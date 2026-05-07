@@ -47,30 +47,30 @@ export default function PublicLanding() {
     <main className="min-h-screen bg-gradient-to-b from-cyan-50/80 via-slate-50 to-violet-100/60 dark:bg-gradient-to-b dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
       <header className="absolute left-0 right-0 top-0 z-50 dark:bg-[#080C14]/90 dark:backdrop-blur-sm">
         <div className="page-shell flex items-center justify-between py-3 sm:py-4">
-          <TripBoardLogo
-            href="/"
-            variant="dark"
-            size="lg"
-            withWordmark
-            imageClassName="drop-shadow-none h-12 max-h-12 sm:h-14 sm:max-h-14"
-          />
+          {/* Logo: dark variant in light mode, light variant in dark mode */}
+          <div className="block dark:hidden">
+            <TripBoardLogo href="/" variant="dark" size="lg" withWordmark imageClassName="h-10 max-h-10 sm:h-12 sm:max-h-12" />
+          </div>
+          <div className="hidden dark:block">
+            <TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="h-10 max-h-10 sm:h-12 sm:max-h-12 brightness-200" />
+          </div>
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--brand)]/40 bg-transparent px-4 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 dark:border-[#F87171]/50 dark:text-[#F87171] dark:hover:bg-[#F87171]/10"
             >
               Precios
             </Link>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--brand)]/40 bg-transparent px-4 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 dark:border-[#F87171]/50 dark:text-[#F87171] dark:hover:bg-[#F87171]/10"
             >
               Entrar
             </Link>
             <div className="flex items-center gap-2">
               <Link
                 href="/auth/register"
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
               >
                 Crear cuenta
               </Link>
