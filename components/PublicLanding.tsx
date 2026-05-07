@@ -44,8 +44,8 @@ export default function PublicLanding() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-cyan-50/80 via-slate-50 to-violet-100/60 dark:bg-none dark:bg-[#080C14]">
-      <header className="absolute left-0 right-0 top-0 z-50">
+    <main className="min-h-screen bg-gradient-to-b from-cyan-50/80 via-slate-50 to-violet-100/60 dark:bg-gradient-to-b dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
+      <header className="absolute left-0 right-0 top-0 z-50 dark:bg-[#080C14]/90 dark:backdrop-blur-sm">
         <div className="page-shell flex items-center justify-between py-3 sm:py-4">
           <TripBoardLogo
             href="/"
@@ -57,13 +57,13 @@ export default function PublicLanding() {
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:bg-[#080C14]"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               Precios
             </Link>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:bg-[#080C14]"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               Entrar
             </Link>
@@ -82,7 +82,7 @@ export default function PublicLanding() {
       </header>
 
       <section className="page-shell pb-8 pt-20 sm:pb-10 sm:pt-24 md:pb-12 md:pt-28">
-        <div className="relative overflow-hidden rounded-[1.5rem] border border-cyan-200/50 bg-gradient-to-br from-white via-cyan-50/50 to-violet-100/70 dark:border-[#1E293B] dark:from-[#0F1623] dark:via-[#0F1623] dark:to-[#0F1623] p-5 shadow-lg shadow-cyan-900/5 sm:rounded-[2rem] sm:p-7 md:rounded-[2.25rem] md:p-9 lg:p-10">
+        <div className="relative overflow-hidden rounded-[1.5rem] border border-cyan-200/50 bg-gradient-to-br from-white via-cyan-50/50 to-violet-100/70 p-5 shadow-lg shadow-cyan-900/5 sm:rounded-[2rem] sm:p-7 md:rounded-[2.25rem] md:p-9 lg:p-10 dark:border-[#1E293B] dark:from-[#0D1117] dark:via-[#0D1117] dark:to-[#0D1117]">
           <div
             className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl"
             aria-hidden
@@ -95,16 +95,16 @@ export default function PublicLanding() {
           <div className="relative grid gap-6 sm:gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div className="space-y-4 sm:space-y-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/60 bg-cyan-100/80 px-3 py-1.5 text-xs font-semibold text-cyan-950">
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/60 bg-cyan-100/80 px-3 py-1.5 text-xs font-semibold text-cyan-950 dark:border-[#F87171]/30 dark:bg-[#F87171]/10 dark:text-[#FCA5A5]">
                   <Sparkles className="h-3.5 w-3.5 text-cyan-700" aria-hidden />
                   Menos caos, más viaje
                 </div>
               </div>
 
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-4xl md:text-[2.65rem] md:leading-tight">
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl md:text-[2.65rem] md:leading-tight dark:text-white">
                 Organiza todo tu viaje en un solo lugar
               </h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base md:text-lg">
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base md:text-lg dark:text-slate-300">
                 Itinerario, gastos, rutas y planes sin caos. Gratis: mapa, plan por días y reparto de gastos. Premium:
                 asistente personal, documentos y automatización.
               </p>
@@ -118,22 +118,22 @@ export default function PublicLanding() {
                   <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                 </Link>
                 <span className="text-sm text-slate-600 dark:text-slate-400">
-                  <Link href="/pricing" className="font-semibold text-violet-800 underline-offset-2 hover:underline">
+                  <Link href="/pricing" className="font-semibold text-[var(--brand)] underline-offset-2 hover:underline dark:text-[var(--brand)]">
                     Ver precios y planes
                   </Link>
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white to-violet-50/90 p-4 shadow-sm md:p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-800/90 dark:text-[var(--brand)]">Qué incluye</p>
-                <ul className="mt-3 grid gap-2 text-sm text-slate-800 sm:grid-cols-2">
+              <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white to-violet-50/90 p-4 shadow-sm md:p-5 dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-800/90 dark:text-[#F87171]">Qué incluye</p>
+                <ul className="mt-3 grid gap-2 text-sm text-slate-800 sm:grid-cols-2 dark:text-slate-300">
                   <Feature>Plan por días con horas</Feature>
                   <Feature>Rutas entre paradas sobre el mapa</Feature>
                   <Feature>Gastos y balances del grupo</Feature>
                   <Feature>Premium: asistente personal y OCR de reservas</Feature>
                 </ul>
-                <p className="mt-3 text-center text-xs text-slate-600 dark:text-slate-400">
-                  <Link href="/pricing" className="font-semibold text-cyan-800 hover:underline">
+                <p className="mt-3 text-center text-xs text-slate-600">
+                  <Link href="/pricing" className="font-semibold text-[var(--brand)] hover:underline dark:text-[var(--brand)]">
                     Comparar planes
                   </Link>
                 </p>
@@ -158,10 +158,10 @@ export default function PublicLanding() {
                       return (
                       <li
                         key={row.label}
-                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white dark:bg-[#0F1623]/5 px-3 py-3 backdrop-blur-sm"
+                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm"
                       >
                         <span
-                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.tone} text-slate-900 dark:text-slate-100 shadow-inner`}
+                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.tone} text-slate-900 shadow-inner`}
                         >
                           <RowIcon className="h-5 w-5" aria-hidden />
                         </span>
@@ -182,16 +182,16 @@ export default function PublicLanding() {
       <footer className="border-t border-violet-200/40 bg-gradient-to-r from-slate-100/90 via-white to-cyan-50/80 dark:border-[#1E293B] dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
         <div className="page-shell flex flex-col gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-900 dark:text-slate-100">Kaviro</span> · Organiza viajes, gastos y rutas
+            <span className="font-semibold text-slate-900 dark:text-white">Kaviro</span> · Organiza viajes, gastos y rutas
           </div>
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/pricing" className="font-semibold text-slate-700 dark:text-slate-300 hover:underline">
+            <Link href="/pricing" className="font-semibold text-slate-500 dark:text-slate-400 hover:underline">
               Precios
             </Link>
-            <Link href="/auth/login" className="font-semibold text-slate-700 dark:text-slate-300 hover:underline">
+            <Link href="/auth/login" className="font-semibold text-slate-500 dark:text-slate-400 hover:underline">
               Entrar
             </Link>
-            <Link href="/auth/register" className="font-semibold text-slate-700 dark:text-slate-300 hover:underline">
+            <Link href="/auth/register" className="font-semibold text-slate-500 dark:text-slate-400 hover:underline">
               Crear cuenta
             </Link>
           </div>
