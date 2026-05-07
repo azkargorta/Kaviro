@@ -42,11 +42,11 @@ export default function DashboardTripSection({
 
   return (
     <section className="mx-auto max-w-2xl space-y-3">
-      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/90 bg-white dark:bg-[#0F1623] p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-bold tracking-tight text-slate-950 sm:text-lg">{title}</h2>
+          <h2 className="text-base font-bold tracking-tight text-slate-950 dark:text-white sm:text-lg">{title}</h2>
           <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{subtitle}</p>
-          <p className="mt-1 text-xs font-semibold text-slate-800 sm:text-sm">{countLabel}</p>
+          <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">{countLabel}</p>
         </div>
         <button
           type="button"
@@ -62,7 +62,7 @@ export default function DashboardTripSection({
         trips.length === 0 ? (
           <div
             ref={expandedRef}
-            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center text-xs text-slate-500 sm:text-sm"
+            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:bg-[#080C14]/80 px-4 py-6 text-center text-xs text-slate-500 sm:text-sm"
           >
             No hay viajes en esta categoría.
           </div>

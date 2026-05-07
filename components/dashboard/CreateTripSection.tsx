@@ -60,7 +60,7 @@ export default function CreateTripSection({
           <button
             type="button"
             onClick={() => setShowForm(false)}
-            className="text-sm font-medium text-slate-500 transition hover:text-slate-700"
+            className="text-sm font-medium text-slate-500 transition hover:text-slate-700 dark:text-slate-300"
           >
             Cerrar formulario
           </button>

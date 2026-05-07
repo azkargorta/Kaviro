@@ -281,3 +281,54 @@ textarea.input { resize: vertical; min-height: 120px; }
 
 /* Map isolation */
 .leaflet-container { isolation: isolate; }
+
+/* ─── Dark mode — component overrides ──────────────────────────────────── */
+
+/* Tailwind slate utilities — automatic dark remapping */
+.dark .bg-white { background-color: #0F1623; }
+.dark .bg-slate-50 { background-color: #080C14; }
+.dark .bg-slate-100 { background-color: #1E293B; }
+.dark .border-slate-200 { border-color: #1E293B; }
+.dark .border-slate-300 { border-color: #334155; }
+.dark .text-slate-900 { color: #F1F5F9; }
+.dark .text-slate-800 { color: #E2E8F0; }
+.dark .text-slate-700 { color: #CBD5E1; }
+.dark .text-slate-600 { color: #94A3B8; }
+.dark .text-slate-500 { color: #64748B; }
+.dark .text-slate-950 { color: #FFFFFF; }
+
+/* Inputs */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: #080C14;
+  border-color: #334155;
+  color: #F1F5F9;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #475569; }
+
+/* Hover states */
+.dark .hover\:bg-slate-50:hover { background-color: #1E293B; }
+.dark .hover\:bg-slate-100:hover { background-color: #334155; }
+
+/* Trip plan cards */
+.dark [class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"],
+.dark [class*="rounded-xl"][class*="border-slate-200"][class*="bg-white"] {
+  background-color: #0F1623;
+  border-color: #1E293B;
+}
+
+/* Dashboard cards */
+.dark .card-soft {
+  background-color: #0F1623;
+  border-color: #1E293B;
+}
+
+/* Expense, plan, participants rows */
+.dark .bg-slate-50 { background-color: #080C14; }
+.dark [class*="bg-slate-50"] { background-color: #080C14; }
+
+/* Scrollbar dark */
+.dark ::-webkit-scrollbar-thumb { background: #1E293B; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #334155; }

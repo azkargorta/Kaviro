@@ -39,7 +39,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
   }, [open]);
 
   const dropItem =
-    "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50";
+    "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:bg-[#080C14]";
 
   return (
     <div ref={rootRef} className="relative -mt-4 pb-0.5 md:-mt-5 md:pb-1">
@@ -49,7 +49,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/[0.04] transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] text-slate-700 shadow-sm ring-1 ring-slate-900/[0.04] transition hover:border-slate-300 hover:bg-slate-50 dark:bg-[#080C14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60"
             aria-expanded={open}
             aria-haspopup="menu"
             aria-controls="dashboard-account-menu"
@@ -62,7 +62,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
             <div
               id="dashboard-account-menu"
               role="menu"
-              className="absolute right-0 top-[calc(100%+0.35rem)] z-[100] w-max min-w-[13.5rem] max-w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-slate-200/90 bg-white py-1.5 shadow-xl ring-1 ring-slate-900/[0.06]"
+              className="absolute right-0 top-[calc(100%+0.35rem)] z-[100] w-max min-w-[13.5rem] max-w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-slate-200/90 bg-white dark:bg-[#0F1623] py-1.5 shadow-xl ring-1 ring-slate-900/[0.06]"
             >
               <div className="px-1.5" onClick={() => setOpen(false)}>
                 {isAdmin ? (
@@ -89,7 +89,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
                   showIcon
                   iconSlotClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 text-white shadow-sm"
                   iconClassName={`${iconInline16} text-white opacity-95`}
-                  className={`${dropItem} border-0 bg-transparent text-slate-900 shadow-none ring-0 hover:bg-slate-50`}
+                  className={`${dropItem} border-0 bg-transparent text-slate-900 shadow-none ring-0 hover:bg-slate-50 dark:bg-[#080C14]`}
                 />
               </div>
             </div>

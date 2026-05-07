@@ -62,7 +62,7 @@ export default function LoginForm() {
     <div className="space-y-6">
       {/* ERROR */}
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
@@ -70,21 +70,21 @@ export default function LoginForm() {
       {/* FORM */}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
             Email
           </label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
+            className="w-full rounded-xl border border-slate-300 bg-white dark:bg-[#0F1623] px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
             placeholder="tu@email.com"
             autoComplete="email"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
             Contraseña
           </label>
 <div className="relative">
@@ -92,14 +92,14 @@ export default function LoginForm() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              className="w-full rounded-xl border border-slate-300 bg-white dark:bg-[#0F1623] px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
               placeholder="••••••••"
               autoComplete="current-password"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-700 transition"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:text-slate-300 transition"
               aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               tabIndex={-1}
             >
@@ -122,7 +122,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50"
+          className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
           {loading ? "Entrando..." : "Iniciar sesión"}
         </button>
@@ -132,14 +132,14 @@ export default function LoginForm() {
       <div className="flex flex-col gap-2 text-sm text-slate-600">
         <Link
           href="/auth/forgot-password"
-          className="text-center text-slate-500 hover:text-slate-700"
+          className="text-center text-slate-500 hover:text-slate-700 dark:text-slate-300"
         >
           ¿Olvidaste tu contraseña?
         </Link>
 
         <Link
           href="/auth/register"
-          className="text-center font-semibold text-cyan-600 hover:text-cyan-700"
+          className="text-center font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]"
         >
           Crear cuenta
         </Link>

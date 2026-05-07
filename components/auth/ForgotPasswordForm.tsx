@@ -35,7 +35,7 @@ export default function ForgotPasswordForm() {
   return (
     <div className="space-y-6">
       {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-800">
           <div className="font-semibold">No se pudo enviar</div>
           <div className="mt-1 opacity-90">{error}</div>
         </div>
@@ -50,12 +50,12 @@ export default function ForgotPasswordForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+            className="w-full rounded-xl border border-slate-300 bg-white dark:bg-[#0F1623] px-4 py-3 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
             placeholder="tu@email.com"
             autoComplete="email"
           />

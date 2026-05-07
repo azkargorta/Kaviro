@@ -79,13 +79,13 @@ export default function RegisterForm() {
   return (
     <div className="space-y-5">
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700">
           {error}
         </div>
       ) : null}
 
       {success ? (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+        <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2 text-sm text-green-700 dark:text-green-300">
           {success}
         </div>
       ) : null}
@@ -146,7 +146,7 @@ export default function RegisterForm() {
         </button>
       </form>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         ¿Ya tienes cuenta?{" "}
         <Link href={loginHref} className="font-medium underline">
           Inicia sesión

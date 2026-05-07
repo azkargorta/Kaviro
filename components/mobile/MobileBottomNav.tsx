@@ -98,7 +98,7 @@ export default function MobileBottomNav({ tripId, isPremium }: Props) {
                       absolute inset-x-1 top-1 bottom-1 rounded-xl
                       ${item.isAI
                         ? "bg-[var(--brand-light)]"
-                        : "bg-slate-100"
+                        : "bg-slate-100 dark:bg-[#1E293B]"
                       }
                     `}
                     aria-hidden

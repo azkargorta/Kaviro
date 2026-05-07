@@ -115,7 +115,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                     ${active
                       ? isAI
                         ? "bg-[var(--brand)] shadow-md shadow-[var(--brand-light)]"
-                        : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md shadow-slate-300/40"
+                        : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md shadow-slate-300/40 dark:from-[#F87171] dark:to-[#EF4444] dark:shadow-[#F87171]/20"
                       : "hover:bg-[var(--brand-light)] active:bg-[var(--brand-light)]"
                     }
                   `}

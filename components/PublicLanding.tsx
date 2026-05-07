@@ -9,7 +9,7 @@ import DarkModeToggle from "@/components/ui/DarkModeToggle";
 
 function Feature({ children }: { children: string }) {
   return (
-    <li className="flex items-start gap-2 text-sm text-slate-700">
+    <li className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
       <Check className="mt-0.5 h-4 w-4 text-emerald-600" aria-hidden />
       <span>{children}</span>
     </li>
@@ -44,7 +44,7 @@ export default function PublicLanding() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-cyan-50/80 via-slate-50 to-violet-100/60">
+    <main className="min-h-screen bg-gradient-to-b from-cyan-50/80 via-slate-50 to-violet-100/60 dark:bg-none dark:bg-[#080C14]">
       <header className="absolute left-0 right-0 top-0 z-50">
         <div className="page-shell flex items-center justify-between py-3 sm:py-4">
           <TripBoardLogo
@@ -57,13 +57,13 @@ export default function PublicLanding() {
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:bg-[#080C14]"
             >
               Precios
             </Link>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:bg-[#080C14]"
             >
               Entrar
             </Link>
@@ -82,7 +82,7 @@ export default function PublicLanding() {
       </header>
 
       <section className="page-shell pb-8 pt-20 sm:pb-10 sm:pt-24 md:pb-12 md:pt-28">
-        <div className="relative overflow-hidden rounded-[1.5rem] border border-cyan-200/50 bg-gradient-to-br from-white via-cyan-50/50 to-violet-100/70 p-5 shadow-lg shadow-cyan-900/5 sm:rounded-[2rem] sm:p-7 md:rounded-[2.25rem] md:p-9 lg:p-10">
+        <div className="relative overflow-hidden rounded-[1.5rem] border border-cyan-200/50 bg-gradient-to-br from-white via-cyan-50/50 to-violet-100/70 dark:border-[#1E293B] dark:from-[#0F1623] dark:via-[#0F1623] dark:to-[#0F1623] p-5 shadow-lg shadow-cyan-900/5 sm:rounded-[2rem] sm:p-7 md:rounded-[2.25rem] md:p-9 lg:p-10">
           <div
             className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl"
             aria-hidden
@@ -101,10 +101,10 @@ export default function PublicLanding() {
                 </div>
               </div>
 
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl md:text-[2.65rem] md:leading-tight">
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-4xl md:text-[2.65rem] md:leading-tight">
                 Organiza todo tu viaje en un solo lugar
               </h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base md:text-lg">
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base md:text-lg">
                 Itinerario, gastos, rutas y planes sin caos. Gratis: mapa, plan por días y reparto de gastos. Premium:
                 asistente personal, documentos y automatización.
               </p>
@@ -112,12 +112,12 @@ export default function PublicLanding() {
               <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href="/auth/register"
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-600 to-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-cyan-600/25 transition hover:from-cyan-500 hover:to-violet-500"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-[var(--brand)] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)]"
                 >
                   Crear viaje
                   <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                 </Link>
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
                   <Link href="/pricing" className="font-semibold text-violet-800 underline-offset-2 hover:underline">
                     Ver precios y planes
                   </Link>
@@ -125,14 +125,14 @@ export default function PublicLanding() {
               </div>
 
               <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white to-violet-50/90 p-4 shadow-sm md:p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-800/90">Qué incluye</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-800/90 dark:text-[var(--brand)]">Qué incluye</p>
                 <ul className="mt-3 grid gap-2 text-sm text-slate-800 sm:grid-cols-2">
                   <Feature>Plan por días con horas</Feature>
                   <Feature>Rutas entre paradas sobre el mapa</Feature>
                   <Feature>Gastos y balances del grupo</Feature>
                   <Feature>Premium: asistente personal y OCR de reservas</Feature>
                 </ul>
-                <p className="mt-3 text-center text-xs text-slate-600">
+                <p className="mt-3 text-center text-xs text-slate-600 dark:text-slate-400">
                   <Link href="/pricing" className="font-semibold text-cyan-800 hover:underline">
                     Comparar planes
                   </Link>
@@ -158,10 +158,10 @@ export default function PublicLanding() {
                       return (
                       <li
                         key={row.label}
-                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm"
+                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white dark:bg-[#0F1623]/5 px-3 py-3 backdrop-blur-sm"
                       >
                         <span
-                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.tone} text-slate-900 shadow-inner`}
+                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.tone} text-slate-900 dark:text-slate-100 shadow-inner`}
                         >
                           <RowIcon className="h-5 w-5" aria-hidden />
                         </span>
@@ -179,19 +179,19 @@ export default function PublicLanding() {
         </div>
       </section>
 
-      <footer className="border-t border-violet-200/40 bg-gradient-to-r from-slate-100/90 via-white to-cyan-50/80">
+      <footer className="border-t border-violet-200/40 bg-gradient-to-r from-slate-100/90 via-white to-cyan-50/80 dark:border-[#1E293B] dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
         <div className="page-shell flex flex-col gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">Kaviro</span> · Organiza viajes, gastos y rutas
+          <div className="text-sm text-slate-600 dark:text-slate-400">
+            <span className="font-semibold text-slate-900 dark:text-slate-100">Kaviro</span> · Organiza viajes, gastos y rutas
           </div>
           <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/pricing" className="font-semibold text-slate-700 hover:underline">
+            <Link href="/pricing" className="font-semibold text-slate-700 dark:text-slate-300 hover:underline">
               Precios
             </Link>
-            <Link href="/auth/login" className="font-semibold text-slate-700 hover:underline">
+            <Link href="/auth/login" className="font-semibold text-slate-700 dark:text-slate-300 hover:underline">
               Entrar
             </Link>
-            <Link href="/auth/register" className="font-semibold text-slate-700 hover:underline">
+            <Link href="/auth/register" className="font-semibold text-slate-700 dark:text-slate-300 hover:underline">
               Crear cuenta
             </Link>
           </div>
