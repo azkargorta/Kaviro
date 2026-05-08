@@ -10,10 +10,12 @@ export type ExpenseDetectedData = {
   currency?: string | null;
   expenseDate?: string | null;
   merchantName?: string | null;
+  confidence?: number | null;
   extractedText?: string | null;
   extractionMethod?: string | null;
   warnings?: string[];
   sharedWarnings?: string[];
+  llmError?: string | null;
   file?: File | null;
 };
 
@@ -30,8 +32,21 @@ export default function ExpenseAnalyzerPanel({
   const [error, setError] = useState<string | null>(null);
   const [useGemini, setUseGemini] = useState(false);
 
+  function validateSelectedFile(f: File) {
+    const maxBytes = 12 * 1024 * 1024; // 12MB
+    if (f.size > maxBytes) {
+      return "El archivo es demasiado grande (máx. 12MB).";
+    }
+    return null;
+  }
+
   async function analyze() {
     if (!file) return;
+    const pre = validateSelectedFile(file);
+    if (pre) {
+      setError(pre);
+      return;
+    }
     setLoading(true);
     setError(null);
     setResult(null);
@@ -59,6 +74,20 @@ export default function ExpenseAnalyzerPanel({
           if (!response.ok) throw new Error(payload?.error || "No se pudo analizar el archivo.");
 
           const llm = payload?.llmExpense && typeof payload.llmExpense === "object" ? payload.llmExpense : null;
+          const detectedCurrency = typeof llm?.currency === "string" ? llm.currency.trim().toUpperCase() : null;
+          const mergedWarnings = [
+            ...(Array.isArray(payload?.warnings) ? payload.warnings : []),
+            ...(Array.isArray(payload?.sharedWarnings) ? payload.sharedWarnings : []),
+          ] as string[];
+          if (!llm?.amount && typeof payload?.amount !== "number") mergedWarnings.push("No se detectó el importe. Revisa el ticket o introdúcelo a mano.");
+          if (!llm?.expenseDate && !payload?.expenseDate) mergedWarnings.push("No se detectó la fecha. Puedes dejarla vacía o completar manualmente.");
+          if (detectedCurrency && detectedCurrency !== String(tripBaseCurrency || "EUR").toUpperCase()) {
+            mergedWarnings.push(`Moneda detectada: ${detectedCurrency}. Por defecto se usará la moneda base del viaje.`);
+          }
+          if (typeof llm?.confidence === "number" && llm.confidence < 0.6) {
+            mergedWarnings.push("La confianza del análisis es baja. Revisa título e importe antes de aplicar.");
+          }
+
           setResult({
             title: llm?.title ?? payload?.title ?? payload?.suggestedTitle ?? null,
             category: llm?.category ?? payload?.category ?? "general",
@@ -68,13 +97,15 @@ export default function ExpenseAnalyzerPanel({
                 : typeof payload?.amount === "number"
                   ? payload.amount
                   : null,
-            currency: tripBaseCurrency,
+            currency: detectedCurrency || tripBaseCurrency,
             expenseDate: llm?.expenseDate ?? payload?.expenseDate ?? null,
             merchantName: llm?.merchantName ?? payload?.merchantName ?? null,
+            confidence: typeof llm?.confidence === "number" ? llm.confidence : null,
             extractedText: payload?.extractedText || pdfText || null,
             extractionMethod: payload?.extractionMethod || "pdfjs-client",
-            warnings: Array.isArray(payload?.warnings) ? payload.warnings : [],
-            sharedWarnings: Array.isArray(payload?.sharedWarnings) ? payload.sharedWarnings : [],
+            warnings: mergedWarnings,
+            sharedWarnings: [],
+            llmError: typeof payload?.llmError === "string" ? payload.llmError : null,
             file,
           });
           return;
@@ -96,17 +127,32 @@ export default function ExpenseAnalyzerPanel({
       }
 
       const llm = payload?.llmExpense && typeof payload.llmExpense === "object" ? payload.llmExpense : null;
+      const detectedCurrency = typeof llm?.currency === "string" ? llm.currency.trim().toUpperCase() : null;
+      const mergedWarnings = [
+        ...(Array.isArray(payload?.warnings) ? payload.warnings : []),
+        ...(Array.isArray(payload?.sharedWarnings) ? payload.sharedWarnings : []),
+      ] as string[];
+      if (!llm?.amount && typeof payload?.amount !== "number") mergedWarnings.push("No se detectó el importe. Revisa el ticket o introdúcelo a mano.");
+      if (!llm?.expenseDate && !payload?.expenseDate) mergedWarnings.push("No se detectó la fecha. Puedes dejarla vacía o completar manualmente.");
+      if (detectedCurrency && detectedCurrency !== String(tripBaseCurrency || "EUR").toUpperCase()) {
+        mergedWarnings.push(`Moneda detectada: ${detectedCurrency}. Por defecto se usará la moneda base del viaje.`);
+      }
+      if (typeof llm?.confidence === "number" && llm.confidence < 0.6) {
+        mergedWarnings.push("La confianza del análisis es baja. Revisa título e importe antes de aplicar.");
+      }
       setResult({
         title: llm?.title ?? payload?.title ?? payload?.suggestedTitle ?? null,
         category: llm?.category ?? payload?.category ?? "general",
         amount: typeof llm?.amount === "number" ? llm.amount : typeof payload?.amount === "number" ? payload.amount : null,
-        currency: tripBaseCurrency,
+        currency: detectedCurrency || tripBaseCurrency,
         expenseDate: llm?.expenseDate ?? payload?.expenseDate ?? null,
         merchantName: llm?.merchantName ?? payload?.merchantName ?? null,
+        confidence: typeof llm?.confidence === "number" ? llm.confidence : null,
         extractedText: payload?.extractedText || null,
         extractionMethod: payload?.extractionMethod || null,
-        warnings: Array.isArray(payload?.warnings) ? payload.warnings : [],
-        sharedWarnings: Array.isArray(payload?.sharedWarnings) ? payload.sharedWarnings : [],
+        warnings: mergedWarnings,
+        sharedWarnings: [],
+        llmError: typeof payload?.llmError === "string" ? payload.llmError : null,
         file,
       });
     } catch (err) {
@@ -151,6 +197,7 @@ export default function ExpenseAnalyzerPanel({
         {file ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
             Archivo seleccionado: <strong>{file.name}</strong>
+            <span className="text-xs text-slate-500"> · {(file.size / (1024 * 1024)).toFixed(1)} MB</span>
           </div>
         ) : null}
 
@@ -179,7 +226,16 @@ export default function ExpenseAnalyzerPanel({
               <p><strong>Moneda:</strong> {result.currency || "EUR"}</p>
               <p><strong>Fecha:</strong> {result.expenseDate || "Sin detectar"}</p>
               <p><strong>Método:</strong> {result.extractionMethod || "Sin indicar"}</p>
+              {typeof result.confidence === "number" ? (
+                <p><strong>Confianza:</strong> {Math.round(result.confidence * 100)}%</p>
+              ) : null}
             </div>
+
+            {result.llmError ? (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                El modelo devolvió un error: {result.llmError}
+              </div>
+            ) : null}
 
             {combinedWarnings.length ? (
               <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

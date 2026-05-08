@@ -6,6 +6,7 @@ import AuthListener from "@/components/auth/AuthListener";
 import AnalyticsRoot from "@/components/analytics/AnalyticsRoot";
 import { ToastProvider } from "@/components/ui/toast";
 import RootTopBar from "@/components/layout/RootTopBar";
+import PwaServiceWorker from "@/components/pwa/PwaServiceWorker";
 
 export const metadata: Metadata = {
   title: "Kaviro",
@@ -52,6 +53,7 @@ export default function RootLayout({
           <AuthListener />
           <AnalyticsRoot />
           <RootTopBar />
+          <PwaServiceWorker />
           <div className="min-h-0 min-w-0">{children}</div>
         </ToastProvider>
       </body>

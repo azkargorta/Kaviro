@@ -109,8 +109,11 @@ export default function ExpenseForm({
     if (detectedData.title) setTitle(detectedData.title);
     if (detectedData.category) setCategory(detectedData.category);
     if (detectedData.amount != null) setAmount(String(detectedData.amount));
-    // Por defecto usamos la moneda base del viaje (el usuario puede cambiarla luego).
-    setCurrency(baseCurrency);
+    // Usamos la moneda detectada si es válida; si no, la base del viaje.
+    const detectedCurrency =
+      typeof detectedData.currency === "string" ? detectedData.currency.trim().toUpperCase() : "";
+    const isSupported = Boolean(ALL_CURRENCIES.find((c) => c.code === detectedCurrency));
+    setCurrency(isSupported ? detectedCurrency : baseCurrency);
     if (detectedData.expenseDate) setExpenseDate(detectedData.expenseDate);
     if (detectedData.file) setAttachment(detectedData.file);
     // No guardamos el File dentro de analysis_data (rompe JSON / DB y no aporta valor).
