@@ -80,7 +80,7 @@ export default function ReservationList({
                     <button
                       type="button"
                       onClick={() => onEdit(reservation)}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                     >
                       Editar
                     </button>

@@ -2302,7 +2302,7 @@ export default function TripAiChatView({
                   layout === "drawer" ? "min-h-[72px]" : "min-h-[100px]"
                 }`}
               />
-              <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-[#1E293B] px-3 py-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 shrink-0">
                     ✦ {activeMode?.label || "Asistente"}
@@ -2318,7 +2318,7 @@ export default function TripAiChatView({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {question.length > 0 && (
-                    <button type="button" onClick={() => setQuestion("")} disabled={loading} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 transition disabled:opacity-40">
+                    <button type="button" onClick={() => setQuestion("")} disabled={loading} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 transition disabled:opacity-40 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300 dark:hover:bg-[#334155]">
                       ✕
                     </button>
                   )}

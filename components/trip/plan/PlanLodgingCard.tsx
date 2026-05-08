@@ -115,7 +115,7 @@ export default function PlanLodgingCard({
             ) : null}
             {activity.place_name ? <p>{activity.place_name}</p> : null}
             {activity.address ? <p>{activity.address}</p> : null}
-            {activity.description ? <p className="text-slate-600">{activity.description}</p> : null}
+            {activity.description ? <p className="text-slate-600 dark:text-slate-400">{activity.description}</p> : null}
             {rating ? (
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-white/70 px-3 py-1 text-xs font-semibold text-amber-800">
                 <div className="flex items-center gap-1" aria-label={`${rating} de 5`}>

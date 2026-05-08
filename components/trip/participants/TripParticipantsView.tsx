@@ -390,7 +390,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
         <button
           type="button"
           onClick={() => void refetch()}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
         >
           Reintentar
         </button>
@@ -487,7 +487,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           </div>
         </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+        <section className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-3 shadow-sm sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-sm font-extrabold text-slate-950">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
@@ -663,7 +663,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
 
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
           {canManageParticipants ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm font-extrabold text-slate-950">Control de pasajeros</div>
                 <button
@@ -706,7 +706,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               </p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 text-sm text-slate-600 shadow-sm">
               <p className="font-semibold text-slate-900">Solo lectura</p>
               <p className="mt-1">
                 No tienes permisos para gestionar pasajeros en este viaje.

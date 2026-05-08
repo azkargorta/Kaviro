@@ -72,7 +72,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
         </div>
       ) : null}
 
-      <section className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 max-w-full flex-1">
             <h3 className="text-lg font-semibold text-slate-900">Listas</h3>
@@ -93,7 +93,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
       </section>
 
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2">
-        <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0 max-w-full flex-1">
               <h3 className="text-lg font-semibold text-slate-900">Adjuntar documento</h3>
@@ -132,7 +132,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
           ) : null}
         </div>
 
-        <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0 max-w-full flex-1">
               <h3 className="text-lg font-semibold text-slate-900">Analizador de documento</h3>
@@ -172,7 +172,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
       />
 
       {!showLodgingForm && !showTransportForm && !showActivityForm ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center dark:border-[#334155] dark:bg-[#080C14]">
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗂️</div>
           <p className="text-sm font-semibold text-slate-700">Selecciona un tipo de reserva para empezar</p>
           <p className="mt-1 text-xs text-slate-400">O usa el analizador IA para autocompletar desde un documento.</p>

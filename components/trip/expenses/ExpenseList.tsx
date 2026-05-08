@@ -171,7 +171,7 @@ export default function ExpenseList({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-sm font-semibold text-slate-900"
             >
               <option value="all">Todas</option>
               {filterOptions.categories.map((c) => (
@@ -186,7 +186,7 @@ export default function ExpenseList({
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-sm font-semibold text-slate-900"
             >
               <option value="all">Todos</option>
               {filterOptions.dates.map((d) => (
@@ -201,7 +201,7 @@ export default function ExpenseList({
             <select
               value={payerFilter}
               onChange={(e) => setPayerFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-sm font-semibold text-slate-900"
             >
               <option value="all">Todos</option>
               {filterOptions.payers.map((p) => (
@@ -216,7 +216,7 @@ export default function ExpenseList({
             <select
               value={owedByFilter}
               onChange={(e) => setOwedByFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-sm font-semibold text-slate-900"
             >
               <option value="all">Todos</option>
               {filterOptions.owedPeople.map((p) => (
@@ -299,9 +299,9 @@ export default function ExpenseList({
                 </div>
 
                 {/* Actions row */}
-                <div className="border-t border-slate-100 px-4 py-2 flex gap-1.5">
-                  <button type="button" onClick={() => onEdit(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">Editar</button>
-                  <button type="button" onClick={() => onDuplicate(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">Duplicar</button>
+                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-2 flex gap-1.5">
+                  <button type="button" onClick={() => onEdit(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]">Editar</button>
+                  <button type="button" onClick={() => onDuplicate(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]">Duplicar</button>
                   <button type="button" onClick={() => onDelete(expense.id)} className="ml-auto rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition">Eliminar</button>
                 </div>
               </div>

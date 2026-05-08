@@ -216,7 +216,7 @@ export default function PlanActivityCard({
           </div>
 
           {/* Title — main element */}
-          <div className="mt-1.5 text-[14px] font-semibold leading-snug text-slate-900" role="heading" aria-level={4}>
+          <div className="mt-1.5 text-[14px] font-semibold leading-snug text-slate-900 dark:text-white" role="heading" aria-level={4}>
             <LongTextSheet
               text={activity.title}
               modalTitle="Actividad"
@@ -239,7 +239,7 @@ export default function PlanActivityCard({
               </div>
             ) : null}
             {activity.description ? (
-              <div className="mt-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-700">
+              <div className="mt-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#1E293B]/40 dark:text-slate-300">
                 <LongTextSheet text={activity.description} modalTitle="Detalles" minLength={80} lineClamp={3} />
               </div>
             ) : null}
@@ -258,7 +258,7 @@ export default function PlanActivityCard({
               </div>
             ) : null}
             {activity.comment ? (
-              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
                 <LongTextSheet text={activity.comment} modalTitle="Comentario" minLength={48} lineClamp={2} />
               </div>
             ) : null}

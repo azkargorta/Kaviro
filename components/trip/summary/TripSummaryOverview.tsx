@@ -78,12 +78,12 @@ function formatFullDate(d: string) {
 // ─── Tile accent colors per tone ──────────────────────────────────────────────
 
 const TILE_ACCENT: Record<TripSummaryTabDef["tone"], { bg: string; border: string; icon: string; chip: string; arrow: string }> = {
-  violet:  { bg: "bg-violet-50",  border: "border-violet-200/70", icon: "bg-violet-100", chip: "bg-violet-100 text-violet-800",  arrow: "text-violet-600" },
-  cyan:    { bg: "bg-sky-50",     border: "border-sky-200/70",    icon: "bg-sky-100",    chip: "bg-sky-100 text-sky-800",       arrow: "text-sky-600"    },
-  emerald: { bg: "bg-emerald-50", border: "border-emerald-200/70",icon: "bg-emerald-100",chip: "bg-emerald-100 text-emerald-800",arrow: "text-emerald-600"},
-  amber:   { bg: "bg-amber-50",   border: "border-amber-200/70",  icon: "bg-amber-100",  chip: "bg-amber-100 text-amber-800",   arrow: "text-amber-600"  },
-  slate:   { bg: "bg-slate-50",   border: "border-slate-200/70",  icon: "bg-slate-100",  chip: "bg-slate-100 text-slate-700",   arrow: "text-slate-500"  },
-  rose:    { bg: "bg-rose-50",    border: "border-rose-200/70",   icon: "bg-rose-100",   chip: "bg-rose-100 text-rose-800",     arrow: "text-rose-600"   },
+  violet:  { bg: "bg-violet-50 dark:bg-[#0F1623]",  border: "border-violet-200/70 dark:border-[#F87171]/20", icon: "bg-violet-100 dark:bg-[#F87171]/15", chip: "bg-violet-100 text-violet-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",  arrow: "text-violet-600 dark:text-[#F87171]" },
+  cyan:    { bg: "bg-sky-50 dark:bg-[#0F1623]",     border: "border-sky-200/70 dark:border-[#F87171]/20",    icon: "bg-sky-100 dark:bg-[#F87171]/15",    chip: "bg-sky-100 text-sky-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",       arrow: "text-sky-600 dark:text-[#F87171]"    },
+  emerald: { bg: "bg-emerald-50 dark:bg-[#0F1623]", border: "border-emerald-200/70 dark:border-[#F87171]/20",icon: "bg-emerald-100 dark:bg-[#F87171]/15",chip: "bg-emerald-100 text-emerald-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",arrow: "text-emerald-600 dark:text-[#F87171]"},
+  amber:   { bg: "bg-amber-50 dark:bg-[#0F1623]",   border: "border-amber-200/70 dark:border-[#F87171]/20",  icon: "bg-amber-100 dark:bg-[#F87171]/15",  chip: "bg-amber-100 text-amber-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",   arrow: "text-amber-600 dark:text-[#F87171]"  },
+  slate:   { bg: "bg-slate-50 dark:bg-[#0F1623]",   border: "border-slate-200/70 dark:border-[#F87171]/20",  icon: "bg-slate-100 dark:bg-[#F87171]/15",  chip: "bg-slate-100 text-slate-700 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",   arrow: "text-slate-500 dark:text-[#F87171]"  },
+  rose:    { bg: "bg-rose-50 dark:bg-[#0F1623]",    border: "border-rose-200/70 dark:border-[#F87171]/20",   icon: "bg-rose-100 dark:bg-[#F87171]/15",   chip: "bg-rose-100 text-rose-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",     arrow: "text-rose-600 dark:text-[#F87171]"   },
 };
 
 const coralBorderDark = "dark:border-[color:var(--brand-border)]";

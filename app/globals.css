@@ -332,3 +332,80 @@ textarea.input { resize: vertical; min-height: 120px; }
 /* Scrollbar dark */
 .dark ::-webkit-scrollbar-thumb { background: #1E293B; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KAVIRO DARK MODE — Global component overrides
+   These catch all components that use hardcoded Tailwind classes
+   without explicit dark: variants. The .dark class on <html> triggers all.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Surfaces ─────────────────────────────────────────────────────────────── */
+.dark .bg-white          { background-color: #0F1623 !important; }
+.dark .bg-slate-50       { background-color: #080C14 !important; }
+.dark .bg-slate-100      { background-color: #1E293B !important; }
+.dark .bg-white\/70      { background-color: rgba(15,22,35,0.9) !important; }
+.dark .bg-white\/5       { background-color: rgba(255,255,255,0.05) !important; }
+
+/* ── Borders ──────────────────────────────────────────────────────────────── */
+.dark .border-slate-200  { border-color: #1E293B !important; }
+.dark .border-slate-100  { border-color: #1A2234 !important; }
+.dark .border-slate-300  { border-color: #334155 !important; }
+
+/* ── Text ─────────────────────────────────────────────────────────────────── */
+.dark .text-slate-950    { color: #FFFFFF !important; }
+.dark .text-slate-900    { color: #F1F5F9 !important; }
+.dark .text-slate-800    { color: #E2E8F0 !important; }
+.dark .text-slate-700    { color: #CBD5E1 !important; }
+.dark .text-slate-600    { color: #94A3B8 !important; }
+.dark .text-slate-500    { color: #64748B !important; }
+.dark .text-slate-400    { color: #475569 !important; }
+
+/* ── Interactive ──────────────────────────────────────────────────────────── */
+.dark .hover\:bg-slate-50:hover  { background-color: #1E293B !important; }
+.dark .hover\:bg-slate-100:hover { background-color: #334155 !important; }
+.dark .hover\:border-slate-300:hover { border-color: #475569 !important; }
+
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: #080C14 !important;
+  border-color: #334155 !important;
+  color: #F1F5F9 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #475569 !important; }
+.dark input:focus,
+.dark textarea:focus {
+  border-color: #F87171 !important;
+  box-shadow: 0 0 0 3px rgba(248,113,113,0.15) !important;
+}
+
+/* ── Cards & sections ─────────────────────────────────────────────────────── */
+.dark [class*="rounded"][class*="border-slate-200"][class*="bg-white"],
+.dark [class*="rounded"][class*="border-slate-200"][class*="bg-slate-50"] {
+  background-color: #0F1623;
+  border-color: #1E293B;
+}
+
+/* ── Plan activity cards ──────────────────────────────────────────────────── */
+.dark .border-slate-200.bg-white { background-color: #0F1623; }
+
+/* ── Weather card ─────────────────────────────────────────────────────────── */
+.dark .from-sky-50     { --tw-gradient-from: #080C14; }
+.dark .via-white       { --tw-gradient-via: #0F1623; }
+.dark .to-slate-50     { --tw-gradient-to: #080C14; }
+.dark .border-sky-200\/60 { border-color: #1E293B !important; }
+.dark .text-sky-700    { color: #F87171 !important; }
+
+/* ── Emerald/Amber stat cards ─────────────────────────────────────────────── */
+.dark .border-emerald-200 { border-color: rgba(52,211,153,0.2) !important; }
+.dark .border-amber-200   { border-color: rgba(251,191,36,0.2) !important; }
+
+/* ── Dialogs & modals ─────────────────────────────────────────────────────── */
+.dark .bg-slate-950\/45 { background-color: rgba(0,0,0,0.7) !important; }
+.dark .bg-slate-950\/40 { background-color: rgba(8,12,20,0.95) !important; }
+
+/* ── Scrollbar dark ───────────────────────────────────────────────────────── */
+.dark ::-webkit-scrollbar-thumb         { background: #1E293B; }
+.dark ::-webkit-scrollbar-thumb:hover   { background: #334155; }

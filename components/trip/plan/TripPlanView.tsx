@@ -628,7 +628,7 @@ export default function TripPlanView({
       />
 
       {historyOpen ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-slate-950">Historial de cambios (Plan)</div>
@@ -637,7 +637,7 @@ export default function TripPlanView({
             <button
               type="button"
               onClick={() => setHistoryOpen(false)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               Cerrar
             </button>
@@ -652,7 +652,7 @@ export default function TripPlanView({
           ) : history.length ? (
             <div className="mt-4 space-y-2">
               {history.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-950">
@@ -676,7 +676,7 @@ export default function TripPlanView({
       ) : null}
 
       <div className="grid grid-cols-2 gap-2 md:gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm md:p-4">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] px-3 py-2 shadow-sm md:p-4">
           <p className="text-[11px] font-semibold leading-tight text-slate-500 md:text-sm">Actividades totales</p>
           <p className="mt-0.5 text-2xl font-bold leading-none text-slate-950 md:mt-2 md:text-3xl">{activities.length}</p>
         </div>
@@ -732,7 +732,7 @@ export default function TripPlanView({
         </div>
 
         {filtersOpen ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950">
                 <SlidersHorizontal className="h-4 w-4 text-slate-700" aria-hidden />
@@ -833,7 +833,7 @@ export default function TripPlanView({
             <button
               type="button"
               onClick={() => setKindsOpen((v) => !v)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               {kindsOpen ? "Cerrar" : "Gestionar"}
             </button>
@@ -852,7 +852,7 @@ export default function TripPlanView({
 
           {kindsOpen ? (
             <div className="mt-4 grid gap-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] p-4">
               <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">Nuevo tipo</div>
               <div className="mt-3 grid gap-3 md:grid-cols-4">
                 <label className="space-y-1 md:col-span-2">
@@ -946,7 +946,7 @@ export default function TripPlanView({
                 <div className="text-sm text-slate-600">Cargando tipos…</div>
               ) : customKinds.length ? (
                 customKinds.map((k) => (
-                  <div key={k.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div key={k.id} className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-slate-950">
@@ -1050,7 +1050,7 @@ export default function TripPlanView({
       ) : null}
 
       {grouped.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] shadow-sm">
           {selectedDate ? (
             // Filtered day — no results
             <div className="px-6 py-8 text-center">
@@ -1156,7 +1156,7 @@ export default function TripPlanView({
               </button>
 
               {expanded ? (
-                <div className="border-t border-slate-100 px-4 pb-4 pt-3">
+                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 pb-4 pt-3">
                   {/* P2 — Timeline vertical continua */}
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                     <SortableContext items={getOrderedItems(date, items).map((a) => a.id)} strategy={verticalListSortingStrategy}>
