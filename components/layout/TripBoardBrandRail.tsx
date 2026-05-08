@@ -23,7 +23,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
   const iconAlt = safeTrim(header.iconAlt) || safeTrim(header.title) || safeTrim(header.section) || "Módulo";
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className="sticky top-0 z-50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {/* Main bar */}
       <div className="border-b border-[var(--border-default)] bg-[var(--surface-card)]/95 backdrop-blur-md shadow-sm shadow-slate-900/[0.04] dark:shadow-none dark:border-[#1E293B] dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950">
         <div className="page-shell max-w-[1200px] !py-0">

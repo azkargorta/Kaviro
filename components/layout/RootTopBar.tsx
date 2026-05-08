@@ -13,7 +13,7 @@ export default function RootTopBar() {
   if (!pathname?.startsWith("/dashboard")) return null;
 
   return (
-    <div className="sticky top-0 z-50">
+    <div className="sticky top-0 z-50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="root-header bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 dark:from-[#080C14] dark:via-[#0F1623] dark:to-[#080C14]">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:py-4 sm:pl-6 sm:pr-6">
           <Link
