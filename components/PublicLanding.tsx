@@ -57,20 +57,20 @@ export default function PublicLanding() {
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--brand)]/40 bg-transparent px-4 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 dark:border-[#F87171]/50 dark:text-[#F87171] dark:hover:bg-[#F87171]/10"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[#F87171] bg-transparent px-4 text-sm font-semibold text-[#F87171] transition hover:bg-[#F87171]/10 dark:bg-[#F87171] dark:text-white dark:border-[#F87171] dark:hover:bg-[#EF4444]"
             >
               Precios
             </Link>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--brand)]/40 bg-transparent px-4 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 dark:border-[#F87171]/50 dark:text-[#F87171] dark:hover:bg-[#F87171]/10"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[#F87171] bg-transparent px-4 text-sm font-semibold text-[#F87171] transition hover:bg-[#F87171]/10 dark:bg-[#F87171] dark:text-white dark:border-[#F87171] dark:hover:bg-[#EF4444]"
             >
               Entrar
             </Link>
             <div className="flex items-center gap-2">
               <Link
                 href="/auth/register"
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+                className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#4F46E5] px-4 text-sm font-semibold text-white transition hover:bg-[#4338CA] dark:bg-[#4F46E5] dark:text-white dark:hover:bg-[#4338CA]"
               >
                 Crear cuenta
               </Link>
@@ -140,7 +140,7 @@ export default function PublicLanding() {
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900 via-cyan-900 to-violet-950 p-6 text-white shadow-xl md:p-8">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-cyan-900 to-violet-950 p-6 text-white shadow-xl md:p-8 dark:from-[#1a0533] dark:via-[#0f0a2e] dark:to-[#0d1535] dark:border-[#F87171]/10">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-transparent" aria-hidden />
                 <div className="relative space-y-6">
                   <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4" />

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import TripBoardLogo from "@/components/brand/TripBoardLogo";
+import DarkModeToggle from "@/components/ui/DarkModeToggle";
 
 type AuthShellProps = {
   title: string;
@@ -14,11 +15,11 @@ export default function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <main className="min-h-dvh min-w-0 bg-[#080C14] dark:bg-[#080C14]">
+    <main className="min-h-dvh min-w-0 bg-gradient-to-br from-slate-100 via-slate-50 to-cyan-100 dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
       <div className="mx-auto flex min-h-dvh max-w-7xl items-start justify-center py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:py-8 sm:pl-6 sm:pr-6 md:py-10">
-        <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white dark:bg-[#0F1623]/80 shadow-2xl backdrop-blur sm:rounded-[28px] md:grid-cols-[1.05fr_0.95fr] md:rounded-[32px]">
+        <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-2xl backdrop-blur sm:rounded-[28px] md:grid-cols-[1.05fr_0.95fr] md:rounded-[32px] dark:border-[#1E293B] dark:bg-[#0F1623]/95">
 
-          <section className="relative hidden overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-900 p-10 text-white md:flex md:flex-col md:justify-between dark:from-[#0A0F1E] dark:via-[#150a0a] dark:to-[#0A0F1E]">
+          <section className="relative hidden overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-900 p-10 text-white md:flex md:flex-col md:justify-between dark:from-[#0A0212] dark:via-[#0f0a2e] dark:to-[#0d1535]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.22),transparent_30%)]" />
 
             <div className="relative z-10">
@@ -28,7 +29,7 @@ export default function AuthShell({
               </div>
 
               <div className="mt-12 max-w-md">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white dark:bg-[#0F1623]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
                   <span>Acceso</span>
                   <span>•</span>
                   <span>Travel Dashboard</span>
@@ -45,32 +46,34 @@ export default function AuthShell({
             </div>
           </section>
 
-          <section className="flex min-w-0 items-start justify-center p-4 sm:p-8 md:p-10">
+          <section className="flex min-w-0 items-start justify-center p-4 sm:p-8 md:p-10 dark:bg-[#0F1623]">
             <div className="w-full min-w-0 max-w-xl">
-              <div className="rounded-2xl border border-slate-200 bg-white dark:bg-[#0F1623] p-5 shadow-xl sm:rounded-[28px] sm:p-8">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:rounded-[28px] sm:p-8 dark:border-[#1E293B] dark:bg-[#0D1117] dark:shadow-none">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6 sm:gap-3">
                   <Link
                     href="/"
-                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:bg-[#080C14]"
+                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300 dark:hover:bg-[#334155]"
                   >
                     Volver a inicio
                   </Link>
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center justify-center rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                    className="inline-flex items-center justify-center rounded-full bg-[#F87171] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#EF4444] dark:bg-[#F87171] dark:hover:bg-[#EF4444]"
                   >
                     Ver precios
                   </Link>
+                  <DarkModeToggle />
                 </div>
                 <div className="mb-6 text-center sm:mb-8">
                   <div className="mb-4 flex justify-center sm:mb-5">
-                    <TripBoardLogo href="/" variant="dark" size="lg" withWordmark />
+                    <span className="block dark:hidden"><TripBoardLogo href="/" variant="dark" size="lg" withWordmark /></span>
+                    <span className="hidden dark:block"><TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="brightness-200" /></span>
                   </div>
-                  <h3 className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                  <h3 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl dark:text-white">
                     {title}
                   </h3>
                   {subtitle ? (
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 sm:mt-3 sm:text-base">{subtitle}</p>
+                    <p className="mt-2 text-sm text-slate-600 sm:mt-3 sm:text-base dark:text-slate-400">{subtitle}</p>
                   ) : null}
                 </div>
 
