@@ -390,6 +390,7 @@ function HelpVisualBadge({
 }
 
 function PageHelpVisualHeader({ pageId }: { pageId: string }) {
+  const isDark = useIsDarkMode();
   if (pageId === "settings") {
     return (
       <div className="mb-5 flex flex-col items-center text-center">
@@ -404,9 +405,21 @@ function PageHelpVisualHeader({ pageId }: { pageId: string }) {
 
   const step = TAB_TOUR.find((s) => s.id === pageId);
   if (!step) return null;
+  const tabKey: TripTabKey | null =
+    pageId === "home"
+      ? "summary"
+      : pageId === "ai"
+        ? "chat"
+        : pageId === "plan" || pageId === "map" || pageId === "expenses" || pageId === "participants" || pageId === "resources"
+          ? pageId
+          : null;
+  const visual =
+    step.visual.type === "image" && tabKey
+      ? { ...step.visual, src: getTripTabIconSrc(tabKey, isDark) }
+      : step.visual;
   return (
     <div className="mb-5 flex flex-col items-center text-center">
-      <HelpVisualBadge visual={step.visual} />
+      <HelpVisualBadge visual={visual} />
       <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800/90 dark:text-violet-300">
         Estás en
       </p>
@@ -559,7 +572,7 @@ export default function TripPageHelp() {
         title={tourOpen ? "Cierra el recorrido para usar la ayuda" : "Ayuda de esta página"}
       >
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50">
-          <LifeBuoy className="h-5 w-5 text-slate-950 dark:text-slate-50" aria-hidden />
+          <LifeBuoy className="h-5 w-5 text-violet-700 dark:text-[#F87171]" aria-hidden />
         </span>
         <span>Ayuda</span>
       </button>

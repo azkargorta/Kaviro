@@ -26,7 +26,7 @@ export default function TripScreenActions({
   menuStack = false,
 }: Props) {
   const desktopIconTile =
-    "inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100 shadow-sm ring-1 ring-slate-900/[0.04]";
+    "inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100 text-slate-900 shadow-sm ring-1 ring-slate-900/[0.04] dark:border-[#334155] dark:bg-[#1E293B] dark:text-white dark:ring-[#0B1220]/50";
 
   const btn =
     variant === "inverse"
@@ -42,7 +42,7 @@ export default function TripScreenActions({
         <TripShareButton tripId={tripId} showLabels menuRow />
         <Link href="/dashboard" className={row} aria-label={homeLabel} title={homeLabel}>
           <span className={iconWrap}>
-            <Home className="text-slate-800" aria-hidden />
+            <Home className="text-slate-800 dark:text-slate-100" aria-hidden />
           </span>
           {homeLabel}
         </Link>
@@ -55,7 +55,7 @@ export default function TripScreenActions({
       <TripShareButton tripId={tripId} showLabels={showLabels} />
       <Link href="/dashboard" className={btn} aria-label={homeLabel} title={homeLabel}>
         <span className={desktopIconTile} aria-hidden>
-          <Home className="h-6 w-6 text-slate-900" aria-hidden />
+          <Home className="h-6 w-6 text-slate-900 dark:text-white" aria-hidden />
         </span>
         <span className={showLabels ? "inline" : "hidden sm:inline"}>{homeLabel}</span>
       </Link>
