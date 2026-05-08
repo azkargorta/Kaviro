@@ -270,6 +270,25 @@ export default function TripExpensesView({
           </div>
           <div className="min-w-0 max-w-full">{topButtons}</div>
         </div>
+
+        {expenses.length === 0 && !shouldShowForm && !isAnalyzeOpen ? (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/70 px-5 py-5 text-sm text-slate-600 backdrop-blur-sm dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/35 dark:text-slate-300">
+            <div className="font-semibold text-slate-800 dark:text-slate-50">Aún no hay gastos</div>
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Añade el primer ticket para ver balances automáticos y quién debe a quién.
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddOpen(true);
+                setIsAnalyzeOpen(false);
+              }}
+              className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+            >
+              Añadir ticket
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {!isPremium ? (

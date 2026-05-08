@@ -2,13 +2,16 @@
 
 import type { TripResource } from "@/hooks/useTripResources";
 import LongTextSheet from "@/components/ui/LongTextSheet";
+import { btnPrimary } from "@/components/ui/brandStyles";
 
 export default function ResourceList({
   resources,
   onDelete,
+  onAdd,
 }: {
   resources: TripResource[];
   onDelete: (resourceId: string) => void;
+  onAdd?: () => void;
 }) {
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -20,8 +23,16 @@ export default function ResourceList({
       </div>
 
       {resources.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500">
-          Todavía no hay documentos subidos.
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-5 text-sm text-slate-600 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/40 dark:text-slate-300">
+          <div className="font-semibold text-slate-800 dark:text-slate-100">Todavía no hay documentos subidos</div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Sube billetes, reservas o PDFs para tenerlos a mano durante el viaje.
+          </div>
+          {onAdd ? (
+            <button type="button" onClick={onAdd} className={`${btnPrimary} mt-3 px-4 py-2 text-sm`}>
+              Adjuntar documento
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="space-y-3">

@@ -364,7 +364,14 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
           onDelete={deleteReservation}
         />
 
-        <ResourceList resources={resources} onDelete={deleteResource} />
+        <ResourceList
+          resources={resources}
+          onDelete={deleteResource}
+          onAdd={() => {
+            setShowUploadForm(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
       </div>
     </div>
   );
