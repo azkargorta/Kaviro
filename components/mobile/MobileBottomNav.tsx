@@ -7,7 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
-import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
@@ -120,7 +120,7 @@ export default function MobileBottomNav({ tripId, isPremium }: Props) {
                     alt=""
                     width={24}
                     height={24}
-                    className={`object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
+                    className={`object-contain ${tripTabIconCoralFilterDark} ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
                   />
                 </span>
 

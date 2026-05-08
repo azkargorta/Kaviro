@@ -16,7 +16,7 @@ import {
   mobileMenuRowSignOut,
 } from "@/components/ui/mobileMenuStyles";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
-import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
@@ -66,7 +66,7 @@ function ItemIcon({ icon }: { icon: NavIcon }) {
       </span>
     );
   }
-  const imgClass = ["object-contain", icon.imageClassName].filter(Boolean).join(" ");
+  const imgClass = ["object-contain", tripTabIconCoralFilterDark, icon.imageClassName].filter(Boolean).join(" ");
   return (
     <span className="relative flex h-full w-full max-h-8 max-w-8 items-center justify-center overflow-hidden rounded-lg">
       <Image src={icon.src} alt={icon.alt} width={32} height={32} className={imgClass} />

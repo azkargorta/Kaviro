@@ -18,5 +18,12 @@ export function getTripTabIconSrc(key: TripTabKey, isDark: boolean) {
   return isDark ? `/brand/tabs/${base}_dark.png` : `/brand/tabs/${base}.png`;
 }
 
+/**
+ * Tiñe un PNG blanco al acento (coral) en dark mode.
+ * Útil para iconos raster (tabs) cuando queremos consistencia visual.
+ */
+export const tripTabIconCoralFilterDark =
+  "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
+
 /** Compat: callers antiguos que esperaban el src directo de Resumen. */
 export const TRIP_TAB_SUMMARY_SRC = "/brand/tabs/summary.png";

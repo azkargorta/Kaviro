@@ -86,9 +86,9 @@ const TILE_ACCENT: Record<TripSummaryTabDef["tone"], { bg: string; border: strin
   rose:    { bg: "bg-rose-50",    border: "border-rose-200/70",   icon: "bg-rose-100",   chip: "bg-rose-100 text-rose-800",     arrow: "text-rose-600"   },
 };
 
-const coralBorderDark = "dark:border-[#F87171]/35";
-const coralRingDark = "dark:ring-1 dark:ring-[#F87171]/15";
-// Aproximación para teñir un PNG blanco a coral (#F87171) en dark mode.
+const coralBorderDark = "dark:border-[color:var(--brand-border)]";
+const coralRingDark = "dark:ring-1 dark:ring-[color:var(--brand-light)]";
+// Aproximación para teñir un PNG blanco al acento en dark mode.
 const coralPngFilterDark =
   "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
 
@@ -170,8 +170,14 @@ export default function TripSummaryOverview({
         {/* Hero card — countdown + today's plan + next activity */}
         <section className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
           {/* Subtle glow */}
-          <div className="pointer-events-none absolute -right-20 -top-10 h-52 w-52 rounded-full bg-violet-500/15 blur-3xl" aria-hidden />
-          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" aria-hidden />
+          <div
+            className="pointer-events-none absolute -right-20 -top-10 h-52 w-52 rounded-full bg-violet-500/15 blur-3xl dark:bg-[var(--brand-light)]"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl dark:bg-[var(--brand-light)]"
+            aria-hidden
+          />
 
           <div className="relative">
             {/* R1 — Countdown / state hero */}
@@ -180,7 +186,7 @@ export default function TripSummaryOverview({
                 {/* Phase-aware headline */}
                 {phase === "before" && daysUntilStart !== null && (
                   <>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-300/90">Cuenta atrás</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-300/90 dark:text-[var(--accent)]">Cuenta atrás</p>
                     <div className="mt-1 flex items-baseline gap-2">
                       <span className="text-5xl font-extrabold tabular-nums leading-none">{daysUntilStart}</span>
                       <span className="text-lg font-semibold text-slate-300">día{daysUntilStart !== 1 ? "s" : ""} para el viaje</span>
@@ -192,7 +198,7 @@ export default function TripSummaryOverview({
                 )}
                 {phase === "during" && daysLeft !== null && (
                   <>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300/90">Viaje en curso ✈️</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300/90 dark:text-[var(--accent)]">Viaje en curso ✈️</p>
                     <div className="mt-1 flex items-baseline gap-2">
                       <span className="text-5xl font-extrabold tabular-nums leading-none">{daysLeft}</span>
                       <span className="text-lg font-semibold text-slate-300">día{daysLeft !== 1 ? "s" : ""} restantes</span>
@@ -239,7 +245,7 @@ export default function TripSummaryOverview({
                 <p className="mt-1 text-xs text-slate-300">Crea tu primer plan o usa el asistente IA para generar el itinerario completo.</p>
                 <Link
                   href={planHref}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-violet-700"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-violet-700 dark:bg-[var(--brand)] dark:hover:bg-[var(--brand-hover)]"
                 >
                   Ir al Plan →
                 </Link>
@@ -249,7 +255,7 @@ export default function TripSummaryOverview({
             {/* Today's activities */}
             {plansToday.length > 0 && (
               <div className="mt-5">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-300/90 mb-2">Planes para hoy</p>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-300/90 mb-2 dark:text-[var(--accent)]">Planes para hoy</p>
                 <ul className="space-y-2">
                   {plansToday.map((a) => (
                     <li
@@ -263,7 +269,7 @@ export default function TripSummaryOverview({
                       <p className={`text-sm font-semibold ${a.isPast ? "line-through decoration-slate-500/80" : ""}`}>
                         {a.title}
                       </p>
-                      <p className="mt-0.5 text-xs text-violet-200/80">{formatActivityWhen(a)}</p>
+                      <p className="mt-0.5 text-xs text-violet-200/80 dark:text-[var(--brand-text)]">{formatActivityWhen(a)}</p>
                       {(a.place_name || a.address) && (
                         <p className="mt-0.5 text-xs text-slate-400">{a.place_name || a.address}</p>
                       )}
@@ -275,10 +281,13 @@ export default function TripSummaryOverview({
 
             {/* R4 — Next activity as featured card */}
             {nextPlan && (
-              <div className="mt-5 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-600/25 to-transparent p-4 ring-1 ring-violet-400/20">
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-violet-200">Próximo en el calendario</p>
+              <div
+                className={`mt-5 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-600/25 to-transparent p-4 ring-1 ring-violet-400/20
+                dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)] dark:ring-[color:var(--brand-light)]`}
+              >
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-violet-200 dark:text-[var(--accent)]">Próximo en el calendario</p>
                 <p className="mt-1.5 text-xl font-extrabold text-white leading-snug">{nextPlan.title}</p>
-                <p className="mt-1 text-sm font-semibold text-violet-200/90">{formatActivityWhen(nextPlan)}</p>
+                <p className="mt-1 text-sm font-semibold text-violet-200/90 dark:text-[var(--brand-text)]">{formatActivityWhen(nextPlan)}</p>
                 {(nextPlan.place_name || nextPlan.address) && (
                   <p className="mt-0.5 text-xs text-slate-300">{nextPlan.place_name || nextPlan.address}</p>
                 )}
@@ -307,11 +316,11 @@ export default function TripSummaryOverview({
         {/* R2 — Weather integrado como columna derecha */}
         <section
           className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
-          dark:border-[#F87171]/28 dark:bg-gradient-to-b dark:from-[#0B1220] dark:via-[#0F1623] dark:to-[#0B1220] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
+          dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-card)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
         >
           <div className="flex items-start justify-between gap-2 mb-4">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700 dark:text-[#F87171]">Clima en el destino</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700 dark:text-[var(--accent)]">Clima en el destino</p>
               <p className="mt-0.5 text-lg font-extrabold text-slate-900 dark:text-slate-50">Previsión</p>
             </div>
             <span className="text-2xl">🌤️</span>
@@ -335,7 +344,7 @@ export default function TripSummaryOverview({
                 return (
                   <div
                     className={`flex items-center gap-4 rounded-2xl bg-white border border-slate-200 px-4 py-3 shadow-sm
-                    dark:bg-[#0B1220]/55 dark:border-[#F87171]/25 dark:shadow-[0_10px_26px_rgba(0,0,0,0.35)]`}
+                    dark:bg-[var(--surface-page)]/55 dark:border-[color:var(--brand-border)] dark:shadow-[0_10px_26px_rgba(0,0,0,0.35)]`}
                   >
                     <span className="text-4xl">{vis.emoji}</span>
                     <div className="flex-1 min-w-0">
@@ -351,10 +360,10 @@ export default function TripSummaryOverview({
                     {/* Today rain */}
                     {(todayW as any).precipProb != null && (
                       <div className="text-right shrink-0">
-                        <p className="text-lg font-extrabold text-sky-600 tabular-nums dark:text-[#F87171]">{(todayW as any).precipProb}%</p>
+                        <p className="text-lg font-extrabold text-sky-600 tabular-nums dark:text-[var(--accent)]">{(todayW as any).precipProb}%</p>
                         <p className="text-[10px] text-slate-400 leading-none mt-0.5 dark:text-slate-400">lluvia</p>
                         {(todayW as any).precipMm != null && (todayW as any).precipMm > 0 && (
-                          <p className="text-[10px] font-semibold text-sky-500 dark:text-[#FDA4AF]">{(todayW as any).precipMm} mm</p>
+                          <p className="text-[10px] font-semibold text-sky-500 dark:text-[var(--brand-text)]">{(todayW as any).precipMm} mm</p>
                         )}
                       </div>
                     )}
@@ -377,11 +386,11 @@ export default function TripSummaryOverview({
                         style={{ scrollSnapAlign: "start" }}
                         className={`w-[84px] shrink-0 rounded-2xl border px-2.5 py-3 text-center shadow-sm transition-all ${
                           isToday
-                            ? "border-violet-300 bg-violet-50 ring-1 ring-violet-200 dark:border-[#F87171]/40 dark:bg-[#0B1220]/55 dark:ring-[#F87171]/15"
-                            : "border-slate-200 bg-white dark:border-[#F87171]/18 dark:bg-[#0F1623]"
+                            ? "border-violet-300 bg-violet-50 ring-1 ring-violet-200 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/55 dark:ring-[color:var(--brand-light)]"
+                            : "border-slate-200 bg-white dark:border-[color:var(--border-default)] dark:bg-[var(--surface-card)]"
                         }`}
                       >
-                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-violet-600 dark:text-[#F87171]" : "text-slate-400 dark:text-slate-400"}`}>
+                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-violet-600 dark:text-[var(--accent)]" : "text-slate-400 dark:text-slate-400"}`}>
                           {isToday ? "HOY" : formatShortWeekday(day.date)}
                         </p>
                         <p className="mt-1.5 text-2xl leading-none">{vis.emoji}</p>
@@ -392,14 +401,14 @@ export default function TripSummaryOverview({
                           {day.tempMin != null ? `${Math.round(day.tempMin)}°` : "—"}
                         </p>
                         {/* Precipitation */}
-                        <div className={`mt-2 rounded-lg px-1.5 py-1 ${hasRain ? "bg-sky-50 dark:bg-[#1E293B]/50" : "bg-transparent"}`}>
+                        <div className={`mt-2 rounded-lg px-1.5 py-1 ${hasRain ? "bg-sky-50 dark:bg-[color:var(--border-default)]/50" : "bg-transparent"}`}>
                           {prob != null ? (
                             <>
-                              <p className={`text-[11px] font-extrabold tabular-nums ${hasRain ? "text-sky-600 dark:text-[#F87171]" : "text-slate-300 dark:text-slate-500"}`}>
+                              <p className={`text-[11px] font-extrabold tabular-nums ${hasRain ? "text-sky-600 dark:text-[var(--accent)]" : "text-slate-300 dark:text-slate-500"}`}>
                                 💧{prob}%
                               </p>
                               {mm != null && mm > 0 && (
-                                <p className="text-[9px] text-sky-400 tabular-nums dark:text-[#FDA4AF]">{mm}mm</p>
+                                <p className="text-[9px] text-sky-400 tabular-nums dark:text-[var(--brand-text)]">{mm}mm</p>
                               )}
                             </>
                           ) : (
@@ -433,8 +442,8 @@ export default function TripSummaryOverview({
           {tabs.map((tab) => {
             const ac = TILE_ACCENT[tab.tone];
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
-            const tileBorder = isDark ? `border-[#F87171]/25 hover:border-[#F87171]/45` : ac.border;
-            const tileBg = isDark ? "bg-[#0F1623]/80 hover:bg-[#0F1623]" : "bg-white";
+            const tileBorder = isDark ? "border-[color:var(--brand-border)] hover:border-[var(--accent)]" : ac.border;
+            const tileBg = isDark ? "bg-[var(--surface-card)]/80 hover:bg-[var(--surface-card)]" : "bg-white";
             const tileShadow = isDark ? "shadow-[0_10px_30px_rgba(0,0,0,0.40)]" : "shadow-sm";
             return (
               <Link
@@ -447,7 +456,7 @@ export default function TripSummaryOverview({
                   <div
                     className={
                       isDark
-                        ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F87171]/10 ring-1 ring-[#F87171]/20"
+                        ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)]"
                         : `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ac.icon}`
                     }
                   >
@@ -462,7 +471,7 @@ export default function TripSummaryOverview({
                   <span
                     className={
                       isDark
-                        ? "rounded-full bg-[#F87171]/10 px-2.5 py-1 text-[11px] font-extrabold text-[#FDA4AF] ring-1 ring-[#F87171]/15"
+                        ? "rounded-full bg-[var(--brand-light)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--brand-text)] ring-1 ring-[color:var(--brand-border)]"
                         : `rounded-full px-2.5 py-1 text-[11px] font-extrabold ${ac.chip}`
                     }
                   >
@@ -478,7 +487,7 @@ export default function TripSummaryOverview({
                 {tab.hint && (
                   <p
                     className={`mt-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 leading-snug line-clamp-2
-                    dark:border-[#F87171]/12 dark:bg-black/20 dark:text-slate-200`}
+                    dark:border-[color:var(--brand-border)] dark:bg-black/20 dark:text-slate-200`}
                   >
                     {tab.hint}
                   </p>
@@ -488,7 +497,7 @@ export default function TripSummaryOverview({
                 <div
                   className={
                     isDark
-                      ? "mt-3 flex items-center gap-1 text-xs font-bold text-[#F87171] transition group-hover:gap-2"
+                      ? "mt-3 flex items-center gap-1 text-xs font-bold text-[var(--accent)] transition group-hover:gap-2"
                       : `mt-3 flex items-center gap-1 text-xs font-bold transition group-hover:gap-2 ${ac.arrow}`
                   }
                 >

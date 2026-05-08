@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
@@ -141,7 +141,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                       alt=""
                       width={28}
                       height={28}
-                      className={`h-7 w-7 object-contain ${item.iconClass || ""} ${active ? "brightness-[2] saturate-0" : "dark:brightness-[1.4] dark:contrast-125"}`}
+                      className={`h-7 w-7 object-contain ${item.iconClass || ""} ${active ? "brightness-[2] saturate-0" : tripTabIconCoralFilterDark}`}
                     />
                   </span>
 

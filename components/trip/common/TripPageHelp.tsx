@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, LifeBuoy, X } from "lucide-react";
-import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { iconInline16, iconSlotFill40, iconSlotFill44 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
@@ -380,7 +380,7 @@ function HelpVisualBadge({
             alt={visual.alt}
             fill
             sizes={fillSizes}
-            className={["object-contain object-center", visual.imageClassName].filter(Boolean).join(" ")}
+            className={["object-contain object-center", tripTabIconCoralFilterDark, visual.imageClassName].filter(Boolean).join(" ")}
             priority={false}
           />
         </div>

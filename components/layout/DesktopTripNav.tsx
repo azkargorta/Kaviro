@@ -4,7 +4,7 @@ import type React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
@@ -81,7 +81,7 @@ export default function DesktopTripNav({ tripId, isPremium }: Props) {
                     alt=""
                     width={22}
                     height={22}
-                    className={`h-[22px] w-[22px] object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
+                    className={`h-[22px] w-[22px] object-contain ${tripTabIconCoralFilterDark} ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
                   />
                 </span>
                 <span>{item.label}</span>
