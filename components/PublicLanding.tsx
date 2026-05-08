@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect } from "react";
 import TripBoardLogo from "@/components/brand/TripBoardLogo";
 import { ArrowRight, CalendarDays, Check, MapPinned, Sparkles, Wallet } from "lucide-react";
-import { PremiumBadge } from "@/components/layout/PremiumBadge";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 
 function Feature({ children }: { children: string }) {
@@ -57,13 +56,13 @@ export default function PublicLanding() {
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[#F87171] bg-transparent px-4 text-sm font-semibold text-[#F87171] transition hover:bg-[#F87171]/10 dark:bg-[#F87171] dark:text-white dark:border-[#F87171] dark:hover:bg-[#EF4444]"
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#F87171] px-4 text-sm font-semibold text-white transition hover:bg-[#EF4444] dark:bg-[#F87171] dark:hover:bg-[#EF4444]"
             >
               Precios
             </Link>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-[#F87171] bg-transparent px-4 text-sm font-semibold text-[#F87171] transition hover:bg-[#F87171]/10 dark:bg-[#F87171] dark:text-white dark:border-[#F87171] dark:hover:bg-[#EF4444]"
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#F87171] px-4 text-sm font-semibold text-white transition hover:bg-[#EF4444] dark:bg-[#F87171] dark:hover:bg-[#EF4444]"
             >
               Entrar
             </Link>
@@ -74,7 +73,6 @@ export default function PublicLanding() {
               >
                 Crear cuenta
               </Link>
-              <PremiumBadge />
             </div>
             <DarkModeToggle />
           </nav>

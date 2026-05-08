@@ -115,8 +115,8 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                     ${active
                       ? isAI
                         ? "bg-[var(--brand)] shadow-md shadow-[var(--brand-light)]"
-                        : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md shadow-slate-300/40 dark:from-[#F87171] dark:to-[#EF4444] dark:shadow-[#F87171]/20"
-                      : "hover:bg-[var(--brand-light)] active:bg-[var(--brand-light)]"
+                        : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md shadow-slate-300/40 dark:from-[#F87171] dark:to-[#EF4444] dark:shadow-[0_2px_12px_rgba(248,113,113,0.25)]"
+                      : "hover:bg-[var(--brand-light)] active:bg-[var(--brand-light)] dark:hover:bg-[#1E293B]"
                     }
                   `}
                 >
@@ -137,7 +137,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                         ? "bg-white/15 ring-1 ring-white/20"
                         : isAI
                           ? "bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]"
-                          : "bg-[var(--surface-page)] ring-1 ring-[var(--border-default)] group-hover:bg-[var(--surface-card)] group-hover:shadow-sm"
+                          : "bg-[var(--surface-page)] ring-1 ring-[var(--border-default)] group-hover:bg-[var(--surface-card)] group-hover:shadow-sm dark:bg-[#1E293B] dark:ring-[#334155]"
                       }
                     `}
                     aria-hidden
@@ -147,7 +147,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                       alt=""
                       width={28}
                       height={28}
-                      className={`h-7 w-7 object-contain ${item.iconClass || ""} ${active ? "brightness-[2] saturate-0" : ""}`}
+                      className={`h-7 w-7 object-contain ${item.iconClass || ""} ${active ? "brightness-[2] saturate-0" : "dark:brightness-[1.4] dark:contrast-125"}`}
                     />
                   </span>
 
@@ -157,7 +157,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                       {item.label}
                     </p>
                     {item.sublabel && !active && (
-                      <p className={`text-[10px] leading-none mt-0.5 truncate ${isAI ? "text-[var(--brand)] font-semibold" : "text-slate-400"}`}>
+                      <p className={`text-[10px] leading-none mt-0.5 truncate ${isAI ? "text-[var(--brand)] font-semibold" : "text-slate-400 dark:text-[#475569]"}`}>
                         {item.sublabel}
                       </p>
                     )}
