@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Bell, X } from "lucide-react";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
@@ -12,6 +13,7 @@ type AuditLog = {
   entity_id: string;
   action: "create" | "update" | "delete" | string;
   summary: string | null;
+  diff?: unknown;
   actor_email: string | null;
   created_at: string;
 };
@@ -42,12 +44,50 @@ function entityLabel(t: string) {
   return t || "Cambio";
 }
 
+type FeedFilter = "all" | "plan" | "expenses" | "docs" | "routes";
+
+function filterLabel(f: FeedFilter) {
+  if (f === "all") return "Todo";
+  if (f === "plan") return "Plan";
+  if (f === "expenses") return "Gastos";
+  if (f === "docs") return "Docs";
+  return "Rutas";
+}
+
+function filterMatches(log: AuditLog, f: FeedFilter) {
+  if (f === "all") return true;
+  const t = (log.entity_type || "").toLowerCase();
+  if (f === "plan") return t === "activity" || t === "plan";
+  if (f === "expenses") return t === "expense";
+  if (f === "docs") return t === "resource" || t === "reservation";
+  if (f === "routes") return t === "route";
+  return true;
+}
+
+function moduleHref(tripId: string, log: AuditLog) {
+  const t = (log.entity_type || "").toLowerCase();
+  if (t === "expense") return `/trip/${encodeURIComponent(tripId)}/expenses`;
+  if (t === "activity" || t === "plan") return `/trip/${encodeURIComponent(tripId)}/plan`;
+  if (t === "resource" || t === "reservation") return `/trip/${encodeURIComponent(tripId)}/resources`;
+  if (t === "route") return `/trip/${encodeURIComponent(tripId)}/map`;
+  return `/trip/${encodeURIComponent(tripId)}/summary`;
+}
+
+function actionLabel(a: string) {
+  const k = (a || "").toLowerCase();
+  if (k === "create") return "Creado";
+  if (k === "update") return "Editado";
+  if (k === "delete") return "Borrado";
+  return a || "Cambio";
+}
+
 export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [filter, setFilter] = useState<FeedFilter>("all");
 
   const lastSeenAt = useMemo(() => {
     if (!mounted) return null;
@@ -65,6 +105,8 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
     const c = logs.filter((l) => new Date(l.created_at).getTime() > last).length;
     return Math.min(c, 9);
   }, [logs, lastSeenAt]);
+
+  const visibleLogs = useMemo(() => logs.filter((l) => filterMatches(l, filter)), [logs, filter]);
 
   useEffect(() => setMounted(true), []);
 
@@ -147,23 +189,49 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            <div className="mb-3 flex flex-wrap gap-2">
+              {(["all", "plan", "expenses", "docs", "routes"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilter(f)}
+                  className={`inline-flex min-h-[36px] items-center justify-center rounded-full border px-3 text-xs font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] ${
+                    filter === f
+                      ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
+                  }`}
+                >
+                  {filterLabel(f)}
+                </button>
+              ))}
+            </div>
             {loading ? (
               <div className="text-sm text-slate-500 dark:text-slate-300">Cargando…</div>
             ) : error ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
-            ) : logs.length === 0 ? (
+            ) : visibleLogs.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-600 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/40 dark:text-slate-300">
                 No hay novedades todavía.
               </div>
             ) : (
               <div className="space-y-3">
-                {logs.map((l) => (
-                  <div key={l.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700/60 dark:bg-slate-950/40">
+                {visibleLogs.map((l) => (
+                  <Link
+                    key={l.id}
+                    href={moduleHref(tripId, l)}
+                    onClick={close}
+                    className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-950/40 dark:hover:bg-slate-900/40"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">
-                        {entityLabel(l.entity_type)}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">
+                          {entityLabel(l.entity_type)}
+                        </span>
+                        <span className="rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--brand-text)] ring-1 ring-[var(--brand-border)]">
+                          {actionLabel(l.action)}
+                        </span>
                       </div>
                       <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-400">
                         {formatWhen(l.created_at)}
@@ -177,7 +245,10 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
                         Por {l.actor_email}
                       </div>
                     ) : null}
-                  </div>
+                    <div className="mt-2 text-xs font-bold text-[var(--accent)]">
+                      Abrir módulo →
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}
