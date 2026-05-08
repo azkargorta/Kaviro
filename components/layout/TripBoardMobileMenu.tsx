@@ -6,7 +6,10 @@ import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Menu, User, X } from "lucide-react";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
+import TripPageHelp from "@/components/trip/common/TripPageHelp";
+import TripActivityFeedButton from "@/components/trip/common/TripActivityFeedButton";
 import SignOutButton from "@/components/auth/SignOutButton";
+import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import {
   mobileMenuSectionTitle,
   mobileMenuRowBase,
@@ -133,28 +136,35 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
               />
 
               <div
-                className="pointer-events-auto absolute right-0 top-0 h-full w-[min(92vw,420px)] overflow-y-auto border-l border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/60 shadow-2xl pb-[max(0.75rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))]"
+                className="pointer-events-auto absolute right-0 top-0 h-full w-[min(92vw,420px)] overflow-y-auto border-l border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/60 shadow-2xl pb-[max(0.75rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))] dark:border-[#1E293B] dark:bg-gradient-to-b dark:from-[#0B1220] dark:via-[#0B1220] dark:to-[#0B1220]"
                 style={{
                   paddingTop: "max(env(safe-area-inset-top), 12px)",
                 }}
               >
                 <div className="flex items-center justify-between gap-3 px-5">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500">Menú</div>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 ${iconSlotFill40}`}
-                    aria-label="Cerrar"
-                  >
-                    <X aria-hidden />
-                  </button>
+                  <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Menú</div>
+                  <div className="flex items-center gap-2">
+                    <DarkModeToggle />
+                    <button
+                      type="button"
+                      onClick={() => setOpen(false)}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B] ${iconSlotFill40}`}
+                      aria-label="Cerrar"
+                    >
+                      <X aria-hidden />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 px-5">
-                  <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 via-white to-violet-50/30 p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+                  <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 via-white to-violet-50/30 p-4 shadow-sm ring-1 ring-slate-900/[0.04] dark:border-[#1E293B] dark:bg-gradient-to-br dark:from-[#0F1623] dark:via-[#0F1623] dark:to-[#0F1623] dark:ring-white/5">
                     <div className={mobileMenuSectionTitle}>Acciones rápidas</div>
                     <div className="mt-3">
                       <TripScreenActions tripId={tripId} showLabels variant="default" menuStack />
+                      <div className="mt-2 space-y-2">
+                        <TripActivityFeedButton tripId={tripId} />
+                        <TripPageHelp />
+                      </div>
                     </div>
                   </div>
                 </div>

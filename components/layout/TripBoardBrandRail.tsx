@@ -100,8 +100,10 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
 
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-1.5">
-              <TripPageHelp />
-              <TripActivityFeedButton tripId={tripId} />
+              <div className="hidden sm:contents">
+                <TripPageHelp />
+                <TripActivityFeedButton tripId={tripId} />
+              </div>
 
               {/* Desktop actions slot */}
               {header.actions ? (
@@ -120,7 +122,9 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
                 </Link>
               )}
 
-              <DarkModeToggle />
+              <div className="hidden sm:block">
+                <DarkModeToggle />
+              </div>
               {/* Mobile hamburger */}
               <TripBoardMobileMenu tripId={tripId} />
             </div>

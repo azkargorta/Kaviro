@@ -82,7 +82,7 @@ export default function PublicLanding() {
         </div>
       </header>
 
-      <section className="page-shell pb-8 pt-20 sm:pb-10 sm:pt-24 md:pb-12 md:pt-28">
+      <section className="page-shell pb-8 pt-[calc(5.25rem+env(safe-area-inset-top))] sm:pb-10 sm:pt-[calc(6rem+env(safe-area-inset-top))] md:pb-12 md:pt-[calc(7rem+env(safe-area-inset-top))]">
         <div className="relative overflow-hidden rounded-[1.5rem] border border-cyan-200/50 bg-gradient-to-br from-white via-cyan-50/50 to-violet-100/70 p-5 shadow-lg shadow-cyan-900/5 sm:rounded-[2rem] sm:p-7 md:rounded-[2.25rem] md:p-9 lg:p-10 dark:border-[#1E293B] dark:from-[#0D1117] dark:via-[#0D1117] dark:to-[#0D1117]">
           <div
             className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl"
