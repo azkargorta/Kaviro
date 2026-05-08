@@ -5,6 +5,7 @@ import Image from "next/image";
 import TripBoardLogo from "@/components/brand/TripBoardLogo";
 import { useTripBoardHeader } from "@/components/layout/TripBoardHeaderContext";
 import TripPageHelp from "@/components/trip/common/TripPageHelp";
+import TripActivityFeedButton from "@/components/trip/common/TripActivityFeedButton";
 import TripBoardMobileMenu from "@/components/layout/TripBoardMobileMenu";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 
@@ -100,6 +101,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-1.5">
               <TripPageHelp />
+              <TripActivityFeedButton tripId={tripId} />
 
               {/* Desktop actions slot */}
               {header.actions ? (
