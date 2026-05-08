@@ -110,7 +110,7 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`inline-flex min-h-[40px] min-w-[40px] shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 md:hidden ${iconSlotFill40}`}
+        className={`inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] md:hidden ${iconSlotFill40}`}
         aria-label="Abrir menú"
         title="Menú"
       >

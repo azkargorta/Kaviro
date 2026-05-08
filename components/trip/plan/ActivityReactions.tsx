@@ -140,7 +140,7 @@ export function ActivityReactions({
                       onChange={(e) => setComment(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && myReaction) { e.preventDefault(); void vote(myReaction.reaction); } }}
                       placeholder="Añade un comentario (opcional)"
-                      className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-violet-300"
+                      className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none transition focus:border-violet-300 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
                     />
                     {myReaction && (
                       <button type="button" disabled={saving || !comment.trim()} onClick={() => vote(myReaction.reaction)} className="rounded-xl bg-violet-600 px-3 py-1.5 text-white disabled:opacity-40">

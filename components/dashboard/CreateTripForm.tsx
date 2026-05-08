@@ -169,7 +169,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             placeholder="Ej. Japón 2026"
           />
         </div>
@@ -185,7 +185,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             />
           </div>
           <div>
@@ -195,7 +195,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               min={startDate || undefined}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             />
           </div>
         </div>
@@ -205,7 +205,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
           <select
             value={baseCurrency}
             onChange={(e) => setBaseCurrency(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
           >
             {currencyOptions.map((c) => (
               <option key={c.code} value={c.code}>

@@ -2283,7 +2283,9 @@ export default function TripAiChatView({
             className={`min-w-0 max-w-full border-t border-slate-200 p-4 sm:p-5 ${layout === "drawer" ? "shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]" : ""}`}
           >
             {/* AI5 — Input with contextual placeholder, char counter, Enter to send */}
-            <div className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}>
+            <div
+              className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-border)] ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}
+            >
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}

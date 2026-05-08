@@ -24,7 +24,7 @@ export default function DarkModeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition border-[#4F46E5] bg-[#4F46E5] text-white hover:bg-[#4338CA] dark:border-[#F87171] dark:bg-[#F87171] dark:text-white dark:hover:bg-[#EF4444]"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-full border transition border-[#4F46E5] bg-[#4F46E5] text-white hover:bg-[#4338CA] dark:border-[#F87171] dark:bg-[#F87171] dark:text-white dark:hover:bg-[#EF4444] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
       title={dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       aria-label={dark ? "Modo claro" : "Modo oscuro"}
     >
