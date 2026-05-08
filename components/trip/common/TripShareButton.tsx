@@ -181,11 +181,11 @@ export default function TripShareButton({
         >
           {menuRow ? (
             <span className={mobileMenuRowIconWrap}>
-              <Link2 className="text-violet-700" aria-hidden />
+              <Link2 className="text-violet-700 dark:text-[#F87171]" aria-hidden />
             </span>
           ) : (
             <span className={desktopIconTile} aria-hidden>
-              <Link2 className="h-5 w-5" aria-hidden />
+              <Link2 className="h-5 w-5 text-slate-900 dark:text-[#F87171]" aria-hidden />
             </span>
           )}
           <span className={menuRow || showLabels ? "inline" : "inline max-w-[9rem] truncate sm:max-w-none"}>Copiar enlace</span>
