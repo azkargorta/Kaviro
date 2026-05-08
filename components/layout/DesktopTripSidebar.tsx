@@ -89,7 +89,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
       <div className="sticky top-24 space-y-2">
 
         {/* Nav card */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#1E293B] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
 
           {/* Header strip */}
           <div className="border-b border-[var(--border-default)] px-4 py-3">
@@ -137,7 +137,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                         ? "bg-white/15 ring-1 ring-white/20"
                         : isAI
                           ? "bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]"
-                          : "bg-[var(--surface-page)] ring-1 ring-[var(--border-default)] group-hover:bg-[var(--surface-card)] group-hover:shadow-sm dark:bg-[#1E293B] dark:ring-[#334155]"
+                          : "bg-[var(--surface-page)] ring-1 ring-[var(--border-default)] group-hover:bg-[var(--surface-card)] group-hover:shadow-sm dark:bg-[#1E293B] dark:ring-[#475569]/50"
                       }
                     `}
                     aria-hidden

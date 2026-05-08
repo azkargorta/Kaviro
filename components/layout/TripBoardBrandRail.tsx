@@ -34,7 +34,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
               {/* Kaviro logo mark — always visible, links to dashboard */}
               <Link
                 href="/dashboard"
-                className="shrink-0 flex items-center justify-center h-8 w-8 rounded-xl overflow-hidden ring-1 ring-slate-900/10 hover:ring-[var(--brand)] transition-all duration-150 dark:ring-[#1E293B] dark:bg-[#1E293B]"
+                className="shrink-0 flex items-center justify-center h-8 w-8 rounded-xl overflow-hidden ring-1 ring-slate-900/10 hover:ring-[var(--brand)] transition-all duration-150 dark:ring-white/20 dark:bg-white"
                 title="Mis viajes"
               >
                 <Image
@@ -107,10 +107,12 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
               ) : (
                 <Link
                   href="/dashboard"
-                  className="hidden md:inline-flex items-center gap-1.5 min-h-[34px] rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] shadow-sm transition hover:border-[var(--brand-border)] hover:text-[var(--brand)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-300 dark:hover:bg-[#1E293B]"
+                  className="hidden md:inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 8l6-6 6 6M3 7.5V14h4v-3h2v3h4V7.5"/></svg>
-                  Mis viajes
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-[#334155] dark:bg-[#1E293B] dark:text-white">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  </span>
+                  <span>Mis viajes</span>
                 </Link>
               )}
 

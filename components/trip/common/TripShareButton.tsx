@@ -163,11 +163,11 @@ export default function TripShareButton({
     ) : null;
 
   const compactBtn =
-    "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 disabled:opacity-60 sm:min-h-0 sm:min-w-0 sm:px-2 sm:py-1";
+    "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
 
   const menuBtn = `${mobileMenuRowBase} text-left disabled:opacity-60`;
   const desktopIconTile =
-    "inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100 shadow-sm ring-1 ring-slate-900/[0.04]";
+    "inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-[#334155] dark:bg-[#1E293B] dark:text-white";
 
   return (
     <>
@@ -185,7 +185,7 @@ export default function TripShareButton({
             </span>
           ) : (
             <span className={desktopIconTile} aria-hidden>
-              <Link2 className="h-5 w-5 text-slate-900" aria-hidden />
+              <Link2 className="h-5 w-5" aria-hidden />
             </span>
           )}
           <span className={menuRow || showLabels ? "inline" : "inline max-w-[9rem] truncate sm:max-w-none"}>Copiar enlace</span>
