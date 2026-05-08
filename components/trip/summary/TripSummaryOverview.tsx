@@ -86,6 +86,12 @@ const TILE_ACCENT: Record<TripSummaryTabDef["tone"], { bg: string; border: strin
   rose:    { bg: "bg-rose-50",    border: "border-rose-200/70",   icon: "bg-rose-100",   chip: "bg-rose-100 text-rose-800",     arrow: "text-rose-600"   },
 };
 
+const coralBorderDark = "dark:border-[#F87171]/35";
+const coralRingDark = "dark:ring-1 dark:ring-[#F87171]/15";
+// Aproximación para teñir un PNG blanco a coral (#F87171) en dark mode.
+const coralPngFilterDark =
+  "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
+
 // ─── Subcomponents ────────────────────────────────────────────────────────────
 
 // R6 — Progress bar for active trip
@@ -299,22 +305,27 @@ export default function TripSummaryOverview({
         </section>
 
         {/* R2 — Weather integrado como columna derecha */}
-        <section className="min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6">
+        <section
+          className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
+          dark:border-[#F87171]/28 dark:bg-gradient-to-b dark:from-[#0B1220] dark:via-[#0F1623] dark:to-[#0B1220] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
+        >
           <div className="flex items-start justify-between gap-2 mb-4">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700">Clima en el destino</p>
-              <p className="mt-0.5 text-lg font-extrabold text-slate-900">Previsión</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700 dark:text-[#F87171]">Clima en el destino</p>
+              <p className="mt-0.5 text-lg font-extrabold text-slate-900 dark:text-slate-50">Previsión</p>
             </div>
             <span className="text-2xl">🌤️</span>
           </div>
 
           {weatherHint === "no-destination" ? (
-            <p className="text-sm text-slate-500">Añade un <span className="font-semibold text-slate-800">destino</span> al viaje para ver el clima.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-300">
+              Añade un <span className="font-semibold text-slate-800 dark:text-slate-100">destino</span> al viaje para ver el clima.
+            </p>
           ) : weatherHint === "unavailable" ? (
-            <p className="text-sm text-slate-500">No se pudo obtener la previsión. Revisa que el destino sea reconocible.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-300">No se pudo obtener la previsión. Revisa que el destino sea reconocible.</p>
           ) : weather && weather.days.length ? (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-slate-500">{weather.locationLabel}</p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{weather.locationLabel}</p>
 
               {/* Today highlight */}
               {(() => {
@@ -322,25 +333,28 @@ export default function TripSummaryOverview({
                 const vis = todayW ? wmoWeatherVisual(todayW.code) : null;
                 if (!todayW || !vis) return null;
                 return (
-                  <div className="flex items-center gap-4 rounded-2xl bg-white border border-slate-200 px-4 py-3 shadow-sm">
+                  <div
+                    className={`flex items-center gap-4 rounded-2xl bg-white border border-slate-200 px-4 py-3 shadow-sm
+                    dark:bg-[#0B1220]/55 dark:border-[#F87171]/25 dark:shadow-[0_10px_26px_rgba(0,0,0,0.35)]`}
+                  >
                     <span className="text-4xl">{vis.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Hoy</p>
-                      <p className="text-2xl font-extrabold text-slate-900 tabular-nums leading-tight">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wide dark:text-slate-300">Hoy</p>
+                      <p className="text-2xl font-extrabold text-slate-900 tabular-nums leading-tight dark:text-slate-50">
                         {todayW.tempMax != null ? `${Math.round(todayW.tempMax)}°` : "—"}
-                        <span className="text-base font-semibold text-slate-400 ml-1">
+                        <span className="text-base font-semibold text-slate-400 ml-1 dark:text-slate-400">
                           / {todayW.tempMin != null ? `${Math.round(todayW.tempMin)}°` : "—"}
                         </span>
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">{vis.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-300">{vis.label}</p>
                     </div>
                     {/* Today rain */}
                     {(todayW as any).precipProb != null && (
                       <div className="text-right shrink-0">
-                        <p className="text-lg font-extrabold text-sky-600 tabular-nums">{(todayW as any).precipProb}%</p>
-                        <p className="text-[10px] text-slate-400 leading-none mt-0.5">lluvia</p>
+                        <p className="text-lg font-extrabold text-sky-600 tabular-nums dark:text-[#F87171]">{(todayW as any).precipProb}%</p>
+                        <p className="text-[10px] text-slate-400 leading-none mt-0.5 dark:text-slate-400">lluvia</p>
                         {(todayW as any).precipMm != null && (todayW as any).precipMm > 0 && (
-                          <p className="text-[10px] font-semibold text-sky-500">{(todayW as any).precipMm} mm</p>
+                          <p className="text-[10px] font-semibold text-sky-500 dark:text-[#FDA4AF]">{(todayW as any).precipMm} mm</p>
                         )}
                       </div>
                     )}
@@ -363,33 +377,33 @@ export default function TripSummaryOverview({
                         style={{ scrollSnapAlign: "start" }}
                         className={`w-[84px] shrink-0 rounded-2xl border px-2.5 py-3 text-center shadow-sm transition-all ${
                           isToday
-                            ? "border-violet-300 bg-violet-50 ring-1 ring-violet-200"
-                            : "border-slate-200 bg-white"
+                            ? "border-violet-300 bg-violet-50 ring-1 ring-violet-200 dark:border-[#F87171]/40 dark:bg-[#0B1220]/55 dark:ring-[#F87171]/15"
+                            : "border-slate-200 bg-white dark:border-[#F87171]/18 dark:bg-[#0F1623]"
                         }`}
                       >
-                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-violet-600" : "text-slate-400"}`}>
+                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-violet-600 dark:text-[#F87171]" : "text-slate-400 dark:text-slate-400"}`}>
                           {isToday ? "HOY" : formatShortWeekday(day.date)}
                         </p>
                         <p className="mt-1.5 text-2xl leading-none">{vis.emoji}</p>
-                        <p className="mt-2 text-xs font-extrabold text-slate-900 tabular-nums leading-tight">
+                        <p className="mt-2 text-xs font-extrabold text-slate-900 tabular-nums leading-tight dark:text-slate-50">
                           {day.tempMax != null ? `${Math.round(day.tempMax)}°` : "—"}
                         </p>
-                        <p className="text-[10px] text-slate-400 tabular-nums">
+                        <p className="text-[10px] text-slate-400 tabular-nums dark:text-slate-400">
                           {day.tempMin != null ? `${Math.round(day.tempMin)}°` : "—"}
                         </p>
                         {/* Precipitation */}
-                        <div className={`mt-2 rounded-lg px-1.5 py-1 ${hasRain ? "bg-sky-50" : "bg-transparent"}`}>
+                        <div className={`mt-2 rounded-lg px-1.5 py-1 ${hasRain ? "bg-sky-50 dark:bg-[#1E293B]/50" : "bg-transparent"}`}>
                           {prob != null ? (
                             <>
-                              <p className={`text-[11px] font-extrabold tabular-nums ${hasRain ? "text-sky-600" : "text-slate-300"}`}>
+                              <p className={`text-[11px] font-extrabold tabular-nums ${hasRain ? "text-sky-600 dark:text-[#F87171]" : "text-slate-300 dark:text-slate-500"}`}>
                                 💧{prob}%
                               </p>
                               {mm != null && mm > 0 && (
-                                <p className="text-[9px] text-sky-400 tabular-nums">{mm}mm</p>
+                                <p className="text-[9px] text-sky-400 tabular-nums dark:text-[#FDA4AF]">{mm}mm</p>
                               )}
                             </>
                           ) : (
-                            <p className="text-[10px] text-slate-200">—</p>
+                            <p className="text-[10px] text-slate-200 dark:text-slate-600">—</p>
                           )}
                         </div>
                       </div>
@@ -398,10 +412,10 @@ export default function TripSummaryOverview({
                 </div>
               </div>
 
-              <p className="text-[10px] text-slate-400">Open-Meteo · 14 días · orientativo</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">Open-Meteo · 14 días · orientativo</p>
             </div>
           ) : (
-            <p className="text-sm text-slate-500">Sin datos de previsión.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>
           )}
         </section>
       </div>
@@ -410,8 +424,8 @@ export default function TripSummaryOverview({
       <section className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400">Navegación rápida</p>
-            <h2 className="mt-0.5 text-xl font-extrabold text-slate-950">Módulos del viaje</h2>
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Navegación rápida</p>
+            <h2 className="mt-0.5 text-xl font-extrabold text-slate-950 dark:text-slate-50">Módulos del viaje</h2>
           </div>
         </div>
 
@@ -419,35 +433,65 @@ export default function TripSummaryOverview({
           {tabs.map((tab) => {
             const ac = TILE_ACCENT[tab.tone];
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
+            const tileBorder = isDark ? `border-[#F87171]/25 hover:border-[#F87171]/45` : ac.border;
+            const tileBg = isDark ? "bg-[#0F1623]/80 hover:bg-[#0F1623]" : "bg-white";
+            const tileShadow = isDark ? "shadow-[0_10px_30px_rgba(0,0,0,0.40)]" : "shadow-sm";
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`group flex flex-col rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${ac.border}`}
+                className={`group flex flex-col rounded-2xl border p-4 transition hover:-translate-y-0.5 ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
               >
                 {/* Top row: icon + metric */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ac.icon}`}>
-                    <Image src={iconSrc} alt="" width={24} height={24} className="h-6 w-6 object-contain" />
+                  <div
+                    className={
+                      isDark
+                        ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F87171]/10 ring-1 ring-[#F87171]/20"
+                        : `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ac.icon}`
+                    }
+                  >
+                    <Image
+                      src={iconSrc}
+                      alt=""
+                      width={24}
+                      height={24}
+                      className={`h-6 w-6 object-contain ${isDark ? coralPngFilterDark : ""}`}
+                    />
                   </div>
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold ${ac.chip}`}>
+                  <span
+                    className={
+                      isDark
+                        ? "rounded-full bg-[#F87171]/10 px-2.5 py-1 text-[11px] font-extrabold text-[#FDA4AF] ring-1 ring-[#F87171]/15"
+                        : `rounded-full px-2.5 py-1 text-[11px] font-extrabold ${ac.chip}`
+                    }
+                  >
                     {tab.metric}
                   </span>
                 </div>
 
                 {/* Label + subtitle */}
-                <p className="mt-3 text-[15px] font-extrabold text-slate-950 leading-tight">{tab.label}</p>
-                <p className="mt-0.5 text-xs text-slate-500 leading-snug">{tab.subtitle}</p>
+                <p className="mt-3 text-[15px] font-extrabold text-slate-950 leading-tight dark:text-slate-50">{tab.label}</p>
+                <p className="mt-0.5 text-xs text-slate-500 leading-snug dark:text-slate-300">{tab.subtitle}</p>
 
                 {/* Hint */}
                 {tab.hint && (
-                  <p className="mt-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 leading-snug line-clamp-2">
+                  <p
+                    className={`mt-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 leading-snug line-clamp-2
+                    dark:border-[#F87171]/12 dark:bg-black/20 dark:text-slate-200`}
+                  >
                     {tab.hint}
                   </p>
                 )}
 
                 {/* Arrow */}
-                <div className={`mt-3 flex items-center gap-1 text-xs font-bold transition group-hover:gap-2 ${ac.arrow}`}>
+                <div
+                  className={
+                    isDark
+                      ? "mt-3 flex items-center gap-1 text-xs font-bold text-[#F87171] transition group-hover:gap-2"
+                      : `mt-3 flex items-center gap-1 text-xs font-bold transition group-hover:gap-2 ${ac.arrow}`
+                  }
+                >
                   <span>Ir al módulo</span>
                   <span aria-hidden>→</span>
                 </div>
