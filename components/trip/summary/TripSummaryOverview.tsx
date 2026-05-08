@@ -316,7 +316,7 @@ export default function TripSummaryOverview({
         {/* R2 — Weather integrado como columna derecha */}
         <section
           className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
-          dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-card)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
+          dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
         >
           <div className="flex items-start justify-between gap-2 mb-4">
             <div>

@@ -71,7 +71,7 @@ type TourStep = {
   href: (tripId: string) => string;
   visual:
     | { type: "emoji"; value: string }
-    | { type: "image"; src: string; alt: string; imageClassName?: string };
+    | { type: "image"; tabKey: TripTabKey; alt: string; imageClassName?: string };
 };
 
 const TAB_TOUR: TourStep[] = [
@@ -82,7 +82,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Resumen del viaje: destino, fechas, accesos rápidos a cada módulo y avisos útiles para el grupo.",
     mobileTip: "Abajo tienes el menú con todas las pestañas; desliza horizontalmente si no caben en pantalla.",
     href: (id) => `/trip/${id}/summary`,
-    visual: { type: "image", src: "/brand/tabs/summary.png", alt: "Resumen" },
+    visual: { type: "image", tabKey: "summary", alt: "Resumen" },
   },
   {
     id: "plan",
@@ -91,7 +91,7 @@ const TAB_TOUR: TourStep[] = [
     body: "La agenda por días: actividades, horarios y visitas. Es la referencia compartida de qué hace el grupo y cuándo.",
     mobileTip: "Suele organizarse por día; desplázate dentro de cada día para ver todas las actividades.",
     href: (id) => `/trip/${id}/plan`,
-    visual: { type: "image", src: "/brand/tabs/plan.png", alt: "Plan" },
+    visual: { type: "image", tabKey: "plan", alt: "Plan" },
   },
   {
     id: "map",
@@ -100,7 +100,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Rutas y trayectos del viaje sobre el mapa: paradas, orden del día y vistas para explorar el entorno o ver el plan georreferenciado.",
     mobileTip: "Gestos de pellizco para zoom; los paneles laterales o inferiores se pueden deslizar o cerrar.",
     href: (id) => `/trip/${id}/map`,
-    visual: { type: "image", src: "/brand/tabs/map.png", alt: "Rutas" },
+    visual: { type: "image", tabKey: "map", alt: "Rutas" },
   },
   {
     id: "expenses",
@@ -109,7 +109,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Quién pagó qué, cómo repartirlo y balances para saldar cuentas sin líos al final del viaje.",
     mobileTip: "Mira primero el resumen arriba; el detalle de cada gasto va debajo en lista o tabla.",
     href: (id) => `/trip/${id}/expenses`,
-    visual: { type: "image", src: "/brand/tabs/expenses.png", alt: "Gastos" },
+    visual: { type: "image", tabKey: "expenses", alt: "Gastos" },
   },
   {
     id: "participants",
@@ -118,7 +118,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Participantes, invitaciones y permisos. Cuanto mejor definido esté el grupo, mejor cuadran plan y gastos.",
     mobileTip: "Usa el mismo nombre en gastos que en participantes para que los balances te reconozcan bien.",
     href: (id) => `/trip/${id}/participants`,
-    visual: { type: "image", src: "/brand/tabs/participants.png", alt: "Participantes" },
+    visual: { type: "image", tabKey: "participants", alt: "Participantes" },
   },
   {
     id: "resources",
@@ -127,7 +127,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Billetes, reservas, PDFs y enlaces en un solo sitio para que nadie pierda el correo de confirmación.",
     mobileTip: "En móvil, enlaces y archivos se abren con el navegador; guarda lo crítico donde te sea cómodo.",
     href: (id) => `/trip/${id}/resources`,
-    visual: { type: "image", src: "/brand/tabs/documents.png", alt: "Docs", imageClassName: tripTabDocsImageClass },
+    visual: { type: "image", tabKey: "resources", alt: "Docs", imageClassName: tripTabDocsImageClass },
   },
   {
     id: "ai",
@@ -136,7 +136,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Asistente con contexto de este viaje: ideas, organizar un día, dudas y sugerencias según el tipo de chat.",
     mobileTip: "En pantalla pequeña el chat va primero; en el panel lateral tienes conversaciones y «Mostrar tipos».",
     href: (id) => `/trip/${id}/ai-chat`,
-    visual: { type: "image", src: "/brand/tabs/ai.png", alt: "Asistente personal" },
+    visual: { type: "image", tabKey: "chat", alt: "Asistente personal" },
   },
 ];
 
@@ -352,6 +352,7 @@ function HelpVisualBadge({
   visual: TourStep["visual"];
   size?: "md" | "lg";
 }) {
+  const isDark = useIsDarkMode();
   /** Mismo tamaño en tour y en ayuda por pantalla; sin padding externo para que el pictograma llene el marco. */
   const frameClass =
     size === "lg"
@@ -376,7 +377,7 @@ function HelpVisualBadge({
       ) : (
         <div className={`relative h-full w-full ${innerRound} bg-white dark:bg-slate-950/40`}>
           <Image
-            src={visual.src}
+            src={getTripTabIconSrc(visual.tabKey, isDark)}
             alt={visual.alt}
             fill
             sizes={fillSizes}
@@ -390,7 +391,6 @@ function HelpVisualBadge({
 }
 
 function PageHelpVisualHeader({ pageId }: { pageId: string }) {
-  const isDark = useIsDarkMode();
   if (pageId === "settings") {
     return (
       <div className="mb-5 flex flex-col items-center text-center">
@@ -405,21 +405,9 @@ function PageHelpVisualHeader({ pageId }: { pageId: string }) {
 
   const step = TAB_TOUR.find((s) => s.id === pageId);
   if (!step) return null;
-  const tabKey: TripTabKey | null =
-    pageId === "home"
-      ? "summary"
-      : pageId === "ai"
-        ? "chat"
-        : pageId === "plan" || pageId === "map" || pageId === "expenses" || pageId === "participants" || pageId === "resources"
-          ? pageId
-          : null;
-  const visual =
-    step.visual.type === "image" && tabKey
-      ? { ...step.visual, src: getTripTabIconSrc(tabKey, isDark) }
-      : step.visual;
   return (
     <div className="mb-5 flex flex-col items-center text-center">
-      <HelpVisualBadge visual={visual} />
+      <HelpVisualBadge visual={step.visual} />
       <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800/90 dark:text-violet-300">
         Estás en
       </p>
@@ -543,20 +531,7 @@ export default function TripPageHelp() {
 
   const tourStepData = TAB_TOUR[tourStep];
   const isLastTourStep = tourStep >= TAB_TOUR.length - 1;
-  const tourIdToTabKey = (id: string): TripTabKey | null => {
-    if (id === "home") return "summary";
-    if (id === "ai") return "chat";
-    if (id === "plan" || id === "map" || id === "expenses" || id === "participants" || id === "resources") return id;
-    return null;
-  };
-
-  const tourVisual =
-    tourStepData?.visual.type === "image"
-      ? (() => {
-          const k = tourIdToTabKey(tourStepData.id);
-          return k ? { ...tourStepData.visual, src: getTripTabIconSrc(k, isDark) } : tourStepData.visual;
-        })()
-      : tourStepData?.visual;
+  const tourVisual = tourStepData?.visual;
 
   // Evita mismatch SSR/CSR: `usePathname/useParams` pueden diferir en el render del servidor.
   if (!mounted || !tripId || !pageId || !entry) return null;
