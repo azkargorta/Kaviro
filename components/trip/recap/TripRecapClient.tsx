@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { MapPin, Calendar, Users, Wallet, Compass, Download, Share2 } from "lucide-react";
 
@@ -35,6 +35,33 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
 
   const topKinds = Object.entries(kindCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const totalActivities = Object.values(kindCounts).reduce((a, b) => a + b, 0);
+
+  const [downloading, setDownloading] = useState(false);
+
+  async function downloadAsImage() {
+    if (!cardRef.current) return;
+    setDownloading(true);
+    try {
+      // Dynamic import to avoid SSR issues
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: null,
+        scale: 2, // Retina quality
+        useCORS: true,
+        logging: false,
+      });
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.download = `kaviro-${tripName.toLowerCase().replace(/\s+/g, "-")}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      // Fallback: share text if html2canvas fails
+      shareText();
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   function shareText() {
     const text = `🌍 Viaje "${tripName}" — ${totalDays} días en ${destination || "varios destinos"}\n✅ ${activitiesCount} actividades · ${kmTravelled > 0 ? `${kmTravelled} km · ` : ""}${formatMoney(totalExpenses, currency)}\nOrganizado con Kaviro`;
@@ -144,6 +171,16 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
         >
           <Share2 className="w-4 h-4" />
           Compartir
+        </button>
+        <button
+          type="button"
+          onClick={downloadAsImage}
+          disabled={downloading}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition disabled:opacity-50"
+          title="Descargar como imagen"
+        >
+          <Download className="w-4 h-4" />
+          {downloading ? "..." : "PNG"}
         </button>
         <Link
           href={`/trip/${tripId}/plan`}

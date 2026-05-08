@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 export type TripActivity = {
   id: string;
   trip_id?: string;
@@ -43,6 +44,8 @@ export type SaveActivityInput = {
 
 export function useTripActivities(tripId: string) {
   const [trip, setTrip] = useState<TripPlanSummary | null>(null);
+  const [unseenCount, setUnseenCount] = useState(0);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const [activities, setActivities] = useState<TripActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -120,6 +123,39 @@ export function useTripActivities(tripId: string) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ── Realtime: notify when another user changes activities ──────────────────
+  useEffect(() => {
+    if (!tripId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`trip-activities-${tripId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trip_activities",
+          filter: `trip_id=eq.${tripId}`,
+        },
+        (payload) => {
+          // Reload activities and increment unseen counter
+          void load();
+          if (payload.eventType !== "DELETE") {
+            setUnseenCount((n) => n + 1);
+          }
+        }
+      )
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [tripId, load]);
+
+  function clearUnseen() {
+    setUnseenCount(0);
+  }
 
   const createActivity = useCallback(
     async (input: SaveActivityInput) => {
@@ -253,6 +289,8 @@ export function useTripActivities(tripId: string) {
     loading,
     saving,
     error,
+    unseenCount,
+    clearUnseen,
     reload: load,
     createActivity,
     updateActivity,

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sin conexión — Kaviro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: #080C14;
+      color: #F1F5F9;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .icon { font-size: 3.5rem; margin-bottom: 1.25rem; }
+    h1 { font-size: 1.5rem; font-weight: 800; color: #fff; }
+    p { margin-top: 0.75rem; color: #94A3B8; font-size: 0.95rem; max-width: 340px; line-height: 1.6; }
+    .btn {
+      margin-top: 2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #F87171;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn:hover { background: #EF4444; }
+  </style>
+</head>
+<body>
+  <div class="icon">✈️</div>
+  <h1>Sin conexión</h1>
+  <p>No hay conexión a Internet. Los datos de tu viaje se cargarán cuando vuelvas a conectarte.</p>
+  <a class="btn" href="javascript:window.location.reload()">Reintentar</a>
+</body>
+</html>
