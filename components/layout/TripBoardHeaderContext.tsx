@@ -9,6 +9,8 @@ export type TripBoardHeaderConfig = {
   description?: string;
   /** Icono del módulo/página (reemplaza el logo general en el header). */
   iconSrc?: string;
+  /** Atajo: icono de pestaña (elige light/dark automáticamente). */
+  iconKey?: import("@/lib/trip-tab-assets").TripTabKey;
   iconAlt?: string;
   actions?: ReactNode;
 };

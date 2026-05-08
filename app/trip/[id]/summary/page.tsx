@@ -11,7 +11,6 @@ import TripSummaryOverview, {
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { getTripWeatherByDestination } from "@/lib/trip-weather";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
-import { TRIP_TAB_SUMMARY_SRC } from "@/lib/trip-tab-assets";
 
 type TripPageProps = {
   params: { id: string };
@@ -269,7 +268,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       label: "Plan",
       subtitle: "Itinerario, notas del viaje y actividades por día",
       metric: `${activitiesCount ?? 0} planes`,
-      iconSrc: "/brand/tabs/plan.png",
+      iconKey: "plan",
       tone: "violet",
       hint: planHint,
     },
@@ -278,7 +277,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       label: "Rutas",
       subtitle: "Rutas, trayectos y paradas sobre el mapa",
       metric: `${routesCount ?? 0} rutas`,
-      iconSrc: "/brand/tabs/map.png",
+      iconKey: "map",
       tone: "emerald",
       hint: mapHint,
     },
@@ -287,7 +286,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       label: "Gastos",
       subtitle: "Split, pagos y balances del grupo",
       metric: `${expensesCount ?? 0} gastos`,
-      iconSrc: "/brand/tabs/expenses.png",
+      iconKey: "expenses",
       tone: "amber",
       hint: expensesHint,
     },
@@ -296,7 +295,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       label: "Gente",
       subtitle: "Invitaciones, roles y permisos",
       metric: `${participantsCount ?? 0} ${(participantsCount ?? 0) === 1 ? "persona" : "personas"}`,
-      iconSrc: "/brand/tabs/participants.png",
+      iconKey: "participants",
       tone: "slate",
       hint: peopleHint,
     },
@@ -305,7 +304,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       label: "Recursos",
       subtitle: "Documentos, reservas y listas",
       metric: `${resourcesCount ?? 0} ítems`,
-      iconSrc: "/brand/tabs/documents.png",
+      iconKey: "resources",
       tone: "rose",
       hint: resourcesHint,
     },
@@ -314,7 +313,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       label: "Asistente personal",
       subtitle: isPremium ? "Conversación con el contexto de este viaje" : "Requiere plan Premium",
       metric: isPremium ? "Premium activo" : "Ver Premium",
-      iconSrc: "/brand/tabs/ai.png",
+      iconKey: "chat",
       tone: "violet",
       hint: aiHint,
     },
@@ -326,7 +325,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         section="Resumen del viaje"
         title={currentTrip.name}
         description={`${currentTrip.destination || "Destino pendiente"} · ${formatDateRange(currentTrip.start_date, currentTrip.end_date)}`}
-        iconSrc={TRIP_TAB_SUMMARY_SRC}
+        iconKey="summary"
         iconAlt="Resumen"
         actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}
       />

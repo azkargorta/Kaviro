@@ -32,7 +32,7 @@ export default async function TripExpensesPage({
         section="Gastos del viaje"
         title="Control económico del viaje"
         description="Añade gastos, revisa balances, analiza tickets y controla quién debe a quién."
-        iconSrc="/brand/tabs/expenses.png"
+        iconKey="expenses"
         iconAlt="Gastos"
         actions={<TripTabActions tripId={tripId} />}
       />

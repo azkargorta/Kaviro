@@ -16,7 +16,8 @@ import {
   mobileMenuRowSignOut,
 } from "@/components/ui/mobileMenuStyles";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
-import { TRIP_TAB_SUMMARY_SRC, tripTabDocsImageClass } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
   tripId: string;
@@ -28,7 +29,7 @@ type NavIcon =
   | { type: "image"; src: string; alt: string; imageClassName?: string };
 
 const NAV_ITEMS: Array<{
-  key: string;
+  key: TripTabKey;
   label: string;
   icon: NavIcon;
   href: (id: string) => string;
@@ -36,7 +37,7 @@ const NAV_ITEMS: Array<{
   {
     key: "summary",
     label: "Resumen",
-    icon: { type: "image", src: TRIP_TAB_SUMMARY_SRC, alt: "Resumen" },
+    icon: { type: "image", src: "/brand/tabs/summary.png", alt: "Resumen" },
     href: (id) => `/trip/${id}/summary`,
   },
   { key: "plan", label: "Plan", icon: { type: "image", src: "/brand/tabs/plan.png", alt: "Plan" }, href: (id) => `/trip/${id}/plan` },
@@ -76,6 +77,7 @@ function ItemIcon({ icon }: { icon: NavIcon }) {
 export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const isDark = useIsDarkMode();
 
   const visibleNavItems = useMemo(() => {
     return isPremium ? NAV_ITEMS : NAV_ITEMS.filter((x) => x.key !== "chat");
@@ -169,7 +171,13 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
                       >
                         <span className="flex min-w-0 items-center gap-3">
                           <span className={mobileMenuRowIconWrap}>
-                            <ItemIcon icon={item.icon} />
+                            <ItemIcon
+                              icon={
+                                item.icon.type === "image"
+                                  ? { ...item.icon, src: getTripTabIconSrc(item.key, isDark) }
+                                  : item.icon
+                              }
+                            />
                           </span>
                           <span className="truncate">{item.label}</span>
                         </span>

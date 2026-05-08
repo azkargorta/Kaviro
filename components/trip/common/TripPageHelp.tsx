@@ -6,9 +6,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, LifeBuoy, X } from "lucide-react";
-import { TRIP_TAB_SUMMARY_SRC, tripTabDocsImageClass } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
 import { iconInline16, iconSlotFill40, iconSlotFill44 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type HelpBlock = { heading: string; bullets: string[] };
 
@@ -81,7 +82,7 @@ const TAB_TOUR: TourStep[] = [
     body: "Resumen del viaje: destino, fechas, accesos rápidos a cada módulo y avisos útiles para el grupo.",
     mobileTip: "Abajo tienes el menú con todas las pestañas; desliza horizontalmente si no caben en pantalla.",
     href: (id) => `/trip/${id}/summary`,
-    visual: { type: "image", src: TRIP_TAB_SUMMARY_SRC, alt: "Resumen" },
+    visual: { type: "image", src: "/brand/tabs/summary.png", alt: "Resumen" },
   },
   {
     id: "plan",
@@ -418,6 +419,7 @@ export default function TripPageHelp() {
   const pathname = usePathname();
   const params = useParams();
   const tripId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
+  const isDark = useIsDarkMode();
 
   const pageId = useMemo(() => {
     if (!tripId) return null;
@@ -528,6 +530,20 @@ export default function TripPageHelp() {
 
   const tourStepData = TAB_TOUR[tourStep];
   const isLastTourStep = tourStep >= TAB_TOUR.length - 1;
+  const tourIdToTabKey = (id: string): TripTabKey | null => {
+    if (id === "home") return "summary";
+    if (id === "ai") return "chat";
+    if (id === "plan" || id === "map" || id === "expenses" || id === "participants" || id === "resources") return id;
+    return null;
+  };
+
+  const tourVisual =
+    tourStepData?.visual.type === "image"
+      ? (() => {
+          const k = tourIdToTabKey(tourStepData.id);
+          return k ? { ...tourStepData.visual, src: getTripTabIconSrc(k, isDark) } : tourStepData.visual;
+        })()
+      : tourStepData?.visual;
 
   // Evita mismatch SSR/CSR: `usePathname/useParams` pueden diferir en el render del servidor.
   if (!mounted || !tripId || !pageId || !entry) return null;
@@ -601,7 +617,7 @@ export default function TripPageHelp() {
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
                       <div className="flex flex-col items-center text-center">
-                        <HelpVisualBadge visual={tourStepData.visual} size="lg" />
+                        <HelpVisualBadge visual={tourVisual} size="lg" />
                         <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-violet-800 dark:text-violet-300">
                           {tourStepData.lead}
                         </p>

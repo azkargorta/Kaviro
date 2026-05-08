@@ -95,7 +95,7 @@ export default async function TripMapPage({ params, searchParams }: Props) {
         section="Rutas del viaje"
         title={trip.name || "Viaje"}
         description="Crea rutas con los lugares del plan, edita recorridos por día, organiza varias paradas y visualízalo todo sobre el mapa."
-        iconSrc="/brand/tabs/map.png"
+        iconKey="map"
         iconAlt="Rutas"
         actions={<TripScreenActions tripId={tripId} />}
       />

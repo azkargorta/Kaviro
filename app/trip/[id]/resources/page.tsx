@@ -24,7 +24,7 @@ export default async function TripResourcesPage({
         section="Recursos y reservas"
         title="Documentos del viaje"
         description="Adjunta PDFs o imágenes de reservas, guarda alojamientos y analiza documentos para rellenar formularios automáticamente."
-        iconSrc="/brand/tabs/resources.png"
+        iconKey="resources"
         iconAlt="Recursos"
         actions={<TripScreenActions tripId={tripId} />}
       />

@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { TripWeatherResult } from "@/lib/trip-weather";
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
+import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,7 +23,8 @@ export type TripSummaryTabDef = {
   label: string;
   subtitle: string;
   metric: string;
-  iconSrc: string;
+  iconSrc?: string;
+  iconKey?: TripTabKey;
   tone: "cyan" | "emerald" | "amber" | "violet" | "slate" | "rose";
   hint?: string | null;
 };
@@ -134,6 +139,7 @@ export default function TripSummaryOverview({
   tripDestination?: string | null;
   activitiesCount?: number;
 }) {
+  const isDark = useIsDarkMode();
   const planHref = `/trip/${tripId}/plan`;
   const phase = tripPhase(tripStartDate, tripEndDate);
   const today = todayYMD();
@@ -412,6 +418,7 @@ export default function TripSummaryOverview({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {tabs.map((tab) => {
             const ac = TILE_ACCENT[tab.tone];
+            const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
             return (
               <Link
                 key={tab.href}
@@ -421,7 +428,7 @@ export default function TripSummaryOverview({
                 {/* Top row: icon + metric */}
                 <div className="flex items-start justify-between gap-3">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ac.icon}`}>
-                    <Image src={tab.iconSrc} alt="" width={24} height={24} className="h-6 w-6 object-contain" />
+                    <Image src={iconSrc} alt="" width={24} height={24} className="h-6 w-6 object-contain" />
                   </div>
                   <span className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold ${ac.chip}`}>
                     {tab.metric}

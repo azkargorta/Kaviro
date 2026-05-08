@@ -4,7 +4,8 @@ import type React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { TRIP_TAB_SUMMARY_SRC, tripTabDocsImageClass } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
   tripId: string;
@@ -12,64 +13,33 @@ type Props = {
 };
 
 const items: Array<{
-  key: string;
+  key: TripTabKey;
   label: string;
-  icon: React.ReactNode;
   href: (id: string) => string;
 }> = [
   {
     key: "summary",
     label: "Resumen",
-    icon: (
-      <Image src={TRIP_TAB_SUMMARY_SRC} alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
-    ),
     href: (id: string) => `/trip/${id}/summary`,
   },
   {
     key: "plan",
     label: "Plan",
-    icon: (
-      <Image
-        src="/brand/tabs/plan.png"
-        alt=""
-        width={22}
-        height={22}
-        className="h-[22px] w-[22px] object-contain"
-      />
-    ),
     href: (id: string) => `/trip/${id}/plan`,
   },
   {
     key: "map",
     label: "Rutas",
-    icon: (
-      <Image
-        src="/brand/tabs/map.png"
-        alt=""
-        width={22}
-        height={22}
-        className="h-[22px] w-[22px] object-contain"
-      />
-    ),
     href: (id: string) => `/trip/${id}/map`,
   },
-  { key: "expenses", label: "Gastos", icon: "💰", href: (id: string) => `/trip/${id}/expenses` },
-  { key: "participants", label: "Gente", icon: "👥", href: (id: string) => `/trip/${id}/participants` },
+  { key: "expenses", label: "Gastos", href: (id: string) => `/trip/${id}/expenses` },
+  { key: "participants", label: "Gente", href: (id: string) => `/trip/${id}/participants` },
   {
     key: "resources",
     label: "Docs",
-    icon: (
-      <Image
-        src="/brand/tabs/documents.png"
-        alt=""
-        width={32}
-        height={32}
-        className={`h-[22px] w-[22px] max-h-full max-w-full ${tripTabDocsImageClass}`}
-      />
-    ),
     href: (id: string) => `/trip/${id}/resources`,
   },
-  { key: "chat", label: "Asistente personal", icon: "🤖", href: (id: string) => `/trip/${id}/ai-chat` },
+  { key: "chat", label: "Asistente personal", href: (id: string) => `/trip/${id}/ai-chat` },
 ];
 
 function isActivePath(pathname: string, href: string, key: string) {
@@ -81,6 +51,7 @@ function isActivePath(pathname: string, href: string, key: string) {
 
 export default function DesktopTripNav({ tripId, isPremium }: Props) {
   const pathname = usePathname();
+  const isDark = useIsDarkMode();
   const visibleItems = isPremium ? items : items.filter((item) => item.key !== "chat");
 
   return (
@@ -104,8 +75,14 @@ export default function DesktopTripNav({ tripId, isPremium }: Props) {
                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                <span className="text-lg leading-none" aria-hidden>
-                  {item.icon}
+                <span className="inline-flex h-[22px] w-[22px] items-center justify-center" aria-hidden>
+                  <Image
+                    src={getTripTabIconSrc(item.key, isDark)}
+                    alt=""
+                    width={22}
+                    height={22}
+                    className={`h-[22px] w-[22px] object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
+                  />
                 </span>
                 <span>{item.label}</span>
               </Link>

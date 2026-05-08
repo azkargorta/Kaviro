@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { TRIP_TAB_SUMMARY_SRC, tripTabDocsImageClass } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
   tripId: string;
@@ -11,10 +12,9 @@ type Props = {
 };
 
 type NavItem = {
-  key: string;
+  key: TripTabKey;
   label: string;
   sublabel?: string;
-  iconSrc: string;
   iconClass?: string;
   href: (id: string) => string;
   isPremiumGated?: boolean;
@@ -25,42 +25,36 @@ const items: NavItem[] = [
     key: "summary",
     label: "Resumen",
     sublabel: "Vista general",
-    iconSrc: TRIP_TAB_SUMMARY_SRC,
     href: (id) => `/trip/${id}/summary`,
   },
   {
     key: "plan",
     label: "Plan",
     sublabel: "Itinerario",
-    iconSrc: "/brand/tabs/plan.png",
     href: (id) => `/trip/${id}/plan`,
   },
   {
     key: "map",
     label: "Rutas",
     sublabel: "Mapa y navegación",
-    iconSrc: "/brand/tabs/map.png",
     href: (id) => `/trip/${id}/map`,
   },
   {
     key: "expenses",
     label: "Gastos",
     sublabel: "Finanzas del grupo",
-    iconSrc: "/brand/tabs/expenses.png",
     href: (id) => `/trip/${id}/expenses`,
   },
   {
     key: "participants",
     label: "Gente",
     sublabel: "Participantes",
-    iconSrc: "/brand/tabs/participants.png",
     href: (id) => `/trip/${id}/participants`,
   },
   {
     key: "resources",
     label: "Docs",
     sublabel: "Documentos",
-    iconSrc: "/brand/tabs/documents.png",
     iconClass: tripTabDocsImageClass,
     href: (id) => `/trip/${id}/resources`,
   },
@@ -68,7 +62,6 @@ const items: NavItem[] = [
     key: "chat",
     label: "Asistente IA",
     sublabel: "Premium",
-    iconSrc: "/brand/tabs/ai.png",
     href: (id) => `/trip/${id}/ai-chat`,
     isPremiumGated: true,
   },
@@ -82,6 +75,7 @@ function isActivePath(pathname: string, href: string, key: string) {
 
 export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
   const pathname = usePathname();
+  const isDark = useIsDarkMode();
   const visibleItems = isPremium ? items : items.filter((i) => !i.isPremiumGated);
 
   return (
@@ -143,7 +137,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                     aria-hidden
                   >
                     <Image
-                      src={item.iconSrc}
+                      src={getTripTabIconSrc(item.key, isDark)}
                       alt=""
                       width={28}
                       height={28}

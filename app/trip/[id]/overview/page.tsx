@@ -119,7 +119,7 @@ export default async function TripOverviewPage({ params }: Props) {
           trip.destination,
           startDate && endDate ? `${formatDate(startDate)} — ${formatDate(endDate)}` : null,
         ].filter(Boolean).join(" · ")}
-        iconSrc="/brand/tabs/plan.png"
+        iconKey="summary"
         iconAlt="Overview"
         actions={<TripScreenActions tripId={tripId} />}
       />

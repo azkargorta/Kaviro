@@ -45,7 +45,7 @@ export default async function TripPlanPage({
         section="Plan del viaje"
         title="Plan"
         description={"Itinerario por días y notas del viaje en la misma pantalla. Las notas son texto libre para el grupo."}
-        iconSrc="/brand/tabs/plan.png"
+        iconKey="plan"
         iconAlt="Plan"
         actions={<TripScreenActions tripId={params.id} />}
       />

@@ -404,7 +404,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
         section="Pasajeros del viaje"
         title="Participantes"
         description="Añade compañeros, envía invitaciones por WhatsApp para que vinculen su cuenta y evita duplicados buscando su perfil."
-        iconSrc="/brand/tabs/participants.png"
+        iconKey="participants"
         iconAlt="Participantes"
         actions={mapFlow ? <TripTabActions tripId={tripId} /> : <TripScreenActions tripId={tripId} />}
       />

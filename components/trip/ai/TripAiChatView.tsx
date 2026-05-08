@@ -454,7 +454,7 @@ export default function TripAiChatView({
           section="Asistente personal del viaje"
           title="Asistente personal"
           description="Esta página está reservada a usuarios Premium."
-          iconSrc="/brand/tabs/ai.png"
+          iconKey="chat"
           iconAlt="Asistente personal"
           actions={<TripScreenActions tripId={tripId} />}
         />
@@ -1421,7 +1421,7 @@ export default function TripAiChatView({
           section="Asistente personal del viaje"
           title="Asistente personal"
           description="Conversación libre con sugerencias y guía opcional al crear el plan. El asistente personal usa un resumen del viaje y acciones concretas (no todo el historial) para ahorrar tokens."
-          iconSrc="/brand/tabs/ai.png"
+          iconKey="chat"
           iconAlt="Asistente personal"
           actions={<TripScreenActions tripId={tripId} />}
         />

@@ -7,54 +7,48 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
-import { TRIP_TAB_SUMMARY_SRC, tripTabDocsImageClass } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
   tripId: string;
   isPremium: boolean;
 };
 
-const items: Array<{ key: string; label: string; icon: React.ReactNode; href: (id: string) => string; isAI?: boolean }> = [
+const items: Array<{ key: TripTabKey; label: string; href: (id: string) => string; isAI?: boolean }> = [
   {
     key: "summary",
     label: "Inicio",
-    icon: <Image src={TRIP_TAB_SUMMARY_SRC} alt="" width={24} height={24} className="object-contain" />,
     href: (id) => `/trip/${id}/summary`,
   },
   {
     key: "plan",
     label: "Plan",
-    icon: <Image src="/brand/tabs/plan.png" alt="" width={24} height={24} className="object-contain" />,
     href: (id) => `/trip/${id}/plan`,
   },
   {
     key: "map",
     label: "Rutas",
-    icon: <Image src="/brand/tabs/map.png" alt="" width={24} height={24} className="object-contain" />,
     href: (id) => `/trip/${id}/map`,
   },
   {
     key: "expenses",
     label: "Gastos",
-    icon: <Image src="/brand/tabs/expenses.png" alt="" width={24} height={24} className="object-contain" />,
     href: (id) => `/trip/${id}/expenses`,
   },
   {
     key: "participants",
     label: "Gente",
-    icon: <Image src="/brand/tabs/participants.png" alt="" width={24} height={24} className="object-contain" />,
     href: (id) => `/trip/${id}/participants`,
   },
   {
     key: "resources",
     label: "Docs",
-    icon: <Image src="/brand/tabs/documents.png" alt="" width={24} height={24} className={`object-contain ${tripTabDocsImageClass}`} />,
     href: (id) => `/trip/${id}/resources`,
   },
   {
     key: "chat",
     label: "IA",
-    icon: <Image src="/brand/tabs/ai.png" alt="" width={24} height={24} className="object-contain" />,
     href: (id) => `/trip/${id}/ai-chat`,
     isAI: true,
   },
@@ -62,6 +56,7 @@ const items: Array<{ key: string; label: string; icon: React.ReactNode; href: (i
 
 export default function MobileBottomNav({ tripId, isPremium }: Props) {
   const pathname = usePathname();
+  const isDark = useIsDarkMode();
   const visibleItems = isPremium ? items : items.filter((i) => i.key !== "chat");
 
   function isActivePath(href: string, key: string) {
@@ -120,7 +115,13 @@ export default function MobileBottomNav({ tripId, isPremium }: Props) {
                   `}
                   aria-hidden
                 >
-                  {item.icon}
+                  <Image
+                    src={getTripTabIconSrc(item.key, isDark)}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className={`object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
+                  />
                 </span>
 
                 {/* Label */}
