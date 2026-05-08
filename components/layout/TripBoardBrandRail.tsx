@@ -42,6 +42,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
                   alt="Kaviro"
                   width={32}
                   height={32}
+                  sizes="32px"
                   className="h-full w-full object-contain"
                   priority
                 />
@@ -62,6 +63,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
                     alt={iconAlt}
                     width={36}
                     height={36}
+                    sizes="36px"
                     className="h-full w-full object-contain scale-[1.15]"
                     priority
                   />

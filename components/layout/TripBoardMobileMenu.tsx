@@ -69,7 +69,7 @@ function ItemIcon({ icon }: { icon: NavIcon }) {
   const imgClass = ["object-contain", tripTabIconCoralFilterDark, icon.imageClassName].filter(Boolean).join(" ");
   return (
     <span className="relative flex h-full w-full max-h-8 max-w-8 items-center justify-center overflow-hidden rounded-lg">
-      <Image src={icon.src} alt={icon.alt} width={32} height={32} className={imgClass} />
+      <Image src={icon.src} alt={icon.alt} width={32} height={32} sizes="32px" className={imgClass} />
     </span>
   );
 }

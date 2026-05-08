@@ -141,6 +141,7 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                       alt=""
                       width={28}
                       height={28}
+                      sizes="28px"
                       className={`h-7 w-7 object-contain ${item.iconClass || ""} ${active ? "brightness-[2] saturate-0" : tripTabIconCoralFilterDark}`}
                     />
                   </span>

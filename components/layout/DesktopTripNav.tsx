@@ -81,6 +81,7 @@ export default function DesktopTripNav({ tripId, isPremium }: Props) {
                     alt=""
                     width={22}
                     height={22}
+                    sizes="22px"
                     className={`h-[22px] w-[22px] object-contain ${tripTabIconCoralFilterDark} ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
                   />
                 </span>

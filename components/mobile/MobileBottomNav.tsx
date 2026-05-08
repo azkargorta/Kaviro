@@ -120,6 +120,7 @@ export default function MobileBottomNav({ tripId, isPremium }: Props) {
                     alt=""
                     width={24}
                     height={24}
+                    sizes="24px"
                     className={`object-contain ${tripTabIconCoralFilterDark} ${item.key === "resources" ? tripTabDocsImageClass : ""}`}
                   />
                 </span>
