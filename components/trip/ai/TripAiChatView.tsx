@@ -1985,7 +1985,7 @@ export default function TripAiChatView({
                   </div>
                 </button>
               )) : (
-                <p className="text-sm text-slate-500">Todavía no hay conversaciones guardadas.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Todavía no hay conversaciones guardadas.</p>
               )}
             </div>
           </div>
@@ -1998,7 +1998,7 @@ export default function TripAiChatView({
           }`}
         >
           <div
-            className={`border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4 ${
+            className={`border-b border-slate-200 dark:border-[#1E293B] px-4 py-3 sm:px-5 sm:py-4 ${
               layout === "drawer"
                 ? "max-h-[min(34dvh,300px)] shrink-0 overflow-y-auto overscroll-y-contain"
                 : ""
@@ -2247,13 +2247,13 @@ export default function TripAiChatView({
                     {message.role === "assistant" && (
                       <div className="flex items-start gap-2.5 max-w-[88%]">
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm mt-0.5" aria-hidden>✦</div>
-                        <div className="min-w-0 break-words whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-violet-200/60 bg-violet-50/70 px-4 py-3 text-sm leading-7 text-slate-800">
+                        <div className="min-w-0 break-words whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-violet-200/60 bg-violet-50/70 px-4 py-3 text-sm leading-7 text-slate-800 dark:border-[#1E293B] dark:bg-[#1E293B] dark:text-slate-200">
                           {stripTripboardJsonBlocksForDisplay(message.content)}
                         </div>
                       </div>
                     )}
                     {message.role === "user" && (
-                      <div className="min-w-0 max-w-[88%] break-words whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-slate-950 px-4 py-3 text-sm leading-7 text-white">
+                      <div className="min-w-0 max-w-[88%] break-words whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-slate-950 dark:bg-[#F87171] px-4 py-3 text-sm leading-7 text-white">
                         {message.content}
                       </div>
                     )}
@@ -2267,7 +2267,7 @@ export default function TripAiChatView({
             {loading ? (
               <div className="flex justify-start items-start gap-2.5">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm mt-0.5" aria-hidden>✦</div>
-                <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm border border-violet-200/60 bg-violet-50/70 px-4 py-3.5">
+                <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm border border-violet-200/60 bg-violet-50/70 px-4 py-3.5 dark:border-[#1E293B] dark:bg-[#1E293B]">
                   <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                   <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "150ms" }} />
                   <span className="h-2 w-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -2280,7 +2280,7 @@ export default function TripAiChatView({
 
           <form
             onSubmit={handleSubmit}
-            className={`min-w-0 max-w-full border-t border-slate-200 p-4 sm:p-5 ${layout === "drawer" ? "shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]" : ""}`}
+            className={`min-w-0 max-w-full border-t border-slate-200 dark:border-[#1E293B] p-4 sm:p-5 ${layout === "drawer" ? "shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]" : ""}`}
           >
             {/* AI5 — Input with contextual placeholder, char counter, Enter to send */}
             <div
@@ -2298,7 +2298,7 @@ export default function TripAiChatView({
                 rows={layout === "drawer" ? 3 : 4}
                 placeholder={placeholder}
                 disabled={!isPremium || aiBudgetExceeded}
-                className={`w-full resize-none border-0 bg-transparent px-4 py-3.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 ${
+                className={`w-full resize-none border-0 bg-transparent px-4 py-3.5 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 ${
                   layout === "drawer" ? "min-h-[72px]" : "min-h-[100px]"
                 }`}
               />
@@ -2325,7 +2325,7 @@ export default function TripAiChatView({
                   <button
                     type="submit"
                     disabled={loading || !question.trim() || !isPremium || aiBudgetExceeded}
-                    className="rounded-xl bg-violet-600 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400"
+                    className="rounded-xl bg-[var(--brand)] px-4 py-1.5 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-[#1E293B]"
                   >
                     Enviar →
                   </button>
