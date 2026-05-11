@@ -70,6 +70,7 @@ export default function ExpenseBalancePanel({
   onResetAllPaymentRules,
   strictPaymentMethods,
   onChangeStrictPaymentMethods,
+  budgetTarget,
 }: Props) {
   const displayCurrency = safeCurrency(balanceCurrency);
   const [prefsOpen, setPrefsOpen] = useState(false);
