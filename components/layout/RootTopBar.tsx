@@ -9,8 +9,9 @@ import DarkModeToggle from "@/components/ui/DarkModeToggle";
 export default function RootTopBar() {
   const pathname = usePathname();
 
-  // Solo queremos el banner en "Mis viajes" (dashboard).
-  if (!pathname?.startsWith("/dashboard")) return null;
+  // Mostrar en dashboard y en el wizard de nuevo viaje.
+  const showOnPath = pathname?.startsWith("/dashboard") || pathname?.startsWith("/trips/new");
+  if (!showOnPath) return null;
 
   return (
     <div className="sticky top-0 z-50" style={{ paddingTop: "env(safe-area-inset-top)" }}>

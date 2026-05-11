@@ -172,10 +172,8 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
       />
 
       {!showLodgingForm && !showTransportForm && !showActivityForm ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center dark:border-[#334155] dark:bg-[#080C14]">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗂️</div>
-          <p className="text-sm font-semibold text-slate-700">Selecciona un tipo de reserva para empezar</p>
-          <p className="mt-1 text-xs text-slate-400">O usa el analizador IA para autocompletar desde un documento.</p>
+        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-[#334155] bg-slate-50 dark:bg-[#080C14] px-6 py-6 text-center">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-[#0F1623] text-xl shadow-sm">🗂️</div>
         </div>
       ) : null}
 

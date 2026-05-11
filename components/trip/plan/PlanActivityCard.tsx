@@ -39,79 +39,79 @@ type Props = {
 function getActivityMeta(kind?: string | null) {
   switch (kind) {
     case "culture":
-      return { icon: "🏛️", label: "Cultura",        badge: "bg-amber-100 text-amber-800",   card: "border-slate-200 bg-white", dot: "#f59e0b" };
+      return { icon: "🏛️", label: "Cultura",        badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",   card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#f59e0b" };
     case "nature":
-      return { icon: "🌿", label: "Naturaleza",      badge: "bg-emerald-100 text-emerald-800", card: "border-slate-200 bg-white", dot: "#10b981" };
+      return { icon: "🌿", label: "Naturaleza",      badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#10b981" };
     case "viewpoint":
-      return { icon: "🌄", label: "Mirador",         badge: "bg-sky-100 text-sky-800",       card: "border-slate-200 bg-white", dot: "#0ea5e9" };
+      return { icon: "🌄", label: "Mirador",         badge: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300",       card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#0ea5e9" };
     case "neighborhood":
-      return { icon: "🧭", label: "Barrio",          badge: "bg-slate-100 text-slate-700",   card: "border-slate-200 bg-white", dot: "#64748b" };
+      return { icon: "🧭", label: "Barrio",          badge: "bg-slate-100 text-slate-700 dark:bg-[#1E293B] dark:text-slate-300",   card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#64748b" };
     case "market":
-      return { icon: "🧺", label: "Mercado",         badge: "bg-orange-100 text-orange-800", card: "border-slate-200 bg-white", dot: "#f97316" };
+      return { icon: "🧺", label: "Mercado",         badge: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300", card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#f97316" };
     case "excursion":
-      return { icon: "🚌", label: "Excursión",       badge: "bg-blue-100 text-blue-800",     card: "border-slate-200 bg-white", dot: "#2563eb" };
+      return { icon: "🚌", label: "Excursión",       badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",     card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#2563eb" };
     case "gastro_experience":
       return {
         icon: "🍷",
         label: "Gastronomía (experiencia)",
         badge: "bg-fuchsia-100 text-fuchsia-800",
-        card: "border-fuchsia-200/60 bg-gradient-to-br from-fuchsia-50 to-white",
+        card: "border-fuchsia-200/60 bg-gradient-to-br from-fuchsia-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "shopping":
       return {
         icon: "🛍️",
         label: "Compras",
         badge: "bg-violet-100 text-violet-800",
-        card: "border-violet-200/60 bg-gradient-to-br from-violet-50 to-white",
+        card: "border-violet-200/60 bg-gradient-to-br from-violet-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "night":
       return {
         icon: "🌙",
         label: "Noche",
         badge: "bg-slate-200 text-slate-800",
-        card: "border-slate-300/60 bg-gradient-to-br from-slate-50 to-white",
+        card: "border-slate-300/60 bg-gradient-to-br from-slate-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "museum":
       return {
         icon: "🏛️",
         label: "Museo",
         badge: "bg-amber-100 text-amber-700",
-        card: "border-amber-200/60 bg-gradient-to-br from-amber-50 to-white",
+        card: "border-amber-200/60 bg-gradient-to-br from-amber-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "restaurant":
       return {
         icon: "🍽️",
         label: "Restaurante",
         badge: "bg-rose-100 text-rose-700",
-        card: "border-rose-200/60 bg-gradient-to-br from-rose-50 to-white",
+        card: "border-rose-200/60 bg-gradient-to-br from-rose-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "transport":
       return {
         icon: "🚆",
         label: "Transporte",
         badge: "bg-sky-100 text-sky-700",
-        card: "border-sky-200/60 bg-gradient-to-br from-sky-50 to-white",
+        card: "border-sky-200/60 bg-gradient-to-br from-sky-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "lodging":
       return {
         icon: "🏨",
         label: "Alojamiento",
         badge: "bg-violet-100 text-violet-700",
-        card: "border-violet-200/60 bg-gradient-to-br from-violet-50 to-white",
+        card: "border-violet-200/60 bg-gradient-to-br from-violet-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "activity":
       return {
         icon: "🎟️",
         label: "Actividad",
         badge: "bg-emerald-100 text-emerald-700",
-        card: "border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-white",
+        card: "border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
       };
     case "visit":
     default:
       return {
         icon: "📍",
         label: "Visita",
-        badge: "bg-slate-100 text-slate-700",   card: "border-slate-200 bg-white", dot: "#64748b",
+        badge: "bg-slate-100 text-slate-700 dark:bg-[#1E293B] dark:text-slate-300",   card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#64748b",
       };
     }
 }

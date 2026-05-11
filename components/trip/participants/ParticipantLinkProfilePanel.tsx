@@ -36,15 +36,15 @@ export default function ParticipantLinkProfilePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-900">
           <Link2 className="h-4 w-4" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="text-sm font-extrabold text-slate-950">Vincular con usuario real</h4>
-          <p className="mt-1 text-xs font-semibold text-slate-600">
-            Busca un perfil existente para evitar duplicados cuando la persona ya se registró.
+          <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
+            Busca por <strong>nombre de usuario</strong> (el email solo funciona si el usuario lo tiene público en su perfil).
           </p>
         </div>
       </div>
@@ -55,8 +55,10 @@ export default function ParticipantLinkProfilePanel({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200"
+            onKeyDown={(e) => { if (e.key === "Enter") void handleSearch(); }}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white dark:placeholder:text-slate-600"
             placeholder="username o email"
+            autoComplete="off"
           />
         </div>
         <button
