@@ -447,12 +447,23 @@ function DebugPanel({ draft }: { draft: ApiDraft }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+// ─── Trip templates ──────────────────────────────────────────────────────────
+const TRIP_TEMPLATES = [
+  { id: "weekend-city", emoji: "🏙️", label: "Fin de semana ciudad", destination: "", days: 3, freeText: "turismo urbano, gastronomía local, ritmo tranquilo" },
+  { id: "beach-week",   emoji: "🏖️", label: "Semana en la playa",   destination: "", days: 7, freeText: "playa, relax, gastronomía local, sin museos" },
+  { id: "road-trip",    emoji: "🚗", label: "Road trip",            destination: "", days: 7, freeText: "varios destinos, flexible, naturaleza, carretera" },
+  { id: "cultural",     emoji: "🏛️", label: "Cultural e historia",  destination: "", days: 5, freeText: "museos, monumentos, historia, arte, visitas guiadas" },
+  { id: "nature",       emoji: "🌿", label: "Naturaleza y senderismo", destination: "", days: 5, freeText: "senderismo, naturaleza, sin museos, actividades al aire libre" },
+  { id: "family",       emoji: "👨‍👩‍👧", label: "Viaje en familia",     destination: "", days: 6, freeText: "con niños, ritmo tranquilo, actividades familiares, parques" },
+] as const;
+
+
 export default function TripAiPlannerWizard() {
   const router = useRouter();
   const toast = useToast();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const [step, setStep] = useState<"form" | "planning" | "review" | "generating" | "preview">("form");
+  const [step, setStep] = useState<"templates" | "form" | "planning" | "review" | "generating" | "preview">("templates");
   const [places, setPlaces] = useState<string[]>([""]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -551,6 +562,39 @@ export default function TripAiPlannerWizard() {
       {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 flex items-start gap-2"><span className="mt-0.5">⚠️</span><span>{error}</span></div>}
 
       {/* FORM */}
+      {/* ── Templates step ─────────────────────────────────────────── */}
+      {step === "templates" && (
+        <div className="card-soft p-7 space-y-5">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">¿Qué tipo de viaje es?</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Elige una plantilla para empezar más rápido, o créalo desde cero.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {TRIP_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setFreeText(t.freeText);
+                  setStep("form");
+                }}
+                className="flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-[var(--brand)]/40 hover:bg-[var(--brand-light)] hover:shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-[#F87171]/30 dark:hover:bg-[#F87171]/5"
+              >
+                <span className="text-2xl">{t.emoji}</span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setStep("form")}
+            className="w-full rounded-xl border border-slate-200 bg-white dark:border-[#334155] dark:bg-[#0F1623] px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+          >
+            Crear desde cero →
+          </button>
+        </div>
+      )}
+
       {step === "form" && (
         <div className="card-soft p-7 space-y-6">
           <div>

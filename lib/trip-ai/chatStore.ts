@@ -1,5 +1,39 @@
 import { createServerSupabase } from "@/lib/trip-ai/serverSupabase";
 
+// ─── Client-side response cache ──────────────────────────────────────────────
+// Deduplicates identical prompts within the same session (TTL: 10 min for briefs)
+type CacheEntry = { value: string; expiresAt: number };
+const _responseCache = new Map<string, CacheEntry>();
+
+function cacheKey(tripId: string, mode: string, prompt: string): string {
+  // Simple hash: concatenate and take first 40 chars of encoded string
+  const raw = `${tripId}|${mode}|${prompt}`.slice(0, 200);
+  return btoa(unescape(encodeURIComponent(raw))).slice(0, 40);
+}
+
+export function getCachedResponse(tripId: string, mode: string, prompt: string): string | null {
+  const key = cacheKey(tripId, mode, prompt);
+  const entry = _responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { _responseCache.delete(key); return null; }
+  return entry.value;
+}
+
+export function setCachedResponse(tripId: string, mode: string, prompt: string, value: string, ttlMs = 600_000): void {
+  const key = cacheKey(tripId, mode, prompt);
+  _responseCache.set(key, { value, expiresAt: Date.now() + ttlMs });
+  // Evict oldest entries if cache grows too large
+  if (_responseCache.size > 50) {
+    const oldest = [..._responseCache.entries()].sort((a, b) => a[1].expiresAt - b[1].expiresAt)[0];
+    if (oldest) _responseCache.delete(oldest[0]);
+  }
+}
+
+export function clearResponseCache(): void {
+  _responseCache.clear();
+}
+
+
 export type ChatMode =
   | "general"
   | "planning"
