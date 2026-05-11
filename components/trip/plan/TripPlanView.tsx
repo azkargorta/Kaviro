@@ -439,7 +439,18 @@ export default function TripPlanView({
       const oi = ordered.findIndex((a) => a.id === String(active.id));
       const ni = ordered.findIndex((a) => a.id === String(over.id));
       if (oi === -1 || ni === -1) continue;
-      setLocalOrder((prev) => new Map(prev).set(date, arrayMove(ordered, oi, ni).map((a) => a.id)));
+      const reordered = arrayMove(ordered, oi, ni);
+      setLocalOrder((prev) => new Map(prev).set(date, reordered.map((a) => a.id)));
+      // Persist sort_order so order survives page reload
+      void Promise.all(
+        reordered.map((activity, index) =>
+          fetch(`/api/trip-activities/${activity.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sort_order: index }),
+          })
+        )
+      ).catch(() => { /* non-blocking — order already updated in UI */ });
       break;
     }
   }

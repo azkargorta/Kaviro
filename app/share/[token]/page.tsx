@@ -40,6 +40,32 @@ function groupByDay(activities: Activity[]) {
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
 }
 
+export async function generateMetadata({ params }: Props) {
+  try {
+    const { createClient: sc } = await import("@/lib/supabase/server");
+    const supabase = await sc();
+    const { data: share } = await supabase
+      .from("trip_shares")
+      .select("trip_id, trips(name, destination, start_date)")
+      .eq("token", params.token)
+      .maybeSingle();
+    const trip = (share as any)?.trips;
+    if (!trip) return { title: "Itinerario | Kaviro" };
+    const dest = trip.destination ? ` — ${trip.destination}` : "";
+    const title = `${trip.name}${dest} | Itinerario compartido en Kaviro`;
+    const description = `Ver el plan, rutas y actividades de ${trip.name}${dest}. Organizado con Kaviro.`;
+    return {
+      title,
+      description,
+      openGraph: { title, description, type: "website", siteName: "Kaviro" },
+      twitter: { card: "summary", title, description },
+    };
+  } catch {
+    return { title: "Itinerario compartido | Kaviro" };
+  }
+}
+
+
 export default async function SharePage({ params }: Props) {
   const token = params.token;
   const h = await headers();

@@ -103,6 +103,34 @@ function sumExpensesByCurrency(rows: Array<{ amount: unknown; currency: string |
   return map;
 }
 
+
+export async function generateMetadata({ params }: TripPageProps) {
+  try {
+    const { createClient: sc } = await import("@/lib/supabase/server");
+    const supabase = await sc();
+    const { data } = await supabase
+      .from("trips")
+      .select("name, destination, start_date, end_date")
+      .eq("id", params.id)
+      .maybeSingle();
+    if (!data) return { title: "Kaviro" };
+    const dest = data.destination ? ` — ${data.destination}` : "";
+    const dates = data.start_date
+      ? ` · ${new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(new Date(data.start_date + "T00:00:00"))}`
+      : "";
+    const title = `${data.name}${dest}${dates} | Kaviro`;
+    const description = `Organiza ${data.name}${dest} con Kaviro: plan por días, rutas, gastos y documentos en un solo lugar.`;
+    return {
+      title,
+      description,
+      openGraph: { title, description, type: "website", siteName: "Kaviro" },
+      twitter: { card: "summary", title, description },
+    };
+  } catch {
+    return { title: "Kaviro" };
+  }
+}
+
 export default async function TripSummaryPage({ params }: TripPageProps) {
   const tripId = params.id;
   const access = await requireTripAccess(tripId);

@@ -9,6 +9,8 @@ import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 type Props = {
   tripId: string;
   isPremium: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
 type NavItem = {
@@ -73,9 +75,16 @@ function isActivePath(pathname: string, href: string, key: string) {
   return false;
 }
 
-export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
+export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
+
+  // Badge "Hoy" — show on Plan item when trip is active today
+  const isTripActiveToday = (() => {
+    if (!startDate || !endDate) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return today >= startDate && today <= endDate;
+  })();
   const visibleItems = isPremium ? items : items.filter((i) => !i.isPremiumGated);
 
   return (
@@ -157,6 +166,13 @@ export default function DesktopTripSidebar({ tripId, isPremium }: Props) {
                       </p>
                     )}
                   </div>
+
+                  {/* HOY badge — shown on Plan item during active trip */}
+                  {item.key === "plan" && isTripActiveToday && !active && (
+                    <span className="shrink-0 rounded-full bg-[#F87171]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#F87171] ring-1 ring-[#F87171]/30 leading-none">
+                      HOY
+                    </span>
+                  )}
 
                   {/* AI sparkle badge */}
                   {isAI && !active && !isPremium && (
