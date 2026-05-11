@@ -196,17 +196,17 @@ export default function ExpenseBalancePanel({
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Presupuesto objetivo</p>
                 <p className="text-xs font-bold text-[var(--text-secondary)]">
-                  {Math.round(Math.min(100, (totalExpenses / budgetTarget) * 100))}%
+                  {Math.round(Math.min(100, (totals.totalExpenses / budgetTarget) * 100))}%
                 </p>
               </div>
               <div className="h-2.5 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${totalExpenses > budgetTarget ? "bg-rose-500" : totalExpenses > budgetTarget * 0.8 ? "bg-amber-400" : "bg-[#F87171]"}`}
-                  style={{ width: `${Math.min(100, (totalExpenses / budgetTarget) * 100)}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${totals.totalExpenses > budgetTarget ? "bg-rose-500" : totals.totalExpenses > budgetTarget * 0.8 ? "bg-amber-400" : "bg-[#F87171]"}`}
+                  style={{ width: `${Math.min(100, (totals.totalExpenses / budgetTarget) * 100)}%` }}
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs text-[var(--text-tertiary)]">
-                <span>{formatMoney(totalExpenses, displayCurrency)} gastado</span>
+                <span>{formatMoney(totals.totalExpenses, displayCurrency)} gastado</span>
                 <span>de {formatMoney(budgetTarget, displayCurrency)}</span>
               </div>
             </div>
