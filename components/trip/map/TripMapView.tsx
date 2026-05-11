@@ -1,5 +1,4 @@
 "use client";
-import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
@@ -484,6 +483,7 @@ function MapSurface({
   lines,
   markers,
   onMapCreated,
+  isDarkMap = false,
 }: {
   visible: boolean;
   bounds: L.LatLngBounds | null;
@@ -491,6 +491,7 @@ function MapSurface({
   lines: Array<{ key: string; points: RoutePoint[]; color: string; label: string }>;
   markers: Array<{ key: string; lat: number; lng: number; title: string; icon: L.Icon | L.DivIcon; subtitle?: string }>;
   onMapCreated?: (map: L.Map) => void;
+  isDarkMap?: boolean;
 }) {
   if (!visible) return null;
 
@@ -2393,6 +2394,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
           lines={mapEntities.lines}
           markers={mapEntities.markers}
           onMapCreated={(m) => setMapRef(m)}
+          isDarkMap={typeof document !== "undefined" && document.documentElement.classList.contains("dark")}
         />
       </div>
 
