@@ -1,4 +1,5 @@
 "use client";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
@@ -507,8 +508,14 @@ function MapSurface({
       <div className="h-[640px] w-full bg-slate-100 lg:h-[calc(100vh-7.5rem)]">
         <MapContainer center={DEFAULT_CENTER} zoom={4} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={isDarkMap
+              ? '&copy; <a href="https://carto.com">CARTO</a>'
+              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }
+            url={isDarkMap
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            }
           />
           <MapReporter onMap={onMapCreated} />
           <FitToBounds bounds={bounds} boundsKey={boundsKey} />

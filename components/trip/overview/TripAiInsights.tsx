@@ -9,9 +9,9 @@ import { Sparkles, Globe, Backpack, ChevronDown, ChevronUp, Loader2, CheckSquare
 
 function BriefRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-3 py-2.5 border-b border-slate-100 last:border-0">
-      <span className="text-xs font-bold text-slate-400 w-28 shrink-0 pt-0.5">{label}</span>
-      <span className="text-xs font-semibold text-slate-800 leading-relaxed">{value}</span>
+    <div className="flex gap-3 py-2.5 border-b border-slate-100 dark:border-[#1E293B] last:border-0">
+      <span className="text-xs font-bold text-slate-400 dark:text-[#475569] w-28 shrink-0 pt-0.5">{label}</span>
+      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">{value}</span>
     </div>
   );
 }
@@ -44,15 +44,15 @@ function CountryBriefCard({ tripId, isPremium }: { tripId: string; isPremium: bo
         type="button"
         onClick={load}
         disabled={loading || !isPremium}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50/60 transition-colors disabled:opacity-60"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50/60 dark:hover:bg-[#1E293B]/60 transition-colors disabled:opacity-60"
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
             <Globe className="w-4 h-4 text-blue-600" />
           </div>
           <div>
-            <p className="text-sm font-extrabold text-slate-900">Brief del destino</p>
-            <p className="text-xs font-medium text-slate-400">
+            <p className="text-sm font-extrabold text-slate-900 dark:text-white">Brief del destino</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-[#475569]">
               {isPremium ? "Moneda, visado, enchufes, costumbres…" : "Requiere Premium"}
             </p>
           </div>
@@ -71,7 +71,7 @@ function CountryBriefCard({ tripId, isPremium }: { tripId: string; isPremium: bo
       )}
 
       {open && brief && (
-        <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-1">
+        <div className="border-t border-slate-100 dark:border-[#1E293B] px-5 pb-5 pt-4 space-y-1">
           <BriefRow label="💶 Moneda" value={`${brief.currency.code} (${brief.currency.symbol}) — ${brief.currency.tip}`} />
           <BriefRow label="🗣️ Idioma" value={brief.language} />
           <BriefRow label="🔌 Enchufe" value={`${brief.plugType} · ${brief.voltage}`} />
@@ -87,7 +87,7 @@ function CountryBriefCard({ tripId, isPremium }: { tripId: string; isPremium: bo
               <p className="text-xs font-bold text-slate-400 mb-2">🧭 Costumbres a tener en cuenta</p>
               <ul className="space-y-1.5">
                 {brief.customs.map((c, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs font-semibold text-slate-700">
+                  <li key={i} className="flex items-start gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                     {c}
                   </li>
@@ -144,15 +144,15 @@ function PackingListCard({ tripId, isPremium }: { tripId: string; isPremium: boo
         type="button"
         onClick={load}
         disabled={loading || !isPremium}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50/60 transition-colors disabled:opacity-60"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50/60 dark:hover:bg-[#1E293B]/60 transition-colors disabled:opacity-60"
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
             <Backpack className="w-4 h-4 text-emerald-600" />
           </div>
           <div>
-            <p className="text-sm font-extrabold text-slate-900">Lista de maleta IA</p>
-            <p className="text-xs font-medium text-slate-400">
+            <p className="text-sm font-extrabold text-slate-900 dark:text-white">Lista de maleta IA</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-[#475569]">
               {isPremium
                 ? categories
                   ? `${doneItems}/${totalItems} preparado`
@@ -173,7 +173,7 @@ function PackingListCard({ tripId, isPremium }: { tripId: string; isPremium: boo
       {error && <div className="px-5 pb-4 text-xs font-semibold text-red-600">{error}</div>}
 
       {open && categories && (
-        <div className="border-t border-slate-100 px-5 pb-5 pt-4 space-y-3">
+        <div className="border-t border-slate-100 dark:border-[#1E293B] px-5 pb-5 pt-4 space-y-3">
           {/* Progress */}
           {totalItems > 0 && (
             <div>
@@ -181,7 +181,7 @@ function PackingListCard({ tripId, isPremium }: { tripId: string; isPremium: boo
                 <span>Progreso</span>
                 <span>{doneItems}/{totalItems}</span>
               </div>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-2 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-all"
                   style={{ width: `${totalItems > 0 ? (doneItems / totalItems) * 100 : 0}%` }}
@@ -195,7 +195,7 @@ function PackingListCard({ tripId, isPremium }: { tripId: string; isPremium: boo
             const catOpen = openCats.has(ci);
             const catDone = cat.items.filter((_, ii) => checked.has(`${ci}:${ii}`)).length;
             return (
-              <div key={ci} className="rounded-xl border border-slate-100 overflow-hidden">
+              <div key={ci} className="rounded-xl border border-slate-100 dark:border-[#1E293B] overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleCat(ci)}

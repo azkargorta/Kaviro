@@ -1,4 +1,5 @@
 "use client";
+import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 import { useMemo } from "react";
 import type { TripExpenseRecord } from "@/hooks/useTripExpenses";
@@ -86,12 +87,12 @@ function DonutChart({
         </path>
       ))}
       {/* Center hole */}
-      <circle cx={CX} cy={CY} r={R - STROKE} fill="white" />
+      <circle cx={CX} cy={CY} r={R - STROKE} fill={isDark ? "#0F1623" : "white"} />
       {/* Center text */}
-      <text x={CX} y={CY - 6} textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e293b">
+      <text x={CX} y={CY - 6} textAnchor="middle" fontSize="11" fontWeight="700" fill={isDark ? "#F1F5F9" : "#1e293b"}>
         Total
       </text>
-      <text x={CX} y={CY + 10} textAnchor="middle" fontSize="9" fill="#64748b">
+      <text x={CX} y={CY + 10} textAnchor="middle" fontSize="9" fill={isDark ? "#64748B" : "#64748b"}>
         {formatMoney(total, currency)}
       </text>
     </svg>
@@ -117,7 +118,7 @@ function HBarChart({
             <span className="text-xs font-semibold text-slate-700 truncate max-w-[130px]">{bar.label}</span>
             <span className="text-xs font-bold text-slate-900 ml-2 shrink-0">{formatMoney(bar.value, currency)}</span>
           </div>
-          <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+          <div className="h-2.5 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
@@ -135,6 +136,7 @@ function HBarChart({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ExpenseCharts({ expenses, baseCurrency }: Props) {
+  const isDark = useIsDarkMode();
   // Group by category
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
@@ -179,7 +181,7 @@ export default function ExpenseCharts({ expenses, baseCurrency }: Props) {
 
   if (expenses.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-400">
         Aún no hay gastos para mostrar estadísticas.
       </div>
     );
@@ -189,8 +191,8 @@ export default function ExpenseCharts({ expenses, baseCurrency }: Props) {
     <div className="space-y-6">
 
       {/* Top row: donut + legend */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-extrabold text-slate-900 mb-4">Gasto por categoría</p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <p className="text-sm font-extrabold text-slate-900 dark:text-white mb-4">Gasto por categoría</p>
         <div className="flex flex-col sm:flex-row gap-6 items-start">
           <div className="w-full sm:w-48 shrink-0">
             <DonutChart segments={byCategory} total={totalCat} currency={baseCurrency} />
@@ -212,16 +214,16 @@ export default function ExpenseCharts({ expenses, baseCurrency }: Props) {
 
       {/* Gasto por persona */}
       {byPayer.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-extrabold text-slate-900 mb-4">Pagado por persona</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <p className="text-sm font-extrabold text-slate-900 dark:text-white mb-4">Pagado por persona</p>
           <HBarChart bars={byPayer} max={maxPayer} currency={baseCurrency} />
         </div>
       )}
 
       {/* Evolución mensual */}
       {byMonth.length > 1 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-extrabold text-slate-900 mb-4">Evolución mensual</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <p className="text-sm font-extrabold text-slate-900 dark:text-white mb-4">Evolución mensual</p>
           <div className="flex items-end gap-2 h-28">
             {byMonth.map((m, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">

@@ -125,7 +125,7 @@ export default function TripOverviewClient({
       {/* ── Hero countdown card ─────────────────────────────────────────── */}
       <div className="card-soft px-6 py-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-2xl font-extrabold tracking-tight text-slate-900">{hero.label}</p>
+          <p className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{hero.label}</p>
           <p className="mt-0.5 text-sm font-medium text-slate-500">{hero.sub}</p>
           {destination && (
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
@@ -141,7 +141,7 @@ export default function TripOverviewClient({
               <span>Progreso del viaje</span>
               <span>{Math.round(((daysElapsed ?? 0) / totalTripDays) * 100)}%</span>
             </div>
-            <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
               <div
                 className="h-full rounded-full bg-violet-500 transition-all"
                 style={{ width: `${Math.min(100, ((daysElapsed ?? 0) / totalTripDays) * 100)}%` }}
@@ -174,10 +174,10 @@ export default function TripOverviewClient({
         <Link href={`/trip/${tripId}/plan`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-violet-200 transition-colors group">
           <div className="flex items-center justify-between">
             <CalendarDays className="w-4 h-4 text-violet-400" />
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-violet-400 transition-colors" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-[#334155] group-hover:text-[var(--brand)] transition-colors" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-1">{activitiesCount}</p>
-          <p className="text-xs font-semibold text-slate-500">Planes</p>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{activitiesCount}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Planes</p>
           {activitiesCount > 0 && (
             <div className="mt-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
               <div className="h-full rounded-full bg-violet-400" style={{ width: `${completionPct}%` }} />
@@ -189,32 +189,32 @@ export default function TripOverviewClient({
         <Link href={`/trip/${tripId}/expenses`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-emerald-200 transition-colors group">
           <div className="flex items-center justify-between">
             <Wallet className="w-4 h-4 text-emerald-500" />
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-400 transition-colors" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-[#334155] group-hover:text-emerald-400 transition-colors" />
           </div>
-          <p className="text-xl font-extrabold text-slate-900 mt-1 truncate">
+          <p className="text-xl font-extrabold text-slate-900 dark:text-white mt-1 truncate">
             {expensesCount > 0 ? formatMoney(totalExpenses, currency) : "—"}
           </p>
-          <p className="text-xs font-semibold text-slate-500">{expensesCount} gastos</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{expensesCount} gastos</p>
         </Link>
 
         {/* Participants */}
         <Link href={`/trip/${tripId}/participants`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-blue-200 transition-colors group">
           <div className="flex items-center justify-between">
             <Users className="w-4 h-4 text-blue-400" />
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-400 transition-colors" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-[#334155] group-hover:text-blue-400 transition-colors" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-1">{participantsCount}</p>
-          <p className="text-xs font-semibold text-slate-500">Personas</p>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{participantsCount}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Personas</p>
         </Link>
 
         {/* Resources */}
         <Link href={`/trip/${tripId}/resources`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-amber-200 transition-colors group">
           <div className="flex items-center justify-between">
             <FileText className="w-4 h-4 text-amber-500" />
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-400 transition-colors" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-[#334155] group-hover:text-amber-400 transition-colors" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-1">{resourcesCount}</p>
-          <p className="text-xs font-semibold text-slate-500">Documentos</p>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{resourcesCount}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Documentos</p>
         </Link>
       </div>
 
@@ -237,7 +237,7 @@ export default function TripOverviewClient({
                 <div key={a.id} className="flex items-center gap-3 py-1.5">
                   <span className="text-base shrink-0">{meta.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{a.title}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{a.title}</p>
                     {a.place_name && <p className="text-xs text-slate-400 truncate">{a.place_name}</p>}
                   </div>
                   {a.activity_time && (

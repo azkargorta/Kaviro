@@ -74,11 +74,11 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
   const canManageResources = access?.canManageResources ?? true;
 
   return (
-    <section className="min-w-0 max-w-full overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="min-w-0 max-w-full overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 max-w-full flex-1">
-          <h3 className="text-lg font-semibold text-slate-900">Listas</h3>
-          <p className="mt-1 text-sm text-slate-500">Crea listas privadas o compartidas (compra, maleta, documentos…).</p>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Listas</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Crea listas privadas o compartidas (compra, maleta, documentos…).</p>
         </div>
         <div className="flex min-w-0 flex-wrap gap-2">
           {canAi ? (
@@ -108,8 +108,8 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
 
       <div className="mt-5 grid min-w-0 max-w-full gap-5 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-4">
-          <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Crear lista</div>
+          <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Crear lista</div>
             <div className="mt-3 min-w-0 space-y-2">
               <input
                 value={newTitle}
@@ -150,14 +150,14 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+          <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:border-[#1E293B] dark:text-slate-400">
               Tus listas
             </div>
             {loading ? (
-              <div className="px-4 py-4 text-sm text-slate-500">Cargando…</div>
+              <div className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">Cargando…</div>
             ) : lists.length === 0 ? (
-              <div className="px-4 py-4 text-sm text-slate-500">Aún no hay listas.</div>
+              <div className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">Aún no hay listas.</div>
             ) : (
               <div className="max-h-[420px] overflow-auto">
                 {lists.map((l) => {
@@ -176,7 +176,7 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
                         }
                       }}
                       className={`flex w-full min-w-0 cursor-pointer items-center justify-between gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm transition hover:bg-slate-50 sm:gap-3 sm:px-4 ${
-                        active ? "bg-slate-50" : "bg-white"
+                        active ? "bg-slate-50 dark:bg-[#1E293B]" : "bg-white dark:bg-[#0F1623]"
                       }`}
                     >
                       <div className="min-w-0 flex-1">
@@ -185,14 +185,14 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
                           modalTitle="Lista"
                           minLength={36}
                           lineClamp={4}
-                          className="font-semibold leading-snug text-slate-900"
+                          className="font-semibold leading-snug text-slate-900 dark:text-white"
                         />
                         <div className="mt-0.5 break-words text-xs leading-snug text-slate-500">
                           {l.visibility === "private" ? "Privada" : "Compartida"}
                           {l.visibility === "shared" ? (l.editable_by_all ? " · editable por todos" : " · editable por roles") : ""}
                         </div>
                       </div>
-                      <div className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                      <div className="shrink-0 rounded-full bg-slate-100 dark:bg-[#1E293B] px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
                         {fmtCount(counts)}
                       </div>
                     </div>
@@ -205,16 +205,16 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
 
         <div className="min-w-0 space-y-4">
           {!selected ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-400">
               Selecciona una lista para ver sus elementos.
             </div>
           ) : (
             <>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0 max-w-full flex-1">
-                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lista</div>
-                    <div className="mt-1 text-lg font-bold leading-snug text-slate-950">
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Lista</div>
+                    <div className="mt-1 text-lg font-bold leading-snug text-slate-950 dark:text-white">
                       <LongTextSheet
                         text={selected.title}
                         modalTitle="Nombre de la lista"
@@ -299,8 +299,8 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
                 ) : null}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white">
-                <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
+                <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:border-[#1E293B] dark:text-slate-400">
                   Elementos
                 </div>
                 {itemsApi.error ? (
@@ -308,11 +308,11 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
                 ) : null}
                 <div className="flex max-h-[55vh] min-h-0 flex-col">
                   {itemsApi.loading ? (
-                    <div className="px-4 py-4 text-sm text-slate-500">Cargando…</div>
+                    <div className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">Cargando…</div>
                   ) : (
                     <div className="min-h-0 overflow-auto divide-y divide-slate-100">
                       {itemsApi.items.length === 0 ? (
-                        <div className="px-4 py-4 text-sm text-slate-500">Esta lista está vacía.</div>
+                        <div className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">Esta lista está vacía.</div>
                       ) : (
                         itemsApi.items.map((it) => (
                           <div
