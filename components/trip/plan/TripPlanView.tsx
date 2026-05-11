@@ -196,7 +196,7 @@ function Chip({
       onClick={onClick}
       title={title}
       className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
-        active ? "border-violet-300 bg-violet-50 text-violet-900" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+        active ? "border-violet-300 bg-violet-50 text-violet-900" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
       }`}
     >
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/70" style={{ backgroundColor: color }}>
@@ -439,18 +439,7 @@ export default function TripPlanView({
       const oi = ordered.findIndex((a) => a.id === String(active.id));
       const ni = ordered.findIndex((a) => a.id === String(over.id));
       if (oi === -1 || ni === -1) continue;
-      const reordered = arrayMove(ordered, oi, ni);
-      setLocalOrder((prev) => new Map(prev).set(date, reordered.map((a) => a.id)));
-      // Persist sort_order so order survives page reload
-      void Promise.all(
-        reordered.map((activity, index) =>
-          fetch(`/api/trip-activities/${activity.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sort_order: index }),
-          })
-        )
-      ).catch(() => { /* non-blocking — order already updated in UI */ });
+      setLocalOrder((prev) => new Map(prev).set(date, arrayMove(ordered, oi, ni).map((a) => a.id)));
       break;
     }
   }
@@ -526,7 +515,7 @@ export default function TripPlanView({
           ) : null}
 
           <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           <span className="font-semibold text-slate-900">{trip?.name || trip?.destination || "Este viaje"}</span>
           {" · "}
           Añade planes con fecha/hora y reutilízalos en el mapa para rutas.
@@ -538,7 +527,7 @@ export default function TripPlanView({
                 type="button"
                 onClick={() => setSelectedActivityIds(new Set(selectableActivityIds))}
                 disabled={!selectableActivityIds.length || saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 Seleccionar todos
               </button>
@@ -546,7 +535,7 @@ export default function TripPlanView({
                 type="button"
                 onClick={() => setSelectedActivityIds(new Set())}
                 disabled={saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 Quitar selección
               </button>
@@ -557,7 +546,7 @@ export default function TripPlanView({
                   setSelectedActivityIds(new Set());
                 }}
                 disabled={saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 Cancelar
               </button>
@@ -642,13 +631,13 @@ export default function TripPlanView({
         <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-slate-950">Historial de cambios (Plan)</div>
-              <div className="mt-1 text-xs text-slate-600">Quién creó/editó/eliminó planes recientemente.</div>
+              <div className="text-sm font-semibold text-slate-950 dark:text-white">Historial de cambios (Plan)</div>
+              <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">Quién creó/editó/eliminó planes recientemente.</div>
             </div>
             <button
               type="button"
               onClick={() => setHistoryOpen(false)}
-              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               Cerrar
             </button>
@@ -663,17 +652,17 @@ export default function TripPlanView({
           ) : history.length ? (
             <div className="mt-4 space-y-2">
               {history.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] p-3">
+                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] dark:border-[#1E293B] dark:bg-[#080C14] p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-950">
+                      <div className="text-sm font-semibold text-slate-950 dark:text-white">
                         {item.summary || `${item.action} ${item.entity_type}`}
                       </div>
-                      <div className="mt-1 text-xs text-slate-600">
+                      <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                         {(item.actor_email || "Alguien")} · {new Date(item.created_at).toLocaleString("es-ES")}
                       </div>
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200">
                       {item.action}
                     </span>
                   </div>
@@ -687,9 +676,9 @@ export default function TripPlanView({
       ) : null}
 
       <div className="grid grid-cols-2 gap-2 md:gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] px-3 py-2 shadow-sm md:p-4">
-          <p className="text-[11px] font-semibold leading-tight text-slate-500 md:text-sm">Actividades totales</p>
-          <p className="mt-0.5 text-2xl font-bold leading-none text-slate-950 md:mt-2 md:text-3xl">{activities.length}</p>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] dark:border-[#1E293B] dark:bg-[#080C14] px-3 py-2 shadow-sm md:p-4">
+          <p className="text-[11px] font-semibold leading-tight text-slate-500 md:text-sm dark:text-slate-400">Actividades totales</p>
+          <p className="mt-0.5 text-2xl font-bold leading-none text-slate-950 md:mt-2 md:text-3xl dark:text-white">{activities.length}</p>
         </div>
         <div className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-2 shadow-sm md:p-4">
           <p className="text-[11px] font-semibold leading-tight text-violet-800 md:text-sm">Alojamientos</p>
@@ -754,7 +743,7 @@ export default function TripPlanView({
                   type="button"
                   onClick={() => setShowLodging((v) => !v)}
                   className={`inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
-                    showLodging ? "border-violet-200 bg-violet-50 text-violet-950" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    showLodging ? "border-violet-200 bg-violet-50 text-violet-950" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                   }`}
                   title="Mostrar/ocultar alojamientos"
                 >
@@ -785,7 +774,7 @@ export default function TripPlanView({
                   type="button"
                   onClick={() => setKindFilter(new Set())}
                   className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
-                    kindFilter.size === 0 ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    kindFilter.size === 0 ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                   }`}
                   title="Todos los tipos"
                 >
@@ -822,7 +811,7 @@ export default function TripPlanView({
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-extrabold text-slate-950">Tipos personalizados</div>
-            <div className="mt-1 text-xs text-slate-600">
+            <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               Avanzado: crea categorías reutilizables (emoji/color) para Plan y Rutas.
             </div>
           </div>
@@ -844,7 +833,7 @@ export default function TripPlanView({
             <button
               type="button"
               onClick={() => setKindsOpen((v) => !v)}
-              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               {kindsOpen ? "Cerrar" : "Gestionar"}
             </button>
@@ -863,7 +852,7 @@ export default function TripPlanView({
 
           {kindsOpen ? (
             <div className="mt-4 grid gap-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] dark:border-[#1E293B] dark:bg-[#080C14] p-4">
               <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">Nuevo tipo</div>
               <div className="mt-3 grid gap-3 md:grid-cols-4">
                 <label className="space-y-1 md:col-span-2">
@@ -954,16 +943,16 @@ export default function TripPlanView({
             <div className="grid gap-3">
               <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">Tipos existentes</div>
               {customKindsLoading ? (
-                <div className="text-sm text-slate-600">Cargando tipos…</div>
+                <div className="text-sm text-slate-600 dark:text-slate-400">Cargando tipos…</div>
               ) : customKinds.length ? (
                 customKinds.map((k) => (
                   <div key={k.id} className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-950">
+                        <div className="text-sm font-semibold text-slate-950 dark:text-white">
                           {(k.emoji ? `${k.emoji} ` : "") + k.label}
                         </div>
-                        <div className="mt-1 text-xs text-slate-600">Clave: {k.kind_key}</div>
+                        <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">Clave: {k.kind_key}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <input

@@ -27,7 +27,7 @@ function fileTypeMeta(type: string | null | undefined) {
     return { icon: "📊", bg: "bg-emerald-100", text: "text-emerald-800", label: "Hoja de cálculo" };
   if (t.includes("zip") || t.includes("rar"))
     return { icon: "📦", bg: "bg-amber-100", text: "text-amber-800", label: "Archivo" };
-  return { icon: "📎", bg: "bg-slate-100", text: "text-slate-700", label: type || "Archivo" };
+  return { icon: "📎", bg: "bg-slate-100 dark:bg-[#1E293B]", text: "text-slate-700 dark:text-slate-300", label: type || "Archivo" };
 }
 
 export default function ResourceCard({ item, onOpen, onDelete }: Props) {
@@ -35,7 +35,7 @@ export default function ResourceCard({ item, onOpen, onDelete }: Props) {
   const meta = fileTypeMeta(item.type || item.file_name?.split(".").pop());
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:border-slate-300">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:border-slate-300 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-[#334155]">
       <div className="flex items-start justify-between gap-3 p-4">
         <div className="min-w-0 flex-1 flex items-start gap-3">
           {/* D1 — Semantic file type icon */}
@@ -46,7 +46,7 @@ export default function ResourceCard({ item, onOpen, onDelete }: Props) {
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.bg} ${meta.text}`}>
               {meta.label}
             </span>
-            <h4 className="mt-1.5 truncate text-sm font-semibold text-slate-950">{title}</h4>
+            <h4 className="mt-1.5 truncate text-sm font-semibold text-slate-950 dark:text-white">{title}</h4>
             {item.created_at ? <p className="mt-0.5 text-xs text-slate-400">{item.created_at}</p> : null}
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function ResourceCard({ item, onOpen, onDelete }: Props) {
             href={item.url}
             target="_blank"
             rel="noreferrer"
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
           >
             Abrir
           </a>
@@ -66,7 +66,7 @@ export default function ResourceCard({ item, onOpen, onDelete }: Props) {
           <button
             type="button"
             onClick={() => onOpen(item)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
           >
             Abrir
           </button>

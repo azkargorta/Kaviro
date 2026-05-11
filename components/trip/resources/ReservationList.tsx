@@ -27,14 +27,14 @@ export default function ReservationList({
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-900">Reservas</h3>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Reservas</h3>
         <p className="mt-1 text-sm text-slate-500">
           Alojamientos y otras reservas del viaje.
         </p>
       </div>
 
       {reservations.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-[#334155] dark:bg-[#080C14] px-6 py-8 text-center">
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🎫</div>
           <p className="text-sm font-semibold text-slate-700">Sin reservas todavía</p>
           <p className="mt-1 text-xs text-slate-400">Añade vuelos, hoteles y traslados para tenerlos a mano durante el viaje.</p>
@@ -80,7 +80,7 @@ export default function ReservationList({
                     <button
                       type="button"
                       onClick={() => onEdit(reservation)}
-                      className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                     >
                       Editar
                     </button>

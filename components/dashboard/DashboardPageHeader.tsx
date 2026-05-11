@@ -49,7 +49,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white dark:bg-[#0F1623] text-slate-700 shadow-sm ring-1 ring-slate-900/[0.04] transition hover:border-slate-300 hover:bg-slate-50 dark:bg-[#080C14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/[0.04] transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             aria-expanded={open}
             aria-haspopup="menu"
             aria-controls="dashboard-account-menu"
@@ -62,7 +62,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
             <div
               id="dashboard-account-menu"
               role="menu"
-              className="absolute right-0 top-[calc(100%+0.35rem)] z-[100] w-max min-w-[13.5rem] max-w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-slate-200/90 bg-white dark:bg-[#0F1623] py-1.5 shadow-xl ring-1 ring-slate-900/[0.06]"
+              className="absolute right-0 top-[calc(100%+0.35rem)] z-[100] w-max min-w-[13.5rem] max-w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-slate-200/90 bg-white py-1.5 shadow-xl ring-1 ring-slate-900/[0.06] dark:border-[#1E293B] dark:bg-[#0F1623]"
             >
               <div className="px-1.5" onClick={() => setOpen(false)}>
                 {isAdmin ? (
