@@ -51,10 +51,12 @@ function DonutChart({
   segments,
   total,
   currency,
+  isDark = false,
 }: {
   segments: Array<{ label: string; value: number; color: string }>;
   total: number;
   currency: string;
+  isDark?: boolean;
 }) {
   const R = 70;
   const CX = 90;
@@ -195,7 +197,7 @@ export default function ExpenseCharts({ expenses, baseCurrency }: Props) {
         <p className="text-sm font-extrabold text-slate-900 dark:text-white mb-4">Gasto por categoría</p>
         <div className="flex flex-col sm:flex-row gap-6 items-start">
           <div className="w-full sm:w-48 shrink-0">
-            <DonutChart segments={byCategory} total={totalCat} currency={baseCurrency} />
+            <DonutChart segments={byCategory} total={totalCat} currency={baseCurrency} isDark={isDark} />
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             {byCategory.map((seg, i) => (
