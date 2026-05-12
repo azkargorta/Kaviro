@@ -8,6 +8,7 @@ import CurrencyConverterCard from "@/components/trip/expenses/CurrencyConverterC
 import ExpenseAnalyzerPanel, { type ExpenseDetectedData } from "@/components/trip/expenses/ExpenseAnalyzerPanel";
 import ExpenseCharts from "@/components/trip/expenses/ExpenseCharts";
 import { useTripExpenses } from "@/hooks/useTripExpenses";
+import { useTripData } from "@/hooks/useTripData";
 import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
 import Link from "next/link";
 
@@ -47,6 +48,8 @@ export default function TripExpensesView({
     convertAmount,
     createWhatsAppLink,
   } = useTripExpenses(tripId);
+
+  const { trip: tripMeta } = useTripData(tripId);
 
   const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [detectedData, setDetectedData] = useState<ExpenseDetectedData | null>(null);
@@ -583,7 +586,7 @@ export default function TripExpensesView({
                 paymentPairRules={paymentPairRules}
                 onSavePaymentPairRule={savePaymentPairRule}
                 onResetPaymentPairRules={resetPaymentPairRules}
-                budgetTarget={(trip as any)?.budget_target ?? null}
+                budgetTarget={(tripMeta as any)?.budget_target ?? null}
                 onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
                 strictPaymentMethods={strictPaymentMethods}
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}
