@@ -64,9 +64,10 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
   }
 
   const shareMessage = [
-    `✈️ ${tripName}`,
-    tripDates ? `📅 ${tripDates}` : "",
-    highlights?.length ? `📍 ${highlights.slice(0,3).join(" · ")}` : "",
+    `✈️ ${tripName}${destination ? ` — ${destination}` : ""}`,
+    startDate ? `📅 ${formatDate(startDate)}${endDate ? ` → ${formatDate(endDate)}` : ""}` : "",
+    cities?.length ? `📍 ${cities.slice(0, 3).join(" · ")}` : "",
+    `${totalDays} días · ${activitiesCount} actividades · ${participantsCount} persona${participantsCount !== 1 ? "s" : ""}`,
     "",
     "Organizado con Kaviro · kaviro.app",
   ].filter(Boolean).join("\n");
