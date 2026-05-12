@@ -13,6 +13,8 @@ import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 type Props = {
   tripId: string;
   isPremium: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
 const items: Array<{ key: TripTabKey; label: string; href: (id: string) => string; isAI?: boolean }> = [
@@ -54,7 +56,7 @@ const items: Array<{ key: TripTabKey; label: string; href: (id: string) => strin
   },
 ];
 
-export default function MobileBottomNav({ tripId, isPremium }: Props) {
+export default function MobileBottomNav({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
   const isTripActiveToday = (() => {
