@@ -49,7 +49,7 @@ export default function PlanLodgingCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm ${selectable ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80" : ""} ${selected ? "ring-2 ring-violet-600" : ""}`}
+      className={`relative overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${selectable ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80" : ""} ${selected ? "ring-2 ring-violet-600 dark:ring-[#F87171]" : ""}`}
       onClick={selectable && onToggleSelect ? () => onToggleSelect() : undefined}
       onKeyDown={
         selectable && onToggleSelect
@@ -65,13 +65,13 @@ export default function PlanLodgingCard({
       tabIndex={selectable ? 0 : undefined}
     >
       {/* P6 — Left violet stripe */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-violet-500" aria-hidden />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-violet-500 dark:bg-[#F87171]" aria-hidden />
 
       {selectable ? (
         <button
           type="button"
           className={`absolute left-5 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-sm ${
-            selected ? "border-violet-600 bg-violet-600 text-white" : "border-slate-300 bg-white text-transparent"
+            selected ? "border-violet-600 bg-violet-600 text-white dark:border-[#F87171] dark:bg-[#F87171]" : "border-slate-300 bg-white text-transparent dark:border-[#334155] dark:bg-[#0F1623]"
           }`}
           aria-label={selected ? "Quitar selección" : "Seleccionar"}
           onClick={(e) => {
@@ -104,9 +104,9 @@ export default function PlanLodgingCard({
             Alojamiento
           </div>
 
-          <h4 className="mt-1.5 text-[14px] font-semibold leading-snug text-slate-900">{activity.title}</h4>
+          <h4 className="mt-1.5 text-[14px] font-semibold leading-snug text-slate-900 dark:text-white">{activity.title}</h4>
 
-          <div className="mt-1.5 space-y-0.5 text-xs text-slate-500">
+          <div className="mt-1.5 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
             {activity.activity_date || activity.activity_time ? (
               <p>
                 {activity.activity_date || "Sin fecha"}
@@ -117,7 +117,7 @@ export default function PlanLodgingCard({
             {activity.address ? <p>{activity.address}</p> : null}
             {activity.description ? <p className="text-slate-600 dark:text-slate-400">{activity.description}</p> : null}
             {rating ? (
-              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-white/70 px-3 py-1 text-xs font-semibold text-amber-800">
+              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-white/70 px-3 py-1 text-xs font-semibold text-amber-800 dark:border-amber-900/40 dark:bg-[#1E293B] dark:text-amber-300">
                 <div className="flex items-center gap-1" aria-label={`${rating} de 5`}>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
@@ -131,7 +131,7 @@ export default function PlanLodgingCard({
               </div>
             ) : null}
             {activity.comment ? (
-              <p className="mt-2 rounded-xl border border-violet-200 bg-white/70 px-3 py-2 text-sm text-slate-700">
+              <p className="mt-2 rounded-xl border border-violet-200 bg-white/70 px-3 py-2 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#1E293B]/40 dark:text-slate-300">
                 {activity.comment}
               </p>
             ) : null}
