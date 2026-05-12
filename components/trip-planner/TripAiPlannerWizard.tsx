@@ -481,7 +481,6 @@ function DebugPanel({ draft }: { draft: ApiDraft }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-// ─── Trip templates ──────────────────────────────────────────────────────────
 const TRIP_TEMPLATES = [
   { id: "weekend-city", emoji: "🏙️", label: "Fin de semana ciudad",    freeText: "turismo urbano, gastronomía local, ritmo tranquilo" },
   { id: "beach-week",   emoji: "🏖️", label: "Semana en la playa",      freeText: "playa, relax, gastronomía local, sin museos" },

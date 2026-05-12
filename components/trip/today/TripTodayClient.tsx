@@ -118,7 +118,7 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
 
       {/* Current activity spotlight */}
       {currentActivity && (
-        <div className="mx-4 mt-4 rounded-3xl bg-violet-600 p-5">
+        <div className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5">
           <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-2">Ahora mismo</p>
           <div className="flex items-start gap-3">
             <span className="text-3xl shrink-0">{kindMeta(currentActivity.activity_kind).icon}</span>

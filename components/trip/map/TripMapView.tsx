@@ -2121,7 +2121,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
                   <p className="text-sm font-bold text-slate-800">Sin rutas todavía</p>
                   <p className="mt-1 text-xs text-slate-500">Crea una ruta manualmente o genera el recorrido completo con IA.</p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <span className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white cursor-pointer hover:bg-violet-700 transition" onClick={() => document.querySelector<HTMLButtonElement>("[data-action=new-route]")?.click()}>
+                    <span className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-bold text-white cursor-pointer hover:bg-[var(--brand-hover)] transition" onClick={() => document.querySelector<HTMLButtonElement>("[data-action=new-route]")?.click()}>
                       ✦ Generar con IA
                     </span>
                   </div>
@@ -2198,7 +2198,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
                     className={`inline-flex min-h-[34px] items-center justify-center rounded-xl border px-3 text-xs font-semibold transition ${
                       showRoutesList
                         ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        : "border-violet-300 bg-violet-600 text-white hover:bg-violet-700"
+                        : "border-[var(--brand)] bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
                     }`}
                     title={showRoutesList ? "Ocultar rutas" : "Mostrar rutas"}
                   >
@@ -2305,7 +2305,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
                               type="button"
                               aria-label={bulkSelected ? "Quitar selección" : "Seleccionar"}
                               className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 shadow-sm ${
-                                bulkSelected ? "border-violet-600 bg-violet-600 text-white" : "border-slate-300 bg-white text-transparent"
+                                bulkSelected ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-slate-300 bg-white text-transparent dark:border-[#334155] dark:bg-[#0F1623]"
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();
