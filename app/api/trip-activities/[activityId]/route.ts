@@ -52,7 +52,8 @@
        if (v !== undefined) patch[k] = v;
      };
  
-     assign("title", typeof body?.title === "string" ? body.title.trim() : undefined);
+     assign("sort_order", typeof body?.sort_order === "number" ? body.sort_order : undefined);
+    assign("title", typeof body?.title === "string" ? body.title.trim() : undefined);
      assign("description", typeof body?.description === "string" ? body.description.trim() : undefined);
      assign("activity_date", typeof body?.activity_date === "string" ? body.activity_date : undefined);
      assign("activity_time", typeof body?.activity_time === "string" ? body.activity_time : undefined);

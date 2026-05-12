@@ -47,7 +47,7 @@ function CountryBriefCard({ tripId, isPremium }: { tripId: string; isPremium: bo
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50/60 dark:hover:bg-[#1E293B]/60 transition-colors disabled:opacity-60"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-[#1E293B] flex items-center justify-center shrink-0">
             <Globe className="w-4 h-4 text-blue-600" />
           </div>
           <div>

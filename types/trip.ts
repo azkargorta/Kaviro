@@ -5,6 +5,7 @@ export type Trip = {
   start_date: string | null;
   end_date: string | null;
   base_currency: string | null;
+  budget_target?: number | null;
 };
 
 export type Activity = {

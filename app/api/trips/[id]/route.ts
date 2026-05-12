@@ -74,7 +74,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const body = await request.json().catch(() => null);
     const wantsMeta =
       body &&
-      ("destination" in body || "start_date" in body || "end_date" in body || "base_currency" in body);
+      ("destination" in body || "start_date" in body || "end_date" in body || "base_currency" in body || "budget_target" in body || "name" in body);
     const wantsDescription = body && "description" in body;
 
     if (!wantsMeta && !wantsDescription) {
@@ -113,6 +113,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       patch.start_date = start_date || null;
       patch.end_date = end_date || null;
       patch.base_currency = base_currency && /^[A-Z]{3}$/.test(base_currency) ? base_currency : null;
+      if (typeof body?.name === "string" && body.name.trim()) patch.name = body.name.trim();
+      if ("budget_target" in body) {
+        patch.budget_target = typeof body.budget_target === "number" && body.budget_target > 0
+          ? body.budget_target : null;
+      }
     }
 
     if (wantsDescription) {

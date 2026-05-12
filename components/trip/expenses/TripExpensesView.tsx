@@ -134,9 +134,9 @@ export default function TripExpensesView({
 
   const topButtons = useMemo(() => {
     const base =
-      "inline-flex min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal rounded-full border bg-white px-3 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 sm:px-4 dark:bg-[#0F1623]";
-    const primary = `${base} border-[#F87171]/40 text-[#F87171] hover:border-[#F87171]/60 hover:bg-[#F87171]/10 dark:border-[#F87171]/40 dark:text-[#F87171] dark:hover:bg-[#F87171]/10`;
-    const secondary = `${base} border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-[#334155] dark:text-slate-200 dark:hover:border-[#475569] dark:hover:bg-[#1E293B]`;
+      "inline-flex min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal rounded-full border bg-white px-3 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 sm:px-4";
+    const primary = `${base} border-violet-200 text-violet-800 hover:border-violet-300 hover:bg-violet-50`;
+    const secondary = `${base} border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50`;
 
     return (
       <div className="flex min-w-0 max-w-full flex-wrap gap-2">
@@ -200,7 +200,7 @@ export default function TripExpensesView({
 
       {/* Tab switcher */}
       {/* G5 — Pill toggle */}
-      <div className="inline-flex rounded-xl bg-slate-100 dark:bg-[#1E293B] p-1 gap-1">
+      <div className="inline-flex rounded-xl bg-slate-100 p-1 gap-1">
         <button
           type="button"
           onClick={() => setActiveTab("list")}
@@ -583,6 +583,7 @@ export default function TripExpensesView({
                 paymentPairRules={paymentPairRules}
                 onSavePaymentPairRule={savePaymentPairRule}
                 onResetPaymentPairRules={resetPaymentPairRules}
+                budgetTarget={(trip as any)?.budget_target ?? null}
                 onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
                 strictPaymentMethods={strictPaymentMethods}
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}
