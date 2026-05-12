@@ -100,7 +100,7 @@ export default function TripWeatherCard({ location }: { location: string | null 
           <div className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
             Clima
           </div>
-          <h2 className="mt-3 text-2xl font-bold text-slate-950">Próximos 7 días</h2>
+          <h2 className="mt-3 text-2xl font-bold text-slate-950 dark:text-white">Próximos 7 días</h2>
           <p className="mt-2 text-sm text-slate-600">
             {data?.resolvedLocation || location || "Destino pendiente"}
           </p>
@@ -119,11 +119,11 @@ export default function TripWeatherCard({ location }: { location: string | null 
           {data.days.map((day) => (
             <div
               key={day.date}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{formatDate(day.date)}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{formatDate(day.date)}</p>
                   <p className="mt-1 text-xs text-slate-500">{day.weatherLabel}</p>
                 </div>
                 <div className="text-3xl">{iconForCode(day.weatherCode)}</div>
@@ -132,17 +132,17 @@ export default function TripWeatherCard({ location }: { location: string | null 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-slate-600">
                 <div>
                   <div className="text-xs uppercase tracking-wide text-slate-400">Temperatura</div>
-                  <div className="mt-1 font-semibold text-slate-900">
+                  <div className="mt-1 font-semibold text-slate-900 dark:text-white">
                     {day.tempMax ?? "—"}° / {day.tempMin ?? "—"}°
                   </div>
                 </div>
                 <div>
                   <div className="text-xs uppercase tracking-wide text-slate-400">Lluvia</div>
-                  <div className="mt-1 font-semibold text-slate-900">{day.precipitation ?? 0} mm</div>
+                  <div className="mt-1 font-semibold text-slate-900 dark:text-white">{day.precipitation ?? 0} mm</div>
                 </div>
                 <div className="col-span-2">
                   <div className="text-xs uppercase tracking-wide text-slate-400">Viento máx.</div>
-                  <div className="mt-1 font-semibold text-slate-900">{day.windMax ?? 0} km/h</div>
+                  <div className="mt-1 font-semibold text-slate-900 dark:text-white">{day.windMax ?? 0} km/h</div>
                 </div>
               </div>
             </div>

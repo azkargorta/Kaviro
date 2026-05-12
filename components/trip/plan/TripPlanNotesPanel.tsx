@@ -52,7 +52,7 @@ export default function TripPlanNotesPanel({
           <NotebookPen aria-hidden />
         </div>
         <div className="min-w-0 space-y-1">
-          <h2 className="text-lg font-extrabold tracking-tight text-slate-950">Notas del viaje</h2>
+          <h2 className="text-lg font-extrabold tracking-tight text-slate-950 dark:text-white">Notas del viaje</h2>
           <p className="text-sm text-slate-600">
             Ideas sueltas, enlaces y recordatorios para el grupo o contexto que no encaje en un plan concreto.
           </p>
@@ -75,7 +75,7 @@ export default function TripPlanNotesPanel({
           placeholder="Ej. preferimos desayunos tarde, evitar museos los lunes, enlace al billete del tren…"
           className="min-h-[220px] w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-70"
         />
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-500 dark:text-slate-400">
           {text.length}/{MAX_LEN} caracteres
         </span>
       </label>

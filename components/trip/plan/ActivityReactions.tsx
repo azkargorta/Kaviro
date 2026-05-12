@@ -104,7 +104,7 @@ export function ActivityReactions({
       </button>
 
       {open && (
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3 dark:border-[#1E293B] dark:bg-[#0F1623]">
           {tableReady === false && (
             <p className="text-xs text-amber-600 font-semibold">
               ⚠️ Crea la tabla <code>trip_activity_reactions</code> en Supabase para activar esta función.
@@ -126,7 +126,7 @@ export function ActivityReactions({
                         type="button"
                         disabled={saving}
                         onClick={() => myReaction?.reaction === r.key ? removeVote() : vote(r.key)}
-                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${myReaction?.reaction === r.key ? r.color + " ring-2 ring-offset-1 ring-current" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition dark:text-slate-200 ${myReaction?.reaction === r.key ? r.color + " ring-2 ring-offset-1 ring-current" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
                       >
                         {r.icon} {r.label}
                         {myReaction?.reaction === r.key && <X className="w-3 h-3 ml-0.5" />}
@@ -143,7 +143,7 @@ export function ActivityReactions({
                       className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none transition focus:border-violet-300 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
                     />
                     {myReaction && (
-                      <button type="button" disabled={saving || !comment.trim()} onClick={() => vote(myReaction.reaction)} className="rounded-xl bg-violet-600 px-3 py-1.5 text-white disabled:opacity-40">
+                      <button type="button" disabled={saving || !comment.trim()} onClick={() => vote(myReaction.reaction)} className="rounded-xl bg-[#F87171] px-3 py-1.5 text-white disabled:opacity-40">
                         <Send className="w-3.5 h-3.5" />
                       </button>
                     )}

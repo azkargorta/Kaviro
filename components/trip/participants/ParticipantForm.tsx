@@ -130,7 +130,7 @@ export default function ParticipantForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border bg-white p-5 shadow-sm">
+    <form onSubmit={handleSubmit} className="rounded-2xl border bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold">
@@ -282,7 +282,7 @@ function PermissionCheckbox({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm">
+    <label className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
       <input type="checkbox" checked={checked} onChange={() => onChange(!checked)} />
       {label}
     </label>

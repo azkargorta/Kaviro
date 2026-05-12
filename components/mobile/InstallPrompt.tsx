@@ -34,7 +34,7 @@ export default function InstallPrompt() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="flex items-center gap-4">
         <img
           src="/icons/icon-192.png"
@@ -42,7 +42,7 @@ export default function InstallPrompt() {
           className="h-16 w-16 rounded-2xl object-cover"
         />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">Instala Kaviro</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Instala Kaviro</p>
           <p className="mt-1 text-sm text-slate-600">
             Añade la app a tu móvil para abrirla como una aplicación de verdad.
           </p>

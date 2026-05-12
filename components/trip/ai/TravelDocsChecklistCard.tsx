@@ -104,7 +104,7 @@ export default function TravelDocsChecklistCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-cyan-900">Checklist documentos</p>
-          <h3 className="mt-0.5 text-sm font-bold text-slate-950">{payload.title}</h3>
+          <h3 className="mt-0.5 text-sm font-bold text-slate-950 dark:text-white">{payload.title}</h3>
           {payload.intro ? <p className="mt-1 text-xs leading-relaxed text-slate-600">{payload.intro}</p> : null}
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function TravelDocsChecklistCard({
                     {levelLabel(it.level)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold leading-snug text-slate-900">{it.requirement}</p>
+                    <p className="font-semibold leading-snug text-slate-900 dark:text-white">{it.requirement}</p>
                     {it.notes ? <p className="mt-1 text-xs leading-relaxed text-slate-600">{it.notes}</p> : null}
                   </div>
                 </li>
@@ -149,7 +149,7 @@ export default function TravelDocsChecklistCard({
           {done ? (
             <Link
               href={`/trip/${encodeURIComponent(tripId)}/resources`}
-              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#F87171] px-4 py-2 text-xs font-bold text-white hover:bg-[#EF4444] transition"
             >
               Ver en Recursos → Listas
             </Link>

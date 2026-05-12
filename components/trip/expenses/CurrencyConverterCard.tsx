@@ -39,7 +39,7 @@ export default function CurrencyConverterCard({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
         <span>💱</span>
         <span>Conversión de moneda</span>
@@ -72,8 +72,8 @@ export default function CurrencyConverterCard({
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="text-sm font-semibold text-slate-900">Moneda del balance</div>
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
+        <div className="text-sm font-semibold text-slate-900 dark:text-white">Moneda del balance</div>
         <div className="mt-2 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
           <p className="text-sm text-slate-600">
             El balance de gastos y las deudas se recalcularán en la moneda que elijas.
