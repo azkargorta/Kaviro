@@ -49,7 +49,7 @@ export default function PricingPage() {
           <>
             <Link
               href="/auth/login?next=/account?upgrade=premium&focus=premium#premium-plans"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 dark:bg-[#0F1623] dark:text-white dark:hover:bg-[#1E293B]"
             >
               Hazte Premium
             </Link>
@@ -68,12 +68,12 @@ export default function PricingPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Plan</p>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">Gratis</h2>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">Gratis</h2>
               <p className="mt-2 text-sm text-slate-600">
                 Todo lo esencial para organizar el viaje en grupo.
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-white">
               0€ / mes
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function PricingPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Plan</p>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">Premium</h2>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">Premium</h2>
               <p className="mt-2 text-sm text-slate-600">
                 Para automatizar y ahorrar tiempo con el asistente personal.
               </p>
@@ -113,7 +113,7 @@ export default function PricingPage() {
             </Link>
             <Link
               href="/account"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-white dark:hover:bg-[#1E293B]"
             >
               Ver cuenta
             </Link>
@@ -122,17 +122,17 @@ export default function PricingPage() {
       </section>
 
       <section className="card-soft p-6 md:p-8">
-        <h3 className="text-lg font-bold text-slate-950">Preguntas frecuentes</h3>
+        <h3 className="text-lg font-bold text-slate-950 dark:text-white">Preguntas frecuentes</h3>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-950">¿Las rutas y el autocompletar están incluidos en Gratis?</p>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <p className="text-sm font-semibold text-slate-950 dark:text-white">¿Las rutas y el autocompletar están incluidos en Gratis?</p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Sí. El plan gratuito incluye mapa con rutas, trayectos y autocompletar para guardar coordenadas.
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-950">¿Qué desbloquea Premium entonces?</p>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <p className="text-sm font-semibold text-slate-950 dark:text-white">¿Qué desbloquea Premium entonces?</p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Principalmente el asistente personal (conversación con contexto del viaje) y el análisis de documentos (tickets, PDFs e imágenes) para ahorrar tiempo.
             </p>
           </div>

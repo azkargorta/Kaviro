@@ -62,14 +62,14 @@ export default function DashboardTripSection({
         trips.length === 0 ? (
           <div
             ref={expandedRef}
-            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-[#334155] dark:bg-[#080C14] dark:bg-[#080C14]/80 px-4 py-6 text-center text-xs text-slate-500 sm:text-sm"
+            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:bg-[#080C14]/80 px-4 py-6 text-center text-xs text-slate-500 sm:text-sm"
           >
             No hay viajes en esta categoría.
           </div>
         ) : (
           <div
             ref={expandedRef}
-            className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-4 dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]"
+            className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-4"
           >
             <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {trips.map((trip) => (

@@ -138,6 +138,26 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           {error && <span className="text-sm font-semibold text-red-600 dark:text-red-400">{error}</span>}
         </div>
       )}
+
+      {/* Danger zone */}
+      {!readOnly && (
+        <div className="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 p-5">
+          <h3 className="text-sm font-extrabold text-red-700 dark:text-red-400 uppercase tracking-[0.1em]">Zona de peligro</h3>
+          <p className="mt-1 text-xs text-red-600 dark:text-red-500">
+            Estas acciones son irreversibles. Procede con cuidado.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              href={`/api/trip-activities?tripId=${tripId}&format=csv`}
+              download
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-red-300 dark:border-red-900/60 bg-white dark:bg-[#0F1623] px-4 text-sm font-semibold text-red-700 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/30"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exportar datos
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
