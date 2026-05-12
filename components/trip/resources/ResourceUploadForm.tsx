@@ -97,10 +97,10 @@ export default function ResourceUploadForm({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Adjuntar documento</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Adjuntar documento</h3>
           <p className="mt-1 text-sm text-slate-500">
             Sube imágenes o PDFs de reservas, tickets o documentos del viaje.
           </p>
@@ -113,7 +113,7 @@ export default function ResourceUploadForm({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Reserva Hotel Tours"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-400"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           />
         </label>
 
@@ -122,7 +122,7 @@ export default function ResourceUploadForm({
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-400"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           >
             {CATEGORY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -137,7 +137,7 @@ export default function ResourceUploadForm({
           <span className="text-sm font-semibold text-slate-800">Archivo</span>
           <div
             className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition ${
-              dragging ? "border-violet-400 bg-violet-50" : file ? "border-emerald-300 bg-emerald-50" : "border-slate-300 bg-slate-50 hover:border-violet-300 hover:bg-violet-50/40"
+              dragging ? "border-violet-400 bg-violet-50" : file ? "border-emerald-300 bg-emerald-50" : "border-slate-300 bg-slate-50 hover:border-[var(--brand)] hover:bg-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14]"
             }`}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
@@ -170,8 +170,8 @@ export default function ResourceUploadForm({
               </div>
             ) : (
               <div>
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">📁</div>
-                <p className="text-sm font-semibold text-slate-700">Arrastra aquí o haz clic para seleccionar</p>
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-[#0F1623] text-2xl shadow-sm">📁</div>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Arrastra aquí o haz clic para seleccionar</p>
                 <p className="mt-1 text-xs text-slate-400">PDF, imágenes · Máx. 10 MB</p>
               </div>
             )}
@@ -184,7 +184,7 @@ export default function ResourceUploadForm({
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             rows={5}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-400"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           />
         </label>
 

@@ -90,10 +90,10 @@ export default function AuditLogDialog({
       <div className="max-h-[62vh] overflow-auto px-5 py-4">
         <div className="space-y-3">
           {rows.map((r) => (
-            <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-950">
+                  <div className="text-sm font-semibold text-slate-950 dark:text-white">
                     {r.summary || `${r.action} ${r.entity_type}`}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
@@ -106,7 +106,7 @@ export default function AuditLogDialog({
                       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                       : r.action === "delete"
                         ? "border-rose-200 bg-rose-50 text-rose-800"
-                        : "border-slate-200 bg-slate-50 text-slate-700"
+                        : "border-slate-200 bg-slate-50 text-slate-700 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200"
                   }`}
                 >
                   {r.action === "create" ? "Creó" : r.action === "delete" ? "Borró" : "Editó"}
@@ -126,16 +126,16 @@ export default function AuditLogDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/30 p-4 backdrop-blur sm:items-center">
-      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-[#1E293B]">
           <div className="min-w-0">
             <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Historial</div>
-            <div className="mt-1 truncate text-lg font-bold text-slate-950">{title}</div>
+            <div className="mt-1 truncate text-lg font-bold text-slate-950 dark:text-white">{title}</div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
           >
             Cerrar
           </button>

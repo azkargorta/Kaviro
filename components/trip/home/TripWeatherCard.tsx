@@ -123,7 +123,7 @@ export default function TripWeatherCard({ tripId, destination }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">Clima</p>
-          <h3 className="mt-1 text-2xl font-bold text-slate-950">Próximos 7 días</h3>
+          <h3 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Próximos 7 días</h3>
           <p className="mt-1 text-sm text-slate-600">
             {data?.locationLabel || effectiveLocation || destination || "Añade el destino del viaje para activar el clima."}
           </p>
@@ -133,9 +133,9 @@ export default function TripWeatherCard({ tripId, destination }: Props) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm font-bold text-slate-900">Ver tiempo en otra ubicación</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white">Ver tiempo en otra ubicación</div>
           {effectiveLocation ? (
             <button
               type="button"
@@ -143,7 +143,7 @@ export default function TripWeatherCard({ tripId, destination }: Props) {
                 setEffectiveLocation(null);
                 setCustomLocation("");
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               title="Volver al destino del viaje"
             >
               <RotateCcw className="h-4 w-4" aria-hidden />
@@ -170,7 +170,7 @@ export default function TripWeatherCard({ tripId, destination }: Props) {
       ) : loading ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 7 }).map((_, index) => (
-            <div key={index} className="h-28 animate-pulse rounded-2xl bg-slate-100" />
+            <div key={index} className="h-28 animate-pulse rounded-2xl bg-slate-100 dark:bg-[#1E293B]" />
           ))}
         </div>
       ) : error ? (
@@ -180,13 +180,13 @@ export default function TripWeatherCard({ tripId, destination }: Props) {
       ) : data?.days?.length ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {data.days.map((day) => (
-            <div key={day.date} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div key={day.date} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-slate-900">{formatDate(day.date)}</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">{formatDate(day.date)}</span>
                 <span className="text-2xl">{weatherEmoji(day.code)}</span>
               </div>
               <p className="mt-3 text-sm text-slate-600">{weatherLabel(day.code)}</p>
-              <p className="mt-2 text-lg font-bold text-slate-950">
+              <p className="mt-2 text-lg font-bold text-slate-950 dark:text-white">
                 {day.tempMax != null ? `${Math.round(day.tempMax)}°` : "—"}
                 <span className="ml-2 text-sm font-medium text-slate-500">
                   {day.tempMin != null ? `${Math.round(day.tempMin)}°` : "—"}

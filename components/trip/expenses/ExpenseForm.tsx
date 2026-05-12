@@ -214,20 +214,20 @@ export default function ExpenseForm({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div>
         <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
           <span>💸</span>
           <span>{isEditing ? "Editar gasto" : isDuplicating ? "Duplicar gasto" : "Nuevo gasto"}</span>
         </div>
-        <h3 className="mt-3 text-lg font-semibold text-slate-900">
+        <h3 className="mt-3 text-lg font-semibold text-slate-900 dark:text-white">
           {isEditing ? "Editar gasto" : isDuplicating ? "Duplicar gasto" : "Añadir gasto"}
         </h3>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         {saving ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
             Guardando… Si esto tarda más de 20s, suele ser un problema de permisos/bucket al subir el adjunto.
           </div>
         ) : null}
@@ -284,7 +284,7 @@ export default function ExpenseForm({
           </label>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
           <div className="text-sm font-semibold text-slate-800">Viajeros registrados</div>
           <p className="mt-1 text-sm text-slate-500">
             Marca los viajeros implicados y luego decide entre cuáles se ha pagado y entre cuáles se reparte.
@@ -295,7 +295,7 @@ export default function ExpenseForm({
               <p className="text-sm text-slate-500">No se han encontrado viajeros registrados.</p>
             ) : (
               travelerOptions.map((name) => (
-                <label key={name} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm">
+                <label key={name} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
                   <input type="checkbox" checked={participantNames.includes(name)} onChange={() => toggleParticipant(name)} />
                   <span>{name}</span>
                 </label>
@@ -306,15 +306,15 @@ export default function ExpenseForm({
           {participantNames.length ? (
             <>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={setAllParticipantsAsDebtors} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900">
+                <button type="button" onClick={setAllParticipantsAsDebtors} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
                   Repartir entre todos los viajeros seleccionados
                 </button>
               </div>
 
               <div className="mt-4 space-y-3">
                 {participantNames.map((name) => (
-                  <div key={name} className="rounded-xl border border-slate-200 bg-white p-3">
-                    <div className="font-semibold text-slate-900">{name}</div>
+                  <div key={name} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-[#1E293B] dark:bg-[#0F1623]">
+                    <div className="font-semibold text-slate-900 dark:text-white">{name}</div>
                     <div className="mt-3 flex flex-wrap gap-4 text-sm">
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={paidByNames.includes(name)} onChange={() => toggleIn("paid", name)} />
@@ -332,7 +332,7 @@ export default function ExpenseForm({
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 dark:border-[#1E293B] dark:bg-[#080C14]">
           <div className="text-sm font-semibold text-slate-800">Archivo adjunto</div>
           {isEditing && editingExpense?.attachment_name ? (
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -341,7 +341,7 @@ export default function ExpenseForm({
             </label>
           ) : null}
           <input type="file" accept="image/*,.pdf" onChange={(e) => setAttachment(e.target.files?.[0] || null)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-          {attachment ? <div className="text-sm text-slate-600">Nuevo archivo: {attachment.name}</div> : null}
+          {attachment ? <div className="text-sm text-slate-600 dark:text-slate-400">Nuevo archivo: {attachment.name}</div> : null}
         </div>
 
         <label className="block space-y-2">
@@ -356,7 +356,7 @@ export default function ExpenseForm({
             {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar gasto"}
           </button>
           {isEditing && onCancelEdit ? (
-            <button type="button" onClick={onCancelEdit} className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900">
+            <button type="button" onClick={onCancelEdit} className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
               Cancelar
             </button>
           ) : null}

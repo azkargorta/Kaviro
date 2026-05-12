@@ -34,7 +34,7 @@ export default function PlanCardActions<T>({
       ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
       : accent === "emerald"
         ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-        : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100";
+        : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155]";
 
   const btnBase =
     "inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200";
@@ -43,7 +43,7 @@ export default function PlanCardActions<T>({
     "min-h-[34px] px-2.5 text-[11px] font-semibold";
 
   const disabled =
-    "opacity-55 cursor-not-allowed hover:bg-white hover:text-slate-900";
+    "opacity-55 cursor-not-allowed hover:bg-white dark:hover:bg-[#0F1623] hover:text-slate-900";
 
   const containerClass =
     placement === "topRight"
@@ -75,7 +75,7 @@ export default function PlanCardActions<T>({
           <span className={labelClass}>Google Maps</span>
         </a>
       ) : (
-        <div className={`${buttonClass} border-slate-200 bg-slate-50 text-slate-400`} aria-hidden>
+        <div className={`${buttonClass} border-slate-200 bg-slate-50 text-slate-400 dark:border-[#334155] dark:bg-[#1E293B]`} aria-hidden>
           <ExternalLink className="h-4 w-4" aria-hidden />
           <span className={labelClass}>Google Maps</span>
         </div>

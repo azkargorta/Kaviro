@@ -84,7 +84,7 @@ export default function TripPlanCalendar({
   return (
     <section className="card-soft p-5 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950">
+        <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950 dark:text-white">
           <CalendarDays className="h-4 w-4 text-slate-700" />
           Calendario
         </div>
@@ -92,18 +92,18 @@ export default function TripPlanCalendar({
           <button
             type="button"
             onClick={() => setMonth((m) => addMonths(m, -1))}
-            className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Mes anterior"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </button>
-          <div className="min-w-[220px] text-center text-sm font-bold text-slate-950 capitalize">
+          <div className="min-w-[220px] text-center text-sm font-bold text-slate-950 dark:text-white capitalize">
             {formatMonthTitle(month)}
           </div>
           <button
             type="button"
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Mes siguiente"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -111,7 +111,7 @@ export default function TripPlanCalendar({
           <button
             type="button"
             onClick={() => onSelectDate(null)}
-            className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 hover:bg-slate-50"
+            className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Ver todo (sin filtrar)"
           >
             Ver todo
@@ -141,11 +141,11 @@ export default function TripPlanCalendar({
               className={`relative min-h-[56px] rounded-2xl border p-2 text-left transition ${
                 active
                   ? "border-cyan-300 bg-cyan-50"
-                  : "border-slate-200 bg-white hover:bg-slate-50"
+                  : "border-slate-200 bg-white hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:bg-[#1E293B]"
               } ${inMonth ? "" : "opacity-45"}`}
               title={count ? `${count} actividades` : "Sin actividades"}
             >
-              <div className="text-xs font-extrabold text-slate-900">{d.getDate()}</div>
+              <div className="text-xs font-extrabold text-slate-900 dark:text-white">{d.getDate()}</div>
               {count ? (
                 <div className="mt-2 inline-flex items-center rounded-full bg-[var(--accent)] px-2 py-0.5 text-[11px] font-extrabold text-white">
                   {count}

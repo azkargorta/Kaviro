@@ -151,11 +151,11 @@ export default function InvitePage({ params }: InvitePageProps) {
           <button
             type="button"
             onClick={() => setReloadNonce((n) => n + 1)}
-            className="rounded-lg border bg-white px-4 py-2 text-sm"
+            className="rounded-lg border bg-white px-4 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
           >
             Reintentar
           </button>
-          <Link href="/auth/login" className="rounded-lg border bg-white px-4 py-2 text-sm">
+          <Link href="/auth/login" className="rounded-lg border bg-white px-4 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
             Ir al login
           </Link>
         </div>
@@ -165,7 +165,7 @@ export default function InvitePage({ params }: InvitePageProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="mb-4">
           <h1 className="text-2xl font-bold">Invitación al viaje</h1>
           <p className="mt-2 text-sm text-gray-600">
@@ -197,13 +197,13 @@ export default function InvitePage({ params }: InvitePageProps) {
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href={`/auth/login?next=/invite/${token}`}
-                className="rounded-lg border bg-white px-4 py-2"
+                className="rounded-lg border bg-white px-4 py-2 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
               >
                 Iniciar sesión
               </Link>
               <Link
                 href={`/auth/register?next=/invite/${token}`}
-                className="rounded-lg border bg-white px-4 py-2"
+                className="rounded-lg border bg-white px-4 py-2 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
               >
                 Crear cuenta
               </Link>
