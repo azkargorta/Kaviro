@@ -9,7 +9,7 @@ function reservationMeta(type: string | null | undefined) {
   if (t.includes("flight") || t.includes("vuelo") || t.includes("avion"))
     return { stripe: "bg-blue-500", icon: "✈️" };
   if (t.includes("hotel") || t.includes("lodging") || t.includes("alojamiento"))
-    return { stripe: "bg-violet-500", icon: "🏨" };
+    return { stripe: "bg-[#F87171]", icon: "🏨" };
   if (t.includes("train") || t.includes("tren") || t.includes("bus"))
     return { stripe: "bg-emerald-500", icon: "🚂" };
   return { stripe: "bg-slate-400", icon: "📋" };

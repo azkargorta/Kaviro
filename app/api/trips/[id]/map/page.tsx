@@ -83,7 +83,7 @@ export default async function TripMapPage({ params }: Props) {
             Rutas del viaje
           </div>
 
-          <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+          <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 dark:text-white md:text-5xl">
             {trip.name || "Viaje"}
           </h1>
 
@@ -96,14 +96,14 @@ export default async function TripMapPage({ params }: Props) {
         <div className="flex gap-3">
           <Link
             href={`/trip/${tripId}`}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
           >
             Volver al viaje
           </Link>
 
           <Link
             href="/dashboard"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
           >
             Dashboard
           </Link>

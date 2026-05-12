@@ -157,7 +157,7 @@ function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDay
       {selectedPlaces.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {selectedPlaces.map((p) => (
-            <div key={p} className="flex items-center gap-1.5 rounded-full bg-violet-600 text-white px-3 py-1 text-xs font-bold">
+            <div key={p} className="flex items-center gap-1.5 rounded-full bg-[var(--brand)] text-white px-3 py-1 text-xs font-bold">
               <MapPin className="w-3 h-3" />{p}<button type="button" onClick={() => onRemove(p)} className="ml-0.5 hover:opacity-75"><X className="w-3 h-3" /></button>
             </div>
           ))}
