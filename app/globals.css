@@ -412,15 +412,18 @@ textarea.input { resize: vertical; min-height: 120px; }
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   KAVIRO DARK MODE — Global overrides (captura clases Tailwind hardcoded)
+   KAVIRO DARK MODE — Global overrides (catch all hardcoded Tailwind classes)
    ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Backgrounds ────────────────────────────────────────────────────────── */
 /* KAVIRO DARK MODE GLOBAL OVERRIDES */
+
+/* ── Backgrounds ─────────────────────────────────────────────────────────── */
 .dark .bg-white          { background-color: #0F1623 !important; }
 .dark .bg-slate-50       { background-color: #080C14 !important; }
 .dark .bg-slate-100      { background-color: #1E293B !important; }
 .dark .bg-slate-200      { background-color: #1E293B !important; }
+.dark .bg-white\/70      { background-color: rgba(15,22,35,0.9) !important; }
+.dark .bg-white\/80      { background-color: rgba(15,22,35,0.92) !important; }
+.dark .bg-white\/90      { background-color: rgba(15,22,35,0.95) !important; }
 
 /* ── Borders ─────────────────────────────────────────────────────────────── */
 .dark .border-slate-100  { border-color: #1A2234 !important; }
@@ -434,16 +437,13 @@ textarea.input { resize: vertical; min-height: 120px; }
 .dark .text-slate-700    { color: #CBD5E1 !important; }
 .dark .text-slate-600    { color: #94A3B8 !important; }
 .dark .text-slate-500    { color: #64748B !important; }
-.dark .text-slate-400    { color: #475569 !important; }
-.dark .text-slate-300    { color: #334155 !important; }
 
-/* ── Interactive ─────────────────────────────────────────────────────────── */
+/* ── Hover backgrounds ───────────────────────────────────────────────────── */
 .dark .hover\:bg-slate-50:hover   { background-color: #1E293B !important; }
 .dark .hover\:bg-slate-100:hover  { background-color: #334155 !important; }
-.dark .hover\:bg-slate-50\/60:hover { background-color: rgba(30,41,59,0.6) !important; }
 
-/* ── Inputs ──────────────────────────────────────────────────────────────── */
-.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+/* ── Form inputs ─────────────────────────────────────────────────────────── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
 .dark textarea,
 .dark select {
   background-color: #080C14 !important;
@@ -458,21 +458,24 @@ textarea.input { resize: vertical; min-height: 120px; }
   box-shadow: 0 0 0 2px rgba(248,113,113,0.2) !important;
 }
 
-/* ── Leaflet map dark mode ───────────────────────────────────────────────── */
+/* ── Leaflet map popups ──────────────────────────────────────────────────── */
 .dark .leaflet-popup-content-wrapper {
   background-color: #0F1623 !important;
   color: #F1F5F9 !important;
   border: 1px solid #1E293B !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
 }
 .dark .leaflet-popup-tip { background-color: #0F1623 !important; }
-.dark .leaflet-popup-content { color: #F1F5F9 !important; }
-.dark .leaflet-container { background-color: #080C14 !important; }
 
 /* ── Scrollbars ──────────────────────────────────────────────────────────── */
-.dark ::-webkit-scrollbar-thumb         { background: #1E293B; }
-.dark ::-webkit-scrollbar-thumb:hover   { background: #334155; }
+.dark ::-webkit-scrollbar              { width: 6px; height: 6px; }
+.dark ::-webkit-scrollbar-track        { background: transparent; }
+.dark ::-webkit-scrollbar-thumb        { background: #1E293B; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb:hover  { background: #334155; }
 
-/* ── Modal overlays ──────────────────────────────────────────────────────── */
-.dark .bg-slate-950\/45 { background-color: rgba(0,0,0,0.7) !important; }
+/* ── Dialog overlays ─────────────────────────────────────────────────────── */
 .dark .bg-slate-950\/50 { background-color: rgba(0,0,0,0.75) !important; }
+.dark .bg-slate-950\/45 { background-color: rgba(0,0,0,0.70) !important; }
+.dark .bg-slate-950\/40 { background-color: rgba(0,0,0,0.70) !important; }
+
+/* ── Animation pulses ────────────────────────────────────────────────────── */
+.dark .bg-slate-200.animate-pulse { background-color: #1E293B !important; }

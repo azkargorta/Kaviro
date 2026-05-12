@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 function Icon({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm dark:bg-violet-500">
+    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#F87171] text-white shadow-sm font-bold">
       {children}
     </span>
   );
@@ -46,14 +46,15 @@ export default function OnboardingNudge({
       onMouseDown={close}
     >
       <div
-        className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700/60 dark:bg-slate-950/60"
+        className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">
-              Bienvenido/a
-            </p>
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#F87171]/10 px-3 py-1">
+              <span className="h-2 w-2 rounded-full bg-[#F87171]" />
+              <p className="text-xs font-semibold tracking-[0.12em] text-[#F87171]">BIENVENIDO/A A KAVIRO</p>
+            </div>
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-950 dark:text-slate-50">
               Tu primer viaje en tres pasos
             </h2>
@@ -71,7 +72,7 @@ export default function OnboardingNudge({
         </div>
 
         <div className="mt-5 grid gap-3">
-          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-900/40">
+          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
             <Icon>1</Icon>
             <div>
               <p className="font-semibold text-slate-950 dark:text-slate-50">Crea el viaje</p>
@@ -80,7 +81,7 @@ export default function OnboardingNudge({
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-900/40">
+          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
             <Icon>2</Icon>
             <div>
               <p className="font-semibold text-slate-950 dark:text-slate-50">Asistente personal (Premium)</p>
@@ -89,7 +90,7 @@ export default function OnboardingNudge({
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-900/40">
+          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
             <Icon>3</Icon>
             <div>
               <p className="font-semibold text-slate-950 dark:text-slate-50">Edita con calma</p>
@@ -108,7 +109,7 @@ export default function OnboardingNudge({
               // Baja al bloque de creación sin depender de refs.
               document.getElementById("create-trip")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#EF4444] transition"
           >
             Crear mi primer viaje
           </button>
