@@ -168,7 +168,7 @@ export default function ExpenseAnalyzerPanel({
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
         <span>🧾</span>
         <span>Analizador de factura o ticket</span>
@@ -195,7 +195,7 @@ export default function ExpenseAnalyzerPanel({
         </label>
 
         {file ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
             Archivo seleccionado: <strong>{file.name}</strong>
             <span className="text-xs text-slate-500"> · {(file.size / (1024 * 1024)).toFixed(1)} MB</span>
           </div>
@@ -205,7 +205,7 @@ export default function ExpenseAnalyzerPanel({
           type="button"
           onClick={analyze}
           disabled={!file || loading}
-          className={`rounded-xl px-4 py-3 text-sm font-semibold ${!file || loading ? "bg-slate-200 text-slate-500" : "bg-slate-950 text-white"}`}
+          className={`rounded-xl px-4 py-3 text-sm font-semibold ${!file || loading ? "bg-slate-200 text-slate-500" : "bg-[#F87171] text-white"}`}
         >
           {loading ? "Analizando..." : "Analizar archivo"}
         </button>

@@ -137,7 +137,7 @@ export default function PlaceAutocompleteInput({
         onChange={(e) => {
           onChange(e.target.value);
         }}
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
       />
 
       {loading ? (
@@ -149,13 +149,13 @@ export default function PlaceAutocompleteInput({
       ) : null}
 
       {isOpen && predictions.length > 0 ? (
-        <div className="absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+        <div className="absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
           {predictions.map((prediction) => (
             <button
               key={prediction.id}
               type="button"
               onClick={() => void resolvePrediction(prediction)}
-              className="flex w-full rounded-xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full rounded-xl px-3 py-3 text-left text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-[#1E293B]"
             >
               {prediction.description}
             </button>

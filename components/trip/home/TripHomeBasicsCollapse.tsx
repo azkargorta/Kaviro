@@ -23,12 +23,12 @@ export default function TripHomeBasicsCollapse({ compactSummary, canEditTrip, ed
       {/* Móvil: franja compacta */}
       <div className="md:hidden">
         {!open ? (
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#1E293B] dark:bg-[#080C14]">
             <div className="min-w-0 flex-1 text-sm font-medium leading-snug text-slate-700">{compactSummary}</div>
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-[0.99]"
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-[0.99] dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               {canEditTrip ? "Editar" : "Ver datos"}
             </button>

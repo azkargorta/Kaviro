@@ -68,20 +68,20 @@ export default async function AccountPage() {
         <section className="card-soft p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-slate-600">Uso de IA este mes</h2>
-              <p className="mt-1 text-xs text-slate-500">Mes: {monthKey}</p>
+              <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-400">Uso de IA este mes</h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mes: {monthKey}</p>
             </div>
-            <div className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+            <div className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200">
               {Math.round(usagePct)}%
             </div>
           </div>
 
           <div className="mt-4">
-            <div className="h-4 w-full overflow-hidden rounded-full border border-slate-200 bg-emerald-100">
+            <div className="h-4 w-full overflow-hidden rounded-full border border-slate-200 bg-emerald-100 dark:border-[#1E293B] dark:bg-[#1E293B]">
               <div className="h-full bg-rose-500" style={{ width: `${usagePct}%` }} aria-hidden />
             </div>
             {usagePct >= 100 ? (
-              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300">
                 <span className="font-semibold">Has alcanzado el límite mensual de IA.</span> El asistente y el analizador de
                 documentos quedan deshabilitados hasta el mes siguiente.
               </div>

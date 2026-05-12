@@ -43,7 +43,7 @@ type Props = {
 
 export default function ReservationTemplateSelector({ value, onChange }: Props) {
   return (
-    <div className="min-w-0 max-w-full space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div className="min-w-0 max-w-full space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div>
         <h3 className="text-lg font-semibold text-slate-900">Tipo de formulario</h3>
         <p className="mt-1 text-sm text-slate-500">
@@ -63,14 +63,14 @@ export default function ReservationTemplateSelector({ value, onChange }: Props) 
               className={`min-w-0 max-w-full rounded-2xl border px-3 py-3 text-left transition sm:px-4 sm:py-4 ${
                 active
                   ? option.activeClasses
-                  : "border-slate-200 bg-white text-slate-900 hover:border-slate-400"
+                  : "border-slate-200 bg-white text-slate-900 hover:border-slate-400 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
               }`}
             >
               <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
                 <div className="shrink-0 text-2xl">{option.icon}</div>
                 <span
                   className={`min-w-0 truncate rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${
-                    active ? option.pillClasses : "bg-slate-100 text-slate-600"
+                    active ? option.pillClasses : "bg-slate-100 dark:bg-[#1E293B] text-slate-600 dark:text-slate-300"
                   }`}
                 >
                   {option.title}
