@@ -64,15 +64,15 @@ export default function LongTextSheet({
           aria-label="Cerrar"
           onClick={() => setOpen(false)}
         />
-        <div className="relative max-h-[min(85dvh,640px)] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/[0.06]">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-cyan-50/40 px-4 py-3">
+        <div className="relative max-h-[min(85dvh,640px)] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/[0.06] dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-cyan-50/40 px-4 py-3 dark:border-[#1E293B] dark:from-[#0D1117] dark:to-[#0D1117]">
             <h2 id="long-text-sheet-title" className="min-w-0 truncate text-base font-extrabold text-slate-950">
               {modalTitle}
             </h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50/80 ${iconSlotFill40}`}
+              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50/80 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 ${iconSlotFill40}`}
               aria-label="Cerrar"
             >
               <X aria-hidden />

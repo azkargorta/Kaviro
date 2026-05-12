@@ -18,7 +18,7 @@ function Card({
       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
       : tone === "error"
         ? "border-red-200 bg-red-50 text-red-800"
-        : "border-slate-200 bg-slate-50 text-slate-700";
+        : "border-slate-200 bg-slate-50 text-slate-700 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200";
   return (
     <div className={`rounded-2xl border px-4 py-3 text-sm ${styles}`}>
       <div className="font-semibold">{title}</div>
@@ -42,7 +42,7 @@ export default function ConfirmAccountView() {
         <Card tone="ok" title="Cuenta confirmada" description="Tu email se ha validado correctamente. Ya puedes entrar." />
         <Link
           href={`/auth/login?next=${encodeURIComponent(next)}`}
-          className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+          className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-semibold text-white hover:bg-[#EF4444] transition"
         >
           Iniciar sesión
         </Link>
@@ -94,13 +94,13 @@ export default function ConfirmAccountView() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Link
             href="/auth/login"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-semibold text-white hover:bg-[#EF4444] transition"
           >
             Ir al login
           </Link>
           <Link
             href={isFlowIssue ? "/auth/forgot-password" : "/auth/register"}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
           >
             {isFlowIssue ? "Pedir nuevo enlace (email)" : "Crear cuenta otra vez"}
           </Link>

@@ -56,7 +56,7 @@ export default function DesktopTripNav({ tripId, isPremium }: Props) {
 
   return (
     <nav
-      className="fixed inset-x-0 top-[56px] z-40 hidden border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75 md:block"
+      className="fixed inset-x-0 top-[56px] z-40 hidden border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75 md:block dark:border-[#1E293B] dark:bg-[#0F1623]/95"
       aria-label="Navegación del viaje"
     >
       <div className="page-shell max-w-[1200px] !py-2">
@@ -72,7 +72,7 @@ export default function DesktopTripNav({ tripId, isPremium }: Props) {
                 className={`inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
                   active
                     ? "border-violet-200 bg-violet-50 text-violet-900"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                 }`}
               >
                 <span className="inline-flex h-[22px] w-[22px] items-center justify-center" aria-hidden>

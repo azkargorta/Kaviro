@@ -48,7 +48,7 @@ function styles(kind: ToastKind) {
     };
   }
   return {
-    wrap: "border-slate-200 bg-white text-slate-950",
+    wrap: "border-slate-200 bg-white text-slate-950 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-white",
     dot: "bg-slate-500",
     title: "text-slate-950",
     desc: "text-slate-600",
@@ -123,7 +123,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => remove(t.id)}
-                  className="rounded-xl border border-black/10 bg-white/60 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-white"
+                  className="rounded-xl border border-black/10 bg-white/60 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-white dark:border-[#334155] dark:bg-[#1E293B]/60 dark:text-slate-200"
                 >
                   Cerrar
                 </button>

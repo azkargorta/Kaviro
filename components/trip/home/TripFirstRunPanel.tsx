@@ -147,14 +147,14 @@ export default function TripFirstRunPanel({
           <Link
             key={it.title}
             href={it.href}
-            className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md"
+            className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623]"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-slate-950">{it.title}</p>
                 <p className="mt-1 text-sm text-slate-600">{it.description}</p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700">
+              <span className="rounded-full bg-slate-100 dark:bg-[#1E293B] px-3 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
                 {it.pill}
               </span>
             </div>

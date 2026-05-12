@@ -72,52 +72,18 @@ const CHAT_SUGGESTIONS = ["Menos museos, más vida local", "Añade más gastrono
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function GeneratingSkeleton({ label }: { label: string }) {
-  const steps = [
-    { icon: "🗺️", label: "Localizando puntos de interés reales…" },
-    { icon: "📅", label: "Distribuyendo actividades por días…" },
-    { icon: "⏱️", label: "Ajustando horarios y ritmo…" },
-    { icon: "✅", label: "Revisando coherencia geográfica…" },
-  ];
+  const steps = [{ icon: "🗺️", label: "Localizando puntos de interés reales…" }, { icon: "📅", label: "Distribuyendo actividades por días…" }, { icon: "⏱️", label: "Ajustando horarios y ritmo…" }, { icon: "✅", label: "Revisando coherencia geográfica…" }];
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    const stepId = setInterval(() => setActive((p) => (p + 1) % steps.length), 1800);
-    // Progress bar: 0→88% in 12s (leaves room for actual completion)
-    const progId = setInterval(() => setProgress((p) => Math.min(88, p + 1.2)), 160);
-    const timeId = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => { clearInterval(stepId); clearInterval(progId); clearInterval(timeId); };
-  }, []);
-
+  useEffect(() => { const id = setInterval(() => setActive((p) => (p + 1) % steps.length), 1800); return () => clearInterval(id); }, []);
   return (
-    <div className="card-soft p-8 flex flex-col items-center justify-center gap-6 min-h-[300px]">
-      {/* Spinner */}
+    <div className="card-soft p-10 flex flex-col items-center justify-center gap-6 min-h-[280px]">
       <div className="relative">
-        <div className="w-14 h-14 rounded-full border-4 border-[var(--brand-light)] border-t-[var(--brand)] animate-spin" />
-        <Wand2 className="absolute inset-0 m-auto w-5 h-5 text-[var(--brand)]" />
+        <div className="w-14 h-14 rounded-full border-4 border-violet-100 border-t-violet-500 animate-spin" />
+        <Wand2 className="absolute inset-0 m-auto w-5 h-5 text-violet-500" />
       </div>
-
-      {/* Labels */}
-      <div className="text-center space-y-1.5 w-full max-w-xs">
-        <p className="text-sm font-bold text-[var(--text-primary)]">{label}</p>
-        <p className="text-xs font-medium text-[var(--text-tertiary)]">
-          {steps[active]?.icon} {steps[active]?.label}
-        </p>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full max-w-xs space-y-2">
-        <div className="h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-[var(--brand)] transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-[10px] text-[var(--text-tertiary)]">
-          <span>{Math.round(progress)}%</span>
-          <span>~{Math.max(0, 12 - elapsed)}s restantes</span>
-        </div>
+      <div className="text-center space-y-1">
+        <p className="text-sm font-bold text-slate-900">{label}</p>
+        <p className="text-xs font-medium text-slate-400">{steps[active]?.icon} {steps[active]?.label}</p>
       </div>
     </div>
   );
@@ -483,12 +449,12 @@ function DebugPanel({ draft }: { draft: ApiDraft }) {
 
 // ─── Trip templates ──────────────────────────────────────────────────────────
 const TRIP_TEMPLATES = [
-  { id: "weekend-city", emoji: "🏙️", label: "Fin de semana ciudad",    freeText: "turismo urbano, gastronomía local, ritmo tranquilo" },
-  { id: "beach-week",   emoji: "🏖️", label: "Semana en la playa",      freeText: "playa, relax, gastronomía local, sin museos" },
-  { id: "road-trip",    emoji: "🚗", label: "Road trip",               freeText: "varios destinos, flexible, naturaleza, carretera" },
-  { id: "cultural",     emoji: "🏛️", label: "Cultural e historia",     freeText: "museos, monumentos, historia, arte, visitas guiadas" },
-  { id: "nature",       emoji: "🌿", label: "Naturaleza y senderismo",  freeText: "senderismo, naturaleza, actividades al aire libre" },
-  { id: "family",       emoji: "👨‍👩‍👧", label: "Viaje en familia",        freeText: "con niños, ritmo tranquilo, actividades familiares" },
+  { id: "weekend-city", emoji: "🏙️", label: "Fin de semana ciudad", destination: "", days: 3, freeText: "turismo urbano, gastronomía local, ritmo tranquilo" },
+  { id: "beach-week",   emoji: "🏖️", label: "Semana en la playa",   destination: "", days: 7, freeText: "playa, relax, gastronomía local, sin museos" },
+  { id: "road-trip",    emoji: "🚗", label: "Road trip",            destination: "", days: 7, freeText: "varios destinos, flexible, naturaleza, carretera" },
+  { id: "cultural",     emoji: "🏛️", label: "Cultural e historia",  destination: "", days: 5, freeText: "museos, monumentos, historia, arte, visitas guiadas" },
+  { id: "nature",       emoji: "🌿", label: "Naturaleza y senderismo", destination: "", days: 5, freeText: "senderismo, naturaleza, sin museos, actividades al aire libre" },
+  { id: "family",       emoji: "👨‍👩‍👧", label: "Viaje en familia",     destination: "", days: 6, freeText: "con niños, ritmo tranquilo, actividades familiares, parques" },
 ] as const;
 
 
@@ -596,19 +562,23 @@ export default function TripAiPlannerWizard() {
       {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 flex items-start gap-2"><span className="mt-0.5">⚠️</span><span>{error}</span></div>}
 
       {/* FORM */}
+      {/* ── Templates step ─────────────────────────────────────────── */}
       {step === "templates" && (
         <div className="card-soft p-7 space-y-5">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">¿Qué tipo de viaje es?</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Elige una plantilla o créalo desde cero.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Elige una plantilla para empezar más rápido, o créalo desde cero.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {TRIP_TEMPLATES.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => { setFreeText(t.freeText); setStep("form"); }}
-                className="flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-[var(--brand)]/40 hover:bg-[var(--brand-light)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-[#F87171]/30 dark:hover:bg-[#F87171]/5"
+                onClick={() => {
+                  setFreeText(t.freeText);
+                  setStep("form");
+                }}
+                className="flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-[var(--brand)]/40 hover:bg-[var(--brand-light)] hover:shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-[#F87171]/30 dark:hover:bg-[#F87171]/5"
               >
                 <span className="text-2xl">{t.emoji}</span>
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">{t.label}</span>
@@ -618,7 +588,7 @@ export default function TripAiPlannerWizard() {
           <button
             type="button"
             onClick={() => setStep("form")}
-            className="w-full rounded-xl border border-slate-200 dark:border-[#334155] bg-white dark:bg-[#0F1623] px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+            className="w-full rounded-xl border border-slate-200 bg-white dark:border-[#334155] dark:bg-[#0F1623] px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
           >
             Crear desde cero →
           </button>

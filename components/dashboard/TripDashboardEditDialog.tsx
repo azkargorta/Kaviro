@@ -111,10 +111,10 @@ export default function TripDashboardEditDialog({
       }}
     >
       <div
-        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl"
+        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-[#1E293B] dark:bg-[#0F1623]"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-[#1E293B]">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Editar viaje</p>
             <h2 id="trip-dash-edit-title" className="mt-1 truncate text-lg font-bold text-slate-950">
@@ -125,7 +125,7 @@ export default function TripDashboardEditDialog({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+            className="shrink-0 rounded-full border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 dark:border-[#334155] dark:text-slate-300 dark:hover:bg-[#1E293B]"
             aria-label="Cerrar"
           >
             <X className="h-5 w-5" />
@@ -146,7 +146,7 @@ export default function TripDashboardEditDialog({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
             <div>
@@ -156,7 +156,7 @@ export default function TripDashboardEditDialog({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate || undefined}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
           </div>
@@ -166,7 +166,7 @@ export default function TripDashboardEditDialog({
             <select
               value={baseCurrency}
               onChange={(e) => setBaseCurrency(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             >
               {currencyOptions.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -176,7 +176,7 @@ export default function TripDashboardEditDialog({
             </select>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 dark:border-[#1E293B] pt-4">
             <button
               type="button"
               onClick={onClose}

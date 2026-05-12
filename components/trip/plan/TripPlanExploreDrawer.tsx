@@ -60,13 +60,13 @@ export default function TripPlanExploreDrawer({
       />
 
       <div
-        className="pointer-events-auto absolute right-0 top-0 flex h-full w-[min(96vw,1100px)] flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl"
+        className="pointer-events-auto absolute right-0 top-0 flex h-full w-[min(96vw,1100px)] flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl dark:border-[#1E293B] dark:bg-[#0F1623]"
         style={{
           paddingTop: "max(env(safe-area-inset-top), 12px)",
           paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
         }}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1E293B] px-5 py-4">
           <div className="min-w-0">
             <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500">Plan</div>
             <div className="mt-1 text-lg font-extrabold tracking-tight text-slate-950">Explorar</div>
@@ -77,7 +77,7 @@ export default function TripPlanExploreDrawer({
           <button
             type="button"
             onClick={onClose}
-            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 ${iconSlotFill40}`}
+            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 ${iconSlotFill40}`}
             aria-label="Cerrar"
           >
             <X aria-hidden />

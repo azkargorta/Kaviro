@@ -139,7 +139,7 @@
  
    return (
      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
-       <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+       <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-[#1E293B] dark:bg-[#0F1623]">
          <div className="flex items-start justify-between gap-3">
            <div>
              <h3 className="text-lg font-extrabold text-slate-950">Duplicar ruta</h3>
@@ -156,7 +156,7 @@
            <button
              type="button"
              onClick={onClose}
-             className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
+             className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
            >
              Cerrar
            </button>
@@ -168,7 +168,7 @@
              <select
                value={targetDate}
                onChange={(e) => setTargetDate(e.target.value)}
-               className="mt-2 min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
+               className="mt-2 min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
                disabled={!canDuplicate}
              >
                <option value="">Selecciona…</option>
@@ -192,7 +192,7 @@
              <button
                type="button"
                onClick={onClose}
-               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 font-extrabold text-slate-900"
+               className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 font-extrabold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
              >
                Cancelar
              </button>
