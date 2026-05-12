@@ -108,19 +108,19 @@ export default function AdminPanel() {
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-600">Cargando…</div>
       ) : overview ? (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Perfiles</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">{overview.counts.profiles}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Viajes</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">{overview.counts.trips}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Visitas (7 días)</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">{overview.counts.pageViewsLast7Days}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Asistente personal este mes ({overview.monthKey})
             </p>
@@ -171,7 +171,7 @@ export default function AdminPanel() {
                 </tr>
               ) : (
                 aiRows.map((r) => (
-                  <tr key={`${r.user_id}-${r.month_key}-${r.provider}`} className="border-b border-slate-100">
+                  <tr key={`${r.user_id}-${r.month_key}-${r.provider}`} className="border-b border-slate-100 dark:border-[#1E293B]">
                     <td className="py-2 pr-3 font-medium text-slate-900">{r.user_label}</td>
                     <td className="py-2 pr-3 text-slate-700">{r.model ?? "—"}</td>
                     <td className="py-2 pr-3">{r.requests_count}</td>
@@ -257,7 +257,7 @@ export default function AdminPanel() {
                   </thead>
                   <tbody>
                     {visits.recent.map((r) => (
-                      <tr key={r.id} className="border-t border-slate-100">
+                      <tr key={r.id} className="border-t border-slate-100 dark:border-[#1E293B]">
                         <td className="p-2 text-slate-600">{new Date(r.created_at).toLocaleString("es-ES")}</td>
                         <td className="p-2">{r.user_label}</td>
                         <td className="p-2 font-mono">{r.path}</td>

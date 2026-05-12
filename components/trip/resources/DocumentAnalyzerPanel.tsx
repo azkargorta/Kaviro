@@ -103,7 +103,7 @@ export default function DocumentAnalyzerPanel({ onUseDetectedData }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <h4 className="text-xl font-semibold text-slate-900">Analizador de documento</h4>
       <p className="mt-2 text-sm text-slate-500">
         Adjunta un PDF o imagen. Analizaremos el texto y te mostraremos el resultado antes de aplicarlo al formulario.

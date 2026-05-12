@@ -186,7 +186,7 @@ export default function PlanForm({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -199,7 +199,7 @@ export default function PlanForm({
               {isEditing ? "Editar actividad del plan" : "Añadir actividad al plan"}
             </h3>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Crea visitas, museos, restaurantes, transportes o actividades manuales. Los alojamientos del plan se pueden editar aquí: si están vinculados a Docs (reserva), los cambios se reflejan también en la pestaña Docs.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function PlanForm({
                   className={`flex-1 rounded-xl border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
                     kindMode === "select"
                       ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                   }`}
                 >
                   Lista
@@ -247,7 +247,7 @@ export default function PlanForm({
                   className={`flex-1 rounded-xl border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
                     kindMode === "custom"
                       ? "border-violet-300 bg-violet-50 text-violet-900"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                   }`}
                 >
                   Personalizado

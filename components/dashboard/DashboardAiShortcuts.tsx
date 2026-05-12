@@ -125,13 +125,13 @@ export default function DashboardAiShortcuts({
           <>
             <Link
               href={hrefFor(trips[0].id, "optimize")}
-              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[180px] sm:flex-none sm:text-sm"
+              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[180px] sm:flex-none sm:text-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               Optimizar viaje
             </Link>
             <Link
               href={hrefFor(trips[0].id, "auto_plans")}
-              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[200px] sm:flex-none sm:text-sm"
+              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[200px] sm:flex-none sm:text-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               <Wand2 className={`${iconInline16} text-slate-600`} aria-hidden />
               Añadir planes automáticamente
@@ -142,14 +142,14 @@ export default function DashboardAiShortcuts({
             <button
               type="button"
               onClick={() => openPicker("optimize")}
-              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[180px] sm:flex-none sm:text-sm"
+              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[180px] sm:flex-none sm:text-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               Optimizar viaje…
             </button>
             <button
               type="button"
               onClick={() => openPicker("auto_plans")}
-              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[200px] sm:flex-none sm:text-sm"
+              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:min-w-[200px] sm:flex-none sm:text-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               <Wand2 className={`${iconInline16} text-slate-600`} aria-hidden />
               Añadir planes automáticamente…
@@ -170,9 +170,9 @@ export default function DashboardAiShortcuts({
             role="dialog"
             aria-modal="true"
             aria-labelledby="dash-ai-picker-title"
-            className="max-h-[min(520px,85vh)] w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="max-h-[min(520px,85vh)] w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-[#1E293B]">
               <div className="min-w-0">
                 <p id="dash-ai-picker-title" className="text-sm font-extrabold text-slate-900">
                   {intentLabel}
@@ -182,7 +182,7 @@ export default function DashboardAiShortcuts({
               <button
                 type="button"
                 onClick={closePicker}
-                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50 ${iconSlotFill40}`}
+                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50 dark:border-[#334155] dark:text-slate-300 dark:hover:bg-[#1E293B] ${iconSlotFill40}`}
                 aria-label="Cerrar"
               >
                 <X aria-hidden />

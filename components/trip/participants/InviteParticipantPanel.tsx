@@ -78,7 +78,7 @@ export default function InviteParticipantPanel({
   }
 
   return (
-    <div className={`overflow-hidden rounded-2xl border shadow-sm ${participant ? "border-violet-200 bg-white" : "border-emerald-300 bg-gradient-to-br from-emerald-50 to-white"}`}>
+    <div className={`overflow-hidden rounded-2xl border shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${participant ? "border-violet-200 bg-white" : "border-emerald-300 bg-gradient-to-br from-emerald-50 to-white"}`}>
       {/* Ge4 — WhatsApp header strip */}
       <div className={`flex items-start gap-3 px-5 py-4 ${participant ? "border-b border-violet-100 bg-violet-50/60" : "border-b border-emerald-200/60 bg-emerald-500"}`}>
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${participant ? "bg-violet-100 text-violet-700" : "bg-white/30 text-white"}`}>
@@ -92,7 +92,7 @@ export default function InviteParticipantPanel({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300"
             aria-label="Cerrar"
             title="Cerrar"
           >
@@ -109,7 +109,7 @@ export default function InviteParticipantPanel({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Ej. Ceci"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             />
           </label>
 
@@ -119,7 +119,7 @@ export default function InviteParticipantPanel({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Ej. 34600111222"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             />
           </label>
         </div>
@@ -129,7 +129,7 @@ export default function InviteParticipantPanel({
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as TripRole)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           >
             <option value="viewer">Lector</option>
             <option value="editor">Editor</option>
@@ -152,7 +152,7 @@ export default function InviteParticipantPanel({
               <button
                 type="button"
                 onClick={copyLink}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-600" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
                 {copied ? "Copiado" : "Copiar enlace"}
@@ -164,7 +164,7 @@ export default function InviteParticipantPanel({
                 className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
                   whatsappHref
                     ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm"
-                    : "pointer-events-none border-slate-200 bg-white text-slate-400 opacity-60"
+                    : "pointer-events-none border-slate-200 bg-white text-slate-400 opacity-60 dark:border-[#334155] dark:bg-[#0F1623]"
                 }`}
               >
                 <MessageCircle className="h-4 w-4" aria-hidden />
@@ -175,7 +175,7 @@ export default function InviteParticipantPanel({
         </div>
 
         {inviteUrl ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 break-all">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 break-all dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
             {inviteUrl}
           </div>
         ) : null}

@@ -206,7 +206,7 @@ export default function AccountSettingsForm({ initial }: Props) {
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Plan</p>
             <p className="text-2xl font-bold text-slate-950">{planLabel}</p>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               {initial.isPremium
                 ? "Tienes acceso completo al asistente personal, mapas, rutas y análisis."
                 : "El plan gratuito incluye mapas, rutas y autocompletar. Premium desbloquea el asistente personal y funciones avanzadas."}
@@ -226,12 +226,12 @@ export default function AccountSettingsForm({ initial }: Props) {
                       <span className="inline-flex h-2 w-2 rounded-full bg-cyan-500" aria-hidden />
                       <span className="text-sm font-semibold text-slate-950">Premium mensual</span>
                     </div>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Pago recurrente. Ideal para probar sin compromiso.
                     </p>
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {monthlyPriceLabel}
                     </div>
                     <div className="inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-slate-800">
@@ -254,13 +254,13 @@ export default function AccountSettingsForm({ initial }: Props) {
                       <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
                       <span className="text-sm font-semibold text-slate-950">Premium anual</span>
                     </div>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Mejor valor. Ahorra frente al plan mensual.
                     </p>
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="text-sm font-semibold text-slate-900">{yearlyPriceLabel}</div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{yearlyPriceLabel}</div>
                       <div className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                         2 meses gratis
                       </div>
@@ -317,7 +317,7 @@ export default function AccountSettingsForm({ initial }: Props) {
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+              className="w-full rounded-xl border border-slate-300 bg-white dark:border-[#334155] dark:bg-[#080C14] dark:text-white px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
               placeholder="tu_username"
             />
             <p className={`text-xs ${usernameValid ? "text-slate-500" : "text-amber-700"}`}>
@@ -359,7 +359,7 @@ export default function AccountSettingsForm({ initial }: Props) {
                 type={showPw1 ? "text" : "password"}
                 value={pw1}
                 onChange={(e) => setPw1(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                className="w-full rounded-xl border border-slate-300 bg-white dark:border-[#334155] dark:bg-[#080C14] dark:text-white px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
                 autoComplete="new-password"
                 placeholder="••••••••"
               />
@@ -375,7 +375,7 @@ export default function AccountSettingsForm({ initial }: Props) {
                 type={showPw2 ? "text" : "password"}
                 value={pw2}
                 onChange={(e) => setPw2(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                className="w-full rounded-xl border border-slate-300 bg-white dark:border-[#334155] dark:bg-[#080C14] dark:text-white px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
                 autoComplete="new-password"
                 placeholder="••••••••"
               />

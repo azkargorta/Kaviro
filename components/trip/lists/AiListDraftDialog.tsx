@@ -61,7 +61,7 @@ export default function AiListDraftDialog({
           <input
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           />
         </div>
         <div>
@@ -70,14 +70,14 @@ export default function AiListDraftDialog({
             <button
               type="button"
               onClick={() => setDraft({ ...draft, items: [...draft.items, { text: "", qty: null, note: null }] })}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200"
             >
               Añadir item
             </button>
           </div>
           <div className="mt-2 max-h-[45vh] space-y-2 overflow-auto pr-1">
             {draft.items.map((it, idx) => (
-              <div key={idx} className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_110px]">
+              <div key={idx} className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_110px] dark:border-[#1E293B] dark:bg-[#0F1623]">
                 <input
                   value={it.text}
                   onChange={(e) => {
@@ -86,7 +86,7 @@ export default function AiListDraftDialog({
                     setDraft({ ...draft, items: next });
                   }}
                   placeholder="Elemento…"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
                 />
                 <input
                   value={it.qty ?? ""}
@@ -100,7 +100,7 @@ export default function AiListDraftDialog({
                   placeholder="Cant."
                   type="number"
                   step="0.5"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
                 />
                 <input
                   value={it.note ?? ""}
@@ -110,7 +110,7 @@ export default function AiListDraftDialog({
                     setDraft({ ...draft, items: next });
                   }}
                   placeholder="Nota (opcional)…"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:col-span-2"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:col-span-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
                 />
                 <div className="sm:col-span-2 flex justify-end">
                   <button
@@ -120,7 +120,7 @@ export default function AiListDraftDialog({
                       next.splice(idx, 1);
                       setDraft({ ...draft, items: next });
                     }}
-                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-900/40 dark:bg-[#0F1623] dark:text-red-400"
                   >
                     Quitar
                   </button>
@@ -136,9 +136,9 @@ export default function AiListDraftDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/30 p-4 backdrop-blur sm:items-center">
-      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur sm:items-center">
+      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-[#1E293B]">
           <div className="min-w-0">
             <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Asistente personal</div>
             <div className="mt-1 truncate text-lg font-bold text-slate-950">Generar lista</div>
@@ -146,7 +146,7 @@ export default function AiListDraftDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200"
           >
             Cerrar
           </button>
@@ -165,7 +165,7 @@ export default function AiListDraftDialog({
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={3}
                 placeholder="Ej: Hazme una lista de la compra para 4 días en una casa con barbacoa…"
-                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
             <div>
@@ -174,7 +174,7 @@ export default function AiListDraftDialog({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ej: Lista de la compra"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
 
@@ -188,18 +188,18 @@ export default function AiListDraftDialog({
             </button>
 
             {draft ? (
-              <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
                 {content}
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
           >
             Cancelar
           </button>

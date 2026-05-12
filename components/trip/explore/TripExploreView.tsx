@@ -318,7 +318,7 @@ export default function TripExploreView({
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         ) : null}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="min-w-0 text-sm font-extrabold text-slate-950">Planes</div>
             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -327,7 +327,7 @@ export default function TripExploreView({
                 onClick={() => setShowPlans((v) => !v)}
                 className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                   showPlans
-                    ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                     : "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
                 }`}
                 title={showPlans ? "Ocultar planes (lista + chinchetas)" : "Mostrar planes (lista + chinchetas)"}
@@ -357,7 +357,7 @@ export default function TripExploreView({
                     type="button"
                     onClick={() => setVisiblePlanKinds((prev) => ({ ...prev, [k]: !(prev[k] !== false) }))}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                      active ? meta.accent : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      active ? meta.accent : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                     }`}
                     aria-pressed={active}
                     title={`Mostrar/ocultar: ${meta.label}`}
@@ -402,7 +402,7 @@ export default function TripExploreView({
                   .map((p) => {
                     const meta = planKindMeta(p.activity_kind, customByKey);
                     return (
-                      <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+                      <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-[#1E293B] dark:bg-[#0F1623]">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="text-xs font-extrabold text-slate-900 line-clamp-1">
@@ -447,7 +447,7 @@ export default function TripExploreView({
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="text-sm font-extrabold text-slate-950">Buscar</div>
           <div className="mt-3">
             <PlaceAutocompleteInput
@@ -512,12 +512,12 @@ export default function TripExploreView({
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="text-sm font-extrabold text-slate-950">Guardados</div>
           <div className="mt-3 space-y-2">
             {visiblePlaces.length ? (
               visiblePlaces.slice(0, 30).map((p) => (
-                <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+                <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-[#1E293B] dark:bg-[#0F1623]">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-xs font-extrabold text-slate-900 line-clamp-1">
@@ -558,7 +558,7 @@ export default function TripExploreView({
             {mapPoints.map((p) => (
               <Marker key={p.key} position={[p.lat, p.lng]} icon={emojiIcon(p.emoji, p.bg)}>
                 <Popup>
-                  <div className="text-sm font-semibold text-slate-900">{p.title}</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{p.title}</div>
                   {p.subtitle ? <div className="mt-1 text-xs text-slate-600">{p.subtitle}</div> : null}
                 </Popup>
               </Marker>

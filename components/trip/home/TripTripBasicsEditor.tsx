@@ -127,7 +127,7 @@ export default function TripTripBasicsEditor({
                       setNextStart(v);
                       if (nextEnd && v && nextEnd < v) setNextEnd(v);
                     }}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    className="w-full rounded-xl border border-slate-300 bg-white dark:border-[#334155] dark:bg-[#080C14] dark:text-white px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   />
                 </label>
                 <label className="space-y-2">
@@ -137,7 +137,7 @@ export default function TripTripBasicsEditor({
                     value={nextEnd}
                     min={endMin || undefined}
                     onChange={(e) => setNextEnd(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    className="w-full rounded-xl border border-slate-300 bg-white dark:border-[#334155] dark:bg-[#080C14] dark:text-white px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   />
                 </label>
               </div>
@@ -148,9 +148,9 @@ export default function TripTripBasicsEditor({
                   value={nextCurrency}
                   onChange={(e) => setNextCurrency(e.target.value)}
                   placeholder="EUR"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 uppercase outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white dark:border-[#334155] dark:bg-[#080C14] dark:text-white px-4 py-3 uppercase outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 />
-                <div className="text-xs text-slate-500">Código ISO (ej. EUR, USD, ARS).</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Código ISO (ej. EUR, USD, ARS).</div>
               </label>
             </div>
 
