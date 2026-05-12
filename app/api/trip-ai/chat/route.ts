@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { buildTripSummaryForAi } from "@/lib/trip-ai/buildTripSummary";
 import { buildTripPrompt, type TripAiMode } from "@/lib/trip-ai/buildPrompt";
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
-import { appendMessage, createConversation, getConversation } from "@/lib/trip-ai/chatStore";
+import { appendMessage, createConversation, getConversation, getCachedResponse, setCachedResponse } from "@/lib/trip-ai/chatStore";
 import { inferAIActionFromQuestion, parseClientAIAction, resolveEffectiveTripAiMode, type AIActionId } from "@/lib/trip-ai/aiActions";
 import { actionPromptHint, handleAIAction } from "@/lib/trip-ai/handleAIAction";
 import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";

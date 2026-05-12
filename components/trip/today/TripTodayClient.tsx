@@ -19,20 +19,20 @@ type Activity = {
 };
 
 const KIND_META: Record<string, { icon: string; color: string; bg: string }> = {
-  culture:           { icon: "🏛️", color: "text-amber-800", bg: "bg-amber-50" },
-  nature:            { icon: "🌿", color: "text-emerald-800", bg: "bg-emerald-50" },
-  viewpoint:         { icon: "🌄", color: "text-sky-800", bg: "bg-sky-50" },
-  neighborhood:      { icon: "🧭", color: "text-slate-700", bg: "bg-slate-50" },
+  culture:           { icon: "🏛️", color: "text-amber-800", bg: "bg-amber-50 dark:bg-amber-900/20" },
+  nature:            { icon: "🌿", color: "text-emerald-800", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+  viewpoint:         { icon: "🌄", color: "text-sky-800", bg: "bg-sky-50 dark:bg-sky-900/20" },
+  neighborhood:      { icon: "🧭", color: "text-slate-700", bg: "bg-slate-50 dark:bg-[#1E293B]" },
   market:            { icon: "🧺", color: "text-orange-800", bg: "bg-orange-50" },
   excursion:         { icon: "🚌", color: "text-blue-800", bg: "bg-blue-50" },
   gastro_experience: { icon: "🍷", color: "text-pink-800", bg: "bg-pink-50" },
   shopping:          { icon: "🛍️", color: "text-purple-800", bg: "bg-purple-50" },
   night:             { icon: "🌙", color: "text-indigo-800", bg: "bg-indigo-50" },
-  transport:         { icon: "✈️", color: "text-slate-600", bg: "bg-slate-50" },
+  transport:         { icon: "✈️", color: "text-slate-600", bg: "bg-slate-50 dark:bg-[#1E293B]" },
 };
 
 function kindMeta(kind?: string | null) {
-  return KIND_META[kind || ""] ?? { icon: "📍", color: "text-slate-700", bg: "bg-slate-50" };
+  return KIND_META[kind || ""] ?? { icon: "📍", color: "text-slate-700", bg: "bg-slate-50 dark:bg-[#1E293B]" };
 }
 
 function formatTime(time: string | null | undefined) {
@@ -89,9 +89,9 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
 
   if (!isActive) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center gap-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] flex flex-col items-center justify-center p-6 text-center gap-4">
         <div className="text-5xl">📅</div>
-        <h1 className="text-xl font-extrabold text-slate-900">{tripName}</h1>
+        <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">{tripName}</h1>
         <p className="text-sm font-medium text-slate-500">
           {today < tripStart
             ? `El viaje empieza el ${formatDate(tripStart)}`
