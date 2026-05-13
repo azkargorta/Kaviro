@@ -72,7 +72,30 @@ import { safeInsertAudit } from "@/lib/audit";
     if (expensesRes.error) throw new Error(expensesRes.error.message);
     if (settlementsRes.error) throw new Error(settlementsRes.error.message);
  
-     return NextResponse.json({
+     const format = new URL(request.url).searchParams.get("format");
+    if (format === "csv") {
+      const expenses = expensesRes.data || [];
+      const baseCurrency = typeof tripRes?.data?.base_currency === "string" ? tripRes.data.base_currency : "EUR";
+      const rows = [
+        ["Fecha", "Concepto", `Importe (${baseCurrency})`, "Pagado por", "Categoría", "Notas"].join(","),
+        ...expenses.map((e: Record<string, unknown>) => [
+          e.expense_date ?? "",
+          `"${String(e.title ?? "").replace(/"/g, '""')}"`,
+          typeof e.amount_in_base === "number" ? (e.amount_in_base as number).toFixed(2) : typeof e.amount === "number" ? (e.amount as number).toFixed(2) : "",
+          `"${String(e.paid_by ?? "").replace(/"/g, '""')}"`,
+          e.category ?? "",
+          `"${String(e.notes ?? "").replace(/"/g, '""')}"`,
+        ].join(",")),
+      ].join("\n");
+      return new Response("\uFEFF" + rows, {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="gastos-${tripId}.csv"`,
+        },
+      });
+    }
+
+    return NextResponse.json({
        expenses: expensesRes.data || [],
        settlements: settlementsRes.data || [],
        registeredTravelers: travelers || [],

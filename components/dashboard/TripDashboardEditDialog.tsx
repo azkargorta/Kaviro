@@ -39,6 +39,7 @@ export default function TripDashboardEditDialog({
   const [endDate, setEndDate] = useState("");
   const [baseCurrency, setBaseCurrency] = useState("EUR");
   const [saving, setSaving] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -62,6 +63,27 @@ export default function TripDashboardEditDialog({
       setBaseCurrency(currencyOptions[0]?.code ?? "EUR");
     }
   }, [currencyOptions, baseCurrency]);
+
+  async function handleDuplicate() {
+    if (!trip) return;
+    setDuplicating(true);
+    try {
+      const res = await fetch(`/api/trips/${encodeURIComponent(trip.id)}/duplicate`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+      toast.success("Viaje duplicado", "Se ha creado una copia. Ábrela para editar fechas.");
+      onSaved();
+      onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo duplicar.";
+      toast.error("Error al duplicar", msg);
+    } finally {
+      setDuplicating(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -176,21 +198,32 @@ export default function TripDashboardEditDialog({
             </select>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 dark:border-[#1E293B] pt-4">
+          <div className="flex flex-wrap justify-between gap-2 border-t border-slate-100 dark:border-[#1E293B] pt-4">
             <button
               type="button"
-              onClick={onClose}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={() => void handleDuplicate()}
+              disabled={duplicating || saving}
+              className="inline-flex min-h-[44px] items-center gap-2 justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
-              Cancelar
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              {duplicating ? "Duplicando…" : "Duplicar viaje"}
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              {saving ? "Guardando…" : "Guardar cambios"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50"
+              >
+                {saving ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
