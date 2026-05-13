@@ -161,6 +161,7 @@ export default async function SharePdfPage({ params }: Props) {
           </div>
         )}
       </div>
+      </div>
     </main>
   );
 }
