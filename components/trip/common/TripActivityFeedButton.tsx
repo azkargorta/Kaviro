@@ -149,7 +149,7 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
   }
 
   const buttonClass =
-    "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-violet-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40";
+    "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm transition hover:bg-[var(--surface-page)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
 
   const iconTile =
     `relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50 ${iconSlotFill40}`;
@@ -168,7 +168,7 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
           aria-label="Cerrar novedades"
           onClick={close}
         />
-        <div className="pointer-events-auto relative my-auto flex min-h-0 w-full max-w-lg max-h-[min(92dvh,calc(100svh-1.5rem))] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl sm:max-h-[min(90dvh,calc(100svh-2rem))] dark:border-slate-700/60 dark:bg-slate-950/70">
+        <div className="pointer-events-auto relative my-auto flex min-h-0 w-full max-w-lg max-h-[min(92dvh,calc(100svh-1.5rem))] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl sm:max-h-[min(90dvh,calc(100svh-2rem))] dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 pb-3 pt-4 sm:pt-5 dark:border-slate-700/60">
             <div className="min-w-0 pr-2">
               <h2 id="trip-activity-title" className="text-lg font-bold leading-snug text-slate-950 dark:text-slate-50">
@@ -222,7 +222,7 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
                     key={l.id}
                     href={moduleHref(tripId, l)}
                     onClick={close}
-                    className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-950/40 dark:hover:bg-slate-900/40"
+                    className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:bg-[#1E293B]"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
