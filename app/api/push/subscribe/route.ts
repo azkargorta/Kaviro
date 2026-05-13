@@ -12,8 +12,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
     }
 
-    // Upsert push subscription
-    // Requires table: push_subscriptions (user_id, endpoint, p256dh, auth, updated_at)
     await supabase.from("push_subscriptions").upsert(
       {
         user_id: user.id,
