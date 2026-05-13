@@ -41,6 +41,7 @@ type UseTripParticipantsResult = {
   participants: TripParticipant[];
   loading: boolean;
   error: string | null;
+  newParticipantCount: number;
   addParticipant: (input: CreateTripParticipantInput) => Promise<TripParticipant>;
   updateParticipant: (
     id: string,
