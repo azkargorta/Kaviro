@@ -202,7 +202,7 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
         </button>
         <Link
           href={`/trip/${tripId}/plan`}
-          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-bold text-white hover:bg-[#EF4444] transition"
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--brand-hover)] transition"
         >
           Ver el plan
         </Link>

@@ -185,7 +185,7 @@ export default function LodgingReservationForm({
   }
 
   return (
-    <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
@@ -259,7 +259,7 @@ export default function LodgingReservationForm({
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
           Coordenadas:{" "}
           {form.latitude != null && form.longitude != null
             ? `${form.latitude.toFixed(6)}, ${form.longitude.toFixed(6)}`
@@ -332,7 +332,7 @@ export default function LodgingReservationForm({
         ) : null}
 
         <div className="flex flex-wrap gap-3">
-          <button type="submit" disabled={saving} className={`rounded-xl px-4 py-3 text-sm font-semibold ${saving ? "bg-slate-200 text-slate-500" : "bg-[#F87171] text-white"}`}>
+          <button type="submit" disabled={saving} className={`rounded-xl px-4 py-3 text-sm font-semibold ${saving ? "bg-slate-200 text-slate-500 dark:bg-[#1E293B] dark:text-slate-500" : "bg-[var(--brand)] text-white"}`}>
             {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar alojamiento"}
           </button>
 
@@ -340,7 +340,7 @@ export default function LodgingReservationForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
             >
               Cancelar edición
             </button>

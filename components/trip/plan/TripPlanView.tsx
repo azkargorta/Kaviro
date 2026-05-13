@@ -441,7 +441,6 @@ export default function TripPlanView({
       if (oi === -1 || ni === -1) continue;
       const reordered = arrayMove(ordered, oi, ni);
       setLocalOrder((prev) => new Map(prev).set(date, reordered.map((a) => a.id)));
-      // Persist sort_order so order survives page reload
       void Promise.all(
         reordered.map((activity, index) =>
           fetch(`/api/trip-activities/${activity.id}`, {
@@ -502,7 +501,7 @@ export default function TripPlanView({
         <button
           type="button"
           onClick={handleStartCreate}
-          className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-200 md:hidden"
+          className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
           aria-label="Añadir plan"
           title="Añadir plan"
         >
@@ -756,7 +755,7 @@ export default function TripPlanView({
               onClick={() => setViewMode("list")}
               className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
                 viewMode === "list"
-                  ? "bg-violet-600 text-white hover:bg-violet-700"
+                  ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
                   : "text-slate-700 hover:bg-violet-50"
               }`}
               title="Vista de lista"
@@ -768,7 +767,7 @@ export default function TripPlanView({
               onClick={() => setViewMode("calendar")}
               className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
                 viewMode === "calendar"
-                  ? "bg-violet-600 text-white hover:bg-violet-700"
+                  ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
                   : "text-slate-700 hover:bg-violet-50"
               }`}
               title="Vista calendario"
