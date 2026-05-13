@@ -177,15 +177,15 @@ export default function ExpenseBalancePanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total gastos</p>
-            <p className="mt-3 text-2xl font-black text-slate-950">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total gastos</p>
+            <p className="mt-3 text-2xl font-black text-slate-950 dark:text-white">
               {formatMoney(totals.totalExpenses, displayCurrency)}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Media por persona</p>
-            <p className="mt-3 text-2xl font-black text-slate-950">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Media por persona</p>
+            <p className="mt-3 text-2xl font-black text-slate-950 dark:text-white">
               {formatMoney(totals.totalPerPerson, displayCurrency)}
             </p>
           </div>
@@ -215,13 +215,13 @@ export default function ExpenseBalancePanel({
 
         <div className="w-full sm:w-auto">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+            <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200">
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
             <span className="text-xs text-slate-500">Moneda balance</span>
             <select
               value={displayCurrency}
               onChange={(e) => onChangeBalanceCurrency(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm font-semibold text-slate-900"
+              className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             >
               {["EUR", "USD", "GBP", "ARS", "MXN", "COP", "CLP", "JPY", "CHF"].map((code) => (
                 <option key={code} value={code}>
@@ -237,7 +237,7 @@ export default function ExpenseBalancePanel({
             <button
               type="button"
               onClick={() => setPrefsOpen((v) => !v)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             >
               <Settings2 className="h-4 w-4" aria-hidden />
               Métodos
@@ -253,10 +253,10 @@ export default function ExpenseBalancePanel({
       ) : null}
 
       {prefsOpen ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-slate-950">Métodos de pago por viajero</div>
+              <div className="text-sm font-semibold text-slate-950 dark:text-white">Métodos de pago por viajero</div>
               <div className="mt-1 text-xs text-slate-600">
                 Define cómo puede <span className="font-semibold">pagar</span> y <span className="font-semibold">recibir</span> cada persona.
                 Si el modo estricto está activo, Kaviro solo propondrá pagos posibles.
@@ -271,12 +271,12 @@ export default function ExpenseBalancePanel({
                   setResetAllBusy(true);
                   void onResetAllPaymentRules().finally(() => setResetAllBusy(false));
                 }}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 {resetAllBusy ? "Restableciendo…" : "Restablecer todo"}
               </button>
 
-              <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-800">
+              <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-800 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200">
                 <input
                   type="checkbox"
                   checked={strictPaymentMethods}
@@ -346,11 +346,11 @@ export default function ExpenseBalancePanel({
               }
 
               return (
-                <div key={name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div key={name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="font-semibold text-slate-950">{name}</div>
+                    <div className="font-semibold text-slate-950 dark:text-white">{name}</div>
                     {savingPref === name ? (
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">Guardando…</span>
+                      <span className="rounded-full bg-white dark:bg-[#1E293B] px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">Guardando…</span>
                     ) : null}
                   </div>
 
@@ -366,7 +366,7 @@ export default function ExpenseBalancePanel({
                               type="button"
                               onClick={() => void toggle("send", m.id)}
                               className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                                active ? m.chip : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                active ? m.chip : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                               }`}
                               aria-pressed={active}
                             >
@@ -388,7 +388,7 @@ export default function ExpenseBalancePanel({
                               type="button"
                               onClick={() => void toggle("receive", m.id)}
                               className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                                active ? m.chip : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                active ? m.chip : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                               }`}
                               aria-pressed={active}
                             >
@@ -400,7 +400,7 @@ export default function ExpenseBalancePanel({
                     </div>
                   </div>
 
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">
                         Puede pagar a
@@ -440,7 +440,7 @@ export default function ExpenseBalancePanel({
                                   className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${
                                     prefer
                                       ? "border-violet-200 bg-violet-50 text-violet-900"
-                                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                                   }`}
                                   title={prefer ? "Preferido (click para quitar)" : "Marcar como preferido"}
                                 >
@@ -465,7 +465,7 @@ export default function ExpenseBalancePanel({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-slate-950">Balance por persona</h3>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -516,7 +516,7 @@ export default function ExpenseBalancePanel({
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-slate-950">Pagos a realizar</h3>
           <div className="flex flex-wrap items-center gap-2">
@@ -541,7 +541,7 @@ export default function ExpenseBalancePanel({
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-slate-950">Avisos por WhatsApp</div>
+                <div className="text-sm font-semibold text-slate-950 dark:text-white">Avisos por WhatsApp</div>
                 <div className="mt-1 text-xs text-slate-600">
                   Genera un mensaje por deudor con el total pendiente. Puedes copiar todo o abrir WhatsApp por persona.
                 </div>
@@ -570,7 +570,7 @@ export default function ExpenseBalancePanel({
                 <div key={it.debtor} className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-950">{it.debtor}</div>
+                      <div className="text-sm font-semibold text-slate-950 dark:text-white">{it.debtor}</div>
                       <div className="mt-1 text-xs text-slate-600">{it.count} pagos · Total {formatMoney(it.total, it.currency)}</div>
                     </div>
                     <a
@@ -606,13 +606,13 @@ export default function ExpenseBalancePanel({
               const methodLabel =
                 s.payment_method === "bizum" ? "Bizum" : s.payment_method === "transfer" ? "Transferencia" : s.payment_method === "cash" ? "Efectivo" : null;
               return (
-                <div key={s.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div key={s.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm text-slate-700">
-                        <span className="font-semibold text-slate-950">{s.debtor_name}</span>{" "}
+                        <span className="font-semibold text-slate-950 dark:text-white">{s.debtor_name}</span>{" "}
                         <span>debe a</span>{" "}
-                        <span className="font-semibold text-slate-950">{s.creditor_name}</span>
+                        <span className="font-semibold text-slate-950 dark:text-white">{s.creditor_name}</span>
                       </div>
                       <div className="mt-2 text-lg font-black text-slate-950">
                         {formatMoney(s.amount, s.currency || displayCurrency)}
