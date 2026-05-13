@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import PrintOnLoad from "./PrintOnLoad";
 
 type Props = { params: { token: string } };
 
@@ -40,33 +40,7 @@ function groupByDay(activities: Activity[]) {
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
 }
 
-export async function generateMetadata({ params }: Props) {
-  try {
-    const { createClient: sc } = await import("@/lib/supabase/server");
-    const supabase = await sc();
-    const { data: share } = await supabase
-      .from("trip_shares")
-      .select("trip_id, trips(name, destination, start_date)")
-      .eq("token", params.token)
-      .maybeSingle();
-    const trip = (share as any)?.trips;
-    if (!trip) return { title: "Itinerario | Kaviro" };
-    const dest = trip.destination ? ` — ${trip.destination}` : "";
-    const title = `${trip.name}${dest} | Itinerario compartido en Kaviro`;
-    const description = `Ver el plan, rutas y actividades de ${trip.name}${dest}. Organizado con Kaviro.`;
-    return {
-      title,
-      description,
-      openGraph: { title, description, type: "website", siteName: "Kaviro" },
-      twitter: { card: "summary", title, description },
-    };
-  } catch {
-    return { title: "Itinerario compartido | Kaviro" };
-  }
-}
-
-
-export default async function SharePage({ params }: Props) {
+export default async function SharePdfPage({ params }: Props) {
   const token = params.token;
   const h = await headers();
   const host = h.get("x-forwarded-host") || h.get("host") || "";
@@ -74,7 +48,6 @@ export default async function SharePage({ params }: Props) {
   const origin = host ? `${proto}://${host}` : "";
 
   const res = await fetch(`${origin}/api/trip-shares/${token}`, { cache: "no-store" }).catch(() => null);
-
   if (!res) notFound();
   if (res.status === 404) notFound();
 
@@ -86,73 +59,109 @@ export default async function SharePage({ params }: Props) {
   const days = groupByDay(activities);
 
   return (
-    <main className="min-h-[100svh] bg-slate-50 dark:bg-[#080C14]">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75 dark:border-[#1E293B] dark:bg-[#0F1623]/95">
-        <div className="mx-auto max-w-[980px] px-4 py-3 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Itinerario público</div>
-              <h1 className="truncate text-xl font-extrabold text-slate-950 dark:text-white">{trip.name || "Viaje"}</h1>
-              <p className="mt-0.5 text-sm text-slate-600">
-                {(trip.destination || "Destino pendiente") + " · " + `${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`}
-              </p>
+    <main className="bg-white text-slate-950">
+      <PrintOnLoad />
+      <style>{`
+        @page { size: A4; margin: 14mm; }
+        @media print {
+          .no-print { display: none !important; }
+          a { color: inherit; text-decoration: none; }
+          .cover-page { page-break-after: always; }
+          .page-break-before { page-break-before: always; }
+        }
+        @media screen {
+          .cover-page { border-bottom: 2px solid #E2E8F0; margin-bottom: 2rem; }
+        }
+      `}</style>
+
+      <div className="no-print border-b border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        Se abrirá el diálogo de impresión. Elige “Guardar como PDF”.
+      </div>
+
+      {/* ── Branded cover page ─────────────────────────────────────── */}
+      <div className="cover-page mx-auto max-w-[780px] flex flex-col min-h-[277mm] p-10">
+        {/* Kaviro logo */}
+        <div className="flex items-center gap-2">
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "#F87171", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "#fff", fontWeight: 900, fontSize: 18, fontFamily: "sans-serif", lineHeight: 1 }}>K</span>
+          </div>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#64748B", letterSpacing: "0.05em" }}>KAVIRO</span>
+        </div>
+
+        {/* Main content centered */}
+        <div className="flex-1 flex flex-col justify-center">
+          {trip.destination && (
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">
+              {trip.destination}
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/share/${encodeURIComponent(token)}/pdf`}
-                className="inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Exportar PDF
-              </Link>
-              <Link
-                href="/auth/login"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-              >
-                Abrir en Kaviro
-              </Link>
-            </div>
+          )}
+          <h1 className="text-5xl font-black tracking-tight text-slate-950 leading-tight">
+            {trip.name || "Itinerario de viaje"}
+          </h1>
+          <div className="mt-6 flex flex-wrap gap-4">
+            {trip.start_date && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Desde</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800">{formatDate(trip.start_date)}</div>
+              </div>
+            )}
+            {trip.end_date && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Hasta</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800">{formatDate(trip.end_date)}</div>
+              </div>
+            )}
+            {activities.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Actividades</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800">{activities.length}</div>
+              </div>
+            )}
           </div>
         </div>
-      </header>
 
-      <section className="mx-auto max-w-[980px] space-y-5 px-4 py-6 sm:px-6">
+        {/* Footer */}
+        <div className="text-xs text-slate-400">
+          Generado con Kaviro · kaviro.app · {new Date().toLocaleDateString("es-ES")}
+        </div>
+      </div>
+
+      {/* ── Itinerary pages ──────────────────────────────────────────── */}
+      <div className="mx-auto max-w-[780px] p-6 page-break-before">
+
         {days.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-600 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-400">
+          <div className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-600">
             Este viaje todavía no tiene actividades en el plan.
           </div>
         ) : (
-          days.map(([day, rows]) => (
-            <section key={day} className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-950 dark:text-white">{day === "Sin fecha" ? "Sin fecha" : formatDate(day)}</h2>
-                  <p className="mt-1 text-sm text-slate-600">{rows.length} actividad{rows.length === 1 ? "" : "es"}</p>
-                </div>
-              </div>
-              <div className="mt-4 space-y-3">
-                {rows.map((a) => (
-                  <div key={a.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-950 dark:text-white">
-                          {a.title || a.place_name || "Actividad"}
+          <div className="space-y-6">
+            {days.map(([day, rows]) => (
+              <section key={day}>
+                <h2 className="text-lg font-bold">{day === "Sin fecha" ? "Sin fecha" : formatDate(day)}</h2>
+                <div className="mt-3 space-y-2">
+                  {rows.map((a) => (
+                    <div key={a.id} className="rounded-xl border border-slate-200 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-semibold">{a.title || a.place_name || "Actividad"}</div>
+                          <div className="mt-1 text-sm text-slate-600">
+                            {(a.place_name || a.address || "Ubicación pendiente") +
+                              (a.activity_time ? ` · ${a.activity_time.slice(0, 5)}` : "")}
+                          </div>
                         </div>
-                        <div className="mt-1 text-sm text-slate-600">
-                          {(a.place_name || a.address || "Ubicación pendiente") +
-                            (a.activity_time ? ` · ${a.activity_time.slice(0, 5)}` : "")}
+                        <div className="text-xs font-semibold text-slate-600">
+                          {a.activity_kind || a.activity_type || ""}
                         </div>
                       </div>
-                      <span className="rounded-full bg-white dark:bg-[#1E293B] px-3 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                        {a.activity_kind || a.activity_type || "Plan"}
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
-      </section>
+      </div>
+      </div>
     </main>
   );
 }

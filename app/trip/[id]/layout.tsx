@@ -7,6 +7,7 @@ import { TripBoardHeaderProvider } from "@/components/layout/TripBoardHeaderCont
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import DesktopTripSidebar from "@/components/layout/DesktopTripSidebar";
 import TripPageAssistantDock from "@/components/trip/ai/TripPageAssistantDock";
+import CommandPalette from "@/components/layout/CommandPalette";
 import { formatTripDateRangeHeader } from "@/lib/format-trip-date-range";
 
 type TripLayoutProps = {
@@ -49,6 +50,7 @@ export default async function TripLayout({
         </div>
         <MobileBottomNav tripId={params.id} isPremium={isPremium} />
         <TripPageAssistantDock tripId={params.id} isPremium={isPremium} />
+        <CommandPalette tripId={params.id} />
       </TripBoardHeaderProvider>
     </>
   );

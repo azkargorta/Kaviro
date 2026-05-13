@@ -1,10 +1,10 @@
-// Kaviro Service Worker — v1
-// Estrategia: cache-first para assets estáticos, network-first para páginas
+// Kaviro Service Worker — v2
+// Cache-first para assets, network-first para páginas, offline cache para plan activo
 
-const CACHE_NAME = "kaviro-v1";
+const CACHE_NAME = "kaviro-v2";
+const DATA_CACHE  = "kaviro-data-v1";
 const OFFLINE_URL = "/offline.html";
 
-// Assets que se cachean en la instalación
 const PRECACHE_ASSETS = [
   "/",
   "/offline.html",
@@ -12,7 +12,7 @@ const PRECACHE_ASSETS = [
   "/brand/icon.png",
 ];
 
-// ── Install ────────────────────────────────────────────────────────────────
+// ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
@@ -20,28 +20,57 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// ── Activate ───────────────────────────────────────────────────────────────
+// ── Activate ──────────────────────────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== DATA_CACHE)
+          .map((k) => caches.delete(k))
+      )
     )
   );
   self.clients.claim();
 });
 
-// ── Fetch ──────────────────────────────────────────────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Solo interceptar same-origin
+  // Only intercept same-origin
   if (url.origin !== self.location.origin) return;
 
-  // API calls — siempre network, sin cache
+  // Trip activities & routes — stale-while-revalidate for offline plan access
+  if (
+    url.pathname.startsWith("/api/trip-activities") ||
+    url.pathname.startsWith("/api/trip-routes") ||
+    url.pathname.startsWith("/api/trip-shares")
+  ) {
+    event.respondWith(
+      caches.open(DATA_CACHE).then(async (cache) => {
+        try {
+          const response = await fetch(request.clone());
+          if (response.ok) await cache.put(request, response.clone());
+          return response;
+        } catch {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          return new Response(JSON.stringify({ error: "Sin conexión" }), {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      })
+    );
+    return;
+  }
+
+  // Other API calls — network only
   if (url.pathname.startsWith("/api/")) return;
 
-  // Imágenes y assets estáticos — cache-first
+  // Static assets — cache-first
   if (
     request.destination === "image" ||
     url.pathname.startsWith("/_next/static/") ||
@@ -53,8 +82,7 @@ self.addEventListener("fetch", (event) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            caches.open(CACHE_NAME).then((c) => c.put(request, response.clone()));
           }
           return response;
         });
@@ -63,7 +91,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Páginas HTML — network-first, fallback offline
+  // HTML pages — network-first, fallback offline
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() =>
@@ -72,4 +100,34 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+});
+
+// ── Push notifications ────────────────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let data = { title: "Kaviro", body: "Tienes cambios en tu viaje", icon: "/icons/icon-192.png" };
+  try { data = { ...data, ...event.data.json() }; } catch {}
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      vibrate: [100, 50, 100],
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+// ── Notification click ────────────────────────────────────────────────────────
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      const existing = clients.find((c) => c.url.includes(url) && "focus" in c);
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
+    })
+  );
 });
