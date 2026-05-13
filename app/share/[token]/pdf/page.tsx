@@ -66,6 +66,11 @@ export default async function SharePdfPage({ params }: Props) {
         @media print {
           .no-print { display: none !important; }
           a { color: inherit; text-decoration: none; }
+          .cover-page { page-break-after: always; }
+          .page-break-before { page-break-before: always; }
+        }
+        @media screen {
+          .cover-page { border-bottom: 2px solid #E2E8F0; margin-bottom: 2rem; }
         }
       `}</style>
 
@@ -73,14 +78,56 @@ export default async function SharePdfPage({ params }: Props) {
         Se abrirá el diálogo de impresión. Elige “Guardar como PDF”.
       </div>
 
-      <div className="mx-auto max-w-[780px] p-6">
-        <div className="mb-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Itinerario</div>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight">{trip.name || "Viaje"}</h1>
-          <div className="mt-2 text-sm text-slate-600">
-            {(trip.destination || "Destino pendiente") + " · " + `${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`}
+      {/* ── Branded cover page ─────────────────────────────────────── */}
+      <div className="cover-page mx-auto max-w-[780px] flex flex-col min-h-[277mm] p-10">
+        {/* Kaviro logo */}
+        <div className="flex items-center gap-2">
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "#F87171", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "#fff", fontWeight: 900, fontSize: 18, fontFamily: "sans-serif", lineHeight: 1 }}>K</span>
+          </div>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#64748B", letterSpacing: "0.05em" }}>KAVIRO</span>
+        </div>
+
+        {/* Main content centered */}
+        <div className="flex-1 flex flex-col justify-center">
+          {trip.destination && (
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">
+              {trip.destination}
+            </div>
+          )}
+          <h1 className="text-5xl font-black tracking-tight text-slate-950 leading-tight">
+            {trip.name || "Itinerario de viaje"}
+          </h1>
+          <div className="mt-6 flex flex-wrap gap-4">
+            {trip.start_date && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Desde</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800">{formatDate(trip.start_date)}</div>
+              </div>
+            )}
+            {trip.end_date && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Hasta</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800">{formatDate(trip.end_date)}</div>
+              </div>
+            )}
+            {activities.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Actividades</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800">{activities.length}</div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="text-xs text-slate-400">
+          Generado con Kaviro · kaviro.app · {new Date().toLocaleDateString("es-ES")}
+        </div>
+      </div>
+
+      {/* ── Itinerary pages ──────────────────────────────────────────── */}
+      <div className="mx-auto max-w-[780px] p-6 page-break-before">
 
         {days.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-600">
