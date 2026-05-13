@@ -11,7 +11,7 @@ const KIND_LABELS: Record<string, string> = {
   transport: "Traslados ✈️", visit: "Visitas 📍",
 };
 
-const BG_COLORS = ["bg-violet-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-sky-500", "bg-orange-500", "bg-indigo-500"];
+const BG_COLORS = ["bg-[#F87171]", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-sky-500", "bg-orange-500", "bg-indigo-500"];
 
 function formatMoney(n: number, currency: string) {
   try { return new Intl.NumberFormat("es-ES", { style: "currency", currency, maximumFractionDigits: 0 }).format(n); }
