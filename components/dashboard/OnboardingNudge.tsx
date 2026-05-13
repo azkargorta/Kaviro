@@ -1,128 +1,140 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
-function Icon({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#F87171] text-white shadow-sm font-bold">
-      {children}
-    </span>
-  );
-}
+type Step = {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  done: boolean;
+};
 
 export default function OnboardingNudge({
   hasTrips,
+  hasParticipants = false,
+  hasExpenses = false,
 }: {
   hasTrips: boolean;
+  hasParticipants?: boolean;
+  hasExpenses?: boolean;
 }) {
-  const storageKey = useMemo(() => "kaviro_onboarding_v1", []);
-  const [open, setOpen] = useState(false);
+  const storageKey = useMemo(() => "kaviro_checklist_v2", []);
+  const [dismissed, setDismissed] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     try {
-      const seen = window.localStorage.getItem(storageKey) === "1";
-      if (!seen && !hasTrips) setOpen(true);
-    } catch {
-      // Si localStorage falla (modo privado), no bloqueamos al usuario.
-    }
-  }, [hasTrips, storageKey]);
+      if (window.localStorage.getItem(storageKey) === "done") setDismissed(true);
+    } catch { /* private mode */ }
+  }, [storageKey]);
 
-  function close() {
-    try {
-      window.localStorage.setItem(storageKey, "1");
-    } catch {
-      /* */
-    }
-    setOpen(false);
+  const steps: Step[] = [
+    { id: "trip",        icon: "✈️", title: "Crea tu primer viaje",     desc: "Ponle nombre, destino y fechas.",             done: hasTrips },
+    { id: "participant", icon: "👥", title: "Invita a alguien",          desc: "Comparte el viaje con tu grupo.",             done: hasParticipants },
+    { id: "expense",     icon: "💶", title: "Añade un gasto",            desc: "Registra el primer ticket del grupo.",        done: hasExpenses },
+    { id: "ai",          icon: "✨", title: "Usa el Asistente IA",       desc: "Pide un plan o rutas en lenguaje natural.",   done: false },
+  ];
+
+  const doneCount = steps.filter((s) => s.done).length;
+  const pct = Math.round((doneCount / steps.length) * 100);
+  const allDone = doneCount === steps.length;
+
+  // Auto-dismiss when all steps done
+  useEffect(() => {
+    if (!mounted || !allDone) return;
+    try { window.localStorage.setItem(storageKey, "done"); } catch { /* */ }
+    const t = setTimeout(() => setDismissed(true), 3000);
+    return () => clearTimeout(t);
+  }, [allDone, mounted, storageKey]);
+
+  function dismiss() {
+    try { window.localStorage.setItem(storageKey, "done"); } catch { /* */ }
+    setDismissed(true);
   }
 
-  if (!open) return null;
+  // Only show for new users (no trips yet or not dismissed)
+  if (!mounted || dismissed || (hasTrips && hasParticipants && hasExpenses)) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
-      onMouseDown={close}
-    >
-      <div
-        className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#F87171]/10 px-3 py-1">
-              <span className="h-2 w-2 rounded-full bg-[#F87171]" />
-              <p className="text-xs font-semibold tracking-[0.12em] text-[#F87171]">BIENVENIDO/A A KAVIRO</p>
+    <div className="mx-auto max-w-2xl px-4 md:px-5">
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#F87171]/10 px-3 py-1 mb-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#F87171]" />
+              <span className="text-[11px] font-semibold tracking-[0.1em] text-[#F87171]">PRIMEROS PASOS</span>
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-950 dark:text-slate-50">
-              Tu primer viaje en tres pasos
+            <h2 className="text-base font-extrabold text-[var(--text-primary)]">
+              {allDone ? "¡Todo listo! 🎉" : `${doneCount} de ${steps.length} pasos completados`}
             </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Crear → dejar que el asistente personal proponga (Premium) → afinar en Plan y Rutas.
-            </p>
           </div>
           <button
             type="button"
-            onClick={close}
-            className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:bg-slate-900/40"
+            onClick={dismiss}
+            className="shrink-0 rounded-full p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--surface-page)] transition"
+            aria-label="Cerrar"
           >
-            Cerrar
+            <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 4l8 8M12 4l-8 8"/>
+            </svg>
           </button>
         </div>
 
-        <div className="mt-5 grid gap-3">
-          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-            <Icon>1</Icon>
-            <div>
-              <p className="font-semibold text-slate-950 dark:text-slate-50">Crea el viaje</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Ponle un nombre y (opcional) destino/fechas.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-            <Icon>2</Icon>
-            <div>
-              <p className="font-semibold text-slate-950 dark:text-slate-50">Asistente personal (Premium)</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Borrador de plan y rutas con contexto del viaje; tú revisas y guardas.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-            <Icon>3</Icon>
-            <div>
-              <p className="font-semibold text-slate-950 dark:text-slate-50">Edita con calma</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Plan, Rutas y Gastos comparten el mismo viaje: un solo contexto para el grupo.
-              </p>
-            </div>
-          </div>
+        {/* Progress bar */}
+        <div className="mt-3 h-1.5 rounded-full bg-[var(--surface-page)] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[#F87171] transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              // Baja al bloque de creación sin depender de refs.
-              document.getElementById("create-trip")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#EF4444] transition"
-          >
-            Crear mi primer viaje
-          </button>
-          <button
-            type="button"
-            onClick={close}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
-          >
-            Lo veré luego
-          </button>
+        {/* Steps */}
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          {steps.map((step) => (
+            <div
+              key={step.id}
+              className={`flex items-start gap-3 rounded-xl border p-3 transition ${
+                step.done
+                  ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-950/20"
+                  : "border-[var(--border-default)] bg-[var(--surface-page)]"
+              }`}
+            >
+              <span className="mt-0.5 text-lg leading-none">{step.icon}</span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-xs font-semibold leading-snug ${
+                  step.done ? "text-emerald-700 dark:text-emerald-400 line-through" : "text-[var(--text-primary)]"
+                }`}>
+                  {step.title}
+                </p>
+                {!step.done && (
+                  <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)] leading-snug">{step.desc}</p>
+                )}
+              </div>
+              {step.done && (
+                <svg className="h-4 w-4 shrink-0 text-emerald-500" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M3 8l4 4 6-7"/>
+                </svg>
+              )}
+            </div>
+          ))}
         </div>
+
+        {/* CTA */}
+        {!hasTrips && (
+          <div className="mt-4">
+            <Link
+              href="#create-trip"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#F87171] px-5 text-sm font-bold text-white transition hover:bg-[#EF4444]"
+            >
+              Crear mi primer viaje →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

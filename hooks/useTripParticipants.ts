@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type {
   ParticipantPermissions,
   ParticipantStatus,
@@ -75,6 +76,9 @@ export function useTripParticipants(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [newParticipantCount, setNewParticipantCount] = useState(0);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+
   const fetchParticipants = useCallback(async () => {
     if (!tripId) {
       setParticipants([]);
@@ -107,6 +111,25 @@ export function useTripParticipants(
   useEffect(() => {
     void fetchParticipants();
   }, [fetchParticipants]);
+
+  // Realtime: detect new participants joining
+  useEffect(() => {
+    if (!tripId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`trip-participants-${tripId}`)
+      .on(
+        "postgres_changes" as Parameters<ReturnType<typeof supabase.channel>["on"]>[0],
+        { event: "*", schema: "public", table: "trip_participants", filter: `trip_id=eq.${tripId}` },
+        () => {
+          void fetchParticipants();
+          setNewParticipantCount((n) => n + 1);
+        }
+      )
+      .subscribe();
+    channelRef.current = channel;
+    return () => { void supabase.removeChannel(channel); };
+  }, [tripId, fetchParticipants]);
 
   const addParticipant = useCallback(
     async (input: CreateTripParticipantInput) => {
@@ -260,6 +283,7 @@ export function useTripParticipants(
     participants,
     loading,
     error,
+    newParticipantCount,
     addParticipant,
     updateParticipant,
     removeParticipant,

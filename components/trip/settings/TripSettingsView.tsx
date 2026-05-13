@@ -158,6 +158,74 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           </div>
         </div>
       )}
+      {/* Analytics */}
+      <TripAnalyticsPanel tripId={tripId} />
+    </div>
+  );
+}
+
+// ── Analytics mini-panel ──────────────────────────────────────────────────────
+type AnalyticsData = {
+  total: number;
+  tabs: { name: string; views: number }[];
+  daily: { date: string; views: number }[];
+};
+
+function TripAnalyticsPanel({ tripId }: { tripId: string }) {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loadingA, setLoadingA] = useState(true);
+
+  useEffect(() => {
+    void fetch(`/api/trips/${tripId}/analytics`)
+      .then((r) => r.json())
+      .then((d: AnalyticsData & { error?: string }) => { if (!d.error) setData(d); })
+      .catch(() => {})
+      .finally(() => setLoadingA(false));
+  }, [tripId]);
+
+  if (loadingA) return (
+    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <div className="h-4 w-32 animate-pulse rounded bg-[var(--surface-page)]" />
+      <div className="mt-3 h-24 animate-pulse rounded-xl bg-[var(--surface-page)]" />
+    </div>
+  );
+
+  if (!data || data.total === 0) return null;
+
+  const maxViews = Math.max(...data.tabs.map((t) => t.views), 1);
+
+  return (
+    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">Actividad del viaje</h3>
+        <span className="text-xs text-[var(--text-tertiary)]">{data.total} visitas · 30 días</span>
+      </div>
+      <div className="space-y-2">
+        {data.tabs.slice(0, 6).map((tab) => (
+          <div key={tab.name} className="flex items-center gap-3">
+            <span className="w-20 shrink-0 text-xs font-semibold text-[var(--text-secondary)] truncate">{tab.name}</span>
+            <div className="flex-1 h-2 rounded-full bg-[var(--surface-page)] overflow-hidden">
+              <div className="h-full rounded-full bg-[#F87171] transition-all duration-500"
+                style={{ width: `${Math.round((tab.views / maxViews) * 100)}%` }} />
+            </div>
+            <span className="w-8 text-right text-xs font-bold text-[var(--text-tertiary)] tabular-nums">{tab.views}</span>
+          </div>
+        ))}
+      </div>
+      {data.daily.length > 1 && (
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-tertiary)] mb-2">Últimas 2 semanas</p>
+          <div className="flex items-end gap-0.5 h-10">
+            {data.daily.map((d) => {
+              const mx = Math.max(...data.daily.map((x) => x.views), 1);
+              const h = Math.max(4, Math.round((d.views / mx) * 40));
+              return <div key={d.date} title={`${d.date}: ${d.views}`}
+                className="flex-1 rounded-sm bg-[#F87171]/40 hover:bg-[#F87171] transition-colors"
+                style={{ height: `${h}px` }} />;
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

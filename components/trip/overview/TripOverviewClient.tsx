@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 
 import Link from "next/link";
 import { useMemo } from "react";
@@ -324,8 +325,68 @@ export default function TripOverviewClient({
       </div>
 
       {/* ── AI Insights — brief + packing list ──────────────────────────── */}
+      {/* Proactive AI suggestion — shows gap in itinerary if found */}
+      {isPremium && <TripAiProactiveHint tripId={tripId} />}
+
       <TripAiInsights tripId={tripId} isPremium={isPremium} />
 
+    </div>
+  );
+}
+
+// ── Proactive AI hint ─────────────────────────────────────────────────────────
+function TripAiProactiveHint({ tripId }: { tripId: string }) {
+  const [hint, setHint] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const key = `kaviro_ai_hint_${tripId}`;
+    try {
+      const cached = window.sessionStorage.getItem(key);
+      if (cached) { setHint(cached === "none" ? null : cached); setLoading(false); return; }
+    } catch { /* */ }
+
+    void fetch("/api/trip-ai/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tripId,
+        question: "¿Hay algún día con pocas actividades o hueco libre en el plan donde podría sugerir algo? Responde en máximo 1 frase corta y accionable, o 'null' si el plan está bien.",
+        mode: "brief",
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        const answer = (d.answer || "").trim();
+        const isNull = !answer || answer === "null" || answer.toLowerCase().includes("está bien") || answer.length < 10;
+        const value = isNull ? null : answer;
+        try { window.sessionStorage.setItem(key, value ?? "none"); } catch { /* */ }
+        setHint(value);
+      })
+      .catch(() => setHint(null))
+      .finally(() => setLoading(false));
+  }, [tripId]);
+
+  if (loading || !hint || dismissed) return null;
+
+  return (
+    <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-4 flex items-start gap-3">
+      <span className="text-lg shrink-0 mt-0.5">✨</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--brand)] mb-1">Sugerencia IA</p>
+        <p className="text-sm text-[var(--text-primary)] leading-snug">{hint}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        className="shrink-0 rounded-full p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-page)] transition"
+        aria-label="Cerrar sugerencia"
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M4 4l8 8M12 4l-8 8"/>
+        </svg>
+      </button>
     </div>
   );
 }
