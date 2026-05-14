@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal, X, Settings, Map, Users, FileText } from "lucide-react";
+import { MoreHorizontal, X, Settings, Map, Users, FileText, Star } from "lucide-react";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -33,6 +33,7 @@ const SECONDARY_ITEMS: Array<{ key: string; label: string; href: (id: string) =>
   { key: "participants", label: "Participantes",  href: (id) => `/trip/${id}/participants`, icon: <Users className="h-5 w-5" /> },
   { key: "resources",    label: "Documentos",     href: (id) => `/trip/${id}/resources`,    icon: <FileText className="h-5 w-5" /> },
   { key: "settings",     label: "Ajustes",        href: (id) => `/trip/${id}/settings`,     icon: <Settings className="h-5 w-5" /> },
+  { key: "recap",        label: "Recap",          href: (id) => `/trip/${id}/recap`,        icon: <Star className="h-5 w-5" /> },
 ];
 
 export default function MobileBottomNav({

@@ -61,6 +61,12 @@ const items: NavItem[] = [
     href: (id) => `/trip/${id}/resources`,
   },
   {
+    key: "recap" as TripTabKey,
+    label: "Recap",
+    sublabel: "Resumen del viaje",
+    href: (id) => `/trip/${id}/recap`,
+  },
+  {
     key: "chat",
     label: "Asistente IA",
     sublabel: "Premium",

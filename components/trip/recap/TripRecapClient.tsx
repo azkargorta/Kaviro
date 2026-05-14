@@ -56,7 +56,7 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
       const url = `/api/trip-recap-image?${params.toString()}`;
       const a = document.createElement("a");
       a.href = url;
-      a.download = `kaviro-${tripName.toLowerCase().replace(/\s+/g, "-")}-${format}.png`;
+      a.download = `kaviro-${tripName.toLowerCase().replace(/\s+/g, "-")}-${format}.svg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -199,7 +199,7 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
           onClick={() => void downloadAsImage("square")}
           disabled={downloading}
           className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition disabled:opacity-50"
-          title="Descargar imagen cuadrada para WhatsApp"
+          title="Descargar imagen cuadrada — WhatsApp, fotos"
         >
           <Download className="w-4 h-4" />
           {downloading ? "..." : "PNG"}
@@ -209,7 +209,7 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
           onClick={() => void downloadAsImage("stories")}
           disabled={downloading}
           className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition disabled:opacity-50"
-          title="Descargar imagen vertical para Instagram Stories"
+          title="Descargar imagen vertical — Instagram Stories"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
           {downloading ? "..." : "Stories"}
