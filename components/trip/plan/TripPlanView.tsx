@@ -1229,7 +1229,7 @@ export default function TripPlanView({
                               ) : (
                                 <>
                                   <PlanActivityCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} premiumEnabled={premiumEnabled} />
-                                  {isPremium && (
+                                  {premiumEnabled && (
                                     <ActivityReactions
                                       tripId={tripId}
                                       activityId={activity.id}
