@@ -255,6 +255,8 @@ export default function TripPlanView({
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [editIconPickerId, setEditIconPickerId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
+  const [calendarMenuOpen, setCalendarMenuOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
