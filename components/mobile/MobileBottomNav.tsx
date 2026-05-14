@@ -28,7 +28,7 @@ const PRIMARY_ITEMS: Array<{ key: TripTabKey; label: string; href: (id: string) 
 ];
 
 // Secondary items — in "Más" sheet
-const SECONDARY_ITEMS: Array<{ key: TripTabKey; label: string; href: (id: string) => string; icon: React.ReactNode }> = [
+const SECONDARY_ITEMS: Array<{ key: string; label: string; href: (id: string) => string; icon: React.ReactNode }> = [
   { key: "map",          label: "Rutas",         href: (id) => `/trip/${id}/map`,          icon: <Map className="h-5 w-5" /> },
   { key: "participants", label: "Participantes",  href: (id) => `/trip/${id}/participants`, icon: <Users className="h-5 w-5" /> },
   { key: "resources",    label: "Documentos",     href: (id) => `/trip/${id}/resources`,    icon: <FileText className="h-5 w-5" /> },
