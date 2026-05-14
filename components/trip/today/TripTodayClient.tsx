@@ -70,6 +70,16 @@ type Props = {
 export default function TripTodayClient({ tripId, tripName, destination, today, isActive, tripStart, tripEnd, todayActivities, upcoming, canEdit }: Props) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeIdx, setActiveIdx] = useState(0);
+  const [weather, setWeather] = useState<{ temp_c: number; description: string; icon: string } | null>(null);
+
+  // Fetch weather for destination
+  useEffect(() => {
+    if (!destination) return;
+    void fetch(`/api/weather?destination=${encodeURIComponent(destination)}`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.temp_c != null) setWeather(d); })
+      .catch(() => {});
+  }, [destination]);
 
   useEffect(() => {
     const id = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -114,18 +124,25 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
         </div>
         <h1 className="text-2xl font-extrabold">{formatDate(today)}</h1>
         {destination && <p className="text-slate-400 text-sm font-medium mt-0.5 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{destination}</p>}
+        {weather && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-2xl">{weather.icon ?? "🌤️"}</span>
+            <span className="text-white font-bold text-lg">{Math.round(weather.temp_c ?? 0)}°C</span>
+            <span className="text-slate-400 text-sm capitalize">{weather.description ?? ""}</span>
+          </div>
+        )}
       </div>
 
       {/* Current activity spotlight */}
       {currentActivity && (
         <div className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5">
-          <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-2">Ahora mismo</p>
+          <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2">Ahora mismo</p>
           <div className="flex items-start gap-3">
             <span className="text-3xl shrink-0">{kindMeta(currentActivity.activity_kind).icon}</span>
             <div className="flex-1 min-w-0">
               <p className="font-extrabold text-lg leading-tight">{currentActivity.title}</p>
-              {currentActivity.place_name && <p className="text-violet-200 text-sm mt-0.5">{currentActivity.place_name}</p>}
-              {currentActivity.description && <p className="text-violet-200 text-xs mt-1 line-clamp-2">{currentActivity.description}</p>}
+              {currentActivity.place_name && <p className="text-white/70 text-sm mt-0.5">{currentActivity.place_name}</p>}
+              {currentActivity.description && <p className="text-white/70 text-xs mt-1 line-clamp-2">{currentActivity.description}</p>}
             </div>
           </div>
           {/* Navigate button */}

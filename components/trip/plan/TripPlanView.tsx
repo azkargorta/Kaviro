@@ -227,7 +227,7 @@ export default function TripPlanView({
   initialWorkspaceTab?: "itinerary" | "notes";
   initialSelectedDate?: string | null;
 }) {
-  const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
+  const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, currentUserId = null, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId);
   const {
     kinds: customKinds,
@@ -604,7 +604,9 @@ export default function TripPlanView({
                   body: JSON.stringify({ tripId }),
                 });
                 const data = await res.json();
-                if (data?.token) window.open(`/share/${data.token}/pdf`, "_blank");
+                const token = data?.share?.token ?? data?.token;
+                if (token) window.open(`/share/${token}/pdf`, "_blank");
+                else alert("No se pudo generar el PDF. Inténtalo de nuevo.");
               } catch { /* silent */ }
             }}
             className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
@@ -619,16 +621,50 @@ export default function TripPlanView({
             PDF
           </button>
 
-          {/* Calendar export — desktop */}
-          <a
-            href={`/api/trips/${tripId}/calendar`}
-            download
-            className="hidden sm:inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-            title="Exportar como .ics para Google/Apple Calendar"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            .ics
-          </a>
+          {/* Calendar export — desktop with menu */}
+          <div className="relative hidden sm:block">
+            <button
+              type="button"
+              onClick={() => setCalendarMenuOpen((v) => !v)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+              title="Añadir actividades a tu calendario"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Calendario
+            </button>
+            {calendarMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setCalendarMenuOpen(false)} />
+                <div className="absolute right-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+                  <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                    Añadir al calendario
+                  </p>
+                  <a
+                    href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/api/trips/${tripId}/calendar`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setCalendarMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+                  >
+                    <span className="text-lg">📅</span> Google Calendar
+                  </a>
+                  <a
+                    href={`/api/trips/${tripId}/calendar`}
+                    download
+                    onClick={() => setCalendarMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+                  >
+                    <span className="text-lg">🍎</span> Apple / Outlook (.ics)
+                  </a>
+                  <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-2">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                      El .ics se abre con cualquier app de calendario instalada.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           {bulkDeleteMode ? (
             <button
               type="button"
@@ -1233,8 +1269,8 @@ export default function TripPlanView({
                                     <ActivityReactions
                                       tripId={tripId}
                                       activityId={activity.id}
-                                      currentUserId={null}
-                                      displayName="Yo"
+                                      currentUserId={currentUserId}
+                                      displayName={trip?.name ?? "Yo"}
                                     />
                                   )}
                                 </>

@@ -191,6 +191,21 @@ export default function ExpenseBalancePanel({
           </div>
 
           {/* Budget progress bar */}
+          {budgetTarget != null && budgetTarget > 0 && totals.totalExpenses > budgetTarget * 0.8 && (
+            <div className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold ${
+              totals.totalExpenses >= budgetTarget
+                ? "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400"
+                : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+            }`}>
+              <span className="text-lg">{totals.totalExpenses >= budgetTarget ? "🚨" : "⚠️"}</span>
+              <span>
+                {totals.totalExpenses >= budgetTarget
+                  ? "Presupuesto superado — el grupo ha gastado más de lo previsto."
+                  : `Aviso: lleváis el ${Math.round((totals.totalExpenses / budgetTarget) * 100)}% del presupuesto.`}
+              </span>
+            </div>
+          )}
+
           {budgetTarget != null && budgetTarget > 0 && (
             <div className="mt-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
