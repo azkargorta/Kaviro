@@ -1233,8 +1233,8 @@ export default function TripPlanView({
                                     <ActivityReactions
                                       tripId={tripId}
                                       activityId={activity.id}
-                                      currentUserId={trip?.participant?.user_id ?? null}
-                                      displayName={trip?.participant?.display_name ?? "Yo"}
+                                      currentUserId={null}
+                                      displayName="Yo"
                                     />
                                   )}
                                 </>
