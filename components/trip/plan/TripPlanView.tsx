@@ -596,36 +596,45 @@ export default function TripPlanView({
             Historial
           </button>
 
-          {/* PDF export — generates share token then opens PDF */}
+          {/* PDF export — direct print approach */}
           <button
             type="button"
             onClick={() => {
-              // Open popup synchronously (required by Firefox — async handlers are blocked)
+              // Open popup synchronously (Firefox requires sync open from click handler)
               const popup = window.open("about:blank", "_blank");
               if (!popup) {
-                alert("Tu navegador bloqueó la ventana emergente. Permite las ventanas emergentes para kaviro y vuelve a intentarlo.");
+                alert("Tu navegador bloqueó la ventana. Permite ventanas emergentes para este sitio.");
                 return;
               }
               popup.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#64748b'><p>Generando PDF...</p></body></html>");
-              void fetch("/api/trip-shares", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tripId }),
-              })
-                .then((r) => r.json())
-                .then((data) => {
-                  const token = data?.share?.token ?? data?.token;
-                  if (token && popup && !popup.closed) {
-                    popup.location.href = `/share/${token}/pdf`;
-                  } else if (!token) {
-                    if (popup && !popup.closed) popup.close();
-                    alert("No se pudo generar el PDF. Inténtalo de nuevo.");
-                  }
+
+              // Try GET first (reuse existing token), then POST
+              const fetchToken = () =>
+                fetch(`/api/trip-shares?tripId=${encodeURIComponent(tripId)}`, { credentials: "include" })
+                  .then((r) => r.json())
+                  .then((d) => d?.share?.token ?? null)
+                  .catch(() => null);
+
+              const createToken = () =>
+                fetch("/api/trip-shares", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ tripId }),
+                  credentials: "include",
                 })
-                .catch(() => {
+                  .then((r) => r.json())
+                  .then((d) => d?.share?.token ?? d?.token ?? null)
+                  .catch(() => null);
+
+              void fetchToken().then(async (token) => {
+                const finalToken = token ?? (await createToken());
+                if (finalToken && popup && !popup.closed) {
+                  popup.location.href = `/share/${finalToken}/pdf`;
+                } else {
                   if (popup && !popup.closed) popup.close();
-                  alert("Error al conectar. Comprueba tu conexión e inténtalo de nuevo.");
-                });
+                  alert("No se pudo generar el PDF. Comprueba que tienes permisos de compartir el viaje.");
+                }
+              });
             }}
             className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Exportar itinerario como PDF"
