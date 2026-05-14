@@ -175,9 +175,34 @@ export default function InviteParticipantPanel({
         </div>
 
         {inviteUrl ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 break-all dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
-            {inviteUrl}
-          </div>
+          <>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 break-all dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
+              {inviteUrl}
+            </div>
+            {/* QR code — escanear para unirse en móvil */}
+            <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                Escanear para unirse
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(inviteUrl)}&bgcolor=ffffff&color=0f172a&margin=8`}
+                alt="QR de invitación"
+                width={160}
+                height={160}
+                className="rounded-xl dark:hidden"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(inviteUrl)}&bgcolor=0f1623&color=f1f5f9&margin=8`}
+                alt="QR de invitación"
+                width={160}
+                height={160}
+                className="rounded-xl hidden dark:block"
+              />
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">Abre la cámara y apunta al código</p>
+            </div>
+          </>
         ) : null}
 
         {inviteUrl && onCreated ? (
