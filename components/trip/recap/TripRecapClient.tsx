@@ -2,42 +2,93 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, Calendar, Users, Wallet, Compass, Download, Share2 } from "lucide-react";
+import Image from "next/image";
+import { MapPin, Calendar, Compass, Download, Share2, ImagePlus, X } from "lucide-react";
 
 const KIND_LABELS: Record<string, string> = {
-  culture: "Cultura 🏛️", nature: "Naturaleza 🌿", viewpoint: "Miradores 🌄",
-  neighborhood: "Barrios 🧭", market: "Mercados 🧺", excursion: "Excursiones 🚌",
-  gastro_experience: "Gastronomía 🍷", shopping: "Compras 🛍️", night: "Vida nocturna 🌙",
-  transport: "Traslados ✈️", visit: "Visitas 📍",
+  culture: "Cultura 🏛️",
+  nature: "Naturaleza 🌿",
+  viewpoint: "Miradores 🌄",
+  neighborhood: "Barrios 🧭",
+  market: "Mercados 🧺",
+  excursion: "Excursiones 🚌",
+  gastro_experience: "Gastronomía 🍷",
+  shopping: "Compras 🛍️",
+  night: "Vida nocturna 🌙",
+  transport: "Traslados ✈️",
+  visit: "Visitas 📍",
+  restaurant: "Restaurantes 🍽️",
+  museum: "Museos 🏛️",
+  activity: "Actividades 🎟️",
+  lodging: "Alojamiento 🏨",
 };
 
-const BG_COLORS = ["bg-[#F87171]", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-sky-500", "bg-orange-500", "bg-indigo-500"];
-
-function formatMoney(n: number, currency: string) {
-  try { return new Intl.NumberFormat("es-ES", { style: "currency", currency, maximumFractionDigits: 0 }).format(n); }
-  catch { return `${Math.round(n)} ${currency}`; }
-}
+const BG_COLORS = [
+  "bg-[#F87171]", "bg-emerald-500", "bg-amber-500",
+  "bg-pink-500", "bg-sky-500", "bg-orange-500",
+];
 
 function formatDate(d: string | null) {
   if (!d) return "";
-  return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${d}T12:00:00`));
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "numeric", month: "long", year: "numeric",
+  }).format(new Date(`${d}T12:00:00`));
 }
 
 type Props = {
-  tripId: string; tripName: string; destination: string | null;
-  startDate: string | null; endDate: string | null; totalDays: number;
-  activitiesCount: number; totalExpenses: number; currency: string;
-  participantsCount: number; cities: string[]; kindCounts: Record<string, number>; kmTravelled: number;
+  tripId: string;
+  tripName: string;
+  destination: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  totalDays: number;
+  activitiesCount: number;
+  totalExpenses: number;
+  currency: string;
+  participantsCount: number;
+  cities: string[];
+  kindCounts: Record<string, number>;
+  kmTravelled: number;
 };
 
-export default function TripRecapClient({ tripId, tripName, destination, startDate, endDate, totalDays, activitiesCount, totalExpenses, currency, participantsCount, cities, kindCounts, kmTravelled }: Props) {
+export default function TripRecapClient({
+  tripId, tripName, destination, startDate, endDate,
+  totalDays, activitiesCount, participantsCount,
+  cities, kindCounts, kmTravelled,
+}: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const topKinds = Object.entries(kindCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topKinds = Object.entries(kindCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
   const totalActivities = Object.values(kindCounts).reduce((a, b) => a + b, 0);
 
   const [downloading, setDownloading] = useState(false);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
 
+  // ── Cover image — user upload or Unsplash tourism photo ──────────────────
+  async function loadUnsplash() {
+    if (!destination) return;
+    const query = encodeURIComponent(destination.split("·")[0].trim());
+    try {
+      const res = await fetch(
+        `https://source.unsplash.com/800x400/?${query},travel,tourism`,
+        { redirect: "follow" }
+      );
+      if (res.ok) setCoverImage(res.url);
+    } catch { /* silent */ }
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCoverImage(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  // ── Download via server SVG API ───────────────────────────────────────────
   async function downloadAsImage(format: "square" | "stories" = "square") {
     setDownloading(true);
     try {
@@ -50,7 +101,7 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
         activities: String(activitiesCount),
         km: String(Math.round(kmTravelled)),
         participants: String(participantsCount),
-        expenses: totalExpenses > 0 ? formatMoney(totalExpenses, currency) : "",
+        expenses: "",
         format,
       });
       const url = `/api/trip-recap-image?${params.toString()}`;
@@ -60,13 +111,11 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } catch {
-      shareText();
-    } finally {
-      setDownloading(false);
-    }
+    } catch { /* silent */ }
+    finally { setDownloading(false); }
   }
 
+  // ── Share text ────────────────────────────────────────────────────────────
   const shareMessage = [
     `✈️ ${tripName}${destination ? ` — ${destination}` : ""}`,
     startDate ? `📅 ${formatDate(startDate)}${endDate ? ` → ${formatDate(endDate)}` : ""}` : "",
@@ -77,7 +126,7 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
   ].filter(Boolean).join("\n");
 
   function shareText() {
-    const text = `🌍 Viaje "${tripName}" — ${totalDays} días en ${destination || "varios destinos"}\n✅ ${activitiesCount} actividades · ${kmTravelled > 0 ? `${kmTravelled} km · ` : ""}${formatMoney(totalExpenses, currency)}\nOrganizado con Kaviro`;
+    const text = shareMessage;
     if (navigator.share) {
       void navigator.share({ title: `Recap: ${tripName}`, text });
     } else {
@@ -90,14 +139,71 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-start py-8 px-4 gap-6">
       {/* Back */}
       <div className="w-full max-w-sm">
-        <Link href={`/trip/${tripId}`} className="text-slate-500 text-xs font-semibold hover:text-slate-300">← Volver al viaje</Link>
+        <Link href={`/trip/${tripId}`} className="text-slate-500 text-xs font-semibold hover:text-slate-300">
+          ← Volver al viaje
+        </Link>
       </div>
 
       {/* Main card */}
       <div ref={cardRef} className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl">
-        {/* Header gradient */}
-        <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-6 pt-8 pb-6 text-white">
-          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">✈️ Viaje completado</p>
+
+        {/* ── Cover image ── */}
+        <div className="relative w-full h-44 bg-slate-800 group">
+          {coverImage ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={coverImage} alt="Portada" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setCoverImage(null)}
+                className="absolute top-2 right-2 rounded-full bg-black/50 p-1 text-white opacity-0 group-hover:opacity-100 transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <p className="text-slate-500 text-xs font-semibold">Añade una foto del viaje</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-600 transition"
+                >
+                  <ImagePlus className="w-3.5 h-3.5" /> Subir foto
+                </button>
+                {destination && (
+                  <button
+                    type="button"
+                    onClick={() => void loadUnsplash()}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-600 transition"
+                  >
+                    🌍 Foto del destino
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+        </div>
+
+        {/* ── Header gradient ── */}
+        <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-6 pt-6 pb-5 text-white">
+          {/* Kaviro branding */}
+          <div className="flex items-center gap-2 mb-4">
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "#fff", fontWeight: 900, fontSize: 15, fontFamily: "sans-serif", lineHeight: 1 }}>K</span>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.15em", fontFamily: "sans-serif" }}>KAVIRO</span>
+            <span className="ml-auto text-white/40 text-[10px] font-semibold uppercase tracking-widest">✈ Viaje completado</span>
+          </div>
+
           <h1 className="text-2xl font-extrabold leading-tight">{tripName}</h1>
           {destination && (
             <p className="text-white/70 mt-1 text-sm font-medium flex items-center gap-1.5">
@@ -111,44 +217,53 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
           )}
         </div>
 
-        {/* Stats grid */}
+        {/* ── Stats grid — sin coste ── */}
         <div className="bg-white dark:bg-[#0F1623] grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-[#1E293B]">
           <div className="p-4 text-center">
-            <p className="text-3xl font-extrabold text-slate-900">{totalDays}</p>
+            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{totalDays}</p>
             <p className="text-xs font-semibold text-slate-400 mt-0.5">días de viaje</p>
           </div>
           <div className="p-4 text-center">
-            <p className="text-3xl font-extrabold text-slate-900">{activitiesCount}</p>
+            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{activitiesCount}</p>
             <p className="text-xs font-semibold text-slate-400 mt-0.5">actividades</p>
           </div>
           <div className="p-4 text-center">
-            <p className="text-2xl font-extrabold text-slate-900">{totalExpenses > 0 ? formatMoney(totalExpenses, currency) : "—"}</p>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">gasto total</p>
+            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{participantsCount}</p>
+            <p className="text-xs font-semibold text-slate-400 mt-0.5">viajeros</p>
           </div>
           <div className="p-4 text-center">
             {kmTravelled > 0 ? (
               <>
-                <p className="text-3xl font-extrabold text-slate-900">{kmTravelled > 999 ? `${(kmTravelled / 1000).toFixed(1)}k` : kmTravelled}</p>
+                <p className="text-3xl font-extrabold text-slate-900 dark:text-white">
+                  {kmTravelled > 999 ? `${(kmTravelled / 1000).toFixed(1)}k` : Math.round(kmTravelled)}
+                </p>
                 <p className="text-xs font-semibold text-slate-400 mt-0.5">km aprox.</p>
               </>
             ) : (
               <>
-                <p className="text-3xl font-extrabold text-slate-900">{participantsCount}</p>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">viajeros</p>
+                <p className="text-3xl font-extrabold text-slate-900 dark:text-white">
+                  {cities.length || "—"}
+                </p>
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">destinos</p>
               </>
             )}
           </div>
         </div>
 
-        {/* Activity breakdown */}
+        {/* ── Activity breakdown — categorías en español ── */}
         {topKinds.length > 0 && (
           <div className="bg-white dark:bg-[#0F1623] border-t border-slate-100 dark:border-[#1E293B] px-5 py-4">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Lo que más hicisteis</p>
             <div className="space-y-2">
               {topKinds.map(([kind, count], i) => (
                 <div key={kind} className="flex items-center gap-2">
-                  <div className={`h-2 rounded-full ${BG_COLORS[i % BG_COLORS.length]}`} style={{ width: `${Math.round((count / totalActivities) * 100)}%`, minWidth: 8, maxWidth: "70%" }} />
-                  <span className="text-xs font-semibold text-slate-700 truncate">{KIND_LABELS[kind] ?? kind}</span>
+                  <div
+                    className={`h-2 rounded-full ${BG_COLORS[i % BG_COLORS.length]}`}
+                    style={{ width: `${Math.round((count / totalActivities) * 100)}%`, minWidth: 8, maxWidth: "70%" }}
+                  />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
+                    {KIND_LABELS[kind] ?? kind}
+                  </span>
                   <span className="ml-auto text-xs font-bold text-slate-400">{count}</span>
                 </div>
               ))}
@@ -156,26 +271,35 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
           </div>
         )}
 
-        {/* Cities */}
+        {/* ── Cities ── */}
         {cities.length > 0 && (
           <div className="bg-slate-50 dark:bg-[#080C14] border-t border-slate-100 dark:border-[#1E293B] px-5 py-4">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Destinos visitados</p>
             <div className="flex flex-wrap gap-1.5">
               {cities.map((c) => (
-                <span key={c} className="rounded-full bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-[#334155] px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">{c}</span>
+                <span key={c} className="rounded-full bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-[#334155] px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  {c}
+                </span>
               ))}
             </div>
           </div>
         )}
 
-        {/* Footer */}
+        {/* ── Footer Kaviro ── */}
         <div className="bg-slate-900 px-5 py-3 flex items-center justify-between">
-          <p className="text-slate-500 text-xs font-semibold">Organizado con <span className="text-violet-400 font-bold">Kaviro</span></p>
-          <Compass className="w-4 h-4 text-violet-500" />
+          <div className="flex items-center gap-2">
+            <div style={{ width: 20, height: 20, borderRadius: 6, background: "#F87171", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "#fff", fontWeight: 900, fontSize: 11, fontFamily: "sans-serif", lineHeight: 1 }}>K</span>
+            </div>
+            <p className="text-slate-400 text-xs font-semibold">
+              Organizado con <span className="text-[#F87171] font-bold">Kaviro</span>
+            </p>
+          </div>
+          <p className="text-slate-600 text-[10px]">kaviro.app</p>
         </div>
       </div>
 
-      {/* Share / download actions */}
+      {/* ── Actions ── */}
       <div className="flex gap-3 w-full max-w-sm flex-wrap">
         <a
           href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
