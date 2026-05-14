@@ -316,14 +316,37 @@ export default function TripRecapClient({
         <button
           type="button"
           onClick={async () => {
-            // Download image first, then open WhatsApp with text
-            // (WhatsApp web/mobile can't receive images directly via URL)
-            await downloadAsImage("square");
-            // Small delay so download starts before opening WhatsApp
-            setTimeout(() => {
-              const text = shareMessage + "\n\n📸 Imagen descargada — adjúntala en WhatsApp";
+            try {
+              // Build SVG image as blob
+              const params = new URLSearchParams({
+                tripName, destination: destination || "",
+                startDate: startDate || "", endDate: endDate || "",
+                days: String(totalDays), activities: String(activitiesCount),
+                km: String(Math.round(kmTravelled)), participants: String(participantsCount),
+                expenses: "", format: "square",
+              });
+              const res = await fetch(`/api/trip-recap-image?${params.toString()}`);
+              const blob = await res.blob();
+              const file = new File([blob], `kaviro-${tripName.toLowerCase().replace(/\s+/g, "-")}.svg`, { type: "image/svg+xml" });
+
+              // Try native share with file (iOS/Android) — includes image in WhatsApp
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  files: [file],
+                  title: `Viaje ${tripName}`,
+                  text: shareMessage,
+                });
+              } else if (navigator.share) {
+                // Desktop fallback — share text only
+                await navigator.share({ title: `Viaje ${tripName}`, text: shareMessage });
+              } else {
+                // Web fallback — open WhatsApp with text
+                window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, "_blank");
+              }
+            } catch {
+              // User cancelled or error — fallback
               window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, "_blank");
-            }, 800);
+            }
           }}
           className="flex items-center justify-center gap-1.5 rounded-2xl bg-[#25D366] px-4 py-3 text-sm font-bold text-white hover:bg-[#20b858] transition"
         >
