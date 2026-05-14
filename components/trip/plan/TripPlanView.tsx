@@ -537,7 +537,7 @@ export default function TripPlanView({
                 type="button"
                 onClick={() => setSelectedActivityIds(new Set(selectableActivityIds))}
                 disabled={!selectableActivityIds.length || saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto"
+                className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 Seleccionar todos
               </button>
@@ -567,7 +567,7 @@ export default function TripPlanView({
           <button
             type="button"
             onClick={handleStartCreate}
-            className={`${btnPrimary} w-full gap-2 sm:w-auto`}
+            className={`hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`}
             title="Crear un plan manual"
           >
             <Plus className="h-4 w-4" />
@@ -606,7 +606,7 @@ export default function TripPlanView({
                 if (data?.token) window.open(`/share/${data.token}/pdf`, "_blank");
               } catch { /* silent */ }
             }}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+            className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Exportar itinerario como PDF"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

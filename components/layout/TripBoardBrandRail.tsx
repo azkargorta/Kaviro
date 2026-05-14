@@ -7,6 +7,8 @@ import { useTripBoardHeader } from "@/components/layout/TripBoardHeaderContext";
 import TripPageHelp from "@/components/trip/common/TripPageHelp";
 import TripActivityFeedButton from "@/components/trip/common/TripActivityFeedButton";
 import TripBoardMobileMenu from "@/components/layout/TripBoardMobileMenu";
+import { Search } from "lucide-react";
+import CommandPaletteButton from "@/components/layout/CommandPaletteButton";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 
 type Props = {

@@ -23,7 +23,7 @@ export default function CommandPalette({ tripId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Keyboard shortcut Cmd+K / Ctrl+K
+  // Keyboard shortcut Cmd+K / Ctrl+K + mobile button event
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -32,8 +32,13 @@ export default function CommandPalette({ tripId }: Props) {
       }
       if (e.key === "Escape") setOpen(false);
     }
+    function onMobileOpen() { setOpen(true); }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("kaviro:open-palette", onMobileOpen);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("kaviro:open-palette", onMobileOpen);
+    };
   }, []);
 
   // Focus input when opened
