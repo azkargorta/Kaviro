@@ -134,32 +134,38 @@ export default async function SharePdfPage({ params }: Props) {
           padding: 48px 56px;
         }
         .logo-mark {
-          width: 56px;
-          height: 56px;
-          border-radius: 16px;
+          width: 168px;
+          height: 168px;
+          border-radius: 40px;
           background: #F87171;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 8px 32px rgba(248,113,113,0.4);
+          box-shadow: 0 24px 80px rgba(248,113,113,0.45);
         }
         .logo-k {
           color: #fff;
           font-weight: 900;
-          font-size: 28px;
+          font-size: 88px;
           font-family: sans-serif;
           line-height: 1;
           letter-spacing: -0.05em;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          text-align: center;
         }
         .logo-name {
-          font-size: 13px;
+          font-size: 16px;
           font-weight: 700;
           color: rgba(255,255,255,0.5);
-          letter-spacing: 0.2em;
+          letter-spacing: 0.3em;
           font-family: sans-serif;
-          margin-top: 10px;
+          margin-top: 18px;
+          text-align: center;
         }
-        .cover-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .cover-main { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 8px; }
         .cover-destination {
           font-size: 11px;
           font-weight: 700;
@@ -182,7 +188,7 @@ export default async function SharePdfPage({ params }: Props) {
           font-size: 16px;
           color: rgba(255,255,255,0.45);
           font-style: italic;
-          margin-bottom: 40px;
+          margin-bottom: 24px;
           font-family: Georgia, serif;
         }
         .cover-pills { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -225,7 +231,7 @@ export default async function SharePdfPage({ params }: Props) {
           color: rgba(248,113,113,0.6);
           font-family: sans-serif;
         }
-        .itinerary { padding: 40px 56px; }
+        .itinerary { padding: 48px 56px 40px; }
         .day-header {
           display: flex;
           align-items: baseline;
@@ -307,6 +313,8 @@ export default async function SharePdfPage({ params }: Props) {
           padding-top: 8px;
         }
         .day-section { margin-bottom: 32px; }
+        .day-section + .day-section { margin-top: 40px; }
+        @media print { .day-section { break-before: auto; } .day-section:not(:first-child) { padding-top: 8px; } }
       `}</style>
 
       {/* ── Banner de pantalla (no se imprime) ── */}
@@ -321,16 +329,16 @@ export default async function SharePdfPage({ params }: Props) {
         <div className="cover-accent" />
         <div className="cover-accent2" />
         <div className="cover-content">
-          {/* Logo */}
-          <div>
+          {/* Logo — centrado en el espacio libre superior */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <div className="logo-mark">
               <span className="logo-k">K</span>
             </div>
             <div className="logo-name">KAVIRO</div>
           </div>
 
-          {/* Contenido central */}
-          <div className="cover-main">
+          {/* Contenido central — pegado al fondo */}
+          <div className="cover-main" style={{ flex: "none" }}>
             {trip.destination && (
               <div className="cover-destination">{trip.destination}</div>
             )}
