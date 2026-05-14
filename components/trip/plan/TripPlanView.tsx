@@ -608,8 +608,20 @@ export default function TripPlanView({
                 });
                 const data = await res.json();
                 const token = data?.share?.token ?? data?.token;
-                if (token) window.open(`/share/${token}/pdf`, "_blank");
-                else alert("No se pudo generar el PDF. Inténtalo de nuevo.");
+                if (token) {
+                  // Open in same tab to preserve session cookies
+                  const pdfUrl = `/share/${token}/pdf`;
+                  const a = document.createElement("a");
+                  a.href = pdfUrl;
+                  a.target = "_blank";
+                  a.rel = "noopener noreferrer";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                } else {
+                  console.error("PDF token not found in response:", data);
+                  alert("No se pudo generar el PDF. Inténtalo de nuevo.");
+                }
               } catch { /* silent */ }
             }}
             className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
@@ -642,15 +654,22 @@ export default function TripPlanView({
                   <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                     Añadir al calendario
                   </p>
-                  <a
-                    href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/api/trips/${tripId}/calendar`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setCalendarMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const url = `${window.location.origin}/api/trips/${tripId}/calendar`;
+                      try { await navigator.clipboard.writeText(url); } catch { /* */ }
+                      setCalendarMenuOpen(false);
+                      alert("URL copiada. En Google Calendar: Otros calendarios → + → Desde URL → pega la URL. Necesitas estar logueado en Kaviro en el mismo navegador.");
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition text-left"
                   >
-                    <span className="text-lg">📅</span> Google Calendar
-                  </a>
+                    <span className="text-lg">📅</span>
+                    <div>
+                      <p className="font-semibold">Google Calendar</p>
+                      <p className="text-xs text-slate-400">Copia la URL del calendario</p>
+                    </div>
+                  </button>
                   <a
                     href={`/api/trips/${tripId}/calendar`}
                     download
