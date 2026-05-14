@@ -227,8 +227,9 @@ export default function TripPlanView({
   initialWorkspaceTab?: "itinerary" | "notes";
   initialSelectedDate?: string | null;
 }) {
-  const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, currentUserId = null, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
+  const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId);
+  const currentUserId: string | null = null; // TODO: wire from useTripActivities once hook is updated
   const {
     kinds: customKinds,
     loading: customKindsLoading,
