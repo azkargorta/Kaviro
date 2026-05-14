@@ -470,7 +470,7 @@ export default function TripAiChatView({
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/account?upgrade=premium&focus=premium#premium-plans"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-hover)]"
             >
               Mejorar a Premium
             </Link>
@@ -1458,7 +1458,7 @@ export default function TripAiChatView({
                 type="button"
                 disabled={onboardingBusy || loading}
                 onClick={() => void quickBootstrapPlan()}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[var(--brand-hover)] disabled:opacity-50"
               >
                 {onboardingBusy ? "Generando…" : "Sugerir itinerario"}
               </button>
@@ -1528,7 +1528,7 @@ export default function TripAiChatView({
                 type="button"
                 disabled={executingPlan}
                 onClick={() => void runExecutePlan("replace")}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
               >
                 Sustituir
               </button>
@@ -1701,7 +1701,7 @@ export default function TripAiChatView({
                   }
                   void runExecutePlan("add");
                 }}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
               >
                 {executingPlan ? "Ejecutando..." : "Ejecutar plan"}
               </button>
@@ -1769,7 +1769,7 @@ export default function TripAiChatView({
                     setApplyingDiff(false);
                   }
                 }}
-                className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                className="rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-60"
               >
                 {applyingDiff ? "Aplicando..." : "Aplicar cambios"}
               </button>

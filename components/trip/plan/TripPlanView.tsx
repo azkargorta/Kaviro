@@ -253,6 +253,7 @@ export default function TripPlanView({
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [editIconPickerId, setEditIconPickerId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -471,7 +472,7 @@ export default function TripPlanView({
       <div
         role="tablist"
         aria-label="Vista del plan"
-        className={`${chipGroup} sm:inline-flex sm:max-w-md`}
+        className={`${chipGroup} max-w-full sm:max-w-md`}
       >
         <button
           type="button"
@@ -573,23 +574,37 @@ export default function TripPlanView({
             <Plus className="h-4 w-4" />
             Añadir plan
           </button>
+          {/* Explorar — desktop only; mobile via options sheet */}
           <button
             type="button"
             onClick={() => setExploreOpen(true)}
-            className={`${btnSecondary} w-full gap-2 sm:w-auto`}
+            className={`hidden sm:inline-flex ${btnSecondary} w-full gap-2 sm:w-auto`}
             title="Buscar lugares y crear planes con coordenadas"
           >
             <Compass className="h-4 w-4" />
             Explorar
           </button>
+          {/* Historial — desktop only; mobile via options sheet */}
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+            className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Ver historial de cambios"
           >
             <Clock className="h-4 w-4" />
             Historial
+          </button>
+
+          {/* Mobile options button — ⋯ */}
+          <button
+            type="button"
+            onClick={() => setMobileOptionsOpen(true)}
+            className="sm:hidden inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+            title="Más opciones"
+            aria-label="Más opciones del plan"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>
+            Más
           </button>
 
           {/* PDF export — generates share token then opens PDF */}

@@ -159,7 +159,7 @@ export default function TripExpensesView({
           title="Exportar gastos y pagos"
         >
           <Download className="h-4 w-4" aria-hidden />
-          Exportar CSV
+          <span className="hidden sm:inline">Exportar</span> CSV
         </button>
         <button
           type="button"
