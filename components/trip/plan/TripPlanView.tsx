@@ -1227,15 +1227,17 @@ export default function TripPlanView({
                               {isLodging ? (
                                 <PlanLodgingCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
                               ) : (
-                                <PlanActivityCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} premiumEnabled={premiumEnabled} />
-                                {isPremium && (
-                                  <ActivityReactions
-                                    tripId={tripId}
-                                    activityId={activity.id}
-                                    currentUserId={trip?.participant?.user_id ?? null}
-                                    displayName={trip?.participant?.display_name ?? "Yo"}
-                                  />
-                                )}
+                                <>
+                                  <PlanActivityCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} premiumEnabled={premiumEnabled} />
+                                  {isPremium && (
+                                    <ActivityReactions
+                                      tripId={tripId}
+                                      activityId={activity.id}
+                                      currentUserId={trip?.participant?.user_id ?? null}
+                                      displayName={trip?.participant?.display_name ?? "Yo"}
+                                    />
+                                  )}
+                                </>
                               )}
                             </SortableRow>
                           );
