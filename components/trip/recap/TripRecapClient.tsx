@@ -38,25 +38,29 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
 
   const [downloading, setDownloading] = useState(false);
 
-  async function downloadAsImage() {
-    if (!cardRef.current) return;
+  async function downloadAsImage(format: "square" | "stories" = "square") {
     setDownloading(true);
     try {
-      // Dynamic import to avoid SSR issues
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: null,
-        scale: 2, // Retina quality
-        useCORS: true,
-        logging: false,
+      const params = new URLSearchParams({
+        tripName,
+        destination: destination || "",
+        startDate: startDate || "",
+        endDate: endDate || "",
+        days: String(totalDays),
+        activities: String(activitiesCount),
+        km: String(Math.round(kmTravelled)),
+        participants: String(participantsCount),
+        expenses: totalExpenses > 0 ? formatMoney(totalExpenses, currency) : "",
+        format,
       });
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `kaviro-${tripName.toLowerCase().replace(/\s+/g, "-")}.png`;
-      link.href = dataUrl;
-      link.click();
+      const url = `/api/trip-recap-image?${params.toString()}`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kaviro-${tripName.toLowerCase().replace(/\s+/g, "-")}-${format}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch {
-      // Fallback: share text if html2canvas fails
       shareText();
     } finally {
       setDownloading(false);
@@ -92,16 +96,16 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
       {/* Main card */}
       <div ref={cardRef} className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl">
         {/* Header gradient */}
-        <div className="bg-gradient-to-br from-violet-600 via-violet-700 to-indigo-800 px-6 pt-8 pb-6 text-white">
-          <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-2">✈️ Viaje completado</p>
+        <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-6 pt-8 pb-6 text-white">
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">✈️ Viaje completado</p>
           <h1 className="text-2xl font-extrabold leading-tight">{tripName}</h1>
           {destination && (
-            <p className="text-violet-200 mt-1 text-sm font-medium flex items-center gap-1.5">
+            <p className="text-white/70 mt-1 text-sm font-medium flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 shrink-0" />{destination}
             </p>
           )}
           {startDate && endDate && (
-            <p className="text-violet-300 mt-1 text-xs font-semibold flex items-center gap-1.5">
+            <p className="text-white/50 mt-1 text-xs font-semibold flex items-center gap-1.5">
               <Calendar className="w-3 h-3 shrink-0" />{formatDate(startDate)} → {formatDate(endDate)}
             </p>
           )}
@@ -192,13 +196,23 @@ export default function TripRecapClient({ tripId, tripName, destination, startDa
         </button>
         <button
           type="button"
-          onClick={downloadAsImage}
+          onClick={() => void downloadAsImage("square")}
           disabled={downloading}
           className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition disabled:opacity-50"
-          title="Descargar como imagen"
+          title="Descargar imagen cuadrada para WhatsApp"
         >
           <Download className="w-4 h-4" />
           {downloading ? "..." : "PNG"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void downloadAsImage("stories")}
+          disabled={downloading}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition disabled:opacity-50"
+          title="Descargar imagen vertical para Instagram Stories"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
+          {downloading ? "..." : "Stories"}
         </button>
         <Link
           href={`/trip/${tripId}/plan`}
