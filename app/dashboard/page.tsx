@@ -136,9 +136,23 @@ export default async function DashboardPage() {
   const lockedTripIds = new Set<string>();
   const freeTripLimitReached = !isPremium && trips.length >= 3;
 
+  // For onboarding checklist — check if user has invited someone or added an expense
+  let hasParticipants = false;
+  let hasExpenses = false;
+  if (tripIds.length > 0) {
+    const [{ count: partCount }, { count: expCount }] = await Promise.all([
+      supabase.from("trip_participants").select("*", { count: "exact", head: true })
+        .in("trip_id", tripIds).neq("user_id", user.id),
+      supabase.from("trip_expenses").select("*", { count: "exact", head: true })
+        .in("trip_id", tripIds),
+    ]);
+    hasParticipants = (partCount ?? 0) > 0;
+    hasExpenses = (expCount ?? 0) > 0;
+  }
+
   return (
     <main className="page-shell space-y-4 pb-8 md:space-y-5 md:pb-10">
-      <OnboardingNudge hasTrips={trips.length > 0} />
+      <OnboardingNudge hasTrips={trips.length > 0} hasParticipants={hasParticipants} hasExpenses={hasExpenses} />
 
       <DashboardPageHeader isAdmin={isAdmin} />
 
@@ -150,7 +164,7 @@ export default async function DashboardPage() {
         <div className="mx-auto mt-4 max-w-2xl border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50">
           {isPremium ? (
             <>
-              <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">
+              <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--brand)] dark:text-[#F87171]">
                 Asistente personal
               </p>
               <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
@@ -160,10 +174,10 @@ export default async function DashboardPage() {
               <div className="mt-4 flex justify-center">
                 <Link
                   href="/trips/new/planner"
-                  className="inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border-2 border-violet-300 bg-violet-50/80 px-3 py-2 text-center text-xs font-semibold text-violet-950 shadow-sm transition hover:bg-violet-50 disabled:opacity-60 sm:w-auto sm:min-w-[320px] sm:text-sm"
+                  className="inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:bg-[var(--brand-light)] disabled:opacity-60 sm:w-auto sm:min-w-[320px] sm:text-sm"
                   title="Genera un borrador con lugares reales y coordenadas"
                 >
-                  <Sparkles className="h-4 w-4 text-violet-700" aria-hidden />
+                  <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />
                   Planificador IA (borrador)
                 </Link>
               </div>
@@ -223,7 +237,7 @@ export default async function DashboardPage() {
             subtitle="Viajes con fecha futura."
             trips={future}
             badge="Próximo"
-            accent="from-violet-100 to-fuchsia-50 border-violet-200"
+            accent="from-[var(--brand-light)] to-slate-50 border-[var(--brand-border)]"
             lockedTripIds={Array.from(lockedTripIds)}
           />
           <DashboardTripSection
