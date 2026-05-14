@@ -59,7 +59,7 @@ export default async function SharePdfPage({ params }: Props) {
   const days = groupByDay(activities);
 
   return (
-    <main className="bg-white text-slate-950">
+    <main className="bg-white dark:bg-[#0F1623] text-slate-950 dark:text-white">
       <PrintOnLoad />
       <style>{`
         @page { size: A4; margin: 14mm; }
@@ -74,7 +74,7 @@ export default async function SharePdfPage({ params }: Props) {
         }
       `}</style>
 
-      <div className="no-print border-b border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+      <div className="no-print border-b border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
         Se abrirá el diálogo de impresión. Elige “Guardar como PDF”.
       </div>
 
@@ -100,21 +100,21 @@ export default async function SharePdfPage({ params }: Props) {
           </h1>
           <div className="mt-6 flex flex-wrap gap-4">
             {trip.start_date && (
-              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Desde</div>
-                <div className="mt-0.5 text-base font-bold text-slate-800">{formatDate(trip.start_date)}</div>
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">Desde</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800 dark:text-white">{formatDate(trip.start_date)}</div>
               </div>
             )}
             {trip.end_date && (
-              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Hasta</div>
-                <div className="mt-0.5 text-base font-bold text-slate-800">{formatDate(trip.end_date)}</div>
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">Hasta</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800 dark:text-white">{formatDate(trip.end_date)}</div>
               </div>
             )}
             {activities.length > 0 && (
-              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Actividades</div>
-                <div className="mt-0.5 text-base font-bold text-slate-800">{activities.length}</div>
+              <div className="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">Actividades</div>
+                <div className="mt-0.5 text-base font-bold text-slate-800 dark:text-white">{activities.length}</div>
               </div>
             )}
           </div>

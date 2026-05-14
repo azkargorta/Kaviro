@@ -299,10 +299,10 @@ export default function ExpenseList({
                 </div>
 
                 {/* Actions row */}
-                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-2 flex gap-1.5">
-                  <button type="button" onClick={() => onEdit(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]">Editar</button>
-                  <button type="button" onClick={() => onDuplicate(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]">Duplicar</button>
-                  <button type="button" onClick={() => onDelete(expense.id)} className="ml-auto rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50">Eliminar</button>
+                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-3 flex gap-2">
+                  <button type="button" onClick={() => onEdit(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B] min-h-[36px]">Editar</button>
+                  <button type="button" onClick={() => onDuplicate(expense)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B] min-h-[36px]">Duplicar</button>
+                  <button type="button" onClick={() => onDelete(expense.id)} className="ml-auto rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 min-h-[36px]">Eliminar</button>
                 </div>
               </div>
             );
