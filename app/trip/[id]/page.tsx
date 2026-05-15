@@ -10,6 +10,6 @@ type TripPageProps = {
 export default async function TripPage({ params }: TripPageProps) {
   const tripId = params.id;
   await requireTripAccess(tripId);
-  redirect(`/trip/${encodeURIComponent(tripId)}/plan`);
+  redirect(`/trip/${encodeURIComponent(tripId)}/summary`);
 }
 

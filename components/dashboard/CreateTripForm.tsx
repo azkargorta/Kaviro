@@ -106,13 +106,8 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
       setBaseCurrency("EUR");
 
       setStep("done");
-      if (isPremium) {
-        toast.success("Viaje creado", "Te llevamos al asistente personal para montar el viaje.");
-        router.push(`/trip/${newTripId}/ai-chat?recien=1&modo=planificador`);
-      } else {
-        toast.success("Viaje creado", "Te llevamos al resumen del viaje.");
-        router.push(`/trip/${newTripId}`);
-      }
+      toast.success("Viaje creado", "Te llevamos al resumen para los primeros pasos.");
+      router.push(`/trip/${encodeURIComponent(newTripId)}/summary?recien=1`);
       router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo crear el viaje.";

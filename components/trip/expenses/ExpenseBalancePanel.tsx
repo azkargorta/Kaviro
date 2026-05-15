@@ -470,7 +470,7 @@ export default function ExpenseBalancePanel({
                       )}
                     </div>
                     <div className="mt-2 text-xs text-slate-500">
-                      Consejo: deja bloqueos solo cuando sea necesario. Si el modo estricto está activo y no hay forma de saldar, TripBoard te avisará.
+                      Consejo: deja bloqueos solo cuando sea necesario. Si el modo estricto está activo y no hay forma de saldar, Kaviro te avisará.
                     </div>
                   </div>
                 </div>

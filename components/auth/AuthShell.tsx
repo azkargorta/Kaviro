@@ -32,7 +32,7 @@ export default function AuthShell({
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
                   <span>Acceso</span>
                   <span>•</span>
-                  <span>Travel Dashboard</span>
+                  <span>Kaviro</span>
                 </div>
 
                 <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight">

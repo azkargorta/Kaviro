@@ -485,8 +485,10 @@ export default function TripPageHelp() {
       openTour();
     };
 
+    window.addEventListener("kaviro:first-run-dismissed", onFirstRunDismiss as EventListener);
     window.addEventListener("tripboard:first-run-dismissed", onFirstRunDismiss as EventListener);
     return () => {
+      window.removeEventListener("kaviro:first-run-dismissed", onFirstRunDismiss as EventListener);
       window.removeEventListener("tripboard:first-run-dismissed", onFirstRunDismiss as EventListener);
       window.clearTimeout(fallback);
     };

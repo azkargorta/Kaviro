@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageParticipants, requireTripAccessApi } from "@/lib/trip-access-api";
 import { normalizePermissions, type TripRole } from "@/lib/participants";
 
 export const runtime = "nodejs";
@@ -12,8 +12,9 @@ export async function GET(request: Request) {
     const tripId = searchParams.get("tripId");
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const { supabase } = gate;
 
     const { data, error } = await supabase
       .from("trip_participants")
@@ -39,12 +40,12 @@ export async function POST(request: Request) {
     const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    const access = await requireTripAccess(tripId);
-    if (access.role !== "owner") {
-      return NextResponse.json({ error: "Solo el owner puede gestionar participantes." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const denied = forbidUnlessCanManageParticipants(gate.access);
+    if (denied) return denied;
 
-    const supabase = await createClient();
+    const { supabase } = gate;
 
     const role = (typeof body?.role === "string" ? body.role : "viewer") as TripRole;
     const permissions = normalizePermissions(role, body || undefined);
