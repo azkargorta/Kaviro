@@ -38,6 +38,66 @@ function monthInputDefault() {
   return `${y}-${m}`;
 }
 
+
+// ── Sparkline SVG chart ──────────────────────────────────────────────────────
+function Sparkline({ data, color = "#F87171", height = 48 }: {
+  data: { date: string; count: number }[];
+  color?: string;
+  height?: number;
+}) {
+  if (!data.length) return null;
+  const W = 400;
+  const H = height;
+  const max = Math.max(...data.map((d) => d.count), 1);
+  const step = W / (data.length - 1 || 1);
+  const pts = data.map((d, i) => ({
+    x: i * step,
+    y: H - (d.count / max) * (H - 4) - 2,
+  }));
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  const area = `${line} L ${pts[pts.length-1].x.toFixed(1)} ${H} L 0 ${H} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }}>
+      <defs>
+        <linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#grad-${color.replace("#","")})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill={color} opacity={i === pts.length - 1 ? 1 : 0} />
+      ))}
+    </svg>
+  );
+}
+
+// ── Bar chart ─────────────────────────────────────────────────────────────────
+function BarChart({ data, color = "#F87171" }: {
+  data: { label: string; value: number }[];
+  color?: string;
+}) {
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div className="space-y-2">
+      {data.map((d) => (
+        <div key={d.label} className="flex items-center gap-3">
+          <span className="w-32 shrink-0 truncate text-xs text-slate-500 dark:text-slate-400">{d.label}</span>
+          <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${(d.value / max) * 100}%`, background: color }}
+            />
+          </div>
+          <span className="w-8 text-right text-xs font-bold text-slate-600 dark:text-slate-300 tabular-nums">{d.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminPanel() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [visits, setVisits] = useState<VisitsPayload | null>(null);
@@ -216,10 +276,39 @@ export default function AdminPanel() {
 
         {visits ? (
           <div className="mt-6 space-y-6">
-            <p className="text-sm text-slate-700">
-              <span className="font-semibold">{visits.totalViews}</span> vistas en los últimos {visits.days} días (muestra
-              máx. 5000).
+            <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+              <span className="font-semibold">{visits.totalViews}</span> vistas en los últimos {visits.days} días
             </p>
+
+            {/* Sparkline — daily views */}
+            {visits.series.length > 1 && (
+              <div className="rounded-2xl border border-slate-200 dark:border-[#1E293B] bg-white dark:bg-[#0F1623] p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-400">Vistas por día</p>
+                  <p className="text-xl font-extrabold text-slate-900 dark:text-white">{visits.totalViews}</p>
+                </div>
+                <Sparkline data={visits.series} color="#F87171" height={56} />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[10px] text-slate-400">{visits.series[0]?.date}</span>
+                  <span className="text-[10px] text-slate-400">{visits.series[visits.series.length - 1]?.date}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Top paths bar chart */}
+            {visits.topPaths.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 dark:border-[#1E293B] bg-white dark:bg-[#0F1623] p-4 mb-4">
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-400 mb-3">Rutas más visitadas</p>
+                <BarChart
+                  data={visits.topPaths.slice(0, 8).map((p) => ({
+                    label: p.path.replace(/\/trip\/[^/]+/, "/trip/…"),
+                    value: p.count,
+                  }))}
+                  color="#6366f1"
+                />
+              </div>
+            )}
+
             <div className="grid gap-6 lg:grid-cols-2">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">Rutas más visitadas</h3>

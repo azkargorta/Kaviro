@@ -482,12 +482,42 @@ function DebugPanel({ draft }: { draft: ApiDraft }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const TRIP_TEMPLATES = [
-  { id: "weekend-city", emoji: "🏙️", label: "Fin de semana ciudad",    freeText: "turismo urbano, gastronomía local, ritmo tranquilo" },
-  { id: "beach-week",   emoji: "🏖️", label: "Semana en la playa",      freeText: "playa, relax, gastronomía local, sin museos" },
-  { id: "road-trip",    emoji: "🚗", label: "Road trip",               freeText: "varios destinos, flexible, naturaleza, carretera" },
-  { id: "cultural",     emoji: "🏛️", label: "Cultural e historia",     freeText: "museos, monumentos, historia, arte, visitas guiadas" },
-  { id: "nature",       emoji: "🌿", label: "Naturaleza y senderismo",  freeText: "senderismo, naturaleza, actividades al aire libre" },
-  { id: "family",       emoji: "👨‍👩‍👧", label: "Viaje en familia",        freeText: "con niños, ritmo tranquilo, actividades familiares" },
+  {
+    id: "weekend-city", emoji: "🏙️", label: "Fin de semana ciudad",
+    sublabel: "París, Roma, Lisboa...",
+    freeText: "turismo urbano, gastronomía local, ritmo tranquilo, paseos por el centro histórico, mercados y cafés, sin agobios",
+    suggestedDays: 3,
+  },
+  {
+    id: "beach-week", emoji: "🏖️", label: "Semana en la playa",
+    sublabel: "Baleares, Algarve, Grecia...",
+    freeText: "playa, relax, gastronomía local, algún pueblo con encanto, sin museos, snorkel, puestas de sol",
+    suggestedDays: 7,
+  },
+  {
+    id: "road-trip", emoji: "🚗", label: "Road trip",
+    sublabel: "Costa Amalfitana, Escocia...",
+    freeText: "varios destinos conectados por carretera, flexible, naturaleza, miradores, pueblos pequeños, máximo 2h de conducción al día",
+    suggestedDays: 7,
+  },
+  {
+    id: "cultural", emoji: "🏛️", label: "Cultural e historia",
+    sublabel: "Atenas, Florencia, Cracovia...",
+    freeText: "museos principales, monumentos históricos, arte, arquitectura, visitas guiadas, mercados de antigüedades, gastronomía local",
+    suggestedDays: 5,
+  },
+  {
+    id: "nature", emoji: "🌿", label: "Naturaleza y senderismo",
+    sublabel: "Pirineos, Dolomitas, Islandia...",
+    freeText: "senderismo, rutas de montaña, naturaleza, miradores, fauna local, refugios, sin demasiado turismo de masas",
+    suggestedDays: 6,
+  },
+  {
+    id: "family", emoji: "👨‍👩‍👧", label: "Viaje en familia",
+    sublabel: "Con niños, ritmo tranquilo",
+    freeText: "actividades para niños, museos interactivos, parques, playas tranquilas, restaurantes familiares, sin caminatas largas, hoteles céntricos",
+    suggestedDays: 5,
+  },
 ] as const;
 
 
