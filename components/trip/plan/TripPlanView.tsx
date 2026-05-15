@@ -662,38 +662,56 @@ export default function TripPlanView({
             {calendarMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setCalendarMenuOpen(false)} />
-                <div className="absolute right-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+                <div className="absolute right-0 top-full z-40 mt-1 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
                   <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
-                    Añadir al calendario
+                    Exportar al calendario
                   </p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const url = `${window.location.origin}/api/trips/${tripId}/calendar`;
-                      try { await navigator.clipboard.writeText(url); } catch { /* */ }
-                      setCalendarMenuOpen(false);
-                      alert("URL copiada. En Google Calendar: Otros calendarios → + → Desde URL → pega la URL. Necesitas estar logueado en Kaviro en el mismo navegador.");
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition text-left"
-                  >
-                    <span className="text-lg">📅</span>
-                    <div>
-                      <p className="font-semibold">Google Calendar</p>
-                      <p className="text-xs text-slate-400">Copia la URL del calendario</p>
+                  {activities.filter((a) => a.activity_date).length > 0 ? (
+                    <div className="max-h-52 overflow-y-auto">
+                      {activities.filter((a) => a.activity_date).map((a) => {
+                        const d = (a.activity_date ?? "").replace(/-/g, "");
+                        const t = a.activity_time ? a.activity_time.replace(/:/g, "").slice(0, 6).padEnd(6, "0") : null;
+                        const start = t ? `${d}T${t}` : d;
+                        const endStr = t
+                          ? (() => {
+                              const [h, m] = (a.activity_time ?? "09:00").split(":").map(Number);
+                              const tot = h * 60 + m + 90;
+                              return `${d}T${String(Math.floor(tot / 60) % 24).padStart(2, "0")}${String(tot % 60).padStart(2, "0")}00`;
+                            })()
+                          : (() => {
+                              const nd = new Date(`${a.activity_date}T00:00:00`);
+                              nd.setDate(nd.getDate() + 1);
+                              return nd.toISOString().slice(0, 10).replace(/-/g, "");
+                            })();
+                        const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(a.title || a.place_name || "Actividad")}&dates=${start}/${endStr}${a.place_name || a.address ? `&location=${encodeURIComponent(a.place_name || a.address || "")}` : ""}`;
+                        return (
+                          <a key={a.id} href={gcalUrl} target="_blank" rel="noopener noreferrer"
+                            onClick={() => setCalendarMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition border-b border-slate-100 dark:border-[#1E293B] last:border-0"
+                          >
+                            <span className="text-base shrink-0">📅</span>
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold">{a.title || a.place_name}</p>
+                              <p className="text-[10px] text-slate-400">{a.activity_date}{a.activity_time ? ` · ${a.activity_time.slice(0, 5)}` : ""}</p>
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
-                  </button>
-                  <a
-                    href={`/api/trips/${tripId}/calendar`}
-                    download
-                    onClick={() => setCalendarMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
-                  >
-                    <span className="text-lg">🍎</span> Apple / Outlook (.ics)
-                  </a>
-                  <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-2">
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                      El .ics se abre con cualquier app de calendario instalada.
-                    </p>
+                  ) : (
+                    <p className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500">No hay actividades con fecha asignada.</p>
+                  )}
+                  <div className="border-t border-slate-100 dark:border-[#1E293B]">
+                    <a href={`/api/trips/${tripId}/calendar`} download
+                      onClick={() => setCalendarMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+                    >
+                      <span className="text-base">⬇️</span>
+                      <div>
+                        <p className="text-xs font-semibold">Descargar todo (.ics)</p>
+                        <p className="text-[10px] text-slate-400">Apple Calendar · Outlook · otros</p>
+                      </div>
+                    </a>
                   </div>
                 </div>
               </>

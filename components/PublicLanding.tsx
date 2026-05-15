@@ -1,204 +1,416 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import TripBoardLogo from "@/components/brand/TripBoardLogo";
-import { ArrowRight, CalendarDays, Check, MapPinned, Sparkles, Wallet } from "lucide-react";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import {
+  ArrowRight, CalendarDays, MapPinned, Wallet, Sparkles,
+  Users, Share2, CheckCircle2, Star,
+} from "lucide-react";
 
-function Feature({ children }: { children: string }) {
-  return (
-    <li className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
-      <Check className="mt-0.5 h-4 w-4 text-emerald-600" aria-hidden />
-      <span>{children}</span>
-    </li>
-  );
-}
-
-/**
- * Landing pública.
- *
- * Importante: mantenemos el “escape hatch” para enlaces de Supabase con tokens
- * en el hash (#) o con `code` en query para recovery/OAuth.
- */
-export default function PublicLanding() {
+// ── Auth redirect (keep existing logic) ──────────────────────────────────────
+function useAuthRedirect() {
   useEffect(() => {
     const { hash, search } = window.location;
     const code = new URLSearchParams(search).get("code");
-
     if (code) {
-      const q = new URLSearchParams({
-        code,
-        next: "/auth/reset-password",
-        type: "recovery",
-      });
+      const q = new URLSearchParams({ code, next: "/auth/reset-password", type: "recovery" });
       window.location.replace(`/auth/callback?${q.toString()}`);
       return;
     }
-
     if (hash && (hash.includes("type=recovery") || hash.includes("access_token"))) {
       window.location.replace(`/auth/reset-password${hash}`);
-      return;
     }
   }, []);
+}
+
+// ── Feature card ──────────────────────────────────────────────────────────────
+function FeatureCard({
+  icon, title, desc, color,
+}: { icon: React.ReactNode; title: string; desc: string; color: string }) {
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl ${color}`}>
+        {icon}
+      </div>
+      <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{desc}</p>
+    </div>
+  );
+}
+
+// ── Stat pill ─────────────────────────────────────────────────────────────────
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{value}</div>
+      <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</div>
+    </div>
+  );
+}
+
+// ── Fake activity card (UI preview) ──────────────────────────────────────────
+function ActivityRow({ time, title, place, icon }: { time: string; title: string; place: string; icon: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-3 dark:border-[#1E293B] dark:bg-[#080C14]">
+      <span className="mt-0.5 text-xl">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{title}</p>
+        <p className="text-[10px] text-slate-400 truncate">{place}</p>
+      </div>
+      <span className="shrink-0 rounded-md bg-[#F87171] px-1.5 py-0.5 text-[10px] font-bold text-white">{time}</span>
+    </div>
+  );
+}
+
+// ── Testimonial ───────────────────────────────────────────────────────────────
+function Testimonial({ text, name, trip }: { text: string; name: string; trip: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div className="flex gap-0.5 mb-3">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+        ))}
+      </div>
+      <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 italic">"{text}"</p>
+      <div className="mt-3 flex items-center gap-2">
+        <div className="h-7 w-7 rounded-full bg-[#F87171] flex items-center justify-center text-xs font-bold text-white">
+          {name[0]}
+        </div>
+        <div>
+          <p className="text-xs font-bold text-slate-900 dark:text-white">{name}</p>
+          <p className="text-[10px] text-slate-400">{trip}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+export default function PublicLanding() {
+  useAuthRedirect();
+  const [activePlan, setActivePlan] = useState<"día1" | "día2" | "día3">("día1");
+
+  const PREVIEW = {
+    día1: [
+      { time: "09:00", title: "Torre Eiffel", place: "Champ de Mars, París", icon: "🗼" },
+      { time: "13:00", title: "Almuerzo en Le Marais", place: "4 Rue de Bretagne", icon: "🍽️" },
+      { time: "16:00", title: "Museo del Louvre", place: "Rue de Rivoli", icon: "🏛️" },
+    ],
+    día2: [
+      { time: "10:00", title: "Montmartre", place: "Basílica del Sacré-Cœur", icon: "⛪" },
+      { time: "14:00", title: "Mercado de Aligre", place: "Place d'Aligre", icon: "🧺" },
+      { time: "19:00", title: "Crucero por el Sena", place: "Pont de l'Alma", icon: "🚢" },
+    ],
+    día3: [
+      { time: "09:30", title: "Versalles", place: "Place d'Armes, Versailles", icon: "🏰" },
+      { time: "15:00", title: "Jardines de Versalles", place: "Parterre d'Eau", icon: "🌿" },
+      { time: "20:00", title: "Cena en Saint-Germain", place: "Boulevard Saint-Germain", icon: "🍷" },
+    ],
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-cyan-50/80 via-slate-50 to-violet-100/60 dark:bg-gradient-to-b dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
-      <header
-        className="absolute left-0 right-0 top-0 z-50 dark:bg-[#080C14]/90 dark:backdrop-blur-sm"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
-      >
-        <div className="page-shell flex items-center justify-between gap-3 py-3 sm:py-4">
-          {/* Logo: dark variant in light mode, light variant in dark mode */}
+    <main className="min-h-screen bg-slate-50 dark:bg-[#080C14] overflow-x-hidden">
+
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-[#1E293B] dark:bg-[#080C14]/95">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="block dark:hidden">
-            <TripBoardLogo href="/" variant="dark" size="lg" withWordmark imageClassName="h-10 max-h-10 sm:h-12 sm:max-h-12" />
+            <TripBoardLogo href="/" variant="dark" size="lg" withWordmark imageClassName="h-9 max-h-9" />
           </div>
           <div className="hidden dark:block">
-            <TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="h-10 max-h-10 sm:h-12 sm:max-h-12 brightness-200" />
+            <TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="h-9 max-h-9 brightness-200" />
           </div>
-          <nav className="flex flex-wrap items-center justify-end gap-2">
-            <Link
-              href="/pricing"
-              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#F87171] px-4 text-sm font-semibold text-white transition hover:bg-[#EF4444] dark:bg-[#F87171] dark:hover:bg-[#EF4444]"
-            >
+          <nav className="flex items-center gap-2">
+            <Link href="/pricing" className="hidden sm:block text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 py-2 transition">
               Precios
             </Link>
-            <Link
-              href="/auth/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#F87171] px-4 text-sm font-semibold text-white transition hover:bg-[#EF4444] dark:bg-[#F87171] dark:hover:bg-[#EF4444]"
-            >
+            <Link href="/auth/login" className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 py-2 transition">
               Entrar
             </Link>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/auth/register"
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#4F46E5] px-4 text-sm font-semibold text-white transition hover:bg-[#4338CA] dark:bg-[#4F46E5] dark:text-white dark:hover:bg-[#4338CA]"
-              >
-                Crear cuenta
-              </Link>
-            </div>
+            <Link href="/auth/register" className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[#F87171] px-4 text-sm font-bold text-white transition hover:bg-[#EF4444]">
+              Empezar gratis
+            </Link>
             <DarkModeToggle />
           </nav>
         </div>
       </header>
 
-      <section className="page-shell pb-8 pt-[calc(5.25rem+env(safe-area-inset-top))] sm:pb-10 sm:pt-[calc(6rem+env(safe-area-inset-top))] md:pb-12 md:pt-[calc(7rem+env(safe-area-inset-top))]">
-        <div className="relative overflow-hidden rounded-[1.5rem] border border-cyan-200/50 bg-gradient-to-br from-white via-cyan-50/50 to-violet-100/70 p-5 shadow-lg shadow-cyan-900/5 sm:rounded-[2rem] sm:p-7 md:rounded-[2.25rem] md:p-9 lg:p-10 dark:border-[#1E293B] dark:from-[#0D1117] dark:via-[#0D1117] dark:to-[#0D1117]">
-          <div
-            className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl"
-            aria-hidden
-          />
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-[#F87171]/10 blur-3xl" />
+          <div className="absolute top-20 right-0 h-64 w-64 rounded-full bg-indigo-500/5 blur-3xl" />
+        </div>
 
-          <div className="relative grid gap-6 sm:gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-            <div className="space-y-4 sm:space-y-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/60 bg-cyan-100/80 px-3 py-1.5 text-xs font-semibold text-cyan-950 dark:border-[#F87171]/30 dark:bg-[#F87171]/10 dark:text-[#FCA5A5]">
-                  <Sparkles className="h-3.5 w-3.5 text-cyan-700" aria-hidden />
-                  Menos caos, más viaje
-                </div>
+        <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-16 lg:pt-24">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+
+            {/* Left — copy */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#F87171]/30 bg-[#F87171]/10 px-3 py-1.5 text-xs font-bold text-[#F87171]">
+                <Sparkles className="h-3 w-3" />
+                Asistente IA incluido
               </div>
 
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl md:text-[2.65rem] md:leading-tight dark:text-white">
-                Organiza todo tu viaje en un solo lugar
+              <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+                El viaje perfecto,{" "}
+                <span className="text-[#F87171]">organizado</span>{" "}
+                para ti
               </h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base md:text-lg dark:text-slate-300">
-                Itinerario, gastos, rutas y planes sin caos. Gratis: mapa, plan por días y reparto de gastos. Premium:
-                asistente personal, documentos y automatización.
+
+              <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+                Plan día a día, rutas en el mapa, gastos del grupo y asistente IA. Todo en un solo lugar, sin caos, sin Excel.
               </p>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/auth/register"
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-[var(--brand)] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)]"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#F87171] px-8 text-base font-bold text-white shadow-lg shadow-[#F87171]/25 transition hover:bg-[#EF4444] hover:shadow-[#F87171]/40"
                 >
-                  Crear viaje
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                  Crear mi viaje gratis
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  <Link href="/pricing" className="font-semibold text-[var(--brand)] underline-offset-2 hover:underline dark:text-[var(--brand)]">
-                    Ver precios y planes
-                  </Link>
-                </span>
+                <Link
+                  href="/pricing"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                >
+                  Ver planes
+                </Link>
               </div>
 
-              <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white to-violet-50/90 p-4 shadow-sm md:p-5 dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-800/90 dark:text-[#F87171]">Qué incluye</p>
-                <ul className="mt-3 grid gap-2 text-sm text-slate-800 sm:grid-cols-2 dark:text-slate-300">
-                  <Feature>Plan por días con horas</Feature>
-                  <Feature>Rutas entre paradas sobre el mapa</Feature>
-                  <Feature>Gastos y balances del grupo</Feature>
-                  <Feature>Premium: asistente personal y OCR de reservas</Feature>
-                </ul>
-                <p className="mt-3 text-center text-xs text-slate-600">
-                  <Link href="/pricing" className="font-semibold text-[var(--brand)] hover:underline dark:text-[var(--brand)]">
-                    Comparar planes
-                  </Link>
-                </p>
+              <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Gratis para siempre</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Sin tarjeta</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Listo en 2 min</span>
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-cyan-900 to-violet-950 p-6 text-white shadow-xl md:p-8 dark:from-[#1a0533] dark:via-[#0f0a2e] dark:to-[#0d1535] dark:border-[#F87171]/10">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-transparent" aria-hidden />
-                <div className="relative space-y-6">
-                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4" />
-                  <p className="text-sm font-medium leading-relaxed text-cyan-50/95">
-                    Todo lo esencial del viaje en un panel: agenda, rutas, gastos y asistente cuando tengas Premium.
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      { label: "Plan e itinerario", sub: "Por días y horas", icon: CalendarDays, tone: "from-sky-400 to-cyan-300" },
-                      { label: "Rutas", sub: "Paradas enlazadas", icon: MapPinned, tone: "from-emerald-400 to-teal-300" },
-                      { label: "Gastos del grupo", sub: "Balances claros", icon: Wallet, tone: "from-amber-400 to-orange-300" },
-                      { label: "Asistente personal", sub: "Premium", icon: Sparkles, tone: "from-violet-400 to-fuchsia-300" },
-                    ].map((row) => {
-                      const RowIcon = row.icon;
-                      return (
-                      <li
-                        key={row.label}
-                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm"
-                      >
-                        <span
-                          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.tone} text-slate-900 shadow-inner`}
-                        >
-                          <RowIcon className="h-5 w-5" aria-hidden />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-white">{row.label}</p>
-                          <p className="text-xs text-cyan-100/80">{row.sub}</p>
-                        </div>
-                      </li>
-                    );
-                    })}
-                  </ul>
+            {/* Right — UI preview */}
+            <div className="relative">
+              <div className="rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden dark:border-[#1E293B] dark:bg-[#0F1623]">
+                {/* Mock trip header */}
+                <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-white/60 uppercase tracking-widest">París · Francia</p>
+                      <p className="text-lg font-extrabold text-white mt-0.5">Viaje a París 2026</p>
+                    </div>
+                    <div className="flex gap-1">
+                      {["UA", "MG", "JL"].map((i) => (
+                        <div key={i} className="h-8 w-8 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-[10px] font-bold text-white">{i}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Day tabs */}
+                <div className="flex border-b border-slate-100 dark:border-[#1E293B] bg-slate-50 dark:bg-[#080C14]">
+                  {(["día1", "día2", "día3"] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setActivePlan(d)}
+                      className={`flex-1 py-2.5 text-xs font-bold transition ${
+                        activePlan === d
+                          ? "border-b-2 border-[#F87171] text-[#F87171]"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      {d.replace("día", "Día ")}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Activities */}
+                <div className="p-4 space-y-2">
+                  {PREVIEW[activePlan].map((a) => (
+                    <ActivityRow key={a.title} {...a} />
+                  ))}
+                </div>
+
+                {/* Mock expense bar */}
+                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gastos del grupo</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-24 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
+                      <div className="h-full w-3/5 rounded-full bg-[#F87171]" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">€342 / €580</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Floating badge */}
+              <div className="absolute -bottom-4 -right-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+                <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Añadir traslado al aeropuerto</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-violet-200/40 bg-gradient-to-r from-slate-100/90 via-white to-cyan-50/80 dark:border-[#1E293B] dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
-        <div className="page-shell flex flex-col gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-900 dark:text-white">Kaviro</span> · Organiza viajes, gastos y rutas
+      {/* ── Stats ── */}
+      <section className="border-y border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+            <Stat value="2 min" label="Para crear tu primer viaje" />
+            <Stat value="100%" label="Gratis para empezar" />
+            <Stat value="∞" label="Actividades por viaje" />
+            <Stat value="1 clic" label="Para compartir el plan" />
           </div>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/pricing" className="font-semibold text-slate-500 dark:text-slate-400 hover:underline">
-              Precios
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
+            Todo lo que necesitas para viajar sin caos
+          </h2>
+          <p className="mt-3 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+            Desde el primer día de planificación hasta el recap final. Sin cambiar de app.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard
+            icon={<CalendarDays className="h-6 w-6 text-white" />}
+            color="bg-[#F87171]"
+            title="Plan día a día"
+            desc="Arrastra y ordena actividades. Añade horas, lugares y notas. Exporta a PDF o calendario."
+          />
+          <FeatureCard
+            icon={<MapPinned className="h-6 w-6 text-white" />}
+            color="bg-emerald-500"
+            title="Rutas en el mapa"
+            desc="Conecta tus paradas sobre el mapa. Calcula distancias y tiempos de desplazamiento."
+          />
+          <FeatureCard
+            icon={<Wallet className="h-6 w-6 text-white" />}
+            color="bg-amber-500"
+            title="Gastos del grupo"
+            desc="Registra tickets, divide por persona y calcula quién debe a quién al instante."
+          />
+          <FeatureCard
+            icon={<Sparkles className="h-6 w-6 text-white" />}
+            color="bg-indigo-500"
+            title="Asistente IA"
+            desc="Pide un plan completo en lenguaje natural. Sugiere actividades, rutas y horarios."
+          />
+          <FeatureCard
+            icon={<Users className="h-6 w-6 text-white" />}
+            color="bg-pink-500"
+            title="Viaja en grupo"
+            desc="Invita a los compañeros con un enlace. Todos ven el plan en tiempo real."
+          />
+          <FeatureCard
+            icon={<Share2 className="h-6 w-6 text-white" />}
+            color="bg-sky-500"
+            title="Comparte el recuerdo"
+            desc="Al volver, genera una tarjeta resumen con stats del viaje para compartir en redes."
+          />
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section className="bg-white dark:bg-[#0F1623] border-y border-slate-200 dark:border-[#1E293B]">
+        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
+          <h2 className="text-center text-3xl font-extrabold text-slate-900 dark:text-white mb-12">
+            Tres pasos para el viaje perfecto
+          </h2>
+          <div className="grid gap-8 sm:grid-cols-3">
+            {[
+              { step: "01", title: "Crea el viaje", desc: "Ponle nombre, destino y fechas. Invita a los compañeros con un enlace.", icon: "✈️" },
+              { step: "02", title: "Planifica con IA", desc: "Pide un itinerario al asistente o añade actividades una a una sobre el mapa.", icon: "🤖" },
+              { step: "03", title: "Viaja sin caos", desc: "Consulta el plan offline, registra gastos y comparte el recap al volver.", icon: "🎉" },
+            ].map((item) => (
+              <div key={item.step} className="relative text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#080C14] text-3xl border border-slate-200 dark:border-[#1E293B]">
+                  {item.icon}
+                </div>
+                <div className="absolute -top-2 -right-2 sm:right-auto sm:-left-2 h-6 w-6 rounded-full bg-[#F87171] flex items-center justify-center text-[10px] font-black text-white">
+                  {item.step}
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{item.title}</h3>
+                <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ── */}
+      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20">
+        <h2 className="text-center text-3xl font-extrabold text-slate-900 dark:text-white mb-10">
+          Lo que dicen los viajeros
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Testimonial
+            text="Nunca habíamos organizado un viaje de grupo tan bien. El reparto de gastos nos salvó de más de una discusión."
+            name="Marina G."
+            trip="Roma con 6 personas"
+          />
+          <Testimonial
+            text="Le pedí al asistente un itinerario de 5 días en Lisboa y en 30 segundos tenía algo mejor que lo que yo habría hecho en horas."
+            name="Carlos P."
+            trip="Lisboa en pareja"
+          />
+          <Testimonial
+            text="El mapa con las rutas entre paradas es lo que más me gusta. Ves de un vistazo si el orden tiene sentido geográficamente."
+            name="Ane M."
+            trip="Costa Amalfitana"
+          />
+        </div>
+      </section>
+
+      {/* ── CTA final ── */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] py-20 px-4">
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+          <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+          <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+            Tu próximo viaje merece estar bien organizado
+          </h2>
+          <p className="mt-4 text-lg text-white/70">
+            Empieza gratis. Sin tarjeta. En 2 minutos ya tienes tu primer viaje creado.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/auth/register"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-white px-8 text-base font-bold text-[#F87171] shadow-lg transition hover:bg-slate-50"
+            >
+              Crear viaje gratis
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-            <Link href="/auth/login" className="font-semibold text-slate-500 dark:text-slate-400 hover:underline">
-              Entrar
+            <Link
+              href="/pricing"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/30 px-8 text-base font-semibold text-white transition hover:bg-white/10"
+            >
+              Ver planes Premium
             </Link>
-            <Link href="/auth/register" className="font-semibold text-slate-500 dark:text-slate-400 hover:underline">
-              Crear cuenta
-            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#080C14]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="text-sm text-slate-600 dark:text-slate-400">
+            <span className="font-bold text-slate-900 dark:text-white">Kaviro</span> · Organiza viajes, gastos y rutas
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <Link href="/pricing" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Precios</Link>
+            <Link href="/auth/login" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Entrar</Link>
+            <Link href="/auth/register" className="font-semibold text-[#F87171] hover:text-[#EF4444] transition">Crear cuenta gratis</Link>
           </div>
         </div>
       </footer>
     </main>
   );
 }
-
