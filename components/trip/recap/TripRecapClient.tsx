@@ -149,10 +149,14 @@ export default function TripRecapClient({
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-start py-8 px-4 gap-6">
-      {/* Back */}
-      <div className="w-full max-w-sm">
+      {/* Back + Help */}
+      <div className="w-full max-w-sm flex items-center justify-between">
         <Link href={`/trip/${tripId}`} className="text-slate-500 text-xs font-semibold hover:text-slate-300">
           ← Volver al viaje
+        </Link>
+        <Link href="/help/recap" className="text-slate-500 text-xs font-semibold hover:text-slate-300 flex items-center gap-1">
+          <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8" cy="8" r="6"/><path d="M8 11v-1M8 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+          Ayuda
         </Link>
       </div>
 
@@ -207,12 +211,11 @@ export default function TripRecapClient({
 
         {/* ── Header gradient ── */}
         <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-6 pt-6 pb-5 text-white">
-          {/* Kaviro branding */}
-          <div className="flex items-center gap-2 mb-4">
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "#fff", fontWeight: 900, fontSize: 15, fontFamily: "sans-serif", lineHeight: 1 }}>K</span>
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.15em", fontFamily: "sans-serif" }}>KAVIRO</span>
+          {/* Kaviro branding — real logo */}
+          <div className="flex items-center gap-2.5 mb-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.15em", fontFamily: "sans-serif" }}>KAVIRO</span>
             <span className="ml-auto text-white/40 text-[10px] font-semibold uppercase tracking-widest">✈ Viaje completado</span>
           </div>
 
@@ -300,9 +303,8 @@ export default function TripRecapClient({
         {/* ── Footer Kaviro ── */}
         <div className="bg-slate-900 px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div style={{ width: 20, height: 20, borderRadius: 6, background: "#F87171", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "#fff", fontWeight: 900, fontSize: 11, fontFamily: "sans-serif", lineHeight: 1 }}>K</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/icon.png" alt="Kaviro" width={20} height={20} className="rounded-full" />
             <p className="text-slate-400 text-xs font-semibold">
               Organizado con <span className="text-[#F87171] font-bold">Kaviro</span>
             </p>
