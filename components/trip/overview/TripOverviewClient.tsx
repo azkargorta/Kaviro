@@ -328,6 +328,30 @@ export default function TripOverviewClient({
       {/* Proactive AI suggestion — shows gap in itinerary if found */}
       {isPremium && <TripAiProactiveHint tripId={tripId} />}
 
+      {/* ── Recap CTA ──────────────────────────────────────────────────── */}
+      <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-[#1E293B] shadow-sm">
+        <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-5 py-4 flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Kaviro · Recap</p>
+            <p className="text-base font-extrabold text-white leading-tight">Crea el recap de tu viaje</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-[#0F1623] px-5 py-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
+            Estadísticas, foto del viaje y tarjeta para compartir con el grupo.
+          </p>
+          <Link
+            href={`/trip/${tripId}/recap`}
+            className="shrink-0 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
+          >
+            Ver Recap
+            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </Link>
+        </div>
+      </div>
+
       <TripAiInsights tripId={tripId} isPremium={isPremium} />
 
     </div>

@@ -60,12 +60,7 @@ const items: NavItem[] = [
     iconClass: tripTabDocsImageClass,
     href: (id) => `/trip/${id}/resources`,
   },
-  {
-    key: "recap" as TripTabKey,  // type now includes recap
-    label: "Recap",
-    sublabel: "Resumen del viaje",
-    href: (id) => `/trip/${id}/recap`,
-  },
+
   {
     key: "chat",
     label: "Asistente IA",
