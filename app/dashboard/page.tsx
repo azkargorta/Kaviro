@@ -10,6 +10,12 @@ import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFl
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
+import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
+import {
+  ensureDemoTripForUser,
+  readDemoOnboardingProfile,
+  shouldRedirectToDemoTour,
+} from "@/lib/onboarding/createDemoTrip";
 
 type Trip = {
   id: string;
@@ -19,6 +25,7 @@ type Trip = {
   end_date: string | null;
   base_currency: string | null;
   created_at?: string | null;
+  is_demo?: boolean | null;
 };
 
 type TripParticipantRow = {
@@ -96,6 +103,18 @@ export default async function DashboardPage() {
 
   const isAdmin = await isPlatformAdmin(user.id, user.email);
 
+  let demoTripId: string | null = null;
+  try {
+    const ensured = await ensureDemoTripForUser(user);
+    demoTripId = ensured.tripId;
+    const onboardingProfile = (await readDemoOnboardingProfile(user.id)) ?? ensured.profile;
+    if (shouldRedirectToDemoTour(onboardingProfile)) {
+      redirect(`/trip/${encodeURIComponent(ensured.tripId)}/summary?tutorial=demo`);
+    }
+  } catch (demoErr) {
+    console.error("No se pudo preparar el viaje demo:", demoErr);
+  }
+
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("is_premium")
@@ -121,7 +140,7 @@ export default async function DashboardPage() {
   if (tripIds.length > 0) {
     const { data: tripsData, error: tripsError } = await supabase
       .from("trips")
-      .select("id, name, destination, start_date, end_date, base_currency, created_at")
+      .select("id, name, destination, start_date, end_date, base_currency, created_at, is_demo")
       .in("id", tripIds)
       .order("created_at", { ascending: false });
 
@@ -132,19 +151,23 @@ export default async function DashboardPage() {
     }
   }
 
-  const { current, future, past, unscheduled } = categorizeTrips(trips);
+  const demoTrips = trips.filter((t) => t.is_demo || (demoTripId && t.id === demoTripId));
+  const realTrips = trips.filter((t) => !demoTrips.some((d) => d.id === t.id));
+
+  const { current, future, past, unscheduled } = categorizeTrips(realTrips);
   const lockedTripIds = new Set<string>();
-  const freeTripLimitReached = !isPremium && trips.length >= 3;
+  const freeTripLimitReached = !isPremium && realTrips.length >= 3;
 
   // For onboarding checklist — check if user has invited someone or added an expense
   let hasParticipants = false;
   let hasExpenses = false;
-  if (tripIds.length > 0) {
+  const realTripIds = realTrips.map((t) => t.id);
+  if (realTripIds.length > 0) {
     const [{ count: partCount }, { count: expCount }] = await Promise.all([
       supabase.from("trip_participants").select("*", { count: "exact", head: true })
-        .in("trip_id", tripIds).neq("user_id", user.id),
+        .in("trip_id", realTripIds).neq("user_id", user.id),
       supabase.from("trip_expenses").select("*", { count: "exact", head: true })
-        .in("trip_id", tripIds),
+        .in("trip_id", realTripIds),
     ]);
     hasParticipants = (partCount ?? 0) > 0;
     hasExpenses = (expCount ?? 0) > 0;
@@ -152,7 +175,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="page-shell space-y-4 pb-8 md:space-y-5 md:pb-10">
-      <OnboardingNudge hasTrips={trips.length > 0} hasParticipants={hasParticipants} hasExpenses={hasExpenses} />
+      <OnboardingNudge hasTrips={realTrips.length > 0} hasParticipants={hasParticipants} hasExpenses={hasExpenses} />
 
       <DashboardPageHeader isAdmin={isAdmin} />
 
@@ -181,7 +204,7 @@ export default async function DashboardPage() {
                   Planificador IA (borrador)
                 </Link>
               </div>
-              <DashboardAiShortcuts trips={trips} isPremium />
+              <DashboardAiShortcuts trips={realTrips} isPremium />
             </>
           ) : (
             <>
@@ -211,7 +234,7 @@ export default async function DashboardPage() {
           id="create-trip"
           className="mx-auto mt-4 max-w-2xl scroll-mt-20 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50"
         >
-          <CreateTripSection isPremium={isPremium} tripCount={trips.length} />
+          <CreateTripSection isPremium={isPremium} tripCount={realTrips.length} />
         </div>
       </section>
 
@@ -222,7 +245,9 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {trips.length === 0 ? null : (
+      <DashboardDemoTripSection trips={demoTrips} />
+
+      {realTrips.length === 0 ? null : (
         <div className="space-y-5">
           <DashboardTripSection
             title="En curso"

@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
+import { DEMO_TAB_TOUR } from "@/lib/onboarding/demo-tour-copy";
+import type { TourStep } from "@/components/trip/common/trip-tour-types";
 import { ChevronLeft, ChevronRight, LifeBuoy, X } from "lucide-react";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { iconInline16, iconSlotFill40, iconSlotFill44 } from "@/components/ui/iconTokens";
@@ -61,18 +64,6 @@ function getTripPageHelpId(pathname: string | null): string | null {
   if (seg === "settings") return "settings";
   return null;
 }
-
-type TourStep = {
-  id: string;
-  title: string;
-  lead: string;
-  body: string;
-  mobileTip: string;
-  href: (tripId: string) => string;
-  visual:
-    | { type: "emoji"; value: string }
-    | { type: "image"; tabKey: TripTabKey; alt: string; imageClassName?: string };
-};
 
 const TAB_TOUR: TourStep[] = [
   {
@@ -139,8 +130,6 @@ const TAB_TOUR: TourStep[] = [
     visual: { type: "image", tabKey: "chat", alt: "Asistente personal" },
   },
 ];
-
-const TAB_TOUR_PAGE_IDS = new Set(TAB_TOUR.map((s) => s.id));
 
 const HELP: Record<string, HelpEntry> = {
   home: {
@@ -416,11 +405,24 @@ function PageHelpVisualHeader({ pageId }: { pageId: string }) {
   );
 }
 
+async function completeDemoOnboarding() {
+  await fetch("/api/onboarding/demo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "complete" }),
+    credentials: "include",
+  });
+}
+
 export default function TripPageHelp() {
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
+  const isDemoTrip = useIsDemoTrip();
   const tripId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
   const isDark = useIsDarkMode();
+  const activeTour = isDemoTrip ? DEMO_TAB_TOUR : TAB_TOUR;
+  const activeTourPageIds = useMemo(() => new Set(activeTour.map((s) => s.id)), [activeTour]);
 
   const pageId = useMemo(() => {
     if (!tripId) return null;
@@ -447,8 +449,15 @@ export default function TripPageHelp() {
     if (tripId) markTourSeen(tripId);
     setTourOpen(false);
     setTourStep(0);
+    if (isDemoTrip) {
+      void completeDemoOnboarding().finally(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
+      return;
+    }
     setTourPulse((p) => p + 1);
-  }, [tripId]);
+  }, [tripId, isDemoTrip, router]);
 
   const closePageHelp = useCallback(() => {
     if (tripId && pageId) markPageHelpSeen(tripId, pageId);
@@ -458,7 +467,7 @@ export default function TripPageHelp() {
   /** Primera vez en el viaje: recorrido visual por las 7 pestañas principales. */
   useEffect(() => {
     if (!tripId || !pageId) return;
-    if (!TAB_TOUR_PAGE_IDS.has(pageId)) return;
+    if (!activeTourPageIds.has(pageId)) return;
     if (readTourSeen(tripId)) return;
     if (tourOfferedRef.current) return;
 
@@ -468,6 +477,11 @@ export default function TripPageHelp() {
       setTourStep(0);
       setTourOpen(true);
     };
+
+    if (isDemoTrip) {
+      const t = window.setTimeout(openTour, 400);
+      return () => window.clearTimeout(t);
+    }
 
     if (pageId !== "home") {
       openTour();
@@ -492,14 +506,14 @@ export default function TripPageHelp() {
       window.removeEventListener("tripboard:first-run-dismissed", onFirstRunDismiss as EventListener);
       window.clearTimeout(fallback);
     };
-  }, [tripId, pageId, pathname]);
+  }, [tripId, pageId, pathname, isDemoTrip, activeTourPageIds]);
 
   /** Primera vez en cada pantalla: ayuda detallada (tras el recorrido global, si aplica). */
   useEffect(() => {
     if (!tripId || !pageId || !entry) return;
     if (readPageHelpSeen(tripId, pageId)) return;
     if (tourOpen) return;
-    const tourBlocksFirst = TAB_TOUR_PAGE_IDS.has(pageId) && !readTourSeen(tripId);
+    const tourBlocksFirst = activeTourPageIds.has(pageId) && !readTourSeen(tripId);
     if (tourBlocksFirst) return;
 
     const t = window.setTimeout(() => {
@@ -531,8 +545,8 @@ export default function TripPageHelp() {
     setMounted(true);
   }, []);
 
-  const tourStepData = TAB_TOUR[tourStep];
-  const isLastTourStep = tourStep >= TAB_TOUR.length - 1;
+  const tourStepData = activeTour[tourStep];
+  const isLastTourStep = tourStep >= activeTour.length - 1;
   const tourVisual = tourStepData?.visual;
 
   // Evita mismatch SSR/CSR: `usePathname/useParams` pueden diferir en el render del servidor.
@@ -574,9 +588,11 @@ export default function TripPageHelp() {
                     <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-violet-900 px-5 pb-4 pt-4 text-white sm:pt-5">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">Recorrido del viaje</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">
+                            {isDemoTrip ? "Recorrido · viaje demo" : "Recorrido del viaje"}
+                          </p>
                           <h2 id="trip-tab-tour-title" className="mt-1 text-lg font-extrabold leading-tight">
-                            Qué hay en cada pestaña
+                            {isDemoTrip ? "Londres de ejemplo: cada pestaña" : "Qué hay en cada pestaña"}
                           </h2>
                         </div>
                         <button
@@ -593,7 +609,7 @@ export default function TripPageHelp() {
                         cualquier pantalla.
                       </p>
                       <div className="mt-4 flex justify-center gap-1.5">
-                        {TAB_TOUR.map((s, i) => (
+                        {activeTour.map((s, i) => (
                           <span
                             key={s.id}
                             className={`h-1.5 rounded-full transition-all ${
@@ -655,12 +671,12 @@ export default function TripPageHelp() {
                               onClick={finishTour}
                               className={`${btnPrimary} min-h-[48px] w-full flex-1 rounded-2xl px-5 py-3 text-sm sm:w-auto sm:flex-none`}
                             >
-                              Entendido
+                              {isDemoTrip ? "Ir al panel" : "Entendido"}
                             </button>
                           ) : (
                             <button
                               type="button"
-                              onClick={() => setTourStep((s) => Math.min(TAB_TOUR.length - 1, s + 1))}
+                              onClick={() => setTourStep((s) => Math.min(activeTour.length - 1, s + 1))}
                               className={`${btnPrimary} min-h-[48px] items-center justify-center gap-1 rounded-2xl px-5 py-3 text-sm`}
                             >
                               Siguiente

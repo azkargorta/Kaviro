@@ -37,11 +37,13 @@ export default function TripCardItem({
   badge,
   accent,
   locked,
+  isDemo = false,
 }: {
   trip: Trip;
   badge: string;
   accent: string;
   locked: boolean;
+  isDemo?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -156,6 +158,8 @@ export default function TripCardItem({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+        {!isDemo ? (
+          <>
         <button
           type="button"
           onClick={(e) => {
@@ -181,6 +185,10 @@ export default function TripCardItem({
           <Trash2 className="h-4 w-4" aria-hidden />
           {deleting ? "Eliminando…" : "Eliminar viaje"}
         </button>
+          </>
+        ) : (
+          <span className="text-xs font-medium text-violet-800 dark:text-violet-300">Viaje de práctica · no se elimina</span>
+        )}
       </div>
 
       <TripDashboardEditDialog

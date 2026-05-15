@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { TripInviteRecord } from "@/lib/trip-invite-accept";
+import { ensureDemoTripForUser } from "@/lib/onboarding/createDemoTrip";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -144,6 +145,12 @@ export async function POST(request: Request) {
 
     if (reloadError) {
       return NextResponse.json({ error: reloadError.message }, { status: 500 });
+    }
+
+    try {
+      await ensureDemoTripForUser(user);
+    } catch (demoErr) {
+      console.error("No se pudo crear el viaje demo tras invitación:", demoErr);
     }
 
     return NextResponse.json({

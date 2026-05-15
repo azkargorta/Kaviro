@@ -139,6 +139,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
 
   const [
     { data: trip, error: tripError },
+    { data: profileRow },
     { count: participantsCount },
     { count: activitiesCount, data: activitiesData },
     { count: routesCount },
@@ -149,7 +150,8 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     { data: firstRouteRow },
     { data: expenseAmountRows },
   ] = await Promise.all([
-    supabase.from("trips").select("id, name, destination, start_date, end_date, base_currency").eq("id", tripId).maybeSingle(),
+    supabase.from("trips").select("id, name, destination, start_date, end_date, base_currency, is_demo").eq("id", tripId).maybeSingle(),
+    supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
     supabase.from("trip_participants").select("id", { count: "exact", head: true }).eq("trip_id", tripId).neq("status", "removed"),
     supabase
       .from("trip_activities")
@@ -179,7 +181,10 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     redirect("/dashboard");
   }
 
-  const currentTrip = trip as TripRow;
+  const currentTrip = trip as TripRow & { is_demo?: boolean };
+  const isDemoTrip =
+    Boolean(currentTrip.is_demo) ||
+    String((profileRow as { demo_trip_id?: string } | null)?.demo_trip_id || "") === tripId;
   const activities = (activitiesData ?? []) as ActivityRow[];
 
   const now = new Date();
@@ -358,18 +363,20 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}
       />
 
-      <TripFirstRunPanel
-        tripId={tripId}
-        tripName={currentTrip.name}
-        isPremium={isPremium}
-        counts={{
-          participants: participantsCount ?? 0,
-          activities: activitiesCount ?? 0,
-          routes: routesCount ?? 0,
-          expenses: expensesCount ?? 0,
-          resources: resourcesCount ?? 0,
-        }}
-      />
+      {!isDemoTrip ? (
+        <TripFirstRunPanel
+          tripId={tripId}
+          tripName={currentTrip.name}
+          isPremium={isPremium}
+          counts={{
+            participants: participantsCount ?? 0,
+            activities: activitiesCount ?? 0,
+            routes: routesCount ?? 0,
+            expenses: expensesCount ?? 0,
+            resources: resourcesCount ?? 0,
+          }}
+        />
+      ) : null}
 
       <TripSummaryOverview
         tripId={tripId}
