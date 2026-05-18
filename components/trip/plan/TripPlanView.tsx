@@ -528,7 +528,7 @@ export default function TripPlanView({
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div data-tour="plan-toolbar" className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{trip?.name || trip?.destination || "Este viaje"}</span>
           {" · "}
@@ -883,7 +883,7 @@ export default function TripPlanView({
         </div>
 
         {filtersOpen ? (
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
+          <div data-tour="plan-calendar-grid" className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950">
                 <SlidersHorizontal className="h-4 w-4 text-slate-700" aria-hidden />

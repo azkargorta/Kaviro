@@ -54,7 +54,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   // ════════ PLAN — 7 pasos ════════
 
   {
-    id: "plan-add", tab: "plan", target: '[data-tour="plan-add-btn"]', placement: "bottom", emoji: "➕",
+    id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', placement: "bottom", emoji: "➕",
     title: "Añadir actividades al plan",
     body: "Pulsa + Añadir plan para crear una actividad: escribe el nombre, busca el lugar en el mapa con autocompletado, asígnale hora, duración y categoría. También puedes darle una valoración de 1 a 5 estrellas y añadir un comentario — en este demo verás que algunas actividades ya tienen su reseña.",
   },
@@ -65,10 +65,10 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Pulsa la cabecera de un día para expandir o contraer sus actividades. Cada tarjeta muestra hora, lugar, categoría, valoración con estrellas y comentario. Usa el icono ≡ para arrastrar y reordenar. Pulsa la tarjeta para editar cualquier dato.",
   },
   {
-    id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-mode"]', placement: "bottom",
+    id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-grid"]', placement: "top",
     action: "calendar-mode", emoji: "📆",
     title: "Vista Calendario",
-    body: "Ahora estás viendo las actividades en modo Calendario. Ves todos los días del viaje en cuadrícula, ideal para detectar días vacíos y comparar jornadas de un vistazo. Pulsa Lista para volver a la vista anterior.",
+    body: "Ahora estás viendo el calendario completo del viaje. Cada día muestra las actividades planificadas. Esta vista es ideal para ver de un vistazo cómo de lleno está cada jornada, detectar días vacíos y comparar semanas enteras. Pulsa el botón Lista en la barra de arriba para volver a la vista por días.",
   },
   {
     id: "plan-explore", tab: "plan", target: '[data-tour="plan-explore-btn"]', placement: "bottom", emoji: "🧭",
