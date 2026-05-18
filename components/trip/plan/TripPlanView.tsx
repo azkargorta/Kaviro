@@ -577,8 +577,7 @@ export default function TripPlanView({
             <Plus className="h-4 w-4" />
             Añadir plan
           </button>
-          <button
-            data-tour="plan-explore-btn"
+          <button data-tour="plan-explore-btn"
             type="button"
             onClick={() => setExploreOpen(true)}
             className={`${btnSecondary} w-full gap-2 sm:w-auto`}
@@ -653,12 +652,11 @@ export default function TripPlanView({
           {/* Calendar export — desktop with menu */}
           <div className="relative hidden sm:block">
             <button
-            data-tour="plan-add-btn"
               type="button"
               onClick={() => setCalendarMenuOpen((v) => !v)}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               title="Añadir actividades a tu calendario"
-            data-tour="plan-calendar-btn"
+              data-tour="plan-calendar-btn"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               Calendario
@@ -1310,7 +1308,7 @@ export default function TripPlanView({
                   {/* P2 — Timeline vertical continua */}
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                     <SortableContext items={getOrderedItems(date, items).map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                      <div data-tour="plan-activity-card" className="space-y-2">
+                      <div className="space-y-2">
                         {getOrderedItems(date, items).map((activity) => {
                           const isLodging = isLodgingActivity(activity);
                           const meta = kindMeta(isLodging ? "lodging" : activity.activity_kind, customByKey);
@@ -1319,7 +1317,7 @@ export default function TripPlanView({
                               {isLodging ? (
                                 <PlanLodgingCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
                               ) : (
-                                <>
+                                <div data-tour="plan-activity-card">
                                   <PlanActivityCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} premiumEnabled={premiumEnabled} />
                                   {premiumEnabled && (
                                     <ActivityReactions
@@ -1329,7 +1327,7 @@ export default function TripPlanView({
                                       displayName={trip?.name ?? "Yo"}
                                     />
                                   )}
-                                </>
+                                </div>
                               )}
                             </SortableRow>
                           );
