@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { DEMO_TAB_TOUR, DEMO_SPOTLIGHT_TOUR } from "@/lib/onboarding/demo-tour-copy";
 import SpotlightTour from "@/components/trip/common/SpotlightTour";
@@ -453,13 +453,14 @@ export default function TripPageHelp() {
     setTourOpen(false);
     setTourStep(0);
     if (isDemoTrip) {
-      // After tab tour, open spotlight tour for current tab
-      const t = window.setTimeout(() => setSpotlightOpen(true), 300);
-      void completeDemoOnboarding().finally(() => {/* stay on page */});
-      return () => window.clearTimeout(t);
+      void completeDemoOnboarding().finally(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
+      return;
     }
     setTourPulse((p) => p + 1);
-  }, [tripId, isDemoTrip]);
+  }, [tripId, isDemoTrip, router]);
 
   const closePageHelp = useCallback(() => {
     if (tripId && pageId) markPageHelpSeen(tripId, pageId);
@@ -768,8 +769,6 @@ export default function TripPageHelp() {
             document.body
           )
         : null}
-
-      {/* Spotlight tour for demo trips — re-openable via Tour button */}
       {mounted && spotlightOpen && isDemoTrip && pageId && (
         <SpotlightTour
           steps={DEMO_SPOTLIGHT_TOUR}
@@ -778,8 +777,6 @@ export default function TripPageHelp() {
           onComplete={() => setSpotlightOpen(false)}
         />
       )}
-
-      {/* Tour button — visible on demo trips when no other tour is open */}
       {isDemoTrip && !tourOpen && !spotlightOpen && pageId && (
         <button
           type="button"
