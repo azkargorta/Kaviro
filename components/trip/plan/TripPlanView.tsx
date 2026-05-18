@@ -591,8 +591,7 @@ export default function TripPlanView({
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-            data-tour="plan-history-btn"
-          title="Ver historial de cambios"
+            data-tour="plan-history-btn" title="Ver historial de cambios"
           >
             <Clock className="h-4 w-4" />
             Historial
@@ -639,8 +638,7 @@ export default function TripPlanView({
               });
             }}
             className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-            title="Exportar itinerario como PDF"
-          data-tour="plan-pdf-btn"
+            data-tour="plan-pdf-btn" title="Exportar itinerario como PDF"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -657,8 +655,7 @@ export default function TripPlanView({
               type="button"
               onClick={() => setCalendarMenuOpen((v) => !v)}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-              title="Añadir actividades a tu calendario"
-              data-tour="plan-calendar-btn"
+              data-tour="plan-calendar-btn" title="Añadir actividades a tu calendario"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               Calendario
@@ -868,18 +865,18 @@ export default function TripPlanView({
             </button>
             <button
               type="button"
-              data-tour="plan-calendar-mode"
               onClick={() => setViewMode("calendar")}
               className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
                 viewMode === "calendar"
                   ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
                   : "text-slate-700 hover:bg-violet-50"
               }`}
-              title="Vista calendario"
+              data-tour="plan-calendar-mode" title="Vista calendario"
             >
               Calendario
             </button>
           </div>
+        </div>
 
         {filtersOpen ? (
           <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
@@ -1321,7 +1318,7 @@ export default function TripPlanView({
                               {isLodging ? (
                                 <PlanLodgingCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
                               ) : (
-                                <div data-tour="plan-activity-card">
+                                <>
                                   <PlanActivityCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} premiumEnabled={premiumEnabled} />
                                   {premiumEnabled && (
                                     <ActivityReactions
@@ -1331,7 +1328,7 @@ export default function TripPlanView({
                                       displayName={trip?.name ?? "Yo"}
                                     />
                                   )}
-                                </div>
+                                </>
                               )}
                             </SortableRow>
                           );
