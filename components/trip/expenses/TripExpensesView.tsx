@@ -156,7 +156,7 @@ export default function TripExpensesView({
           type="button"
           className={secondary}
           onClick={() => setExportOpen((v) => !v)}
-          title="Exportar gastos y pagos"
+          title="Exportar gastos y pagos" data-tour="expenses-csv-btn"
         >
           <Download className="h-4 w-4" aria-hidden />
           <span className="hidden sm:inline">Exportar</span> CSV
@@ -572,7 +572,8 @@ export default function TripExpensesView({
               <div className="mt-1 text-xs text-slate-600">Quién debe a quién y enlaces rápidos por WhatsApp.</div>
             </div>
             <div className="px-4 py-4">
-              <div data-tour="expenses-balance"><ExpenseBalancePanel
+              <div data-tour="expenses-balance">
+              <ExpenseBalancePanel
                 balances={balances}
                 settlements={suggestedSettlements}
                 balanceCurrency={balanceCurrency}
@@ -591,6 +592,7 @@ export default function TripExpensesView({
                 strictPaymentMethods={strictPaymentMethods}
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}
               />
+              </div>
             </div>
           </div>
         </div>
