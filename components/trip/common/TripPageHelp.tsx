@@ -438,6 +438,7 @@ export default function TripPageHelp() {
 
   const entry = pageId ? HELP[pageId] : null;
 
+  const searchParams = useSearchParams();
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
   const [pageHelpOpen, setPageHelpOpen] = useState(false);
@@ -544,6 +545,19 @@ export default function TripPageHelp() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-open tour when arriving from ?tutorial=demo (new user onboarding)
+  useEffect(() => {
+    if (!mounted) return;
+    if (searchParams?.get("tutorial") !== "demo") return;
+    if (tourOpen) return;
+    const t = window.setTimeout(() => {
+      setTourStep(0);
+      setTourOpen(true);
+    }, 600);
+    return () => window.clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, searchParams]);
 
   const tourStepData = activeTour[tourStep];
   const isLastTourStep = tourStep >= activeTour.length - 1;
