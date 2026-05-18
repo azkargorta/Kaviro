@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { DEMO_TAB_TOUR } from "@/lib/onboarding/demo-tour-copy";
 import type { TourStep } from "@/components/trip/common/trip-tour-types";
