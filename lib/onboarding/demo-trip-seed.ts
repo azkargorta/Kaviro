@@ -22,6 +22,8 @@ export const DEMO_GHOST_PARTICIPANTS = [
 
 export type DemoActivitySeed = {
   title: string;
+  rating?: number | null;
+  comment?: string | null;
   activity_date: string;
   activity_time: string;
   place_name: string;
