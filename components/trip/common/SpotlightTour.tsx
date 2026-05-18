@@ -110,9 +110,9 @@ export default function SpotlightTour({ steps, tripId, currentTab, onClose, onCo
     executeAction(step.action);
     const t = setTimeout(() => {
       if (step.target) document.querySelector(step.target)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      const t2 = setTimeout(() => setRect(getRect(step.target)), step.action === "calendar-mode" ? 700 : 350);
+      const t2 = setTimeout(() => setRect(getRect(step.target)), 350);
       return () => clearTimeout(t2);
-    }, step.action ? 500 : 0);
+    }, step.action ? 400 : 0);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, mounted]);
@@ -183,18 +183,11 @@ export default function SpotlightTour({ steps, tripId, currentTab, onClose, onCo
           {/* Body */}
           <p style={{ margin: "0 16px 14px", fontSize: 12.5, lineHeight: 1.65, color: "#475569" }}>{step.body}</p>
 
-          {/* Progress bar */}
-          <div style={{ margin: "0 16px 12px", height: 3, borderRadius: 2, background: "#f1f5f9", overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 2, background: "#F87171", width: `${((idx+1)/steps.length)*100}%`, transition: "width 0.3s" }} />
-          </div>
+
 
           {/* Nav footer */}
           <div style={{ borderTop: "1px solid #f8fafc", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", gap: 3 }}>
-              {steps.map((_, i) => (
-                <span key={i} style={{ height: 5, borderRadius: 3, display: "inline-block", transition: "all 0.2s", width: i===idx ? 14 : 5, background: i===idx ? "#F87171" : i<idx ? "#fca5a5" : "#e2e8f0" }} />
-              ))}
-            </div>
+            <div style={{ flex: 1, height: 5, borderRadius: 3, background: "#f1f5f9", overflow: "hidden" }}><div style={{ height: "100%", borderRadius: 3, background: "#F87171", width: `${((idx + 1) / steps.length) * 100}%`, transition: "width 0.35s ease" }} /></div>
             <div style={{ display: "flex", gap: 6 }}>
               {!isFirst && (
                 <button type="button" onClick={() => setIdx(i => i-1)} style={{ height: 32, width: 32, borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }} aria-label="Anterior">
