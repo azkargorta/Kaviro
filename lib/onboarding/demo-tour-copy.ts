@@ -90,7 +90,6 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     title: "Añadir al calendario",
     body: "Lista todas las actividades con fecha y hora. Pulsa cualquiera para crear el evento en Google Calendar con un clic — título, hora, duración y dirección ya rellenados. También puedes descargar el archivo .ics para Apple Calendar u Outlook.",
   },
-];
 
   // ════════ RUTAS — 4 pasos ════════
 
