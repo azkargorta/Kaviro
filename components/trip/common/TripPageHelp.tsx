@@ -453,10 +453,8 @@ export default function TripPageHelp() {
     setTourOpen(false);
     setTourStep(0);
     if (isDemoTrip) {
-      void completeDemoOnboarding().finally(() => {
-        router.push("/dashboard");
-        router.refresh();
-      });
+      setSpotlightOpen(true);
+      void completeDemoOnboarding().catch(() => {});
       return;
     }
     setTourPulse((p) => p + 1);
@@ -482,8 +480,8 @@ export default function TripPageHelp() {
     };
 
     if (isDemoTrip) {
-      const t = window.setTimeout(openTour, 400);
-      return () => window.clearTimeout(t);
+      // Demo trips use spotlight tour only — skip tab modal auto-open
+      return;
     }
 
     if (pageId !== "home") {
@@ -548,15 +546,12 @@ export default function TripPageHelp() {
     setMounted(true);
   }, []);
 
-  // Auto-open tour when arriving from ?tutorial=demo (new user onboarding)
+  // ?tutorial=demo → open spotlight directly (skip tab modal)
   useEffect(() => {
     if (!mounted) return;
     if (searchParams?.get("tutorial") !== "demo") return;
-    if (tourOpen) return;
-    const t = window.setTimeout(() => {
-      setTourStep(0);
-      setTourOpen(true);
-    }, 600);
+    if (spotlightOpen) return;
+    const t = window.setTimeout(() => setSpotlightOpen(true), 600);
     return () => window.clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, searchParams]);
