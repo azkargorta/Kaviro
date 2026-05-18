@@ -37,6 +37,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
               {/* Kaviro logo mark — always visible, links to dashboard */}
               <Link
                 href="/dashboard"
+                data-tour="topbar-logo"
                 className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full overflow-hidden ring-1 ring-slate-900/10 hover:ring-[var(--brand)] transition-all duration-150 dark:ring-white/30 dark:bg-white"
                 title="Mis viajes"
               >
@@ -103,18 +104,19 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-1.5">
               <div className="hidden sm:contents">
-                <TripPageHelp />
-                <TripActivityFeedButton tripId={tripId} />
+                <span data-tour="topbar-help"><TripPageHelp /></span>
+                <span data-tour="topbar-novedades"><TripActivityFeedButton tripId={tripId} /></span>
               </div>
 
               {/* Desktop actions slot */}
               {header.actions ? (
-                <div className="hidden md:flex max-w-[45vw] flex-nowrap justify-end gap-1.5 overflow-x-auto no-scrollbar items-center">
+                <div data-tour="topbar-actions" className="hidden md:flex max-w-[45vw] flex-nowrap justify-end gap-1.5 overflow-x-auto no-scrollbar items-center">
                   {header.actions}
                 </div>
               ) : (
                 <Link
                   href="/dashboard"
+                  data-tour="topbar-mis-viajes"
                   className="hidden md:inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
                 >
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50">
@@ -124,7 +126,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
                 </Link>
               )}
 
-              <div className="hidden sm:block">
+              <div data-tour="topbar-darkmode" className="hidden sm:block">
                 <DarkModeToggle />
               </div>
               {/* Mobile hamburger */}

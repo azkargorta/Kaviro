@@ -124,7 +124,7 @@ export default function TripOverviewClient({
     <div className="space-y-5">
 
       {/* ── Hero countdown card ─────────────────────────────────────────── */}
-      <div className="card-soft px-6 py-6 flex flex-wrap items-center justify-between gap-4">
+      <div data-tour="summary-countdown" className="card-soft px-6 py-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           {phase === "during" && totalTripDays && (
             <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[#F87171]/10 px-3 py-1 ring-1 ring-[#F87171]/25">
@@ -157,7 +157,7 @@ export default function TripOverviewClient({
               />
             </div>
             {todayWeather && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+              <div data-tour="summary-weather" className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
                 <WMOIcon code={todayWeather.code} />
                 {todayWeather.tempMax !== null && `${Math.round(todayWeather.tempMax)}°`}
                 {todayWeather.tempMin !== null && ` / ${Math.round(todayWeather.tempMin)}°`}

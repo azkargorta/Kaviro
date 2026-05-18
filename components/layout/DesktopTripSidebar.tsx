@@ -101,7 +101,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
           </div>
 
           {/* Nav items */}
-          <nav aria-label="Navegación del viaje" className="p-1.5 space-y-0.5">
+          <nav aria-label="Navegación del viaje" data-tour="sidebar-nav" className="p-1.5 space-y-0.5">
             {visibleItems.map((item) => {
               const href = item.href(tripId);
               const active = isActivePath(pathname, href, item.key);

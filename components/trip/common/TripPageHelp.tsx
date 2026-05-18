@@ -770,7 +770,7 @@ export default function TripPageHelp() {
           tripId={tripId}
           currentTab={pageId}
           onClose={() => setSpotlightOpen(false)}
-          onComplete={() => { setSpotlightOpen(false); }}
+          onComplete={() => setSpotlightOpen(false)}
         />
       )}
       {isDemoTrip && !tourOpen && !spotlightOpen && pageId && (

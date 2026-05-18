@@ -590,7 +590,8 @@ export default function TripPlanView({
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-            title="Ver historial de cambios"
+            data-tour="plan-history-btn"
+          title="Ver historial de cambios"
           >
             <Clock className="h-4 w-4" />
             Historial
@@ -866,6 +867,7 @@ export default function TripPlanView({
             </button>
             <button
               type="button"
+              data-tour="plan-calendar-mode"
               onClick={() => setViewMode("calendar")}
               className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
                 viewMode === "calendar"
