@@ -20,6 +20,6 @@ export type SpotlightStep = {
   title: string;
   body: string;
   emoji?: string;
+  /** Optional pre-step action to execute before showing the step */
+  action?: "expand-days" | "calendar-mode";
 };
-
-export type SpotlightTour = SpotlightStep[];

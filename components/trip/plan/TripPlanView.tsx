@@ -569,6 +569,7 @@ export default function TripPlanView({
             <></>
           )}
           <button
+            data-tour="plan-add-btn"
             type="button"
             onClick={handleStartCreate}
             className={`hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`}
@@ -1247,13 +1248,13 @@ export default function TripPlanView({
         </div>
       ) : null}
 
-      <div className="space-y-3">
+      <div data-tour="plan-day-sections" className="space-y-3">
         {grouped.map(([date, items]) => {
           const expanded = singleDayList || expandedDayKeys.has(date);
           const heading = formatPlanDayHeading(date);
           const today = todayYMD();
           return (
-            <section key={date} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+            <section data-tour="plan-activity-card" key={date} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
               {/* P1 — Cabecera de día rediseñada */}
               <button
                 type="button"

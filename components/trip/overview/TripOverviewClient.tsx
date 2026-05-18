@@ -262,7 +262,7 @@ export default function TripOverviewClient({
       {/* ── Next activity (before / during) ─────────────────────────────── */}
       {nextActivity && phase !== "after" && (
         <Link href={`/trip/${tripId}/plan`} className="card-soft p-5 flex items-start gap-4 hover:border-violet-200 transition-colors group">
-          <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg ${kindMeta(nextActivity.activity_kind).color}`}>
+          <div data-tour="summary-next-activity" className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg ${kindMeta(nextActivity.activity_kind).color}`}>
             {kindMeta(nextActivity.activity_kind).icon}
           </div>
           <div className="flex-1 min-w-0">

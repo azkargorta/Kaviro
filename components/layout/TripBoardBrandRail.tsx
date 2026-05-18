@@ -27,7 +27,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
   return (
     <header className="sticky top-0 z-50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {/* Main bar */}
-      <div className="border-b border-[var(--border-default)] bg-[var(--surface-card)]/95 backdrop-blur-md shadow-sm shadow-slate-900/[0.04] dark:shadow-none dark:border-[#1E293B] dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950">
+      <div data-tour="topbar-bar" className="border-b border-[var(--border-default)] bg-[var(--surface-card)]/95 backdrop-blur-md shadow-sm shadow-slate-900/[0.04] dark:shadow-none dark:border-[#1E293B] dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950">
         <div className="page-shell max-w-[1200px] !py-0">
           <div className="flex h-[64px] items-center justify-between gap-3">
 
@@ -104,13 +104,13 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-1.5">
               <div className="hidden sm:contents">
-                <span data-tour="topbar-help"><TripPageHelp /></span>
+                <TripPageHelp />
                 <span data-tour="topbar-novedades"><TripActivityFeedButton tripId={tripId} /></span>
               </div>
 
               {/* Desktop actions slot */}
               {header.actions ? (
-                <div data-tour="topbar-actions" className="hidden md:flex max-w-[45vw] flex-nowrap justify-end gap-1.5 overflow-x-auto no-scrollbar items-center">
+                <div className="hidden md:flex max-w-[45vw] flex-nowrap justify-end gap-1.5 overflow-x-auto no-scrollbar items-center">
                   {header.actions}
                 </div>
               ) : (
