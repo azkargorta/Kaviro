@@ -123,13 +123,13 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   },
   {
     id: "expenses-list", tab: "expenses", target: '[data-tour="expenses-list-details"]', placement: "top",
-    action: "expand-expenses", emoji: "📋",
+    emoji: "📋",
     title: "Listado de gastos",
     body: "Despliega para ver todos los tickets registrados del viaje. Cada gasto muestra el importe, quién pagó, la categoría y entre quiénes se divide. Pulsa cualquier gasto para editarlo o eliminar. Puedes filtrar por persona o categoría.",
   },
   {
     id: "expenses-currency", tab: "expenses", target: '[data-tour="expenses-currency-details"]', placement: "top",
-    action: "expand-currency", emoji: "💱",
+    emoji: "💱",
     title: "Convertidor de moneda",
     body: "Despliega para convertir importes entre divisas al tipo de cambio actual. También puedes cambiar aquí la moneda principal del balance — si el viaje es en libras pero tú prefieres ver los totales en euros, cámbialo aquí.",
   },
