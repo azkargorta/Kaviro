@@ -853,8 +853,7 @@ export default function TripPlanView({
             )}
           </button>
 
-          <div className="inline-flex w-full overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto">
-            <div data-tour="plan-view-toggle" style={{display:"contents"}}>
+          <div data-tour="plan-view-toggle" className="inline-flex w-full overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto">
             <button
               type="button"
               onClick={() => setViewMode("list")}
@@ -880,7 +879,6 @@ export default function TripPlanView({
             >
               Calendario
             </button>
-          </div>
         </div>
 
         {filtersOpen ? (
