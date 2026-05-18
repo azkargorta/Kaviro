@@ -156,7 +156,7 @@ export default function TripExpensesView({
           type="button"
           className={secondary}
           onClick={() => setExportOpen((v) => !v)}
-          title="Exportar gastos y pagos" data-tour="expenses-csv-btn"
+          data-tour="expenses-csv-btn" title="Exportar gastos y pagos"
         >
           <Download className="h-4 w-4" aria-hidden />
           <span className="hidden sm:inline">Exportar</span> CSV

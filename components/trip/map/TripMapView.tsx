@@ -1770,7 +1770,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">{form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}</div>
+                <div data-tour="map-new-route-btn" className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">{form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}</div>
                 <div className="flex items-center gap-2">
                   {isRouteFormOpen ? (
                     <button
@@ -1804,7 +1804,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
                         setStopPlanId("");
                         setDestinationPlanId("");
                       }}
-                      data-tour="map-new-route-btn" className={`${btnPrimary} inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs`}
+                      className={`${btnPrimary} inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs`}
                     >
                       <Plus className="h-3.5 w-3.5" aria-hidden />
                       Nueva ruta
@@ -2117,10 +2117,10 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
               </div>
               ) : (
                 <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
-                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗺️</div>
+                  <div data-tour="map-ai-btn" className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗺️</div>
                   <p className="text-sm font-bold text-slate-800">Sin rutas todavía</p>
                   <p className="mt-1 text-xs text-slate-500">Crea una ruta manualmente o genera el recorrido completo con IA.</p>
-                  <div data-tour="map-ai-btn" className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
                     <span className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-bold text-white cursor-pointer hover:bg-[var(--brand-hover)] transition" onClick={() => document.querySelector<HTMLButtonElement>("[data-action=new-route]")?.click()}>
                       ✦ Generar con IA
                     </span>

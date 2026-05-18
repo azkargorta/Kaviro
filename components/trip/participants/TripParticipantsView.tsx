@@ -1,4 +1,4 @@
-"use client";
+"us data-tour="participants-qr"e client";
 
 import { useEffect, useMemo, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
@@ -123,7 +123,7 @@ function ActionMenu({
         {canInvite ? (
           <>
             <button
-              data-tour="participants-invite-btn"
+            data-tour="participants-invite-btn"
               type="button"
               onClick={() => {
                 onInvite();

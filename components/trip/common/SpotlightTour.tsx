@@ -5,9 +5,9 @@ import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { SpotlightStep } from "./trip-tour-types";
 
-type Rect = { top: number; left: number; width: number; height: number };
+const PAD = 10;
 
-const PAD = 12; // spotlight padding around target
+type Rect = { top: number; left: number; width: number; height: number };
 
 function getTargetRect(selector: string | null): Rect | null {
   if (!selector) return null;
@@ -21,81 +21,34 @@ function getTargetRect(selector: string | null): Rect | null {
       width: r.width + PAD * 2,
       height: r.height + PAD * 2,
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-function useRect(selector: string | null, open: boolean) {
-  const [rect, setRect] = useState<Rect | null>(null);
+type TooltipPos = { top: number; left: number };
 
-  useLayoutEffect(() => {
-    if (!open) return;
-    const update = () => setRect(getTargetRect(selector));
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [selector, open]);
-
-  return rect;
-}
-
-type TooltipPos = { top: number; left: number; transformOrigin: string };
-
-function calcTooltipPos(
-  rect: Rect | null,
-  placement: SpotlightStep["placement"],
-  tooltipW: number,
-  tooltipH: number
-): TooltipPos {
-  if (!rect || placement === "center") {
-    return {
-      top: window.innerHeight / 2 - tooltipH / 2,
-      left: window.innerWidth / 2 - tooltipW / 2,
-      transformOrigin: "center center",
-    };
-  }
-
+function calcPos(rect: Rect | null, placement: SpotlightStep["placement"]): TooltipPos {
   const vw = window.innerWidth;
-  const vh = window.innerHeight + window.scrollY;
-  const gap = 16;
+  const vh = window.scrollY + window.innerHeight;
+  const TW = Math.min(300, vw - 24);
+  const TH = 180;
+  const GAP = 14;
 
-  let top = 0;
-  let left = 0;
-  let transformOrigin = "top left";
+  if (!rect || placement === "center") {
+    return { top: window.scrollY + window.innerHeight / 2 - TH / 2, left: vw / 2 - TW / 2 };
+  }
+
+  let top = 0, left = 0;
 
   switch (placement) {
-    case "bottom":
-      top = rect.top + rect.height + gap;
-      left = rect.left + rect.width / 2 - tooltipW / 2;
-      transformOrigin = "top center";
-      break;
-    case "top":
-      top = rect.top - tooltipH - gap;
-      left = rect.left + rect.width / 2 - tooltipW / 2;
-      transformOrigin = "bottom center";
-      break;
-    case "right":
-      top = rect.top + rect.height / 2 - tooltipH / 2;
-      left = rect.left + rect.width + gap;
-      transformOrigin = "center left";
-      break;
-    case "left":
-      top = rect.top + rect.height / 2 - tooltipH / 2;
-      left = rect.left - tooltipW - gap;
-      transformOrigin = "center right";
-      break;
+    case "bottom": top = rect.top + rect.height + GAP; left = rect.left + rect.width / 2 - TW / 2; break;
+    case "top":    top = rect.top - TH - GAP;           left = rect.left + rect.width / 2 - TW / 2; break;
+    case "right":  top = rect.top + rect.height / 2 - TH / 2; left = rect.left + rect.width + GAP; break;
+    case "left":   top = rect.top + rect.height / 2 - TH / 2; left = rect.left - TW - GAP; break;
   }
 
-  // Clamp to viewport
-  left = Math.max(12, Math.min(left, vw - tooltipW - 12));
-  top = Math.max(12, Math.min(top, vh - tooltipH - 12));
-
-  return { top, left, transformOrigin };
+  left = Math.max(12, Math.min(left, vw - TW - 12));
+  top  = Math.max(window.scrollY + 12, Math.min(top, vh - TH - 12));
+  return { top, left };
 }
 
 type Props = {
@@ -107,180 +60,157 @@ type Props = {
 
 export default function SpotlightTour({ steps, currentTab, onClose, onComplete }: Props) {
   const tabSteps = steps.filter((s) => s.tab === currentTab);
-  const [stepIdx, setStepIdx] = useState(0);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const [tooltipSize, setTooltipSize] = useState({ w: 300, h: 160 });
+  const [idx, setIdx] = useState(0);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const step = tabSteps[stepIdx];
-  const isFirst = stepIdx === 0;
-  const isLast = stepIdx >= tabSteps.length - 1;
-  const totalSteps = tabSteps.length;
+  const step = tabSteps[idx];
+  const isLast = idx >= tabSteps.length - 1;
 
-  const rect = useRect(step?.target ?? null, Boolean(step));
+  useEffect(() => { setMounted(true); }, []);
 
-  // Measure tooltip
-  useLayoutEffect(() => {
-    if (tooltipRef.current) {
-      const r = tooltipRef.current.getBoundingClientRect();
-      setTooltipSize({ w: r.width || 300, h: r.height || 160 });
-    }
-  });
+  // Scroll target into view + measure
+  useEffect(() => {
+    if (!step?.target) { setRect(null); return; }
+    const el = document.querySelector(step.target);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setRect(getTargetRect(step.target)), 350);
+    return () => clearTimeout(t);
+  }, [step?.target]);
 
-  // Scroll target into view
+  // Update rect on resize/scroll
   useEffect(() => {
     if (!step?.target) return;
-    const el = document.querySelector(step.target);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    const update = () => setRect(getTargetRect(step.target));
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, { passive: true });
+    return () => { window.removeEventListener("resize", update); window.removeEventListener("scroll", update); };
   }, [step?.target]);
 
   // Keyboard nav
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight" || e.key === "Enter") {
-        if (isLast) onComplete();
-        else setStepIdx((i) => i + 1);
-      }
-      if (e.key === "ArrowLeft" && !isFirst) setStepIdx((i) => i - 1);
-    }
+      if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); isLast ? onComplete() : setIdx((i) => i + 1); }
+      if (e.key === "ArrowLeft" && idx > 0) { e.preventDefault(); setIdx((i) => i - 1); }
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [isFirst, isLast, onClose, onComplete]);
+  }, [idx, isLast, onClose, onComplete]);
 
-  if (!step || tabSteps.length === 0) return null;
+  if (!mounted || !step || tabSteps.length === 0) return null;
 
-  const tooltipPos = calcTooltipPos(
-    rect,
-    step.placement,
-    tooltipSize.w,
-    tooltipSize.h
-  );
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const TW = Math.min(300, vw - 24);
+  const scrollY = window.scrollY;
 
-  // SVG spotlight mask
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-
+  // Build SVG cutout path
   const maskPath = rect
-    ? `M 0 0 H ${vw} V ${vh} H 0 Z M ${rect.left} ${rect.top - window.scrollY} H ${rect.left + rect.width} V ${rect.top - window.scrollY + rect.height} H ${rect.left} Z`
-    : `M 0 0 H ${vw} V ${vh} H 0 Z`;
+    ? [
+        `M0 0 H${vw} V${vh} H0 Z`,
+        `M${rect.left} ${rect.top - scrollY}`,
+        `H${rect.left + rect.width}`,
+        `V${rect.top - scrollY + rect.height}`,
+        `H${rect.left} Z`,
+      ].join(" ")
+    : `M0 0 H${vw} V${vh} H0 Z`;
+
+  const pos = calcPos(rect, step.placement);
 
   return createPortal(
-    <div className="fixed inset-0 z-[1200]" style={{ pointerEvents: "none" }}>
-      {/* Overlay with cutout */}
+    <div style={{ position: "fixed", inset: 0, zIndex: 1200, pointerEvents: "none" }}>
+      {/* Overlay */}
       <svg
-        className="absolute inset-0 w-full h-full"
-        style={{ pointerEvents: "auto" }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "auto" }}
         onClick={onClose}
       >
-        <defs>
-          <clipPath id="spotlight-clip">
-            <path fillRule="evenodd" d={maskPath} />
-          </clipPath>
-        </defs>
-        <rect
-          width={vw}
-          height={vh}
-          fill="rgba(15,23,42,0.75)"
-          clipPath="url(#spotlight-clip)"
-        />
+        <path fillRule="evenodd" d={maskPath} fill="rgba(15,23,42,0.72)" />
       </svg>
 
-      {/* Highlight border around target */}
+      {/* Highlight ring */}
       {rect && (
-        <div
-          className="absolute rounded-2xl ring-2 ring-[#F87171] ring-offset-0"
-          style={{
-            top: rect.top - window.scrollY,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
-            pointerEvents: "none",
-            boxShadow: "0 0 0 4px rgba(248,113,113,0.2)",
-          }}
-        />
+        <div style={{
+          position: "absolute",
+          top: rect.top - scrollY,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          borderRadius: 14,
+          outline: "2px solid #F87171",
+          outlineOffset: 0,
+          boxShadow: "0 0 0 4px rgba(248,113,113,0.25)",
+          pointerEvents: "none",
+        }} />
       )}
 
       {/* Tooltip */}
-      <div
-        ref={tooltipRef}
-        className="absolute w-[min(320px,calc(100vw-24px))] rounded-2xl border border-white/10 bg-white shadow-2xl dark:bg-[#0F1623]"
-        style={{
-          top: tooltipPos.top,
-          left: tooltipPos.left,
-          pointerEvents: "auto",
-          transformOrigin: tooltipPos.transformOrigin,
-          zIndex: 1201,
-        }}
-      >
+      <div style={{
+        position: "absolute",
+        top: pos.top - scrollY,
+        left: pos.left,
+        width: TW,
+        pointerEvents: "auto",
+        zIndex: 1201,
+        borderRadius: 16,
+        background: "var(--tooltip-bg, #fff)",
+        border: "1px solid rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+        overflow: "hidden",
+      }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2">
-            {step.emoji && <span className="text-xl">{step.emoji}</span>}
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
-              {step.title}
-            </h3>
+        <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {step.emoji && <span style={{ fontSize: 20 }}>{step.emoji}</span>}
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{step.title}</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1E293B] transition"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 8, color: "#94a3b8", flexShrink: 0 }}
             aria-label="Cerrar tour"
           >
-            <X className="h-3.5 w-3.5" />
+            <X size={14} />
           </button>
         </div>
 
         {/* Body */}
-        <p className="px-4 pb-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+        <p style={{ margin: "0 16px 14px", fontSize: 12, lineHeight: 1.6, color: "#475569" }}>
           {step.body}
         </p>
 
-        {/* Progress + nav */}
-        <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-3 flex items-center justify-between gap-2">
-          {/* Dots */}
-          <div className="flex gap-1">
+        {/* Footer */}
+        <div style={{ borderTop: "1px solid #f1f5f9", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* Progress dots */}
+          <div style={{ display: "flex", gap: 4 }}>
             {tabSteps.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === stepIdx
-                    ? "w-4 bg-[#F87171]"
-                    : i < stepIdx
-                    ? "w-1.5 bg-slate-300 dark:bg-slate-600"
-                    : "w-1.5 bg-slate-200 dark:bg-slate-700"
-                }`}
-              />
+              <span key={i} style={{
+                height: 6, borderRadius: 3, transition: "width 0.2s",
+                width: i === idx ? 16 : 6,
+                background: i === idx ? "#F87171" : i < idx ? "#cbd5e1" : "#e2e8f0",
+                display: "inline-block",
+              }} />
             ))}
           </div>
 
-          <span className="text-[10px] text-slate-400 font-semibold">
-            {stepIdx + 1} / {totalSteps}
+          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>
+            {idx + 1} / {tabSteps.length}
           </span>
 
-          <div className="flex items-center gap-1.5">
-            {!isFirst && (
-              <button
-                type="button"
-                onClick={() => setStepIdx((i) => i - 1)}
-                className="h-8 w-8 rounded-xl border border-slate-200 dark:border-[#334155] bg-white dark:bg-[#0F1623] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
+          <div style={{ display: "flex", gap: 6 }}>
+            {idx > 0 && (
+              <button type="button" onClick={() => setIdx((i) => i - 1)}
+                style={{ height: 32, width: 32, borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}
                 aria-label="Anterior"
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft size={14} />
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                if (isLast) onComplete();
-                else setStepIdx((i) => i + 1);
-              }}
-              className="h-8 px-3 rounded-xl bg-[#F87171] text-white text-xs font-bold flex items-center gap-1 hover:bg-[#EF4444] transition"
+            <button type="button"
+              onClick={() => isLast ? onComplete() : setIdx((i) => i + 1)}
+              style={{ height: 32, padding: "0 12px", borderRadius: 10, border: "none", background: "#F87171", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
             >
-              {isLast ? "¡Listo! ✓" : (
-                <>Siguiente <ChevronRight className="h-3 w-3" /></>
-              )}
+              {isLast ? "¡Listo! ✓" : <><span>Siguiente</span><ChevronRight size={12} /></>}
             </button>
           </div>
         </div>
