@@ -1,4 +1,4 @@
-"us data-tour="participants-qr"e client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
@@ -716,7 +716,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           )}
 
           {canManageParticipants && isInviting ? (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
+            <div data-tour="participants-qr" className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
               <InviteParticipantPanel
                 tripId={tripId}
                 participant={inviteParticipant}
