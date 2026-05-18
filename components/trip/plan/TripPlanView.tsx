@@ -854,6 +854,7 @@ export default function TripPlanView({
           </button>
 
           <div className="inline-flex w-full overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto">
+            <div data-tour="plan-view-toggle" style={{display:"contents"}}>
             <button
               type="button"
               onClick={() => setViewMode("list")}
@@ -883,7 +884,7 @@ export default function TripPlanView({
         </div>
 
         {filtersOpen ? (
-          <div data-tour="plan-calendar-grid" className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950">
                 <SlidersHorizontal className="h-4 w-4 text-slate-700" aria-hidden />
@@ -1191,6 +1192,7 @@ export default function TripPlanView({
       ) : null}
 
       {viewMode === "calendar" ? (
+        <div data-tour="plan-calendar-grid">
         <TripPlanCalendar
           activities={filtered}
           selectedDate={selectedDate}
@@ -1198,6 +1200,7 @@ export default function TripPlanView({
             setSelectedDate(d);
           }}
         />
+        </div>
       ) : null}
 
       {grouped.length === 0 ? (

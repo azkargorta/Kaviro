@@ -65,10 +65,16 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Pulsa la cabecera de un día para expandir o contraer sus actividades. Cada tarjeta muestra hora, lugar, categoría, valoración con estrellas y comentario. Usa el icono ≡ para arrastrar y reordenar. Pulsa la tarjeta para editar cualquier dato.",
   },
   {
-    id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-grid"]', placement: "top",
+    id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-mode"]', placement: "bottom",
     action: "calendar-mode", emoji: "📆",
-    title: "Vista Calendario",
-    body: "Ahora estás viendo el calendario completo del viaje. Cada día muestra las actividades planificadas. Esta vista es ideal para ver de un vistazo cómo de lleno está cada jornada, detectar días vacíos y comparar semanas enteras. Pulsa el botón Lista en la barra de arriba para volver a la vista por días.",
+    title: "Cambiar a vista Calendario",
+    body: "Pulsa este botón para ver las actividades en modo Calendario en lugar de lista. Kaviro cambia automáticamente la vista para mostrarte todos los días del viaje en una cuadrícula.",
+  },
+  {
+    id: "plan-calendar-grid", tab: "plan", target: '[data-tour="plan-calendar-grid"]', placement: "top",
+    emoji: "📅",
+    title: "Calendario del viaje",
+    body: "Cada día del viaje aparece en su celda. Los días con actividades muestran un contador con el número de planes. Pulsa cualquier día para ver sus actividades. Esta vista es ideal para detectar días vacíos y ver de un vistazo cómo de lleno está cada jornada.",
   },
   {
     id: "plan-explore", tab: "plan", target: '[data-tour="plan-explore-btn"]', placement: "bottom", emoji: "🧭",

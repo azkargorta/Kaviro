@@ -110,9 +110,9 @@ export default function SpotlightTour({ steps, tripId, currentTab, onClose, onCo
     executeAction(step.action);
     const t = setTimeout(() => {
       if (step.target) document.querySelector(step.target)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      const t2 = setTimeout(() => setRect(getRect(step.target)), 350);
+      const t2 = setTimeout(() => setRect(getRect(step.target)), step.action === "calendar-mode" ? 700 : 350);
       return () => clearTimeout(t2);
-    }, step.action ? 400 : 0);
+    }, step.action ? 500 : 0);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, mounted]);
