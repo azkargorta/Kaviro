@@ -1,18 +1,14 @@
-import type { TourStep } from "@/components/trip/common/trip-tour-types";
+import type { TourStep, SpotlightStep } from "@/components/trip/common/trip-tour-types";
 import { tripTabDocsImageClass } from "@/lib/trip-tab-assets";
 
-/**
- * Recorrido guiado del viaje demo de Londres.
- * 7 pasos — uno por pestaña principal.
- * Cada paso explica QUÉ es la sección, QUÉ puede hacer el usuario y un tip para móvil.
- */
+/** Tab-level tour — still used as entry point between tabs */
 export const DEMO_TAB_TOUR: TourStep[] = [
   {
     id: "home",
     title: "Resumen",
     lead: "🏠 Paso 1 de 7 · Empezamos aquí",
-    body: "El Resumen es la pantalla de entrada de cada viaje. Ves de un vistazo las fechas, quién viaja, cuántas actividades hay y el estado del presupuesto. También encontrarás el acceso al Recap cuando el viaje termine. En este demo hay 3 participantes de ejemplo y un plan de 3 días por Londres.",
-    mobileTip: "En móvil, usa el menú inferior para moverte entre secciones. El botón ⋯ agrupa las secciones secundarias.",
+    body: "El Resumen es la pantalla de entrada. Verás fechas, participantes, estadísticas y el estado del presupuesto. Pulsa 'Siguiente' para explorar esta pestaña.",
+    mobileTip: "En móvil, usa el menú inferior para moverte entre secciones.",
     href: (id) => `/trip/${id}/summary`,
     visual: { type: "image", tabKey: "summary", alt: "Resumen" },
   },
@@ -20,8 +16,8 @@ export const DEMO_TAB_TOUR: TourStep[] = [
     id: "plan",
     title: "Plan",
     lead: "📅 Paso 2 de 7 · El corazón del viaje",
-    body: "Aquí vive el itinerario: actividades ordenadas por día y hora, con lugar, duración y notas. Puedes arrastrar para reordenar, añadir con el botón +, explorar lugares cercanos en el mapa o exportar el plan como PDF con portada Kaviro. En tu viaje real, todos los participantes ven los cambios al instante.",
-    mobileTip: "Pulsa el botón ⋯ junto al FAB para acceder a Explorar, Historial y exportar PDF desde el móvil.",
+    body: "El itinerario día a día: actividades, horas y lugares. Arrastra para reordenar, añade con el botón + y exporta como PDF.",
+    mobileTip: "Pulsa el botón ⋯ para acceder a más opciones desde el móvil.",
     href: (id) => `/trip/${id}/plan`,
     visual: { type: "image", tabKey: "plan", alt: "Plan" },
   },
@@ -29,8 +25,8 @@ export const DEMO_TAB_TOUR: TourStep[] = [
     id: "map",
     title: "Rutas",
     lead: "🗺️ Paso 3 de 7 · Visualiza los trayectos",
-    body: "Conecta las paradas del plan sobre un mapa interactivo. Kaviro calcula la distancia y el tiempo estimado de cada tramo — a pie, en coche o transporte. El demo tiene una ruta de paseo por el centro de Londres. En tu viaje puedes crear tantas rutas como necesites y verlas todas a la vez.",
-    mobileTip: "Usa dos dedos para hacer zoom en el mapa. Toca una ruta para ver sus detalles.",
+    body: "Conecta tus paradas sobre el mapa. Kaviro calcula distancias y tiempos de desplazamiento.",
+    mobileTip: "Usa dos dedos para hacer zoom. Toca una ruta para ver sus detalles.",
     href: (id) => `/trip/${id}/map`,
     visual: { type: "image", tabKey: "map", alt: "Rutas" },
   },
@@ -38,8 +34,8 @@ export const DEMO_TAB_TOUR: TourStep[] = [
     id: "expenses",
     title: "Gastos",
     lead: "💶 Paso 4 de 7 · Sin pelearos con Excel",
-    body: "Registra tickets y gastos del grupo, divídelos por participante y Kaviro calcula automáticamente quién debe qué a quién. El demo tiene gastos en GBP, EUR y USD — la moneda base es la libra y los balances se convierten al instante. Hay un conversor de divisas integrado y puedes exportar todo como CSV para Excel.",
-    mobileTip: "Los botones Editar y Eliminar aparecen al expandir cada gasto. Mantén pulsado para ver opciones rápidas.",
+    body: "Registra tickets, divide por persona y Kaviro calcula quién debe qué a quién automáticamente.",
+    mobileTip: "Los botones Editar y Eliminar aparecen al expandir cada gasto.",
     href: (id) => `/trip/${id}/expenses`,
     visual: { type: "image", tabKey: "expenses", alt: "Gastos" },
   },
@@ -47,8 +43,8 @@ export const DEMO_TAB_TOUR: TourStep[] = [
     id: "participants",
     title: "Gente",
     lead: "👥 Paso 5 de 7 · Viajad juntos",
-    body: "Invita a tu grupo con un enlace o código QR. Cada persona puede tener un rol diferente: quién edita el plan, quién gestiona gastos, quién solo mira. El demo tiene a Ana, Luis y María como viajeros de ejemplo. En tu viaje real recibirán una notificación cuando alguien edite el plan.",
-    mobileTip: "El punto rojo en el icono de Gente avisa cuando alguien nuevo se ha unido al viaje.",
+    body: "Invita con un enlace o QR. Cada persona puede tener rol diferente: editar, ver gastos o solo mirar.",
+    mobileTip: "El punto rojo en el icono avisa cuando alguien nuevo se une.",
     href: (id) => `/trip/${id}/participants`,
     visual: { type: "image", tabKey: "participants", alt: "Participantes" },
   },
@@ -56,8 +52,8 @@ export const DEMO_TAB_TOUR: TourStep[] = [
     id: "resources",
     title: "Docs",
     lead: "📎 Paso 6 de 7 · Todo en un lugar",
-    body: "Guarda reservas de hotel, billetes de tren, entradas a museos y cualquier documento del viaje. Puedes añadir reservas con los datos del alojamiento (nombre, dirección, fechas, confirmación) o subir PDFs directamente. Todos los participantes tienen acceso. El asistente IA Premium puede escanear y extraer datos de tickets automáticamente.",
-    mobileTip: "Toca un documento para abrirlo. Mantén pulsado para ver opciones de edición o borrado.",
+    body: "Reservas de hotel, billetes, entradas. Sube PDFs o añade reservas con dirección y fechas.",
+    mobileTip: "Toca un documento para abrirlo.",
     href: (id) => `/trip/${id}/resources`,
     visual: { type: "image", tabKey: "resources", alt: "Documentos", imageClassName: tripTabDocsImageClass },
   },
@@ -65,9 +61,138 @@ export const DEMO_TAB_TOUR: TourStep[] = [
     id: "ai",
     title: "Asistente IA",
     lead: "✨ Paso 7 de 7 · Tu planificador inteligente",
-    body: "El Asistente IA conoce todo tu viaje: destino, fechas, participantes, presupuesto y actividades ya planificadas. Puedes pedirle que sugiera actividades para un día libre, que cree un itinerario completo, que resuelva dudas sobre el destino o que detecte huecos en el plan. Con Premium tienes acceso ilimitado. ¡Ya has visto todo Kaviro — empieza tu primer viaje real!",
-    mobileTip: "El asistente es opcional — Kaviro funciona perfectamente sin IA para organizar el grupo.",
+    body: "Conoce todo tu viaje. Pídele actividades, itinerarios completos o que detecte huecos en el plan.",
+    mobileTip: "El asistente es opcional — Kaviro funciona perfectamente sin IA.",
     href: (id) => `/trip/${id}/ai-chat`,
     visual: { type: "image", tabKey: "chat", alt: "Asistente" },
+  },
+];
+
+/**
+ * SPOTLIGHT TOUR — intra-tab steps.
+ * Each step targets a specific UI element via data-tour attribute.
+ * Grouped by tab (id prefix).
+ */
+export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
+  // ── RESUMEN ──────────────────────────────────────────────────────────────
+  {
+    id: "summary-1", tab: "home", target: '[data-tour="summary-stats"]',
+    placement: "bottom", emoji: "📊",
+    title: "Estadísticas del viaje",
+    body: "De un vistazo: cuántos días, actividades, participantes y km tienes planificados. Se actualizan en tiempo real.",
+  },
+  {
+    id: "summary-2", tab: "home", target: '[data-tour="summary-recap-cta"]',
+    placement: "top", emoji: "🎬",
+    title: "Recap del viaje",
+    body: "Al terminar el viaje, genera una tarjeta visual con estadísticas para compartir por WhatsApp o Instagram Stories.",
+  },
+
+  // ── PLAN ─────────────────────────────────────────────────────────────────
+  {
+    id: "plan-1", tab: "plan", target: '[data-tour="plan-add-btn"]',
+    placement: "bottom", emoji: "➕",
+    title: "Añadir actividad",
+    body: "Crea una actividad con título, lugar en el mapa, hora y notas. El grupo la verá al instante.",
+  },
+  {
+    id: "plan-2", tab: "plan", target: '[data-tour="plan-activity-card"]',
+    placement: "right", emoji: "☰",
+    title: "Arrastrar para reordenar",
+    body: "Mantén pulsado el icono ≡ y arrastra la actividad a donde quieras. El orden se guarda automáticamente.",
+  },
+  {
+    id: "plan-3", tab: "plan", target: '[data-tour="plan-explore-btn"]',
+    placement: "bottom", emoji: "🧭",
+    title: "Explorar lugares",
+    body: "Busca restaurantes, museos o puntos de interés cerca del destino y añádelos directamente al plan.",
+  },
+  {
+    id: "plan-4", tab: "plan", target: '[data-tour="plan-pdf-btn"]',
+    placement: "bottom", emoji: "📄",
+    title: "Exportar PDF",
+    body: "Genera un PDF del itinerario con portada Kaviro. Perfecto para imprimir o compartir antes del viaje.",
+  },
+  {
+    id: "plan-5", tab: "plan", target: '[data-tour="plan-calendar-btn"]',
+    placement: "bottom", emoji: "📅",
+    title: "Añadir al calendario",
+    body: "Exporta cada actividad directamente a Google Calendar, Apple Calendar u Outlook con un solo clic.",
+  },
+
+  // ── RUTAS ────────────────────────────────────────────────────────────────
+  {
+    id: "map-1", tab: "map", target: '[data-tour="map-new-route-btn"]',
+    placement: "bottom", emoji: "🗺️",
+    title: "Crear una ruta",
+    body: "Dibuja el trayecto entre paradas: a pie, en coche o transporte público. Kaviro calcula la distancia y el tiempo.",
+  },
+  {
+    id: "map-2", tab: "map", target: '[data-tour="map-ai-btn"]',
+    placement: "bottom", emoji: "✨",
+    title: "Rutas con IA",
+    body: "El asistente genera rutas óptimas conectando todas tus actividades del día. Ahorra horas de planificación.",
+  },
+
+  // ── GASTOS ───────────────────────────────────────────────────────────────
+  {
+    id: "expenses-1", tab: "expenses", target: '[data-tour="expenses-add-btn"]',
+    placement: "bottom", emoji: "💶",
+    title: "Registrar un gasto",
+    body: "Añade el importe, quién pagó y entre quiénes se divide. Funciona con cualquier moneda — Kaviro convierte automáticamente.",
+  },
+  {
+    id: "expenses-2", tab: "expenses", target: '[data-tour="expenses-balance"]',
+    placement: "top", emoji: "⚖️",
+    title: "Balance automático",
+    body: "Kaviro calcula quién debe dinero a quién. Al final del viaje, todos saben exactamente qué transferir.",
+  },
+  {
+    id: "expenses-3", tab: "expenses", target: '[data-tour="expenses-csv-btn"]',
+    placement: "bottom", emoji: "📥",
+    title: "Exportar CSV",
+    body: "Descarga todos los gastos en un Excel. Útil para contabilidad o para compartir el resumen con el grupo.",
+  },
+
+  // ── PARTICIPANTES ────────────────────────────────────────────────────────
+  {
+    id: "participants-1", tab: "participants", target: '[data-tour="participants-invite-btn"]',
+    placement: "bottom", emoji: "📨",
+    title: "Invitar al grupo",
+    body: "Comparte el enlace de invitación por WhatsApp. El invitado elige su rol: puede editar o solo ver.",
+  },
+  {
+    id: "participants-2", tab: "participants", target: '[data-tour="participants-qr"]',
+    placement: "top", emoji: "📱",
+    title: "Código QR",
+    body: "En el aeropuerto o la reunión previa, escanea el QR para unirte al viaje sin buscar el enlace.",
+  },
+
+  // ── DOCS ─────────────────────────────────────────────────────────────────
+  {
+    id: "resources-1", tab: "resources", target: '[data-tour="resources-add-btn"]',
+    placement: "bottom", emoji: "📎",
+    title: "Subir documentos",
+    body: "Sube PDFs de reservas, billetes o entradas. Todos los participantes pueden verlos y descargarlos.",
+  },
+  {
+    id: "resources-2", tab: "resources", target: '[data-tour="resources-lodging-btn"]',
+    placement: "bottom", emoji: "🏨",
+    title: "Guardar alojamiento",
+    body: "Añade los datos del hotel: nombre, dirección, check-in, check-out y código de reserva. Sin buscar emails.",
+  },
+
+  // ── ASISTENTE IA ─────────────────────────────────────────────────────────
+  {
+    id: "ai-1", tab: "ai", target: '[data-tour="ai-input"]',
+    placement: "top", emoji: "💬",
+    title: "Pregunta lo que quieras",
+    body: "Escribe en lenguaje natural: 'Crea un plan para el martes', '¿Qué hacer en Londres con lluvia?' o 'Reorganiza el itinerario del jueves'.",
+  },
+  {
+    id: "ai-2", tab: "ai", target: '[data-tour="ai-suggestions"]',
+    placement: "bottom", emoji: "⚡",
+    title: "Sugerencias rápidas",
+    body: "Pulsa cualquier sugerencia para hacer la pregunta al instante. Kaviro conoce el contexto completo del viaje.",
   },
 ];

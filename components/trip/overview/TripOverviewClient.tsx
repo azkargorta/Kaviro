@@ -178,7 +178,7 @@ export default function TripOverviewClient({
       </div>
 
       {/* ── Stats grid ──────────────────────────────────────────────────── */}
-      <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 no-scrollbar">
+      <div data-tour="summary-stats" className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 no-scrollbar">
         {/* Activities */}
         <Link href={`/trip/${tripId}/plan`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-violet-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
           <div className="flex items-center justify-between">
@@ -329,7 +329,7 @@ export default function TripOverviewClient({
       {isPremium && <TripAiProactiveHint tripId={tripId} />}
 
       {/* ── Recap CTA ──────────────────────────────────────────────────── */}
-      <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-[#1E293B] shadow-sm">
+      <div data-tour="summary-recap-cta" className="rounded-2xl overflow-hidden border border-slate-200 dark:border-[#1E293B] shadow-sm">
         <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-5 py-4 flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full shrink-0" />

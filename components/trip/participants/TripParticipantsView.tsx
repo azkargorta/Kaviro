@@ -123,6 +123,7 @@ function ActionMenu({
         {canInvite ? (
           <>
             <button
+              data-tour="participants-invite-btn"
               type="button"
               onClick={() => {
                 onInvite();

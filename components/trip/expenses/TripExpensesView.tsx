@@ -286,7 +286,7 @@ export default function TripExpensesView({
                 setIsAddOpen(true);
                 setIsAnalyzeOpen(false);
               }}
-              className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+              data-tour="expenses-add-btn" className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             >
               Añadir ticket
             </button>
@@ -572,7 +572,7 @@ export default function TripExpensesView({
               <div className="mt-1 text-xs text-slate-600">Quién debe a quién y enlaces rápidos por WhatsApp.</div>
             </div>
             <div className="px-4 py-4">
-              <ExpenseBalancePanel
+              <div data-tour="expenses-balance"><ExpenseBalancePanel
                 balances={balances}
                 settlements={suggestedSettlements}
                 balanceCurrency={balanceCurrency}

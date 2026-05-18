@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
-import { DEMO_TAB_TOUR } from "@/lib/onboarding/demo-tour-copy";
+import { DEMO_TAB_TOUR, DEMO_SPOTLIGHT_TOUR } from "@/lib/onboarding/demo-tour-copy";
+import SpotlightTour from "@/components/trip/common/SpotlightTour";
 import type { TourStep } from "@/components/trip/common/trip-tour-types";
 import { ChevronLeft, ChevronRight, LifeBuoy, X } from "lucide-react";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -439,6 +440,7 @@ export default function TripPageHelp() {
   const entry = pageId ? HELP[pageId] : null;
 
   const searchParams = useSearchParams();
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
   const [pageHelpOpen, setPageHelpOpen] = useState(false);
@@ -451,14 +453,13 @@ export default function TripPageHelp() {
     setTourOpen(false);
     setTourStep(0);
     if (isDemoTrip) {
-      void completeDemoOnboarding().finally(() => {
-        router.push("/dashboard");
-        router.refresh();
-      });
-      return;
+      // After tab tour, open spotlight tour for current tab
+      const t = window.setTimeout(() => setSpotlightOpen(true), 300);
+      void completeDemoOnboarding().finally(() => {/* stay on page */});
+      return () => window.clearTimeout(t);
     }
     setTourPulse((p) => p + 1);
-  }, [tripId, isDemoTrip, router]);
+  }, [tripId, isDemoTrip]);
 
   const closePageHelp = useCallback(() => {
     if (tripId && pageId) markPageHelpSeen(tripId, pageId);
@@ -767,6 +768,29 @@ export default function TripPageHelp() {
             document.body
           )
         : null}
+
+      {/* Spotlight tour for demo trips — re-openable via Tour button */}
+      {mounted && spotlightOpen && isDemoTrip && pageId && (
+        <SpotlightTour
+          steps={DEMO_SPOTLIGHT_TOUR}
+          currentTab={pageId}
+          onClose={() => setSpotlightOpen(false)}
+          onComplete={() => setSpotlightOpen(false)}
+        />
+      )}
+
+      {/* Tour button — visible on demo trips when no other tour is open */}
+      {isDemoTrip && !tourOpen && !spotlightOpen && pageId && (
+        <button
+          type="button"
+          onClick={() => setSpotlightOpen(true)}
+          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#F87171]/30 bg-[#F87171]/10 px-4 text-[10px] font-semibold text-[#F87171] shadow-sm transition hover:bg-[#F87171]/20"
+          aria-label="Tour de esta pestaña"
+        >
+          <span className="text-sm">🗺️</span>
+          <span>Tour</span>
+        </button>
+      )}
     </>
   );
 }

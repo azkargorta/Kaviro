@@ -505,7 +505,7 @@ export default function TripPlanView({
         <button
           type="button"
           onClick={handleStartCreate}
-          className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
+          className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden" data-tour="plan-add-btn"
           aria-label="Añadir plan"
           title="Añadir plan"
         >
@@ -571,13 +571,14 @@ export default function TripPlanView({
           <button
             type="button"
             onClick={handleStartCreate}
-            className={`hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`}
+            className={`hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`} data-tour="plan-add-btn"
             title="Crear un plan manual"
           >
             <Plus className="h-4 w-4" />
             Añadir plan
           </button>
           <button
+            data-tour="plan-explore-btn"
             type="button"
             onClick={() => setExploreOpen(true)}
             className={`${btnSecondary} w-full gap-2 sm:w-auto`}
@@ -638,6 +639,7 @@ export default function TripPlanView({
             }}
             className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             title="Exportar itinerario como PDF"
+            data-tour="plan-pdf-btn"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -655,6 +657,7 @@ export default function TripPlanView({
               onClick={() => setCalendarMenuOpen((v) => !v)}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               title="Añadir actividades a tu calendario"
+              data-tour="plan-calendar-btn"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               Calendario
