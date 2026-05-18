@@ -168,7 +168,7 @@ export default function TripSummaryOverview({
       <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
 
         {/* Hero card — countdown + today's plan + next activity */}
-        <section className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
+        <section data-tour="summary-countdown" className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
           {/* Subtle glow */}
           <div
             className="pointer-events-none absolute -right-20 -top-10 h-52 w-52 rounded-full bg-violet-500/15 blur-3xl dark:bg-[var(--brand-light)]"
@@ -315,6 +315,7 @@ export default function TripSummaryOverview({
 
         {/* R2 — Weather integrado como columna derecha */}
         <section
+          data-tour="summary-weather"
           className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
           dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
         >
@@ -438,7 +439,7 @@ export default function TripSummaryOverview({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div data-tour="summary-stats" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {tabs.map((tab) => {
             const ac = TILE_ACCENT[tab.tone];
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";

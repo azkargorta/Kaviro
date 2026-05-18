@@ -41,6 +41,8 @@ export function buildDemoActivities(start_date: string): DemoActivitySeed[] {
   return [
     {
       title: "Llegada y paseo por Westminster",
+      rating: 5,
+      comment: "Impresionante ver el Big Ben en directo. Vale la pena llegar al atardecer.",
       activity_date: d(0),
       activity_time: "15:00",
       place_name: "Palacio de Westminster",
@@ -51,6 +53,8 @@ export function buildDemoActivities(start_date: string): DemoActivitySeed[] {
     },
     {
       title: "British Museum",
+      rating: 5,
+      comment: "Increíble colección. Imposible verlo todo en un día, pero la momia egipcia es imprescindible.",
       activity_date: d(1),
       activity_time: "10:30",
       place_name: "British Museum",
@@ -61,6 +65,8 @@ export function buildDemoActivities(start_date: string): DemoActivitySeed[] {
     },
     {
       title: "Mercado y cena en Borough",
+      rating: 4,
+      comment: "El mercado está muy bien pero hay que ir temprano. La cena en el pub de al lado, fenomenal.",
       activity_date: d(1),
       activity_time: "19:30",
       place_name: "Borough Market",
@@ -71,6 +77,8 @@ export function buildDemoActivities(start_date: string): DemoActivitySeed[] {
     },
     {
       title: "Tower Bridge y Tower of London",
+      rating: 4,
+      comment: "El puente es muy fotogénico. La Torre de Londres merece la visita guiada.",
       activity_date: d(2),
       activity_time: "11:00",
       place_name: "Tower Bridge",
@@ -81,6 +89,8 @@ export function buildDemoActivities(start_date: string): DemoActivitySeed[] {
     },
     {
       title: "Musical en West End",
+      rating: 5,
+      comment: "La mejor noche del viaje. Reservar con antelación para conseguir buenas butacas.",
       activity_date: d(2),
       activity_time: "20:00",
       place_name: "West End",
