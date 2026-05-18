@@ -764,12 +764,13 @@ export default function TripPageHelp() {
             document.body
           )
         : null}
-      {mounted && spotlightOpen && isDemoTrip && pageId && (
+      {mounted && spotlightOpen && isDemoTrip && tripId && pageId && (
         <SpotlightTour
           steps={DEMO_SPOTLIGHT_TOUR}
+          tripId={tripId}
           currentTab={pageId}
           onClose={() => setSpotlightOpen(false)}
-          onComplete={() => setSpotlightOpen(false)}
+          onComplete={() => { setSpotlightOpen(false); }}
         />
       )}
       {isDemoTrip && !tourOpen && !spotlightOpen && pageId && (
