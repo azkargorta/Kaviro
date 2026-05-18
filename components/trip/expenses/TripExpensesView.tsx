@@ -142,12 +142,12 @@ export default function TripExpensesView({
     const secondary = `${base} border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50`;
 
     return (
-      <div className="flex min-w-0 max-w-full flex-wrap gap-2">
+      <div data-tour="expenses-toolbar" className="flex min-w-0 max-w-full flex-wrap gap-2">
         <button
           type="button"
           className={secondary}
           onClick={() => setHistoryOpen((v) => !v)}
-          title="Ver historial de cambios"
+          data-tour="expenses-history-btn" title="Ver historial de cambios"
         >
           <Clock className="h-4 w-4" aria-hidden />
           Historial
@@ -163,7 +163,7 @@ export default function TripExpensesView({
         </button>
         <button
           type="button"
-          className={primary}
+          data-tour="expenses-add-btn" className={primary}
           onClick={() => {
             setIsAddOpen((v) => !v);
             setIsAnalyzeOpen(false);
@@ -172,7 +172,7 @@ export default function TripExpensesView({
           <Plus className="h-4 w-4" aria-hidden />
           {shouldShowForm ? "Cerrar añadir" : "Añadir ticket"}
         </button>
-        <button
+        <button data-tour="expenses-analyze-btn"
           type="button"
           className={secondary}
           onClick={() => {
@@ -222,7 +222,7 @@ export default function TripExpensesView({
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("charts")}
+          data-tour="expenses-stats-btn" onClick={() => setActiveTab("charts")}
           className={`inline-flex min-h-[34px] items-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition ${
             activeTab === "charts"
               ? "bg-white text-slate-900 shadow-sm"
@@ -286,7 +286,7 @@ export default function TripExpensesView({
                 setIsAddOpen(true);
                 setIsAnalyzeOpen(false);
               }}
-              data-tour="expenses-add-btn" className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+              className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             >
               Añadir ticket
             </button>
@@ -513,7 +513,7 @@ export default function TripExpensesView({
             </div>
           </details>
 
-          <details
+          <details data-tour="expenses-currency-details"
             className="rounded-2xl border border-violet-200 bg-gradient-to-br from-white via-violet-50/35 to-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
             open={isConverterOpen}
             onToggle={(e) => setIsConverterOpen((e.currentTarget as HTMLDetailsElement).open)}
@@ -534,7 +534,7 @@ export default function TripExpensesView({
             </div>
           </details>
 
-          <details className="group rounded-2xl border border-violet-200 bg-gradient-to-br from-white via-violet-50/25 to-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
+          <details data-tour="expenses-list-details" className="group rounded-2xl border border-violet-200 bg-gradient-to-br from-white via-violet-50/25 to-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
             <summary className="flex min-w-0 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 hover:bg-violet-50/40 dark:hover:bg-slate-900/40 sm:px-5">
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-slate-950">Listado de gastos</div>
@@ -565,14 +565,13 @@ export default function TripExpensesView({
           </details>
         </div>
 
-        <div className="min-w-0 space-y-4">
+        <div data-tour="expenses-balance-panel" className="min-w-0 space-y-4">
           <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-white via-violet-50/25 to-white shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
             <div className="border-b border-violet-200/80 bg-violet-50/50 px-5 py-4 dark:border-slate-700/50 dark:bg-slate-900/45">
               <div className="text-sm font-semibold text-slate-950">Balances y pagos</div>
               <div className="mt-1 text-xs text-slate-600">Quién debe a quién y enlaces rápidos por WhatsApp.</div>
             </div>
             <div className="px-4 py-4">
-              <div data-tour="expenses-balance">
               <ExpenseBalancePanel
                 balances={balances}
                 settlements={suggestedSettlements}
@@ -592,7 +591,6 @@ export default function TripExpensesView({
                 strictPaymentMethods={strictPaymentMethods}
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}
               />
-              </div>
             </div>
           </div>
         </div>

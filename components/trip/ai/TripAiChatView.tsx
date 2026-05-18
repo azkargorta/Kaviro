@@ -2009,7 +2009,7 @@ export default function TripAiChatView({
                 <h2 className="text-lg font-bold text-slate-950">Conversación</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Modo:{" "}
-                  <span className="font-semibold text-slate-800">
+                  <span data-tour="ai-suggestions" className="font-semibold text-slate-800">
                     {modeSource === "auto" ? "Automático" : activeMode?.label || MODE_LABELS[mode] || mode}
                   </span>
                   {modeSource === "manual" && activeMode ? (
@@ -2284,7 +2284,7 @@ export default function TripAiChatView({
           >
             {/* AI5 — Input with contextual placeholder, char counter, Enter to send */}
             <div
-              className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-border)] ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}
+              data-tour="ai-input" className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-border)] ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}
             >
               <textarea
                 value={question}

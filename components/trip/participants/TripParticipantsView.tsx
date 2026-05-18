@@ -123,7 +123,6 @@ function ActionMenu({
         {canInvite ? (
           <>
             <button
-            data-tour="participants-invite-btn"
               type="button"
               onClick={() => {
                 onInvite();
@@ -687,12 +686,12 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                     setLinkingParticipant(null);
                     setIsCreating((prev) => !prev);
                   }}
-                  className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
+                  data-tour="participants-add-btn" className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
                 >
                   <UserPlus className="h-4 w-4" aria-hidden />
                   {isCreating ? "Cerrar" : "Añadir pasajero"}
                 </button>
-                <button
+                <button data-tour="participants-invite-btn"
                   type="button"
                   onClick={openGenericInvite}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
