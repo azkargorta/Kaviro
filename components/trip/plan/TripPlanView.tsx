@@ -879,7 +879,7 @@ export default function TripPlanView({
             >
               Calendario
             </button>
-        </div>
+          </div>
 
         {filtersOpen ? (
           <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
