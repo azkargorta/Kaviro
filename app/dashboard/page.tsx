@@ -11,6 +11,7 @@ import { isPlatformAdmin } from "@/lib/platform-admin";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
+import DashboardFavoritesSection from "@/components/dashboard/DashboardFavoritesSection";
 import {
   ensureDemoTripForUser,
   readDemoOnboardingProfile,
@@ -26,10 +27,12 @@ type Trip = {
   base_currency: string | null;
   created_at?: string | null;
   is_demo?: boolean | null;
+  is_favorite?: boolean;
 };
 
 type TripParticipantRow = {
   trip_id: string;
+  is_favorite?: boolean;
 };
 
 function formatDate(value: string | null) {
@@ -124,16 +127,18 @@ export default async function DashboardPage() {
 
   const { data: participantRows, error: participantsError } = await supabase
     .from("trip_participants")
-    .select("trip_id")
+    .select("trip_id, is_favorite")
     .eq("user_id", user.id);
 
   if (participantsError) {
     console.error("Error cargando participaciones del usuario:", participantsError);
   }
 
-  const tripIds = ((participantRows ?? []) as TripParticipantRow[])
-    .map((row) => row.trip_id)
-    .filter(Boolean);
+  const participantData = (participantRows ?? []) as TripParticipantRow[];
+  const favoriteMap = new Map<string, boolean>(
+    participantData.map((row) => [row.trip_id, row.is_favorite ?? false])
+  );
+  const tripIds = participantData.map((row) => row.trip_id).filter(Boolean);
 
   let trips: Trip[] = [];
 
@@ -147,7 +152,10 @@ export default async function DashboardPage() {
     if (tripsError) {
       console.error("Error cargando viajes del usuario:", tripsError);
     } else {
-      trips = (tripsData ?? []) as Trip[];
+      trips = ((tripsData ?? []) as Trip[]).map((t) => ({
+        ...t,
+        is_favorite: favoriteMap.get(t.id) ?? false,
+      }));
     }
   }
 
@@ -157,6 +165,28 @@ export default async function DashboardPage() {
   const { current, future, past, unscheduled } = categorizeTrips(realTrips);
   const lockedTripIds = new Set<string>();
   const freeTripLimitReached = !isPremium && realTrips.length >= 3;
+
+  const currentIds = new Set(current.map((t) => t.id));
+  const futureIds = new Set(future.map((t) => t.id));
+  const pastIds = new Set(past.map((t) => t.id));
+
+  const favoriteTrips = realTrips
+    .filter((t) => t.is_favorite)
+    .map((t) => {
+      let badge = "Pendiente";
+      let accent = "from-amber-100 to-orange-50 border-amber-200";
+      if (currentIds.has(t.id)) {
+        badge = "En curso";
+        accent = "from-emerald-100 to-teal-50 border-emerald-200";
+      } else if (futureIds.has(t.id)) {
+        badge = "Próximo";
+        accent = "from-[var(--brand-light)] to-slate-50 border-[var(--brand-border)]";
+      } else if (pastIds.has(t.id)) {
+        badge = "Finalizado";
+        accent = "from-slate-100 to-slate-50 border-slate-200";
+      }
+      return { ...t, badge, accent, is_favorite: true as const };
+    });
 
   // For onboarding checklist — check if user has invited someone or added an expense
   let hasParticipants = false;
@@ -249,6 +279,10 @@ export default async function DashboardPage() {
 
       {realTrips.length === 0 ? null : (
         <div className="space-y-5">
+          <DashboardFavoritesSection
+            trips={favoriteTrips}
+            lockedTripIds={Array.from(lockedTripIds)}
+          />
           <DashboardTripSection
             title="En curso"
             subtitle="Lo que estás viviendo ahora."

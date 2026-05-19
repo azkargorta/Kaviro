@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Trash2, Star } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import TripDashboardEditDialog from "@/components/dashboard/TripDashboardEditDialog";
@@ -14,6 +14,7 @@ type Trip = {
   start_date: string | null;
   end_date: string | null;
   base_currency: string | null;
+  is_favorite?: boolean;
 };
 
 function formatDate(value: string | null) {
@@ -50,6 +51,8 @@ export default function TripCardItem({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(trip.is_favorite ?? false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   async function onDelete() {
     setError(null);
@@ -74,6 +77,30 @@ export default function TripCardItem({
       toast.error("No se pudo eliminar", msg);
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleToggleFavorite() {
+    if (favoriteLoading) return;
+    const newValue = !isFavorite;
+    setIsFavorite(newValue);
+    setFavoriteLoading(true);
+    try {
+      const resp = await fetch(`/api/trips/${encodeURIComponent(trip.id)}/favorite`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!resp.ok) {
+        setIsFavorite(!newValue);
+        toast.error("Error", "No se pudo actualizar favorito.");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setIsFavorite(!newValue);
+      toast.error("Error", "No se pudo actualizar favorito.");
+    } finally {
+      setFavoriteLoading(false);
     }
   }
 
@@ -126,6 +153,27 @@ export default function TripCardItem({
         </div>
 
         <div className="flex flex-col items-end gap-2">
+          {!isDemo ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleToggleFavorite();
+              }}
+              disabled={favoriteLoading}
+              className="group rounded-full p-1.5 transition-colors hover:bg-amber-50 disabled:opacity-60 dark:hover:bg-amber-950/30"
+              title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+              aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+            >
+              <Star
+                className={`h-5 w-5 transition-colors ${
+                  isFavorite
+                    ? "fill-amber-400 text-amber-400"
+                    : "fill-transparent text-slate-300 group-hover:text-amber-300"
+                }`}
+              />
+            </button>
+          ) : null}
           {locked ? (
             <div className="rounded-full bg-white/75 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-[#1E293B] dark:text-slate-200">
               Premium
@@ -200,4 +248,3 @@ export default function TripCardItem({
     </div>
   );
 }
-
