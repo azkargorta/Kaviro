@@ -151,6 +151,8 @@ export async function ensureDemoTripForUser(user: User): Promise<{
         activity_kind: a.activity_kind,
         latitude: a.latitude,
         longitude: a.longitude,
+        ...(a.rating != null ? { rating: a.rating } : {}),
+        ...(a.comment != null ? { comment: a.comment } : {}),
         source: "demo",
         created_by_user_id: user.id,
       }))

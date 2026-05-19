@@ -180,7 +180,7 @@ export default function InviteParticipantPanel({
               {inviteUrl}
             </div>
             {/* QR code — escanear para unirse en móvil */}
-            <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4">
+            <div data-tour="participants-qr" className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                 Escanear para unirse
               </p>

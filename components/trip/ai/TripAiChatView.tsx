@@ -2029,6 +2029,7 @@ export default function TripAiChatView({
 
             <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">Elige el foco</p>
             <div
+              data-tour="ai-suggestions"
               className={
                 layout === "drawer"
                   ? "mt-2 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4"
@@ -2279,6 +2280,7 @@ export default function TripAiChatView({
           </div>
 
           <form
+            data-tour="ai-input"
             onSubmit={handleSubmit}
             className={`min-w-0 max-w-full border-t border-slate-200 dark:border-[#1E293B] p-4 sm:p-5 ${layout === "drawer" ? "shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]" : ""}`}
           >

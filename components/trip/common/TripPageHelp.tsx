@@ -543,13 +543,9 @@ export default function TripPageHelp() {
   }, [tourOpen, pageHelpOpen, finishTour, closePageHelp]);
 
   const openManual = useCallback(() => {
-    if (!isDemoTrip) {
-      // Normal trip — open spotlight filtered to current tab
-      setSpotlightOpen(true);
-    } else {
-      setPageHelpOpen(true);
-    }
-  }, [isDemoTrip]);
+    // Both demo and normal trips open the spotlight; demo = full cross-tab, normal = current tab only
+    setSpotlightOpen(true);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -559,14 +555,19 @@ export default function TripPageHelp() {
   useEffect(() => {
     if (!mounted) return;
     if (searchParams?.get("tutorial") !== "demo") return;
-    if (tourOpen) return;
+    if (tourOpen || spotlightOpen) return;
     const t = window.setTimeout(() => {
-      setTourStep(0);
-      setTourOpen(true);
+      if (isDemoTrip) {
+        // Demo trips use the spotlight tour
+        setSpotlightOpen(true);
+      } else {
+        setTourStep(0);
+        setTourOpen(true);
+      }
     }, 600);
     return () => window.clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, searchParams]);
+  }, [mounted, searchParams, isDemoTrip]);
 
   const tourStepData = activeTour[tourStep];
   const isLastTourStep = tourStep >= activeTour.length - 1;
