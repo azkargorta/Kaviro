@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import type { DetectedDocumentData } from "@/lib/document-analyzer";
 import {
   useTripResources,
