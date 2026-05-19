@@ -195,48 +195,66 @@ export async function ensureDemoTripForUser(user: User): Promise<{
     return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(x);
   };
 
-  await admin.from("trip_routes").insert(
-    DEMO_ROUTES.map((r, i) => {
-      const routeDate = dateForOffset(r.day_offset);
-      const originId = r.origin_activity_title ? activityIdByTitle.get(r.origin_activity_title) : undefined;
-      const destId = r.destination_activity_title ? activityIdByTitle.get(r.destination_activity_title) : undefined;
-      const waypointIds = (r.waypoint_activity_titles ?? [])
-        .map((t) => activityIdByTitle.get(t))
-        .filter((id): id is string => Boolean(id));
-      const originCoords = r.origin_activity_title ? activityCoordsByTitle.get(r.origin_activity_title) : undefined;
-      const destCoords = r.destination_activity_title ? activityCoordsByTitle.get(r.destination_activity_title) : undefined;
+  // Insertar rutas una a una con fallback progresivo si alguna columna no existe
+  for (let i = 0; i < DEMO_ROUTES.length; i++) {
+    const r = DEMO_ROUTES[i]!;
+    const routeDate = dateForOffset(r.day_offset);
+    const originId = r.origin_activity_title ? activityIdByTitle.get(r.origin_activity_title) : undefined;
+    const destId = r.destination_activity_title ? activityIdByTitle.get(r.destination_activity_title) : undefined;
+    const waypointIds = (r.waypoint_activity_titles ?? [])
+      .map((t) => activityIdByTitle.get(t))
+      .filter((id): id is string => Boolean(id));
+    const originCoords = r.origin_activity_title ? activityCoordsByTitle.get(r.origin_activity_title) : undefined;
+    const destCoords = r.destination_activity_title ? activityCoordsByTitle.get(r.destination_activity_title) : undefined;
 
-      // Build path_points: origin → waypoints → destination (straight lines)
-      const pathPoints: Array<{ lat: number; lng: number }> = [];
-      if (originCoords) pathPoints.push(originCoords);
-      for (const waypointTitle of (r.waypoint_activity_titles ?? [])) {
-        const c = activityCoordsByTitle.get(waypointTitle);
-        if (c) pathPoints.push(c);
-      }
-      if (destCoords) pathPoints.push(destCoords);
+    const pathPoints: Array<{ lat: number; lng: number }> = [];
+    if (originCoords) pathPoints.push(originCoords);
+    for (const waypointTitle of (r.waypoint_activity_titles ?? [])) {
+      const c = activityCoordsByTitle.get(waypointTitle);
+      if (c) pathPoints.push(c);
+    }
+    if (destCoords) pathPoints.push(destCoords);
 
-      return {
-        trip_id: tripId,
-        route_date: routeDate,
-        route_day: routeDate,
-        day_date: routeDate,
-        sort_order: i,
-        title: r.title,
-        route_name: r.title,
-        travel_mode: r.travel_mode,
-        origin_name: r.origin_name,
-        destination_name: r.destination_name,
-        distance_text: r.distance_text,
-        duration_text: r.duration_text,
-        ...(originId ? { origin_activity_id: originId } : {}),
-        ...(destId ? { destination_activity_id: destId } : {}),
-        ...(waypointIds.length ? { waypoint_ids: waypointIds } : {}),
-        ...(originCoords ? { origin_latitude: originCoords.lat, origin_longitude: originCoords.lng } : {}),
-        ...(destCoords ? { destination_latitude: destCoords.lat, destination_longitude: destCoords.lng } : {}),
-        ...(pathPoints.length >= 2 ? { path_points: pathPoints, route_points: pathPoints } : {}),
-      };
-    })
-  );
+    // Intento 1: con todas las columnas enriquecidas
+    const fullPayload = {
+      trip_id: tripId,
+      route_date: routeDate,
+      route_day: routeDate,
+      day_date: routeDate,
+      title: r.title,
+      route_name: r.title,
+      travel_mode: r.travel_mode,
+      origin_name: r.origin_name,
+      destination_name: r.destination_name,
+      distance_text: r.distance_text,
+      duration_text: r.duration_text,
+      ...(originCoords ? { origin_latitude: originCoords.lat, origin_longitude: originCoords.lng } : {}),
+      ...(destCoords ? { destination_latitude: destCoords.lat, destination_longitude: destCoords.lng } : {}),
+      ...(pathPoints.length >= 2 ? { path_points: pathPoints, route_points: pathPoints } : {}),
+      ...(originId ? { origin_activity_id: originId } : {}),
+      ...(destId ? { destination_activity_id: destId } : {}),
+      ...(waypointIds.length ? { waypoint_ids: waypointIds } : {}),
+    };
+
+    const { error: err1 } = await admin.from("trip_routes").insert(fullPayload);
+    if (!err1) continue;
+
+    // Intento 2: sin columnas avanzadas (solo las básicas que siempre existen)
+    const basicPayload = {
+      trip_id: tripId,
+      route_date: routeDate,
+      route_day: routeDate,
+      day_date: routeDate,
+      title: r.title,
+      route_name: r.title,
+      travel_mode: r.travel_mode,
+      origin_name: r.origin_name,
+      destination_name: r.destination_name,
+      distance_text: r.distance_text,
+      duration_text: r.duration_text,
+    };
+    await admin.from("trip_routes").insert(basicPayload);
+  }
 
   // Listas en la sección Docs
   for (const listSeed of DEMO_LISTS) {

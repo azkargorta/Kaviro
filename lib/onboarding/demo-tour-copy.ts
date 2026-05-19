@@ -143,10 +143,10 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Genera un enlace único y ábrelo directamente en WhatsApp. El invitado pulsa el enlace, inicia sesión o se registra en Kaviro y queda vinculado automáticamente al viaje. Puedes asignarle el rol antes de enviar: Gestor, Editor, Colaborador o Visor.",
   },
   {
-    id: "participants-qr", tab: "participants", target: '[data-tour="participants-qr"]', placement: "top",
-    action: "open-participants-invite", emoji: "📱",
+    id: "participants-qr", tab: "participants", target: '[data-tour="participants-qr-btn"]', placement: "top",
+    action: "open-participants-qr", emoji: "📱",
     title: "Código QR de invitación",
-    body: "En el aeropuerto o la reunión previa al viaje, muestra el QR y todos pueden unirse al instante escaneando con la cámara del móvil. Sin buscar el enlace, sin copiar y pegar. El QR lleva a la misma página de invitación que el enlace de WhatsApp.",
+    body: "Pulsa Crear QR y se genera al instante un código QR de invitación. En el aeropuerto o la reunión previa al viaje muéstralo en pantalla y todos pueden unirse escaneando con la cámara. Sin buscar el enlace, sin copiar y pegar.",
   },
 
   // ════════ DOCS — 3 pasos ════════

@@ -27,5 +27,6 @@ export type SpotlightStep = {
     | "open-expenses-currency"
     | "open-expenses-stats"
     | "open-resources-lists"
-    | "open-participants-invite";
+    | "open-participants-invite"
+    | "open-participants-qr";
 };

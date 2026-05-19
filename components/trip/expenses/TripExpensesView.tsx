@@ -246,25 +246,7 @@ export default function TripExpensesView({
         </button>
       </div>
 
-      {activeTab === "charts" ? (
-        <ExpenseCharts expenses={expenses} baseCurrency={tripBaseCurrency || "EUR"} />
-      ) : null}
-
-      <div className={activeTab !== "list" ? "hidden" : undefined}>
-      {error ? (
-        <div className="break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <div className="font-semibold">No se pudieron cargar bien los gastos.</div>
-          <div className="mt-1">{error}</div>
-          <button
-            type="button"
-            onClick={() => void reload()}
-            className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-          >
-            Reintentar
-          </button>
-        </div>
-      ) : null}
-
+      {/* Toolbar — siempre visible independientemente del tab activo */}
       <div className="card-soft relative overflow-hidden p-4">
         <div
           className="pointer-events-none absolute inset-0 opacity-100"
@@ -286,8 +268,28 @@ export default function TripExpensesView({
           </div>
           <div className="min-w-0 max-w-full">{topButtons}</div>
         </div>
+      </div>
 
-        {expenses.length === 0 && !shouldShowForm && !isAnalyzeOpen ? (
+      {activeTab === "charts" ? (
+        <ExpenseCharts expenses={expenses} baseCurrency={tripBaseCurrency || "EUR"} />
+      ) : null}
+
+      <div className={activeTab !== "list" ? "hidden" : undefined}>
+      {error ? (
+        <div className="break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="font-semibold">No se pudieron cargar bien los gastos.</div>
+          <div className="mt-1">{error}</div>
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : null}
+
+      {expenses.length === 0 && !shouldShowForm && !isAnalyzeOpen ? (
           <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/70 px-5 py-5 text-sm text-slate-600 backdrop-blur-sm dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/35 dark:text-slate-300">
             <div className="font-semibold text-slate-800 dark:text-slate-50">Aún no hay gastos</div>
             <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -305,7 +307,6 @@ export default function TripExpensesView({
             </button>
           </div>
         ) : null}
-      </div>
 
       {!isPremium ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">

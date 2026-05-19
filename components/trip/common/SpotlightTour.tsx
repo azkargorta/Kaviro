@@ -82,6 +82,10 @@ function executeAction(action?: SpotlightStep["action"]) {
     const btn = document.querySelector('[data-tour="participants-invite-btn"]') as HTMLElement | null;
     btn?.click();
   }
+  if (action === "open-participants-qr") {
+    const btn = document.querySelector('[data-tour="participants-qr-btn"]') as HTMLElement | null;
+    btn?.click();
+  }
 }
 
 type Props = {
