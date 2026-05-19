@@ -5,12 +5,10 @@ import {
   DEMO_TRIP_DESTINATION,
   DEMO_TRIP_NAME,
   DEMO_GHOST_PARTICIPANTS,
+  DEMO_ROUTES,
   buildDemoActivities,
   buildDemoExpenses,
   demoTripDateRange,
-  DEMO_ROUTE_SEED,
-  DEMO_ROUTE_SEED_2,
-  DEMO_ROUTE_SEED_3,
 } from "@/lib/onboarding/demo-trip-seed";
 
 export type DemoOnboardingProfile = {
@@ -178,50 +176,31 @@ export async function ensureDemoTripForUser(user: User): Promise<{
     );
   }
 
-  await admin.from("trip_routes").insert([
-    {
-      trip_id: tripId,
-      route_date: start_date,
-      route_day: start_date,
-      day_date: start_date,
-      sort_order: 0,
-      title: DEMO_ROUTE_SEED.title,
-      route_name: DEMO_ROUTE_SEED.title,
-      travel_mode: DEMO_ROUTE_SEED.travel_mode,
-      origin_name: DEMO_ROUTE_SEED.origin_name,
-      destination_name: DEMO_ROUTE_SEED.destination_name,
-      distance_text: DEMO_ROUTE_SEED.distance_text,
-      duration_text: DEMO_ROUTE_SEED.duration_text,
-    },
-    {
-      trip_id: tripId,
-      route_date: start_date,
-      route_day: start_date,
-      day_date: start_date,
-      sort_order: 1,
-      title: DEMO_ROUTE_SEED_2.title,
-      route_name: DEMO_ROUTE_SEED_2.title,
-      travel_mode: DEMO_ROUTE_SEED_2.travel_mode,
-      origin_name: DEMO_ROUTE_SEED_2.origin_name,
-      destination_name: DEMO_ROUTE_SEED_2.destination_name,
-      distance_text: DEMO_ROUTE_SEED_2.distance_text,
-      duration_text: DEMO_ROUTE_SEED_2.duration_text,
-    },
-    {
-      trip_id: tripId,
-      route_date: start_date,
-      route_day: start_date,
-      day_date: start_date,
-      sort_order: 2,
-      title: DEMO_ROUTE_SEED_3.title,
-      route_name: DEMO_ROUTE_SEED_3.title,
-      travel_mode: DEMO_ROUTE_SEED_3.travel_mode,
-      origin_name: DEMO_ROUTE_SEED_3.origin_name,
-      destination_name: DEMO_ROUTE_SEED_3.destination_name,
-      distance_text: DEMO_ROUTE_SEED_3.distance_text,
-      duration_text: DEMO_ROUTE_SEED_3.duration_text,
-    },
-  ]);
+  const dateForOffset = (offset: number) => {
+    const x = new Date(`${start_date}T12:00:00`);
+    x.setDate(x.getDate() + offset);
+    return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(x);
+  };
+
+  await admin.from("trip_routes").insert(
+    DEMO_ROUTES.map((r, i) => {
+      const routeDate = dateForOffset(r.day_offset);
+      return {
+        trip_id: tripId,
+        route_date: routeDate,
+        route_day: routeDate,
+        day_date: routeDate,
+        sort_order: i,
+        title: r.title,
+        route_name: r.title,
+        travel_mode: r.travel_mode,
+        origin_name: r.origin_name,
+        destination_name: r.destination_name,
+        distance_text: r.distance_text,
+        duration_text: r.duration_text,
+      };
+    })
+  );
 
   const profilePatch: Record<string, unknown> = {
     demo_trip_id: tripId,

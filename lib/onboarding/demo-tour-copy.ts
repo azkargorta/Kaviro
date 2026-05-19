@@ -51,44 +51,24 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Al terminar el viaje, genera una tarjeta visual con estadísticas: días, actividades, km recorridos y foto del destino. Se comparte directamente por WhatsApp o se descarga en formato Stories para Instagram.",
   },
 
-  // ════════ PLAN — 7 pasos ════════
+  // ════════ PLAN — 3 pasos ════════
 
   {
     id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', placement: "bottom", emoji: "➕",
-    title: "Añadir actividades al plan",
-    body: "Pulsa + Añadir plan para crear una actividad: escribe el nombre, busca el lugar en el mapa con autocompletado, asígnale hora, duración y categoría. También puedes darle una valoración de 1 a 5 estrellas y añadir un comentario — en este demo verás que algunas actividades ya tienen su reseña.",
+    title: "Añadir y gestionar el plan",
+    body: "Pulsa + Añadir plan para crear una actividad: nombre, lugar con autocompletado, hora, categoría y valoración de 1 a 5 estrellas con comentario. La barra de herramientas también incluye: 🧭 Explorar (busca puntos de interés en tiempo real en el mapa), 🕐 Historial (quién cambió qué y cuándo en el grupo), 📄 PDF (exporta el itinerario completo con portada) y 📅 Calendario (envía cada actividad a Google Calendar o descarga el .ics para Outlook/Apple).",
   },
   {
     id: "plan-card", tab: "plan", target: '[data-tour="plan-activity-card"]', placement: "right",
     action: "expand-days", emoji: "☰",
-    title: "Gestionar actividades del día",
-    body: "Pulsa la cabecera de un día para expandir o contraer sus actividades. Cada tarjeta muestra hora, lugar, categoría, valoración con estrellas y comentario. Usa el icono ≡ para arrastrar y reordenar. Pulsa la tarjeta para editar cualquier dato.",
+    title: "Tarjetas de actividad",
+    body: "Cada tarjeta muestra hora, lugar, categoría, estrellas de valoración y comentario del grupo. Usa el icono ≡ para arrastrar y reordenar actividades dentro del día. Pulsa la tarjeta para editar cualquier dato.",
   },
   {
     id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-mode"]', placement: "bottom",
     action: "calendar-mode", emoji: "📆",
     title: "Vista Calendario",
-    body: "Ahora estás viendo las actividades en modo Calendario. Ves todos los días del viaje en cuadrícula, ideal para detectar días vacíos y comparar jornadas de un vistazo. Pulsa Lista para volver a la vista anterior.",
-  },
-  {
-    id: "plan-explore", tab: "plan", target: '[data-tour="plan-explore-btn"]', placement: "bottom", emoji: "🧭",
-    title: "Explorar el destino",
-    body: "Busca en tiempo real restaurantes, museos, miradores y puntos de interés cerca de tu destino usando OpenStreetMap. Con un clic añades el lugar al plan con nombre y coordenadas ya rellenados.",
-  },
-  {
-    id: "plan-history", tab: "plan", target: '[data-tour="plan-history-btn"]', placement: "bottom", emoji: "🕐",
-    title: "Historial de cambios",
-    body: "Muestra todos los cambios del plan: qué actividad se añadió, editó, eliminó o reordenó, quién lo hizo y cuándo. Muy útil en viajes de grupo para saber siempre qué ha cambiado desde la última vez que miraste.",
-  },
-  {
-    id: "plan-pdf", tab: "plan", target: '[data-tour="plan-pdf-btn"]', placement: "bottom", emoji: "📄",
-    title: "Exportar a PDF",
-    body: "Genera un PDF con portada Kaviro: nombre del viaje, destino, fechas y actividades organizadas por día con hora, lugar y descripción. Perfecto para imprimir antes de salir o compartir con alguien sin la app.",
-  },
-  {
-    id: "plan-calendar", tab: "plan", target: '[data-tour="plan-calendar-btn"]', placement: "bottom", emoji: "📅",
-    title: "Añadir al calendario",
-    body: "Lista todas las actividades con fecha y hora. Pulsa cualquiera para crear el evento en Google Calendar con un clic — título, hora, duración y dirección ya rellenados. También puedes descargar el archivo .ics para Apple Calendar u Outlook.",
+    body: "Alterna entre Lista y Calendario con este botón. La vista de cuadrícula es ideal para detectar días vacíos y comparar jornadas de un vistazo. Pulsa Lista para volver a la vista anterior.",
   },
 
   // ════════ RUTAS — 4 pasos ════════
