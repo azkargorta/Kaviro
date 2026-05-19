@@ -37,7 +37,7 @@ export default async function TripRecapServerPage({ params }: Props) {
 
   // Activity count
   const { count: activitiesCount } = await supabase
-    .from("trip_plan_activities")
+    .from("trip_activities")
     .select("*", { count: "exact", head: true })
     .eq("trip_id", tripId);
 
