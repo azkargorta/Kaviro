@@ -5,12 +5,16 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: tripId } = await context.params;
     if (!tripId) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+
+    const body = await request.json().catch(() => null);
+    const customName: string | undefined =
+      typeof body?.name === "string" && body.name.trim() ? body.name.trim() : undefined;
 
     const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -42,11 +46,30 @@ export async function POST(
       return NextResponse.json({ error: "Viaje no encontrado." }, { status: 404 });
     }
 
+    const newName = customName ?? `${trip.name} (copia)`;
+
+    // Validate name uniqueness among user's trips (case-insensitive)
+    const { data: nameConflict } = await supabase
+      .from("trip_participants")
+      .select("trip_id, trips!inner(name)")
+      .eq("user_id", user.id)
+      .neq("status", "removed")
+      .ilike("trips.name", newName)
+      .limit(1)
+      .maybeSingle();
+
+    if (nameConflict) {
+      return NextResponse.json(
+        { error: `Ya tienes un viaje llamado "${newName}". Elige un nombre diferente.` },
+        { status: 409 }
+      );
+    }
+
     // Create new trip (copy)
     const { data: newTrip, error: newTripError } = await supabase
       .from("trips")
       .insert({
-        name: `${trip.name} (copia)`,
+        name: newName,
         destination: trip.destination,
         start_date: null,   // User sets new dates
         end_date: null,

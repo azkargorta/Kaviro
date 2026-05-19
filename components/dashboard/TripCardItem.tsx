@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Pencil, Trash2, Star } from "lucide-react";
+import { Copy, MapPin, Pencil, Trash2, Star } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import TripDashboardEditDialog from "@/components/dashboard/TripDashboardEditDialog";
+import DuplicateTripDialog from "@/components/dashboard/DuplicateTripDialog";
 
 type Trip = {
   id: string;
@@ -51,6 +52,7 @@ export default function TripCardItem({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(trip.is_favorite ?? false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
@@ -224,6 +226,18 @@ export default function TripCardItem({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            setDuplicateOpen(true);
+          }}
+          className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-white px-4 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 dark:border-violet-400/30 dark:bg-[#0F1623] dark:text-violet-300 dark:hover:bg-violet-950/20"
+          title="Duplicar viaje (copia el plan, rutas y listas)"
+        >
+          <Copy className="h-4 w-4" aria-hidden />
+          Duplicar
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
             void onDelete();
           }}
           disabled={deleting}
@@ -244,6 +258,11 @@ export default function TripCardItem({
         open={editOpen}
         onClose={() => setEditOpen(false)}
         onSaved={() => router.refresh()}
+      />
+      <DuplicateTripDialog
+        trip={duplicateOpen ? trip : null}
+        open={duplicateOpen}
+        onClose={() => setDuplicateOpen(false)}
       />
     </div>
   );
