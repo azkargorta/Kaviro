@@ -25,6 +25,7 @@ export type SpotlightStep = {
     | "calendar-mode"
     | "open-expenses-list"
     | "open-expenses-currency"
+    | "open-expenses-stats"
     | "open-resources-lists"
     | "open-participants-invite";
 };
