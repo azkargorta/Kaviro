@@ -257,6 +257,28 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   };
 }
 
+export async function resetDemoTripForUser(user: import("@supabase/supabase-js").User): Promise<{ tripId: string }> {
+  const admin = createSupabaseAdmin();
+
+  // Borrar el viaje demo anterior (cascada a actividades, gastos, rutas, listas…)
+  const existing = await readDemoOnboardingProfile(user.id);
+  if (existing?.demo_trip_id) {
+    await admin.from("trips").delete().eq("id", existing.demo_trip_id);
+  }
+
+  // Limpiar el perfil para forzar recreación
+  await admin.from("profiles").update({
+    demo_trip_id: null,
+    demo_onboarding_completed_at: null,
+    demo_onboarding_skipped_at: null,
+    updated_at: new Date().toISOString(),
+  }).eq("id", user.id);
+
+  // Crear el nuevo demo con los datos actualizados
+  const result = await ensureDemoTripForUser(user);
+  return { tripId: result.tripId };
+}
+
 export async function markDemoOnboardingSkipped(userId: string): Promise<void> {
   const admin = createSupabaseAdmin();
   const patch = { demo_onboarding_skipped_at: new Date().toISOString(), updated_at: new Date().toISOString() };

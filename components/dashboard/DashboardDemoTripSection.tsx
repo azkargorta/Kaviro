@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TripCardItem from "@/components/dashboard/TripCardItem";
-import { ChevronDown, ChevronUp, MapPin, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, MapPin, RefreshCw, Sparkles } from "lucide-react";
 
 type Trip = {
   id: string;
@@ -19,6 +20,8 @@ const STORAGE_KEY = "kaviro_demo_section_collapsed";
 export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const router = useRouter();
 
   // Restore collapsed state from localStorage
   useEffect(() => {
@@ -27,6 +30,26 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
       if (window.localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
     } catch { /* private mode */ }
   }, []);
+
+  async function handleReset() {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      const resp = await fetch("/api/onboarding/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset" }),
+        credentials: "include",
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (data?.redirectTo) {
+        router.push(data.redirectTo);
+        router.refresh();
+      }
+    } finally {
+      setResetting(false);
+    }
+  }
 
   function toggle() {
     const next = !collapsed;
@@ -123,12 +146,24 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
             />
           </div>
 
-          {/* Footer tip */}
-          <div className="px-4 py-2.5 bg-slate-50 dark:bg-[#080C14] border-t border-slate-100 dark:border-[#1E293B] flex items-center gap-2">
-            <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">
-              Puedes explorar el viaje demo libremente — nada de lo que hagas aquí afecta a tus viajes reales.
-            </p>
+          {/* Footer tip + reset */}
+          <div className="px-4 py-2.5 bg-slate-50 dark:bg-[#080C14] border-t border-slate-100 dark:border-[#1E293B] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                Explora libremente — no afecta a tus viajes reales.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={resetting}
+              title="Borra el demo actual y lo regenera con los datos más recientes"
+              className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-[#334155] bg-white dark:bg-[#1E293B] px-2 py-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 transition hover:border-[#F87171]/50 hover:text-[#F87171] disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <RefreshCw className={`h-2.5 w-2.5 ${resetting ? "animate-spin" : ""}`} />
+              {resetting ? "Regenerando…" : "Regenerar demo"}
+            </button>
           </div>
         </div>
       )}

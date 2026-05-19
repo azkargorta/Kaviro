@@ -5,6 +5,7 @@ import {
   markDemoOnboardingCompleted,
   markDemoOnboardingSkipped,
   readDemoOnboardingProfile,
+  resetDemoTripForUser,
   shouldRedirectToDemoTour,
 } from "@/lib/onboarding/createDemoTrip";
 
@@ -54,6 +55,11 @@ export async function POST(request: Request) {
     if (action === "complete") {
       await markDemoOnboardingCompleted(user.id);
       return NextResponse.json({ ok: true, redirectTo: "/dashboard" });
+    }
+
+    if (action === "reset") {
+      const { tripId } = await resetDemoTripForUser(user);
+      return NextResponse.json({ ok: true, tripId, redirectTo: `/trip/${tripId}/summary?tutorial=demo` });
     }
 
     return NextResponse.json({ error: "Acción no válida." }, { status: 400 });
