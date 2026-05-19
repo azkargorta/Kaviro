@@ -7,6 +7,7 @@ import {
   DEMO_GHOST_PARTICIPANTS,
   DEMO_ROUTES,
   DEMO_LISTS,
+  DEMO_CHATS,
   buildDemoActivities,
   buildDemoExpenses,
   demoTripDateRange,
@@ -138,8 +139,10 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   }
 
   const activities = buildDemoActivities(start_date);
+  // title → id map for linking routes to activities
+  const activityIdByTitle = new Map<string, string>();
   if (activities.length) {
-    await admin.from("trip_activities").insert(
+    const { data: insertedActivities } = await admin.from("trip_activities").insert(
       activities.map((a) => ({
         trip_id: tripId,
         title: a.title,
@@ -155,7 +158,12 @@ export async function ensureDemoTripForUser(user: User): Promise<{
         source: "demo",
         created_by_user_id: user.id,
       }))
-    );
+    ).select("id, title");
+    if (insertedActivities) {
+      for (const row of insertedActivities as Array<{ id: string; title: string }>) {
+        activityIdByTitle.set(row.title, row.id);
+      }
+    }
   }
 
   const expenses = buildDemoExpenses(start_date, ownerName);
@@ -186,6 +194,11 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   await admin.from("trip_routes").insert(
     DEMO_ROUTES.map((r, i) => {
       const routeDate = dateForOffset(r.day_offset);
+      const originId = r.origin_activity_title ? activityIdByTitle.get(r.origin_activity_title) : undefined;
+      const destId = r.destination_activity_title ? activityIdByTitle.get(r.destination_activity_title) : undefined;
+      const waypointIds = (r.waypoint_activity_titles ?? [])
+        .map((t) => activityIdByTitle.get(t))
+        .filter((id): id is string => Boolean(id));
       return {
         trip_id: tripId,
         route_date: routeDate,
@@ -199,6 +212,9 @@ export async function ensureDemoTripForUser(user: User): Promise<{
         destination_name: r.destination_name,
         distance_text: r.distance_text,
         duration_text: r.duration_text,
+        ...(originId ? { origin_activity_id: originId } : {}),
+        ...(destId ? { destination_activity_id: destId } : {}),
+        ...(waypointIds.length ? { waypoint_ids: waypointIds } : {}),
       };
     })
   );
@@ -230,6 +246,33 @@ export async function ensureDemoTripForUser(user: User): Promise<{
           is_done: item.is_done ?? false,
           position: pos,
           created_by_user_id: user.id,
+        }))
+      );
+    }
+  }
+
+  // Conversaciones IA de demostración
+  for (const chatSeed of DEMO_CHATS) {
+    const { data: convRow } = await admin
+      .from("trip_ai_conversations")
+      .insert({
+        trip_id: tripId,
+        mode: chatSeed.mode,
+        title: chatSeed.title,
+      })
+      .select("id")
+      .single();
+
+    if (!convRow) continue;
+    const convId = String((convRow as { id: string }).id);
+
+    if (chatSeed.messages.length) {
+      await admin.from("trip_ai_messages").insert(
+        chatSeed.messages.map((msg) => ({
+          conversation_id: convId,
+          trip_id: tripId,
+          role: msg.role,
+          content: msg.content,
         }))
       );
     }

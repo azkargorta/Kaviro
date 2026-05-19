@@ -464,120 +464,124 @@ export type DemoRouteSeed = {
   destination_name: string;
   distance_text: string;
   duration_text: string;
+  /** Título exacto de la actividad origen (para vincular origin_activity_id) */
+  origin_activity_title?: string;
+  /** Título exacto de la actividad destino (para vincular destination_activity_id) */
+  destination_activity_title?: string;
+  /** Títulos de actividades intermedias (para waypoint_ids) */
+  waypoint_activity_titles?: string[];
 };
 
 export const DEMO_ROUTES: DemoRouteSeed[] = [
-  // ── Día 1 ────────────────────────────────────────────────────
+  // ── Día 1 · Westminster & South Bank ─────────────────────────
   {
-    title: "Día 1 · Buckingham → Westminster",
+    title: "Día 1 · Buckingham → Tate Modern",
     day_offset: 0,
-    travel_mode: "walking",
+    travel_mode: "WALKING",
     origin_name: "Buckingham Palace",
-    destination_name: "Palacio de Westminster",
-    distance_text: "1,3 km",
-    duration_text: "16 min",
-  },
-  {
-    title: "Día 1 · Westminster → Tate Modern",
-    day_offset: 0,
-    travel_mode: "walking",
-    origin_name: "Puente de Westminster",
     destination_name: "Tate Modern",
-    distance_text: "1,8 km",
-    duration_text: "23 min",
-  },
-  {
-    title: "Día 1 · Tate Modern → Southbank",
-    day_offset: 0,
-    travel_mode: "walking",
-    origin_name: "Tate Modern",
-    destination_name: "The Anchor Bankside",
-    distance_text: "0,4 km",
-    duration_text: "5 min",
-  },
-  // ── Día 2 ────────────────────────────────────────────────────
-  {
-    title: "Día 2 · British Museum → Dishoom",
-    day_offset: 1,
-    travel_mode: "walking",
-    origin_name: "British Museum",
-    destination_name: "Dishoom Bloomsbury",
-    distance_text: "0,7 km",
-    duration_text: "9 min",
-  },
-  {
-    title: "Día 2 · National Gallery → St. Paul's",
-    day_offset: 1,
-    travel_mode: "transit",
-    origin_name: "National Gallery",
-    destination_name: "St. Paul's Cathedral",
-    distance_text: "2,4 km",
-    duration_text: "15 min",
-  },
-  {
-    title: "Día 2 · Covent Garden → Borough Market",
-    day_offset: 1,
-    travel_mode: "transit",
-    origin_name: "Covent Garden",
-    destination_name: "Borough Market",
-    distance_text: "3,2 km",
-    duration_text: "18 min",
-  },
-  // ── Día 3 ────────────────────────────────────────────────────
-  {
-    title: "Día 3 · Tower Bridge → Brick Lane",
-    day_offset: 2,
-    travel_mode: "walking",
-    origin_name: "Tower Bridge",
-    destination_name: "Brick Lane",
-    distance_text: "2,1 km",
-    duration_text: "26 min",
-  },
-  {
-    title: "Día 3 · Brick Lane → Shoreditch",
-    day_offset: 2,
-    travel_mode: "walking",
-    origin_name: "Brick Lane",
-    destination_name: "Shoreditch High Street",
-    distance_text: "0,8 km",
-    duration_text: "10 min",
-  },
-  {
-    title: "Día 3 · Shoreditch → Lyceum Theatre",
-    day_offset: 2,
-    travel_mode: "transit",
-    origin_name: "Shoreditch High Street",
-    destination_name: "Lyceum Theatre",
-    distance_text: "4,8 km",
-    duration_text: "22 min",
-  },
-  // ── Día 4 ────────────────────────────────────────────────────
-  {
-    title: "Día 4 · Hyde Park → V&A Museum",
-    day_offset: 3,
-    travel_mode: "walking",
-    origin_name: "Hyde Park (entrada sur)",
-    destination_name: "Victoria & Albert Museum",
-    distance_text: "0,9 km",
-    duration_text: "11 min",
-  },
-  {
-    title: "Día 4 · V&A Museum → Notting Hill",
-    day_offset: 3,
-    travel_mode: "transit",
-    origin_name: "Victoria & Albert Museum",
-    destination_name: "Portobello Road Market",
     distance_text: "3,5 km",
-    duration_text: "20 min",
+    duration_text: "44 min",
+    origin_activity_title: "Buckingham Palace y Guardia Real",
+    destination_activity_title: "Tate Modern",
+    waypoint_activity_titles: ["Palacio de Westminster y Big Ben"],
+  },
+  // ── Día 2 · Bloomsbury & City ─────────────────────────────────
+  {
+    title: "Día 2 · British Museum → Borough Market",
+    day_offset: 1,
+    travel_mode: "TRANSIT",
+    origin_name: "British Museum",
+    destination_name: "Borough Market",
+    distance_text: "4,1 km",
+    duration_text: "28 min",
+    origin_activity_title: "The British Museum",
+    destination_activity_title: "Cena en Borough Market",
+    waypoint_activity_titles: ["Covent Garden y Seven Dials"],
+  },
+  // ── Día 3 · East End & Teatro ─────────────────────────────────
+  {
+    title: "Día 3 · Tower Bridge → Lyceum Theatre",
+    day_offset: 2,
+    travel_mode: "TRANSIT",
+    origin_name: "Tower Bridge",
+    destination_name: "Lyceum Theatre",
+    distance_text: "7,2 km",
+    duration_text: "35 min",
+    origin_activity_title: "Tower Bridge y The Shard",
+    destination_activity_title: "El Rey León en el Lyceum Theatre",
+    waypoint_activity_titles: ["East End Street Art — Shoreditch"],
+  },
+  // ── Día 4 · Hyde Park & Museos ────────────────────────────────
+  {
+    title: "Día 4 · Hyde Park → Notting Hill",
+    day_offset: 3,
+    travel_mode: "WALKING",
+    origin_name: "Hyde Park",
+    destination_name: "Portobello Road Market",
+    distance_text: "2,5 km",
+    duration_text: "31 min",
+    origin_activity_title: "Paseo matinal por Hyde Park",
+    destination_activity_title: "Notting Hill y Portobello Road",
+    waypoint_activity_titles: ["Victoria & Albert Museum"],
+  },
+];
+
+// ── Chats IA de demostración ────────────────────────────────────
+
+export type DemoChatMessageSeed = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type DemoChatSeed = {
+  title: string;
+  mode: "general" | "planning" | "expenses" | "optimizer" | "actions" | "day_planner" | "travel_docs";
+  messages: DemoChatMessageSeed[];
+};
+
+export const DEMO_CHATS: DemoChatSeed[] = [
+  {
+    title: "Planificación inicial del viaje",
+    mode: "planning",
+    messages: [
+      {
+        role: "user",
+        content: "¿Cuál es la mejor forma de organizar 4 días en Londres para un grupo de 4 personas?",
+      },
+      {
+        role: "assistant",
+        content: "Para 4 días en Londres te recomiendo este enfoque por zonas:\n\n**Día 1 — Westminster e historia**: Buckingham Palace → Abadía de Westminster → Tower Bridge → Tate Modern. Cena en Southbank.\n\n**Día 2 — Arte y cultura**: British Museum → Covent Garden → Sky Garden (reserva gratis obligatoria) → Borough Market para cenar.\n\n**Día 3 — East End y espectáculo**: Tower of London → Shoreditch Street Art → Musical por la noche (El Rey León en Lyceum).\n\n**Día 4 — Parques y barrios**: Hyde Park → V&A Museum → Harrods → Notting Hill → Vuelta al aeropuerto.\n\nEste itinerario minimiza desplazamientos: cada día te mueves por una zona concreta. ¿Quieres que cree las actividades directamente en el plan?",
+      },
+    ],
   },
   {
-    title: "Día 4 · Paddington → Heathrow",
-    day_offset: 3,
-    travel_mode: "transit",
-    origin_name: "Paddington Station",
-    destination_name: "Heathrow Terminal 2",
-    distance_text: "24 km",
-    duration_text: "15 min",
+    title: "Requisitos de entrada — visado y ETA",
+    mode: "travel_docs",
+    messages: [
+      {
+        role: "user",
+        content: "Somos ciudadanos españoles. ¿Necesitamos visa para entrar a Reino Unido?",
+      },
+      {
+        role: "assistant",
+        content: "Desde el Brexit, los ciudadanos españoles **ya no pueden entrar con el DNI**. Esto es lo que necesitáis:\n\n📘 **Pasaporte vigente** — obligatorio. El DNI no se acepta desde enero 2021.\n\n🔵 **ETA (Electronic Travel Authorisation)** — desde enero 2024, los ciudadanos UE necesitan solicitar el ETA online antes del viaje. Coste: £10 por persona. Se aprueba normalmente en horas o pocos días.\n\n🏥 **Seguro médico recomendado** — la GHIC (Global Health Insurance Card) cubre atención básica en NHS, pero no reemplaza a un seguro de viaje completo.\n\n¿Quiero añadir 'Solicitar ETA' y 'Renovar pasaporte si caduca en 6 meses' a la lista de tareas del viaje?",
+      },
+    ],
+  },
+  {
+    title: "Optimizar gastos del grupo",
+    mode: "expenses",
+    messages: [
+      {
+        role: "user",
+        content: "Ana ha pagado bastante más que el resto. ¿Cómo lo equilibramos?",
+      },
+      {
+        role: "assistant",
+        content: "Revisando los gastos del viaje, Ana tiene un saldo positivo considerable. Para liquidar de forma eficiente:\n\n**Balances actuales** (estimado): Luis te debe a ti y a Ana; María debe a Ana principalmente.\n\n**Cómo liquidar**:\n1. Abre la pestaña **Balances** en Gastos — Kaviro calcula exactamente cuánto debe cada persona a quién, ya con las conversiones de EUR, USD y GBP.\n2. Configura el **método de pago preferido** de Ana (Bizum, PayPal, cuenta bancaria) en la sección Métodos de pago.\n3. Kaviro genera el **enlace de pago directo** para que cada uno transfiera lo suyo sin errores de cálculo.\n\n¿Hay algún gasto grande que no hayas registrado aún? Si me dices el importe lo añado yo directamente.",
+      },
+    ],
   },
 ];
 

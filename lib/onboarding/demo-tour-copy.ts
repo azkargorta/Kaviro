@@ -94,7 +94,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "El mapa muestra todas tus rutas dibujadas con sus colores. Haz zoom con la rueda del ratón o los botones + / −. Pulsa cualquier marcador para ver los datos de esa parada. En móvil usa dos dedos para hacer zoom y desplazarte.",
   },
 
-  // ════════ GASTOS — 5 pasos ════════
+  // ════════ GASTOS — 6 pasos ════════
 
   {
     id: "expenses-toolbar", tab: "expenses", target: '[data-tour="expenses-toolbar"]', placement: "bottom", emoji: "🔧",
@@ -119,9 +119,15 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Kaviro calcula automáticamente quién debe dinero a quién. La pestaña Balances muestra el resumen por persona. La pestaña Métodos de pago permite configurar el Bizum, PayPal o cuenta bancaria de cada participante para que los enlaces de pago vayan directos.",
   },
   {
-    id: "expenses-stats", tab: "expenses", target: '[data-tour="expenses-stats-btn"]', placement: "bottom", emoji: "📊",
+    id: "expenses-stats", tab: "expenses", target: '[data-tour="expenses-stats-btn"]', placement: "bottom",
+    action: "open-expenses-stats", emoji: "📊",
     title: "Estadísticas de gastos",
     body: "Pulsa Estadísticas para ver gráficos del gasto: distribución por categoría (restaurantes, transporte, alojamiento...), gasto por persona y evolución diaria del presupuesto. Muy útil para saber en qué se va el dinero y comparar con el presupuesto previsto.",
+  },
+  {
+    id: "expenses-stats-charts", tab: "expenses", target: '[data-tour="expenses-stats-charts"]', placement: "top", emoji: "🥧",
+    title: "Desglose de estadísticas",
+    body: "El primer gráfico de rosca muestra el reparto del gasto por categoría: cada sector es un tipo de gasto con su porcentaje e importe. Debajo, las barras horizontales indican cuánto ha pagado cada persona del grupo. Si el viaje abarca más de un mes, aparece un tercer gráfico con la evolución mensual del presupuesto.",
   },
 
   // ════════ GENTE — 3 pasos ════════
@@ -162,17 +168,12 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Sube una foto o PDF de una reserva y Kaviro extrae automáticamente los datos: tipo de documento, nombre del hotel, fechas, número de confirmación y dirección. Los datos se guardan directamente como recurso del viaje sin tener que rellenar nada a mano.",
   },
 
-  // ════════ ASISTENTE IA — 4 pasos ════════
+  // ════════ ASISTENTE IA — 3 pasos ════════
 
   {
-    id: "ai-modes", tab: "ai-chat", target: '[data-tour="ai-suggestions"]', placement: "bottom", emoji: "🎛️",
-    title: "Modos de conversación",
-    body: "El asistente tiene 7 modos especializados: General (visión del viaje), Planificación (crear itinerarios en JSON ejecutable), Gastos (balances y repartos), Optimizador (detectar huecos y solapes), Acciones (crear o modificar actividades directamente), Organizar día (un solo día con horarios) y Documentos (visados, seguros y requisitos por país). Cambia de modo pulsando la píldora de color.",
-  },
-  {
-    id: "ai-history", tab: "ai-chat", target: null, placement: "center", emoji: "🕐",
+    id: "ai-history", tab: "ai-chat", target: '[data-tour="ai-history"]', placement: "right", emoji: "🕐",
     title: "Historial de conversaciones",
-    body: "Kaviro guarda todas tus conversaciones con el asistente. Cada vez que cambias de tema o empiezas una nueva consulta, puedes abrir una conversación nueva — el historial anterior queda guardado y puedes retomarlo en cualquier momento. Los chats se organizan automáticamente por fecha.",
+    body: "Kaviro guarda todas tus conversaciones con el asistente. Pulsa cualquier conversación del historial para retomar el hilo. Crea una nueva con el botón Nueva para empezar un tema diferente. Los chats se organizan automáticamente por fecha y modo.",
   },
   {
     id: "ai-input", tab: "ai-chat", target: '[data-tour="ai-input"]', placement: "top", emoji: "💬",
@@ -181,7 +182,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   },
   {
     id: "ai-suggestions", tab: "ai-chat", target: '[data-tour="ai-suggestions"]', placement: "bottom", emoji: "⚡",
-    title: "Modo del asistente",
-    body: "El asistente cambia de contexto según la sección donde estés. El modo activo aparece aquí como una píldora de color. Puedes pedirle que planifique actividades, analice gastos, sugiera rutas o responda preguntas sobre el destino. ¡El tour ha terminado — ya conoces Kaviro completo!",
+    title: "Modos del asistente",
+    body: "El asistente tiene 7 modos especializados: General (visión del viaje), Planificación (crear itinerarios en JSON ejecutable), Gastos (balances y repartos), Optimizador (detectar huecos y solapes), Acciones (crear o modificar actividades directamente), Organizar día (un solo día con horarios) y Documentos (visados, seguros y requisitos por país). Cambia de modo pulsando la píldora de color. ¡El tour ha terminado — ya conoces Kaviro completo!",
   },
 ];

@@ -190,7 +190,7 @@ export default function ExpenseCharts({ expenses, baseCurrency }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-tour="expenses-stats-charts" className="space-y-6">
 
       {/* Top row: donut + legend */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">

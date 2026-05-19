@@ -74,6 +74,10 @@ function executeAction(action?: SpotlightStep["action"]) {
     // Only click if lists are not already showing
     if (btn && section && !section.querySelector('[data-tour="resources-lists-panel"]')) btn.click();
   }
+  if (action === "open-expenses-stats") {
+    const btn = document.querySelector('[data-tour="expenses-stats-btn"]') as HTMLElement | null;
+    btn?.click();
+  }
   if (action === "open-participants-invite") {
     const btn = document.querySelector('[data-tour="participants-invite-btn"]') as HTMLElement | null;
     btn?.click();

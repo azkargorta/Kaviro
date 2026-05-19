@@ -1952,7 +1952,7 @@ export default function TripAiChatView({
         }
       >
         {showConvSidebar ? (
-        <aside className="order-2 space-y-5 xl:order-1 xl:space-y-6">
+        <aside data-tour="ai-history" className="order-2 space-y-5 xl:order-1 xl:space-y-6">
           <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-slate-950">Conversaciones</h2>

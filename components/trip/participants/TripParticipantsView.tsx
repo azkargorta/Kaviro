@@ -11,6 +11,7 @@ import {
   type TripParticipant,
   type TripRole,
 } from "@/hooks/useTripParticipants";
+import { useTripInvites } from "@/hooks/useTripInvites";
 import { supabase } from "@/lib/supabase";
 import ParticipantLinkProfilePanel from "./ParticipantLinkProfilePanel";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
@@ -35,6 +36,8 @@ import {
   UserPlus,
   Users,
   UserCheck,
+  QrCode,
+  X,
 } from "lucide-react";
 
 type TripParticipantsViewProps = {
@@ -186,6 +189,10 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const isDemoTrip = useIsDemoTrip();
   const [isCreating, setIsCreating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const { createInvite, buildInviteUrl } = useTripInvites();
 
   useEffect(() => {
     if (isDemoTrip) setIsInviting(true);
@@ -353,6 +360,17 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     setIsCreating(false);
     setInviteParticipant(null);
     setIsInviting((prev) => !prev);
+  }
+
+  async function handleCreateQr() {
+    if (showQr && qrUrl) { setShowQr(false); setQrUrl(null); return; }
+    setQrLoading(true);
+    try {
+      const invite = await createInvite({ trip_id: tripId, role: "viewer" });
+      setQrUrl(buildInviteUrl(invite.token));
+      setShowQr(true);
+    } catch { /* silent */ }
+    finally { setQrLoading(false); }
   }
 
   function openParticipantInvite(participant: TripParticipant) {
@@ -707,10 +725,20 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   <MessageCircle className="h-4 w-4 text-emerald-600" aria-hidden />
                   {isInviting && !inviteParticipant ? "Cerrar invitación" : "Invitar por WhatsApp"}
                 </button>
+                <button
+                  data-tour="participants-qr-btn"
+                  type="button"
+                  onClick={handleCreateQr}
+                  disabled={qrLoading}
+                  className="col-span-full inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 shadow-sm transition hover:bg-violet-100 disabled:opacity-50"
+                >
+                  <QrCode className="h-4 w-4" aria-hidden />
+                  {qrLoading ? "Generando QR..." : showQr ? "Ocultar QR" : "Crear QR de invitación"}
+                </button>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                Envía un enlace único por WhatsApp. La persona inicia sesión y Kaviro crea o vincula su pasajero automáticamente.
+                Envía un enlace único por WhatsApp o genera un QR para escanear en el momento.
               </p>
             </div>
           ) : (
@@ -721,6 +749,46 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               </p>
             </div>
           )}
+
+          {canManageParticipants && showQr && qrUrl ? (
+            <div data-tour="participants-qr" className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div>
+                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">QR de invitación</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Escanea para unirte al viaje</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowQr(false); setQrUrl(null); }}
+                  className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50"
+                  aria-label="Cerrar QR"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex flex-col items-center gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=0f172a&margin=8`}
+                  alt="QR de invitación al viaje"
+                  width={200}
+                  height={200}
+                  className="rounded-2xl border border-slate-100 shadow-sm dark:hidden"
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=0f1623&color=f1f5f9&margin=8`}
+                  alt="QR de invitación al viaje"
+                  width={200}
+                  height={200}
+                  className="rounded-2xl border border-[#1E293B] shadow-sm hidden dark:block"
+                />
+                <p className="text-center text-xs text-slate-400 leading-snug max-w-[200px]">
+                  Muéstralo en pantalla para que cualquier persona del grupo pueda escanear y unirse al instante.
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           {canManageParticipants && isInviting ? (
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
