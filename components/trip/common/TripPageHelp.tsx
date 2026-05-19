@@ -476,6 +476,7 @@ export default function TripPageHelp() {
     if (tourOfferedRef.current) return;
 
     const openTour = () => {
+      if (isDemoTrip) return; // Demo uses spotlight tour only
       if (readTourSeen(tripId) || tourOfferedRef.current) return;
       tourOfferedRef.current = true;
       setTourStep(0);
@@ -593,7 +594,7 @@ export default function TripPageHelp() {
       {mounted
         ? createPortal(
             <>
-              {tourOpen && tourStepData ? (
+              {tourOpen && tourStepData && !isDemoTrip ? (
                 <div
                   className="fixed inset-0 z-[1180] flex items-center justify-center overflow-y-auto overscroll-contain px-3 py-[max(10px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))] sm:p-4"
                   role="dialog"

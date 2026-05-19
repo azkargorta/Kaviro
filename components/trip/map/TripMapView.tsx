@@ -608,7 +608,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
   const [routePreview, setRoutePreview] = useState<RoutePreview | null>(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [isMapVisible, setIsMapVisible] = useState(true);
-  const [showRoutesList, setShowRoutesList] = useState(false);
+  const [showRoutesList, setShowRoutesList] = useState(true)  // Open by default;
   const [routesBulkMode, setRoutesBulkMode] = useState(false);
   const [selectedRouteKeys, setSelectedRouteKeys] = useState<Set<string>>(new Set());
 
@@ -2236,7 +2236,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
           </div>
 
           {showRoutesList ? (
-          <div className="space-y-3 px-4 pb-4">
+          <div data-tour="map-routes-list-panel" className="space-y-3 px-4 pb-4">
             {selectedDate !== "all" && !routesBulkMode ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filteredRouteKeys} strategy={verticalListSortingStrategy}>

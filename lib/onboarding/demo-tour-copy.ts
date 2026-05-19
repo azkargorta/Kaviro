@@ -54,7 +54,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   // ════════ PLAN — 7 pasos ════════
 
   {
-    id: "plan-add", tab: "plan", target: '[data-tour="plan-add-btn"]', placement: "bottom", emoji: "➕",
+    id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', placement: "bottom", emoji: "➕",
     title: "Añadir actividades al plan",
     body: "Pulsa + Añadir plan para crear una actividad: escribe el nombre, busca el lugar en el mapa con autocompletado, asígnale hora, duración y categoría. También puedes darle una valoración de 1 a 5 estrellas y añadir un comentario — en este demo verás que algunas actividades ya tienen su reseña.",
   },
@@ -104,7 +104,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "El asistente analiza todas las actividades del día y genera automáticamente la ruta óptima conectándolas en el orden más eficiente. Ahorra horas de planificación y evita ir y volver al mismo barrio. Función disponible en el plan Premium.",
   },
   {
-    id: "map-routes-list", tab: "map", target: '[data-tour="map-routes-list"]', placement: "bottom", emoji: "📋",
+    id: "map-routes-list", tab: "map", target: '[data-tour="map-routes-list-panel"]', placement: "top", emoji: "📋",
     title: "Lista de rutas",
     body: "Despliega esta sección para ver todas las rutas creadas del viaje. Cada ruta muestra su nombre, color, distancia y tiempo. Desde aquí puedes editar, duplicar o eliminar cada ruta. Pulsa una ruta para centrarla en el mapa.",
   },
@@ -123,13 +123,13 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   },
   {
     id: "expenses-list", tab: "expenses", target: '[data-tour="expenses-list-details"]', placement: "top",
-    emoji: "📋",
+    action: "open-expenses-list", emoji: "📋",
     title: "Listado de gastos",
     body: "Despliega para ver todos los tickets registrados del viaje. Cada gasto muestra el importe, quién pagó, la categoría y entre quiénes se divide. Pulsa cualquier gasto para editarlo o eliminar. Puedes filtrar por persona o categoría.",
   },
   {
     id: "expenses-currency", tab: "expenses", target: '[data-tour="expenses-currency-details"]', placement: "top",
-    emoji: "💱",
+    action: "open-expenses-currency", emoji: "💱",
     title: "Convertidor de moneda",
     body: "Despliega para convertir importes entre divisas al tipo de cambio actual. También puedes cambiar aquí la moneda principal del balance — si el viaje es en libras pero tú prefieres ver los totales en euros, cámbialo aquí.",
   },
@@ -157,7 +157,8 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Genera un enlace único y ábrelo directamente en WhatsApp. El invitado pulsa el enlace, inicia sesión o se registra en Kaviro y queda vinculado automáticamente al viaje. Puedes asignarle el rol antes de enviar: Gestor, Editor, Colaborador o Visor.",
   },
   {
-    id: "participants-qr", tab: "participants", target: '[data-tour="participants-qr"]', placement: "top", emoji: "📱",
+    id: "participants-qr", tab: "participants", target: '[data-tour="participants-qr"]', placement: "top",
+    action: "open-participants-invite", emoji: "📱",
     title: "Código QR de invitación",
     body: "En el aeropuerto o la reunión previa al viaje, muestra el QR y todos pueden unirse al instante escaneando con la cámara del móvil. Sin buscar el enlace, sin copiar y pegar. El QR lleva a la misma página de invitación que el enlace de WhatsApp.",
   },
@@ -165,7 +166,8 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   // ════════ DOCS — 3 pasos ════════
 
   {
-    id: "resources-lists", tab: "resources", target: '[data-tour="resources-lists-section"]', placement: "bottom", emoji: "📝",
+    id: "resources-lists", tab: "resources", target: '[data-tour="resources-lists-section"]', placement: "bottom",
+    action: "open-resources-lists", emoji: "📝",
     title: "Crear y ver listas",
     body: "Pulsa Crear/ver listas para gestionar listas compartidas del viaje: maleta, lista de compras, documentos pendientes, cosas que no hay que olvidar. Cada lista puede ser privada (solo tú) o compartida con todo el grupo. Los participantes pueden marcar ítems como completados.",
   },
@@ -180,8 +182,18 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Sube una foto o PDF de una reserva y Kaviro extrae automáticamente los datos: tipo de documento, nombre del hotel, fechas, número de confirmación y dirección. Los datos se guardan directamente como recurso del viaje sin tener que rellenar nada a mano.",
   },
 
-  // ════════ ASISTENTE IA — 2 pasos ════════
+  // ════════ ASISTENTE IA — 4 pasos ════════
 
+  {
+    id: "ai-modes", tab: "ai-chat", target: '[data-tour="ai-suggestions"]', placement: "bottom", emoji: "🎛️",
+    title: "Modos de conversación",
+    body: "El asistente tiene 7 modos especializados: General (visión del viaje), Planificación (crear itinerarios en JSON ejecutable), Gastos (balances y repartos), Optimizador (detectar huecos y solapes), Acciones (crear o modificar actividades directamente), Organizar día (un solo día con horarios) y Documentos (visados, seguros y requisitos por país). Cambia de modo pulsando la píldora de color.",
+  },
+  {
+    id: "ai-history", tab: "ai-chat", target: null, placement: "center", emoji: "🕐",
+    title: "Historial de conversaciones",
+    body: "Kaviro guarda todas tus conversaciones con el asistente. Cada vez que cambias de tema o empiezas una nueva consulta, puedes abrir una conversación nueva — el historial anterior queda guardado y puedes retomarlo en cualquier momento. Los chats se organizan automáticamente por fecha.",
+  },
   {
     id: "ai-input", tab: "ai-chat", target: '[data-tour="ai-input"]', placement: "top", emoji: "💬",
     title: "Pregunta lo que quieras",
