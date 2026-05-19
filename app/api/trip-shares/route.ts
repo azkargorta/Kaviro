@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { getTripAccessForApi } from "@/lib/trip-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -8,9 +9,19 @@ export const maxDuration = 60;
 const TABLE = "trip_shares";
 
 async function requireCanShareTrip(tripId: string) {
-  const access = await requireTripAccess(tripId);
-  if (!access.can_manage_resources) {
-    throw new Error("No tienes permisos para compartir este viaje.");
+  const supabase = await createClient();
+  const result = await getTripAccessForApi(supabase, tripId);
+  if (!result.ok) {
+    const err = new Error(result.error);
+    (err as any).status = result.status;
+    throw err;
+  }
+  const { access } = result;
+  // Owners can always share; other roles need can_manage_resources
+  if (access.role !== "owner" && !access.can_manage_resources) {
+    const err = new Error("No tienes permisos para compartir este viaje.");
+    (err as any).status = 403;
+    throw err;
   }
   return access;
 }
@@ -27,9 +38,9 @@ export async function GET(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
     const access = await requireCanShareTrip(tripId);
-    const supabase = await createClient();
+    const admin = getServiceRoleClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from(TABLE)
       .select("token, trip_id, revoked_at, created_at")
       .eq("trip_id", tripId)
@@ -42,9 +53,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ share: data || null, tripId, userId: access.userId }, { status: 200 });
   } catch (error) {
+    const status = (error as any)?.status ?? 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo cargar el enlace público." },
-      { status: 500 }
+      { status }
     );
   }
 }
@@ -56,10 +68,10 @@ export async function POST(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
     const access = await requireCanShareTrip(tripId);
-    const supabase = await createClient();
+    const admin = getServiceRoleClient();
 
-    // Si ya existe uno activo, reutilizamos (evita crear múltiples links).
-    const existing = await supabase
+    // Reutilizar enlace activo si ya existe
+    const existing = await admin
       .from(TABLE)
       .select("token, trip_id, revoked_at, created_at")
       .eq("trip_id", tripId)
@@ -75,36 +87,26 @@ export async function POST(request: Request) {
 
     const token = makeToken();
 
-    // created_by_user_id es opcional según esquema; intentamos y hacemos fallback.
-    const payload: Record<string, unknown> = {
-      token,
-      trip_id: tripId,
-      created_by_user_id: access.userId,
-      revoked_at: null,
-      expires_at: null,
-    };
+    const { data, error } = await admin
+      .from(TABLE)
+      .insert({
+        token,
+        trip_id: tripId,
+        created_by_user_id: access.userId,
+        revoked_at: null,
+        expires_at: null,
+      })
+      .select("token, trip_id, revoked_at, created_at")
+      .single();
 
-    let { data, error } = await supabase.from(TABLE).insert(payload).select("token, trip_id, revoked_at, created_at").single();
-    if (error) {
-      const msg = (error.message || "").toLowerCase();
-      if (msg.includes("created_by_user_id") && msg.includes("could not find")) {
-        const { created_by_user_id: _omit, ...payloadWithoutCreatedBy } = payload as any;
-        const retry = await supabase
-          .from(TABLE)
-          .insert(payloadWithoutCreatedBy)
-          .select("token, trip_id, revoked_at, created_at")
-          .single();
-        data = retry.data;
-        error = retry.error;
-      }
-    }
     if (error) throw new Error(error.message);
 
     return NextResponse.json({ share: data }, { status: 201 });
   } catch (error) {
+    const status = (error as any)?.status ?? 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo crear el enlace público." },
-      { status: 500 }
+      { status }
     );
   }
 }
@@ -116,10 +118,10 @@ export async function DELETE(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
     await requireCanShareTrip(tripId);
-    const supabase = await createClient();
+    const admin = getServiceRoleClient();
 
     const now = new Date().toISOString();
-    const { error } = await supabase
+    const { error } = await admin
       .from(TABLE)
       .update({ revoked_at: now })
       .eq("trip_id", tripId)
@@ -129,9 +131,10 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
+    const status = (error as any)?.status ?? 500;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo revocar el enlace público." },
-      { status: 500 }
+      { status }
     );
   }
 }
