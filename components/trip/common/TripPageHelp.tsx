@@ -443,6 +443,7 @@ export default function TripPageHelp() {
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
+  // Never open old help panel for demo trips
   const [pageHelpOpen, setPageHelpOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   /** Se incrementa al terminar el recorrido por pestañas para disparar la ayuda detallada de la pantalla actual. */
@@ -530,7 +531,7 @@ export default function TripPageHelp() {
     if (!tourOpen && !pageHelpOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (pageHelpOpen) {
+      if (pageHelpOpen && !isDemoTrip) {
         closePageHelp();
         return;
       }
@@ -711,7 +712,7 @@ export default function TripPageHelp() {
                 </div>
               ) : null}
 
-              {pageHelpOpen ? (
+              {pageHelpOpen && !isDemoTrip ? (
                 <div
                   className="fixed inset-0 z-[1180] flex items-center justify-center overflow-y-auto overscroll-contain px-3 py-[max(10px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))] sm:p-4"
                   role="dialog"
