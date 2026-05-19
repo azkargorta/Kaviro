@@ -10,7 +10,7 @@ import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
 import PlanLodgingCard from "@/components/trip/plan/PlanLodgingCard";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
-import { useIsDemoTrip } from "@/hooks/useIsDemoTrip";;
+import { useIsDemoTrip } from "@/components/trip/TripDemoContext";;
 import {
   CalendarDays,
   ChevronDown,

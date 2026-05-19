@@ -1,6 +1,6 @@
 "use client";
 
-import { useIsDemoTrip } from "@/hooks/useIsDemoTrip";
+import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useEffect, useMemo, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";

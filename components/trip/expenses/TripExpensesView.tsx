@@ -7,7 +7,7 @@ import ExpenseBalancePanel from "@/components/trip/expenses/ExpenseBalancePanel"
 import CurrencyConverterCard from "@/components/trip/expenses/CurrencyConverterCard";
 import ExpenseAnalyzerPanel, { type ExpenseDetectedData } from "@/components/trip/expenses/ExpenseAnalyzerPanel";
 import ExpenseCharts from "@/components/trip/expenses/ExpenseCharts";
-import { useIsDemoTrip } from "@/hooks/useIsDemoTrip";
+import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useTripExpenses } from "@/hooks/useTripExpenses";
 import { useTripData } from "@/hooks/useTripData";
 import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
