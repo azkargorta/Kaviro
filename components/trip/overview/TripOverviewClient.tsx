@@ -91,7 +91,7 @@ function WMOIcon({ code }: { code: number | null }) {
 }
 
 export default function TripOverviewClient({
-  tripId, destination, phase,
+  tripId, tripName, destination, phase,
   daysUntilStart, daysUntilEnd, daysElapsed, totalTripDays,
   activitiesCount, completedActivities, completionPct,
   expensesCount, totalExpenses, currency,
