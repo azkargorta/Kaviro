@@ -5,13 +5,12 @@ import CreateTripSection from "@/components/dashboard/CreateTripSection";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import OnboardingNudge from "@/components/dashboard/OnboardingNudge";
 import DashboardAiShortcuts from "@/components/dashboard/DashboardAiShortcuts";
-import DashboardTripSection from "@/components/dashboard/DashboardTripSection";
 import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFlowStepper";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
-import DashboardFavoritesSection from "@/components/dashboard/DashboardFavoritesSection";
+import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
 import {
   ensureDemoTripForUser,
   readDemoOnboardingProfile,
@@ -278,46 +277,14 @@ export default async function DashboardPage() {
       <DashboardDemoTripSection trips={demoTrips} />
 
       {realTrips.length === 0 ? null : (
-        <div className="space-y-5">
-          <DashboardFavoritesSection
-            trips={favoriteTrips}
-            lockedTripIds={Array.from(lockedTripIds)}
-          />
-          <DashboardTripSection
-            title="En curso"
-            subtitle="Lo que estás viviendo ahora."
-            trips={current}
-            badge="En curso"
-            accent="from-emerald-100 to-teal-50 border-emerald-200"
-            lockedTripIds={Array.from(lockedTripIds)}
-          />
-          <DashboardTripSection
-            title="Próximos"
-            subtitle="Viajes con fecha futura."
-            trips={future}
-            badge="Próximo"
-            accent="from-[var(--brand-light)] to-slate-50 border-[var(--brand-border)]"
-            lockedTripIds={Array.from(lockedTripIds)}
-          />
-          <DashboardTripSection
-            title="Pasados"
-            subtitle="Viajes ya cerrados en el calendario."
-            trips={past}
-            badge="Finalizado"
-            accent="from-slate-100 to-slate-50 border-slate-200"
-            lockedTripIds={Array.from(lockedTripIds)}
-          />
-          {unscheduled.length > 0 ? (
-            <DashboardTripSection
-              title="Sin fechas cerradas"
-              subtitle="Define inicio y fin cuando puedas."
-              trips={unscheduled}
-              badge="Pendiente"
-              accent="from-amber-100 to-orange-50 border-amber-200"
-              lockedTripIds={Array.from(lockedTripIds)}
-            />
-          ) : null}
-        </div>
+        <DashboardTripsClient
+          current={current}
+          future={future}
+          past={past}
+          unscheduled={unscheduled}
+          favoriteTrips={favoriteTrips}
+          lockedTripIds={Array.from(lockedTripIds)}
+        />
       )}
     </main>
   );
