@@ -57,8 +57,25 @@ function executeAction(action?: SpotlightStep["action"]) {
       .forEach((btn) => (btn as HTMLElement).click());
   }
   if (action === "calendar-mode") {
-    // Click the calendar mode button
     const btn = document.querySelector('[data-tour="plan-calendar-mode"]') as HTMLElement | null;
+    btn?.click();
+  }
+  if (action === "open-expenses-list") {
+    const el = document.querySelector('[data-tour="expenses-list-details"]') as HTMLDetailsElement | null;
+    if (el && !el.open) el.open = true;
+  }
+  if (action === "open-expenses-currency") {
+    const el = document.querySelector('[data-tour="expenses-currency-details"]') as HTMLDetailsElement | null;
+    if (el && !el.open) el.open = true;
+  }
+  if (action === "open-resources-lists") {
+    const btn = document.querySelector('[data-tour="resources-lists-btn"]') as HTMLElement | null;
+    const section = document.querySelector('[data-tour="resources-lists-section"]');
+    // Only click if lists are not already showing
+    if (btn && section && !section.querySelector('[data-tour="resources-lists-panel"]')) btn.click();
+  }
+  if (action === "open-participants-invite") {
+    const btn = document.querySelector('[data-tour="participants-invite-btn"]') as HTMLElement | null;
     btn?.click();
   }
 }

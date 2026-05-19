@@ -10,6 +10,7 @@ import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
 import PlanLodgingCard from "@/components/trip/plan/PlanLodgingCard";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
+import { useIsDemoTrip } from "@/hooks/useIsDemoTrip";;
 import {
   CalendarDays,
   ChevronDown,
@@ -264,6 +265,9 @@ export default function TripPlanView({
   const [workspaceTab, setWorkspaceTab] = useState<"itinerary" | "notes">(initialWorkspaceTab);
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<Set<string>>(new Set());
+  // For demo trips (detected via URL), expand all days by default
+  const isDemoExpand = typeof window !== "undefined" && window.location.href.includes("tutorial=demo");
+  const isDemoTrip = useIsDemoTrip();
   const [expandedDayKeys, setExpandedDayKeys] = useState<Set<string>>(() => new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
@@ -357,6 +361,14 @@ export default function TripPlanView({
     if (!selectedDate) return filtered;
     return filtered.filter((a) => (a.activity_date || "") === selectedDate);
   }, [filtered, selectedDate]);
+
+  // Auto-expand all days for demo trip
+  useEffect(() => {
+    if (!isDemoTrip) return;
+    const dates = activities.map((a) => a.activity_date ?? "").filter(Boolean);
+    if (dates.length > 0) setExpandedDayKeys(new Set(dates));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemoTrip, activities.length]);
 
   const grouped = useMemo(() => groupByDate(filteredWithCalendarDate), [filteredWithCalendarDate]);
 

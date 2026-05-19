@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsDemoTrip } from "@/hooks/useIsDemoTrip";
 import { useEffect, useMemo, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
@@ -182,8 +183,13 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [serverCanManageParticipants, setServerCanManageParticipants] = useState<boolean | null>(null);
   const [serverAccessLoaded, setServerAccessLoaded] = useState(false);
 
+  const isDemoTrip = useIsDemoTrip();
   const [isCreating, setIsCreating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
+
+  useEffect(() => {
+    if (isDemoTrip) setIsInviting(true);
+  }, [isDemoTrip]);
   const [inviteParticipant, setInviteParticipant] = useState<TripParticipant | null>(null);
   const [editingParticipant, setEditingParticipant] = useState<TripParticipant | null>(null);
   const [linkingParticipant, setLinkingParticipant] = useState<TripParticipant | null>(null);
@@ -686,12 +692,12 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                     setLinkingParticipant(null);
                     setIsCreating((prev) => !prev);
                   }}
-                  data-tour="participants-add-btn" className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
+                  className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
                 >
                   <UserPlus className="h-4 w-4" aria-hidden />
                   {isCreating ? "Cerrar" : "Añadir pasajero"}
                 </button>
-                <button data-tour="participants-invite-btn"
+                <button
                   type="button"
                   onClick={openGenericInvite}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
@@ -715,7 +721,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           )}
 
           {canManageParticipants && isInviting ? (
-            <div data-tour="participants-qr" className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
               <InviteParticipantPanel
                 tripId={tripId}
                 participant={inviteParticipant}

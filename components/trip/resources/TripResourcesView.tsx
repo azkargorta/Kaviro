@@ -53,7 +53,12 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
   const [templateType, setTemplateType] = useState<ReservationTemplateType | null>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showAnalyzerForm, setShowAnalyzerForm] = useState(false);
+  const isDemoTrip = useIsDemoTrip();
   const [showLists, setShowLists] = useState(false);
+
+  useEffect(() => {
+    if (isDemoTrip) setShowLists(true);
+  }, [isDemoTrip]);
 
   const editingMode = useMemo(() => Boolean(editingReservation), [editingReservation]);
   const showLodgingForm = editingMode || templateType === "lodging";
@@ -72,7 +77,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
         </div>
       ) : null}
 
-      <section data-tour="resources-lists-section" className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <section className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 max-w-full flex-1">
             <h3 className="text-lg font-semibold text-slate-900">Listas</h3>
@@ -80,7 +85,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
               Crea listas privadas o compartidas (compra, maleta, documentos…).
             </p>
           </div>
-          <button data-tour="resources-lists-btn"
+          <button
             type="button"
             onClick={() => setShowLists((v) => !v)}
             className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
@@ -102,7 +107,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
               </p>
             </div>
 
-            <button data-tour="resources-upload-btn"
+            <button
               type="button"
               onClick={() => setShowUploadForm((current) => !current)}
               className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
@@ -141,7 +146,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
               </p>
             </div>
 
-            <button data-tour="resources-analyze-btn"
+            <button
               type="button"
               onClick={() => setShowAnalyzerForm((current) => !current)}
               className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}

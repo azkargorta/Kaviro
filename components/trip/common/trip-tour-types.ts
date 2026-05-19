@@ -20,6 +20,11 @@ export type SpotlightStep = {
   title: string;
   body: string;
   emoji?: string;
-  /** Optional pre-step action to execute before showing the step */
-  action?: "expand-days" | "calendar-mode";
+  action?:
+    | "expand-days"
+    | "calendar-mode"
+    | "open-expenses-list"
+    | "open-expenses-currency"
+    | "open-resources-lists"
+    | "open-participants-invite";
 };
