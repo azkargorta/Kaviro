@@ -6,6 +6,7 @@ import {
   DEMO_TRIP_NAME,
   DEMO_GHOST_PARTICIPANTS,
   DEMO_ROUTES,
+  DEMO_LISTS,
   buildDemoActivities,
   buildDemoExpenses,
   demoTripDateRange,
@@ -201,6 +202,38 @@ export async function ensureDemoTripForUser(user: User): Promise<{
       };
     })
   );
+
+  // Listas en la sección Docs
+  for (const listSeed of DEMO_LISTS) {
+    const { data: listRow, error: listErr } = await admin
+      .from("trip_lists")
+      .insert({
+        trip_id: tripId,
+        title: listSeed.title,
+        visibility: listSeed.visibility,
+        editable_by_all: listSeed.editable_by_all,
+        owner_user_id: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (listErr || !listRow) continue;
+    const listId = String((listRow as { id: string }).id);
+
+    if (listSeed.items.length) {
+      await admin.from("trip_list_items").insert(
+        listSeed.items.map((item, pos) => ({
+          trip_id: tripId,
+          list_id: listId,
+          text: item.text,
+          note: item.note ?? null,
+          is_done: item.is_done ?? false,
+          position: pos,
+          created_by_user_id: user.id,
+        }))
+      );
+    }
+  }
 
   const profilePatch: Record<string, unknown> = {
     demo_trip_id: tripId,
