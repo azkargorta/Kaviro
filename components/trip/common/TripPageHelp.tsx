@@ -453,8 +453,10 @@ export default function TripPageHelp() {
     setTourOpen(false);
     setTourStep(0);
     if (isDemoTrip) {
-      setSpotlightOpen(true);
-      void completeDemoOnboarding().catch(() => {});
+      void completeDemoOnboarding().finally(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
       return;
     }
     setTourPulse((p) => p + 1);
@@ -480,7 +482,7 @@ export default function TripPageHelp() {
     };
 
     if (isDemoTrip) {
-      // Demo trips use spotlight tour only — skip tab modal auto-open
+      // Demo trips use spotlight tour only
       return;
     }
 
@@ -539,19 +541,27 @@ export default function TripPageHelp() {
   }, [tourOpen, pageHelpOpen, finishTour, closePageHelp]);
 
   const openManual = useCallback(() => {
-    setPageHelpOpen(true);
-  }, []);
+    if (!isDemoTrip) {
+      // Normal trip — open spotlight filtered to current tab
+      setSpotlightOpen(true);
+    } else {
+      setPageHelpOpen(true);
+    }
+  }, [isDemoTrip]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // ?tutorial=demo → open spotlight directly (skip tab modal)
+  // Auto-open tour when arriving from ?tutorial=demo (new user onboarding)
   useEffect(() => {
     if (!mounted) return;
     if (searchParams?.get("tutorial") !== "demo") return;
-    if (spotlightOpen) return;
-    const t = window.setTimeout(() => setSpotlightOpen(true), 600);
+    if (tourOpen) return;
+    const t = window.setTimeout(() => {
+      setTourStep(0);
+      setTourOpen(true);
+    }, 600);
     return () => window.clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, searchParams]);
@@ -764,15 +774,18 @@ export default function TripPageHelp() {
             document.body
           )
         : null}
-      {mounted && spotlightOpen && isDemoTrip && tripId && pageId && (
+      {/* Spotlight — demo: full cross-tab | normal: current-tab only */}
+      {mounted && spotlightOpen && tripId && pageId && (
         <SpotlightTour
           steps={DEMO_SPOTLIGHT_TOUR}
           tripId={tripId}
           currentTab={pageId}
+          filterToTab={!isDemoTrip}
           onClose={() => setSpotlightOpen(false)}
           onComplete={() => setSpotlightOpen(false)}
         />
       )}
+      {/* Tour button shown only on demo trips */}
       {isDemoTrip && !tourOpen && !spotlightOpen && pageId && (
         <button
           type="button"

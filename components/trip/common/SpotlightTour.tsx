@@ -67,19 +67,23 @@ type Props = {
   steps: SpotlightStep[];
   tripId: string;
   currentTab: string;
+  /** If true, only show steps for currentTab — no cross-tab navigation */
+  filterToTab?: boolean;
   onClose: () => void;
   onComplete: () => void;
 };
 
-export default function SpotlightTour({ steps, tripId, currentTab, onClose, onComplete }: Props) {
+export default function SpotlightTour({ steps, tripId, currentTab, filterToTab = false, onClose, onComplete }: Props) {
+  // Filter to current tab only when requested (non-demo trips)
+  const effectiveSteps = filterToTab ? steps.filter((s) => (TAB_ROUTES[s.tab] ?? s.tab) === currentTab) : steps;
   const router = useRouter();
   const [idx, setIdx] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [mounted, setMounted] = useState(false);
   const [navigating, setNavigating] = useState(false);
 
-  const step = steps[idx];
-  const isLast = idx >= steps.length - 1;
+  const step = effectiveSteps[idx];
+  const isLast = idx >= effectiveSteps.length - 1;
   const isFirst = idx === 0;
 
   useEffect(() => { setMounted(true); }, []);
@@ -167,7 +171,7 @@ export default function SpotlightTour({ steps, tripId, currentTab, onClose, onCo
           {/* Tab label bar */}
           <div style={{ background: "#fef2f2", borderBottom: "1px solid #fee2e2", padding: "7px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: "#F87171", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              {TAB_LABELS[step.tab] ?? step.tab} · {idx+1} de {steps.length}
+              {TAB_LABELS[step.tab] ?? step.tab} · {idx+1} de {effectiveSteps.length}
             </span>
             <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", borderRadius: 6, color: "#fca5a5" }} aria-label="Cerrar tour">
               <X size={13} />
