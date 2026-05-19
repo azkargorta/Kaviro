@@ -1,18 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { DEMO_TAB_TOUR, DEMO_SPOTLIGHT_TOUR } from "@/lib/onboarding/demo-tour-copy";
 import SpotlightTour from "@/components/trip/common/SpotlightTour";
 import type { TourStep } from "@/components/trip/common/trip-tour-types";
-import { ChevronLeft, ChevronRight, LifeBuoy, X } from "lucide-react";
+import { LifeBuoy } from "lucide-react";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
-import { iconInline16, iconSlotFill40, iconSlotFill44 } from "@/components/ui/iconTokens";
-import { btnPrimary } from "@/components/ui/brandStyles";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type HelpBlock = { heading: string; bullets: string[] };
@@ -418,132 +414,22 @@ async function completeDemoOnboarding() {
 export default function TripPageHelp() {
   const pathname = usePathname();
   const params = useParams();
-  const router = useRouter();
   const isDemoTrip = useIsDemoTrip();
   const tripId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
-  const isDark = useIsDarkMode();
   const activeTour = isDemoTrip ? DEMO_TAB_TOUR : TAB_TOUR;
-  const activeTourPageIds = useMemo(() => new Set(activeTour.map((s) => s.id)), [activeTour]);
 
   const pageId = useMemo(() => {
     if (!tripId) return null;
     return getTripPageHelpId(pathname);
   }, [pathname, tripId]);
 
-  /** Evita reiniciar el recorrido al cambiar de ruta mientras el usuario sigue en el tour. */
-  const tourOfferedRef = useRef(false);
-
-  useEffect(() => {
-    tourOfferedRef.current = false;
-  }, [tripId]);
-
   const entry = pageId ? HELP[pageId] : null;
 
   const searchParams = useSearchParams();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
-  const [tourStep, setTourStep] = useState(0);
-  // Never open old help panel for demo trips
-  const [pageHelpOpen, setPageHelpOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  /** Se incrementa al terminar el recorrido por pestañas para disparar la ayuda detallada de la pantalla actual. */
-  const [tourPulse, setTourPulse] = useState(0);
-
-  const finishTour = useCallback(() => {
-    if (tripId) markTourSeen(tripId);
-    setTourOpen(false);
-    setTourStep(0);
-    if (isDemoTrip) {
-      void completeDemoOnboarding().finally(() => {
-        router.push("/dashboard");
-        router.refresh();
-      });
-      return;
-    }
-    setTourPulse((p) => p + 1);
-  }, [tripId, isDemoTrip, router]);
-
-  const closePageHelp = useCallback(() => {
-    if (tripId && pageId) markPageHelpSeen(tripId, pageId);
-    setPageHelpOpen(false);
-  }, [tripId, pageId]);
-
-  /** Primera vez en el viaje: recorrido visual por las 7 pestañas principales. */
-  useEffect(() => {
-    if (!tripId || !pageId) return;
-    if (!activeTourPageIds.has(pageId)) return;
-    if (readTourSeen(tripId)) return;
-    if (tourOfferedRef.current) return;
-
-    const openTour = () => {
-      if (isDemoTrip) return; // Demo uses spotlight tour only
-      if (readTourSeen(tripId) || tourOfferedRef.current) return;
-      tourOfferedRef.current = true;
-      setTourStep(0);
-      setTourOpen(true);
-    };
-
-    if (isDemoTrip) {
-      // Demo trips use spotlight tour only
-      return;
-    }
-
-    if (pageId !== "home") {
-      openTour();
-      return;
-    }
-
-    const fallback = window.setTimeout(() => {
-      openTour();
-    }, 3200);
-
-    const onFirstRunDismiss = (e: Event) => {
-      const ce = e as CustomEvent<{ tripId?: string }>;
-      if (ce.detail?.tripId !== tripId) return;
-      window.clearTimeout(fallback);
-      openTour();
-    };
-
-    window.addEventListener("kaviro:first-run-dismissed", onFirstRunDismiss as EventListener);
-    window.addEventListener("tripboard:first-run-dismissed", onFirstRunDismiss as EventListener);
-    return () => {
-      window.removeEventListener("kaviro:first-run-dismissed", onFirstRunDismiss as EventListener);
-      window.removeEventListener("tripboard:first-run-dismissed", onFirstRunDismiss as EventListener);
-      window.clearTimeout(fallback);
-    };
-  }, [tripId, pageId, pathname, isDemoTrip, activeTourPageIds]);
-
-  /** Primera vez en cada pantalla: ayuda detallada (tras el recorrido global, si aplica). */
-  useEffect(() => {
-    if (!tripId || !pageId || !entry) return;
-    if (readPageHelpSeen(tripId, pageId)) return;
-    if (tourOpen) return;
-    const tourBlocksFirst = activeTourPageIds.has(pageId) && !readTourSeen(tripId);
-    if (tourBlocksFirst) return;
-
-    const t = window.setTimeout(() => {
-      if (readPageHelpSeen(tripId, pageId)) return;
-      setPageHelpOpen(true);
-    }, 400);
-    return () => window.clearTimeout(t);
-  }, [tripId, pageId, entry, tourOpen, tourPulse, pathname]);
-
-  useEffect(() => {
-    if (!tourOpen && !pageHelpOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (pageHelpOpen && !isDemoTrip) {
-        closePageHelp();
-        return;
-      }
-      if (tourOpen) finishTour();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [tourOpen, pageHelpOpen, finishTour, closePageHelp]);
 
   const openManual = useCallback(() => {
-    // Both demo and normal trips open the spotlight; demo = full cross-tab, normal = current tab only
     setSpotlightOpen(true);
   }, []);
 
@@ -551,27 +437,17 @@ export default function TripPageHelp() {
     setMounted(true);
   }, []);
 
-  // Auto-open tour when arriving from ?tutorial=demo (new user onboarding)
+  // Auto-open spotlight when arriving from ?tutorial=demo (onboarding nuevo usuario)
   useEffect(() => {
     if (!mounted) return;
     if (searchParams?.get("tutorial") !== "demo") return;
-    if (tourOpen || spotlightOpen) return;
+    if (spotlightOpen) return;
     const t = window.setTimeout(() => {
-      if (isDemoTrip) {
-        // Demo trips use the spotlight tour
-        setSpotlightOpen(true);
-      } else {
-        setTourStep(0);
-        setTourOpen(true);
-      }
+      setSpotlightOpen(true);
     }, 600);
     return () => window.clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, searchParams, isDemoTrip]);
-
-  const tourStepData = activeTour[tourStep];
-  const isLastTourStep = tourStep >= activeTour.length - 1;
-  const tourVisual = tourStepData?.visual;
+  }, [mounted, searchParams]);
 
   // Evita mismatch SSR/CSR: `usePathname/useParams` pueden diferir en el render del servidor.
   if (!mounted || !tripId || !pageId || !entry) return null;
@@ -581,10 +457,9 @@ export default function TripPageHelp() {
       <button
         type="button"
         onClick={openManual}
-        disabled={tourOpen}
-        className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-violet-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
+        className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-violet-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
         aria-label={`Ayuda: ${entry.title}`}
-        title={tourOpen ? "Cierra el recorrido para usar la ayuda" : `Ayuda de ${entry.title}`}
+        title={`Ayuda de ${entry.title}`}
       >
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50">
           <LifeBuoy className="h-5 w-5 text-violet-700 dark:text-[#F87171]" aria-hidden />
@@ -597,192 +472,7 @@ export default function TripPageHelp() {
         </span>
       </button>
 
-      {mounted
-        ? createPortal(
-            <>
-              {tourOpen && tourStepData && !isDemoTrip ? (
-                <div
-                  className="fixed inset-0 z-[1180] flex items-center justify-center overflow-y-auto overscroll-contain px-3 py-[max(10px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))] sm:p-4"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="trip-tab-tour-title"
-                >
-                  <button
-                    type="button"
-                    className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] dark:bg-black/60"
-                    aria-label="Cerrar recorrido"
-                    onClick={finishTour}
-                  />
-                  <div className="pointer-events-auto relative my-auto flex min-h-0 w-full max-w-md max-h-[min(92dvh,calc(100svh-1.5rem))] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl sm:max-h-[min(90dvh,calc(100svh-2rem))] dark:border-slate-700/60 dark:bg-slate-950/70">
-                    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-violet-900 px-5 pb-4 pt-4 text-white sm:pt-5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">
-                            {isDemoTrip ? "Recorrido · viaje demo" : "Recorrido del viaje"}
-                          </p>
-                          <h2 id="trip-tab-tour-title" className="mt-1 text-lg font-extrabold leading-tight">
-                            {isDemoTrip ? "Londres de ejemplo: cada pestaña" : "Qué hay en cada pestaña"}
-                          </h2>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={finishTour}
-                          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/15 ${iconSlotFill40}`}
-                          aria-label="Cerrar"
-                        >
-                          <X aria-hidden />
-                        </button>
-                      </div>
-                      <p className="mt-2 text-xs leading-relaxed text-white/80">
-                        Siete pasos, uno por cada sección. Puedes saltar cuando quieras; luego podrás repetir ayuda con «?» en
-                        cualquier pantalla.
-                      </p>
-                      <div className="mt-4 flex justify-center gap-1.5">
-                        {activeTour.map((s, i) => (
-                          <span
-                            key={s.id}
-                            className={`h-1.5 rounded-full transition-all ${
-                              i === tourStep ? "w-6 bg-violet-300" : i < tourStep ? "w-1.5 bg-white/50" : "w-1.5 bg-white/25"
-                            }`}
-                            aria-hidden
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
-                      <div className="flex flex-col items-center text-center">
-                        <HelpVisualBadge visual={tourVisual} size="lg" />
-                        <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-violet-800 dark:text-violet-300">
-                          {tourStepData.lead}
-                        </p>
-                        <h3 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-slate-50">
-                          {tourStepData.title}
-                        </h3>
-                        <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                          {tourStepData.body}
-                        </p>
-                        <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                          {tourStepData.mobileTip}
-                        </p>
-                        <Link
-                          href={tourStepData.href(tripId)}
-                          onClick={finishTour}
-                          className="mt-5 text-sm font-semibold text-violet-700 underline-offset-2 hover:text-violet-900 hover:underline dark:text-violet-300 dark:hover:text-violet-200"
-                        >
-                          Ir a {tourStepData.title} ahora →
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 border-t border-slate-100 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 dark:border-slate-700/60">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={finishTour}
-                          className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-300 dark:hover:text-slate-100"
-                        >
-                          Saltar recorrido
-                        </button>
-                        <div className="ml-auto flex w-full items-center justify-end gap-2 sm:w-auto">
-                          <button
-                            type="button"
-                            disabled={tourStep <= 0}
-                            onClick={() => setTourStep((s) => Math.max(0, s - 1))}
-                            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-35 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40 ${iconSlotFill44}`}
-                            aria-label="Paso anterior"
-                          >
-                            <ChevronLeft aria-hidden />
-                          </button>
-                          {isLastTourStep ? (
-                            <button
-                              type="button"
-                              onClick={finishTour}
-                              className={`${btnPrimary} min-h-[48px] w-full flex-1 rounded-2xl px-5 py-3 text-sm sm:w-auto sm:flex-none`}
-                            >
-                              {isDemoTrip ? "Ir al panel" : "Entendido"}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setTourStep((s) => Math.min(activeTour.length - 1, s + 1))}
-                              className={`${btnPrimary} min-h-[48px] items-center justify-center gap-1 rounded-2xl px-5 py-3 text-sm`}
-                            >
-                              Siguiente
-                              <ChevronRight className={iconInline16} aria-hidden />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {pageHelpOpen && !isDemoTrip ? (
-                <div
-                  className="fixed inset-0 z-[1180] flex items-center justify-center overflow-y-auto overscroll-contain px-3 py-[max(10px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))] sm:p-4"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="trip-page-help-title"
-                >
-                  <button
-                    type="button"
-                    className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px] dark:bg-black/60"
-                    aria-label="Cerrar ayuda"
-                    onClick={closePageHelp}
-                  />
-                  <div className="pointer-events-auto relative my-auto flex min-h-0 w-full max-w-lg max-h-[min(92dvh,calc(100svh-1.5rem))] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl sm:max-h-[min(90dvh,calc(100svh-2rem))] dark:border-slate-700/60 dark:bg-slate-950/70">
-                    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 pb-3 pt-4 sm:pt-5 dark:border-slate-700/60">
-                      <div className="min-w-0 pr-2">
-                        <h2 id="trip-page-help-title" className="text-lg font-bold leading-snug text-slate-950 dark:text-slate-50">
-                          {entry.title}
-                        </h2>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={closePageHelp}
-                        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700/60 dark:text-slate-200 dark:hover:bg-slate-900/40 ${iconSlotFill40}`}
-                        aria-label="Cerrar"
-                      >
-                        <X aria-hidden />
-                      </button>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-                      <PageHelpVisualHeader pageId={pageId} />
-                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{entry.intro}</p>
-                      <div className="mt-5 space-y-5">
-                        {entry.blocks.map((block) => (
-                          <div key={block.heading}>
-                            <h3 className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">
-                              {block.heading}
-                            </h3>
-                            <ul className="mt-2 list-disc space-y-2 pl-4 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                              {block.bullets.map((b) => (
-                                <li key={b}>{b}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="shrink-0 border-t border-slate-100 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:pb-4 dark:border-slate-700/60">
-                      <button
-                        type="button"
-                        onClick={closePageHelp}
-                        className={`${btnPrimary} flex min-h-[48px] w-full items-center justify-center rounded-2xl px-4 py-3 text-sm`}
-                      >
-                        Entendido
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </>,
-            document.body
-          )
-        : null}
-      {/* Spotlight — demo: full cross-tab | normal: current-tab only */}
+      {/* Spotlight — demo: recorrido completo cross-tab | normal: solo pasos de la pestaña actual */}
       {mounted && spotlightOpen && tripId && pageId && (
         <SpotlightTour
           steps={DEMO_SPOTLIGHT_TOUR}
@@ -793,8 +483,8 @@ export default function TripPageHelp() {
           onComplete={() => setSpotlightOpen(false)}
         />
       )}
-      {/* Tour button shown only on demo trips */}
-      {isDemoTrip && !tourOpen && !spotlightOpen && pageId && (
+      {/* Botón de tour rápido, solo en el viaje demo */}
+      {isDemoTrip && !spotlightOpen && pageId && (
         <button
           type="button"
           onClick={() => setSpotlightOpen(true)}
