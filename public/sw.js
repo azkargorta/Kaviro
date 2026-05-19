@@ -1,7 +1,7 @@
-// Kaviro Service Worker — v2
+// Kaviro Service Worker — v3
 // Cache-first para assets, network-first para páginas, offline cache para plan activo
 
-const CACHE_NAME = "kaviro-v2";
+const CACHE_NAME = "kaviro-v3";
 const DATA_CACHE  = "kaviro-data-v1";
 const OFFLINE_URL = "/offline.html";
 
@@ -43,10 +43,10 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Trip activities & routes — stale-while-revalidate for offline plan access
+  // Note: /api/trip-shares is NOT cached here — share tokens must always go to the network
   if (
     url.pathname.startsWith("/api/trip-activities") ||
-    url.pathname.startsWith("/api/trip-routes") ||
-    url.pathname.startsWith("/api/trip-shares")
+    url.pathname.startsWith("/api/trip-routes")
   ) {
     event.respondWith(
       caches.open(DATA_CACHE).then(async (cache) => {

@@ -584,12 +584,17 @@ export default function TripPageHelp() {
         disabled={tourOpen}
         className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-violet-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
         aria-label={`Ayuda: ${entry.title}`}
-        title={tourOpen ? "Cierra el recorrido para usar la ayuda" : "Ayuda de esta página"}
+        title={tourOpen ? "Cierra el recorrido para usar la ayuda" : `Ayuda de ${entry.title}`}
       >
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50">
           <LifeBuoy className="h-5 w-5 text-violet-700 dark:text-[#F87171]" aria-hidden />
         </span>
-        <span>Ayuda</span>
+        <span className="flex flex-col items-start gap-0 leading-tight">
+          <span className="text-[8px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">Ayuda</span>
+          <span className="leading-none">
+            {activeTour.find((s) => s.id === pageId)?.title ?? entry.title}
+          </span>
+        </span>
       </button>
 
       {mounted
