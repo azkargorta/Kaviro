@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import type { TripWeatherResult } from "@/lib/trip-weather";
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
+import { Share2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,6 +122,7 @@ function TripProgressBar({ startDate, endDate }: { startDate: string; endDate: s
 
 export default function TripSummaryOverview({
   tripId,
+  tripName,
   weather,
   weatherHint,
   todayLabel,
@@ -133,6 +136,7 @@ export default function TripSummaryOverview({
   activitiesCount,
 }: {
   tripId: string;
+  tripName?: string | null;
   weather: TripWeatherResult | null;
   weatherHint: "ok" | "no-destination" | "unavailable";
   todayLabel: string;
@@ -510,6 +514,87 @@ export default function TripSummaryOverview({
           })}
         </div>
       </section>
+
+      {/* ── Recap CTA ────────────────────────────────────────────── */}
+      <SummaryRecapCta
+        tripId={tripId}
+        tripName={tripName ?? ""}
+        destination={tripDestination ?? null}
+        startDate={tripStartDate ?? null}
+        endDate={tripEndDate ?? null}
+      />
+    </div>
+  );
+}
+
+// ── Recap CTA ────────────────────────────────────────────────────────────────
+function SummaryRecapCta({
+  tripId, tripName, destination, startDate, endDate,
+}: {
+  tripId: string;
+  tripName: string;
+  destination: string | null;
+  startDate: string | null;
+  endDate: string | null;
+}) {
+  const [shared, setShared] = useState(false);
+
+  function formatDate(d: string | null) {
+    if (!d) return "";
+    return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${d}T12:00:00`));
+  }
+
+  async function handleShare() {
+    const text = [
+      `✈️ ${tripName}${destination ? ` — ${destination}` : ""}`,
+      startDate ? `📅 ${formatDate(startDate)}${endDate ? ` → ${formatDate(endDate)}` : ""}` : "",
+      "",
+      "Organizado con Kaviro · kaviro.app",
+    ].filter(Boolean).join("\n");
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: `Recap: ${tripName}`, text });
+      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setShared(true);
+        setTimeout(() => setShared(false), 2500);
+      }
+    } catch { /* user cancelled */ }
+  }
+
+  return (
+    <div data-tour="summary-recap-cta" className="rounded-2xl overflow-hidden border border-slate-200 dark:border-[#1E293B] shadow-sm">
+      <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-5 py-4 flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full shrink-0" />
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Kaviro · Recap</p>
+          <p className="text-base font-extrabold text-white leading-tight">Crea el recap de tu viaje</p>
+        </div>
+      </div>
+      <div className="bg-white dark:bg-[#0F1623] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
+          Estadísticas, foto del destino y tarjeta para compartir con el grupo.
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            {shared ? "¡Copiado!" : "Compartir"}
+          </button>
+          <Link
+            href={`/trip/${tripId}/recap`}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
+          >
+            Crear Recap
+            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

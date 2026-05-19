@@ -139,8 +139,9 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   }
 
   const activities = buildDemoActivities(start_date);
-  // title → id map for linking routes to activities
+  // title → {id, lat, lng} map for linking routes to activities
   const activityIdByTitle = new Map<string, string>();
+  const activityCoordsByTitle = new Map<string, { lat: number; lng: number }>();
   if (activities.length) {
     const { data: insertedActivities } = await admin.from("trip_activities").insert(
       activities.map((a) => ({
@@ -158,10 +159,13 @@ export async function ensureDemoTripForUser(user: User): Promise<{
         source: "demo",
         created_by_user_id: user.id,
       }))
-    ).select("id, title");
+    ).select("id, title, latitude, longitude");
     if (insertedActivities) {
-      for (const row of insertedActivities as Array<{ id: string; title: string }>) {
+      for (const row of insertedActivities as Array<{ id: string; title: string; latitude: number; longitude: number }>) {
         activityIdByTitle.set(row.title, row.id);
+        if (row.latitude != null && row.longitude != null) {
+          activityCoordsByTitle.set(row.title, { lat: row.latitude, lng: row.longitude });
+        }
       }
     }
   }
@@ -199,6 +203,18 @@ export async function ensureDemoTripForUser(user: User): Promise<{
       const waypointIds = (r.waypoint_activity_titles ?? [])
         .map((t) => activityIdByTitle.get(t))
         .filter((id): id is string => Boolean(id));
+      const originCoords = r.origin_activity_title ? activityCoordsByTitle.get(r.origin_activity_title) : undefined;
+      const destCoords = r.destination_activity_title ? activityCoordsByTitle.get(r.destination_activity_title) : undefined;
+
+      // Build path_points: origin → waypoints → destination (straight lines)
+      const pathPoints: Array<{ lat: number; lng: number }> = [];
+      if (originCoords) pathPoints.push(originCoords);
+      for (const waypointTitle of (r.waypoint_activity_titles ?? [])) {
+        const c = activityCoordsByTitle.get(waypointTitle);
+        if (c) pathPoints.push(c);
+      }
+      if (destCoords) pathPoints.push(destCoords);
+
       return {
         trip_id: tripId,
         route_date: routeDate,
@@ -215,6 +231,9 @@ export async function ensureDemoTripForUser(user: User): Promise<{
         ...(originId ? { origin_activity_id: originId } : {}),
         ...(destId ? { destination_activity_id: destId } : {}),
         ...(waypointIds.length ? { waypoint_ids: waypointIds } : {}),
+        ...(originCoords ? { origin_latitude: originCoords.lat, origin_longitude: originCoords.lng } : {}),
+        ...(destCoords ? { destination_latitude: destCoords.lat, destination_longitude: destCoords.lng } : {}),
+        ...(pathPoints.length >= 2 ? { path_points: pathPoints, route_points: pathPoints } : {}),
       };
     })
   );

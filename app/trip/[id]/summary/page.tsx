@@ -380,6 +380,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
 
       <TripSummaryOverview
         tripId={tripId}
+        tripName={currentTrip.name}
         weather={weather}
         weatherHint={weatherHint}
         todayLabel={todayLabel}
