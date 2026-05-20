@@ -4,6 +4,7 @@ import TripPlanView from "@/components/trip/plan/TripPlanView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { canEditTripNotesFromAccess } from "@/lib/trip-module-access";
 
 export default async function TripPlanPage({
   params,
@@ -42,7 +43,7 @@ export default async function TripPlanPage({
   const currentDisplayName =
     (profileRow as { display_name?: string | null } | null)?.display_name?.trim() || "Yo";
 
-  const canEditTripNotes = access.role === "owner" || access.can_manage_trip || access.can_manage_plan;
+  const canEditTripNotes = canEditTripNotesFromAccess(access);
 
   return (
     <main className="space-y-8">
@@ -63,6 +64,7 @@ export default async function TripPlanPage({
         initialExploreOpen={initialExploreOpen}
         initialTripDescription={tripDescription}
         canEditTripNotes={canEditTripNotes}
+        canManagePlan={access.can_manage_plan}
         initialWorkspaceTab={initialWorkspaceTab}
         initialSelectedDate={initialSelectedDate}
       />

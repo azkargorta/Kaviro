@@ -62,7 +62,7 @@ export default async function TripMapPage({ params, searchParams }: Props) {
     redirect(`/trip/${encodeURIComponent(tripId)}/plan?explore=1`);
   }
 
-  await requireTripAccess(tripId);
+  const access = await requireTripAccess(tripId);
   const supabase = await createClient();
   const {
     data: { user },
@@ -103,6 +103,7 @@ export default async function TripMapPage({ params, searchParams }: Props) {
       <TripMapView
         tripId={tripId}
         isPremium={isPremium}
+        canManageMap={access.can_manage_map}
         trip={{
           id: trip.id,
           name: trip.name || "Viaje",

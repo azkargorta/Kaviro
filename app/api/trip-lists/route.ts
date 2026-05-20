@@ -62,14 +62,13 @@ export async function GET(request: Request) {
       }, {});
     }
 
-    const participant = await getParticipant(supabase, tripId, userId);
-    const role = (participant?.role ?? access.role ?? "viewer") as "owner" | "editor" | "viewer";
-    const canManageResources = role === "owner" || role === "editor" || Boolean(participant?.can_manage_resources);
-
     return NextResponse.json({
       lists: lists || [],
       countsByList,
-      access: { role, canManageResources },
+      access: {
+        role: access.role,
+        canManageResources: access.can_manage_resources,
+      },
     });
   } catch (error) {
     return NextResponse.json(

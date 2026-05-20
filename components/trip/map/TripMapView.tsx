@@ -8,6 +8,7 @@ import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
+import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import { useTripRoutes, type RoutePoint, type SaveRouteInput } from "@/hooks/useTripRoutes";
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
 import DuplicateRouteDialog from "@/components/trip/map/DuplicateRouteDialog";
@@ -136,6 +137,7 @@ type PlanSources = {
 type Props = {
   tripId: string;
   isPremium?: boolean;
+  canManageMap?: boolean;
   trip?: { id: string; name: string; destination?: string | null; start_date?: string | null; end_date?: string | null };
   tripDates?: string[];
   planSources?: PlanSources;
@@ -569,7 +571,16 @@ function MapSurface({
   );
 }
 
-export default function TripMapView({ tripId, tripDates = [], planSources, routeSources, points, routes, isPremium = false }: Props) {
+export default function TripMapView({
+  tripId,
+  tripDates = [],
+  planSources,
+  routeSources,
+  points,
+  routes,
+  isPremium = false,
+  canManageMap = true,
+}: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [mapRef, setMapRef] = useState<L.Map | null>(null);
@@ -1508,7 +1519,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
             {subtitle ? <div className="mt-1 text-xs text-slate-600 line-clamp-2">{subtitle}</div> : null}
           </button>
           <div className="flex shrink-0 items-center gap-2">
-            {route.source === "trip_routes" ? (
+            {canManageMap && route.source === "trip_routes" ? (
               <>
                 <button
                   type="button"
@@ -1547,6 +1558,8 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
 
   return (
     <div className="min-w-0 max-w-full space-y-4 overflow-x-hidden">
+      {!canManageMap ? <TripReadOnlyBanner moduleLabel="rutas y mapa" /> : null}
+      {canManageMap ? (
       <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
         <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -1610,8 +1623,9 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
           </div>
         </div>
       </section>
+      ) : null}
 
-      {routesDraft?.routes?.length ? (
+      {canManageMap && routesDraft?.routes?.length ? (
         <div className="rounded-3xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 px-5 py-4 shadow-sm dark:border-[#F87171]/20 dark:from-[#F87171]/8 dark:via-[#0F1623] dark:to-[#0F1623]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
@@ -1830,6 +1844,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
               </div>
             </div>
 
+            {canManageMap ? (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">{form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}</div>
@@ -2190,6 +2205,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
                 </div>
               )}
             </div>
+            ) : null}
           </div>
         </section>
 
@@ -2402,7 +2418,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
                             {subtitle ? <div className="mt-1 text-xs text-slate-600 line-clamp-2">{subtitle}</div> : null}
                           </button>
                         </div>
-                        {!routesBulkMode ? (
+                        {!routesBulkMode && canManageMap ? (
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             {r.source === "trip_routes" ? (
                               <>

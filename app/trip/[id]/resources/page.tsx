@@ -29,7 +29,7 @@ export default async function TripResourcesPage({
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripResourcesView tripId={tripId} isPremium={isPremium} />
+      <TripResourcesView tripId={tripId} isPremium={isPremium} canManageResources={access.can_manage_resources} />
     </main>
   );
 }

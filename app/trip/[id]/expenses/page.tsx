@@ -37,7 +37,7 @@ export default async function TripExpensesPage({
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripExpensesView tripId={tripId} isPremium={isPremium} />
+      <TripExpensesView tripId={tripId} isPremium={isPremium} canManageExpenses={access.can_manage_expenses} />
     </main>
   );
 }

@@ -40,6 +40,7 @@ import {
   chipItemBase,
   chipItemInactive,
 } from "@/components/ui/brandStyles";
+import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 
 const COMMON_KIND_ICONS: Array<{ emoji: string; label: string }> = [
   { emoji: "📍", label: "Visita" },
@@ -218,6 +219,7 @@ export default function TripPlanView({
   initialExploreOpen = false,
   initialTripDescription = null,
   canEditTripNotes = false,
+  canManagePlan = true,
   initialWorkspaceTab = "itinerary",
   initialSelectedDate = null,
 }: {
@@ -228,6 +230,7 @@ export default function TripPlanView({
   initialExploreOpen?: boolean;
   initialTripDescription?: string | null;
   canEditTripNotes?: boolean;
+  canManagePlan?: boolean;
   initialWorkspaceTab?: "itinerary" | "notes";
   initialSelectedDate?: string | null;
 }) {
@@ -526,6 +529,7 @@ export default function TripPlanView({
           {error}
         </div>
       ) : null}
+      {!canManagePlan ? <TripReadOnlyBanner moduleLabel="el plan del viaje" /> : null}
 
       <div
         role="tablist"
@@ -556,7 +560,7 @@ export default function TripPlanView({
         <TripPlanNotesPanel tripId={tripId} initialDescription={initialTripDescription} readOnly={!canEditTripNotes} />
       ) : null}
 
-      {workspaceTab === "itinerary" && !showForm ? (
+      {workspaceTab === "itinerary" && canManagePlan && !showForm ? (
         <button
           type="button"
           onClick={handleStartCreate}
@@ -623,6 +627,7 @@ export default function TripPlanView({
           ) : (
             <></>
           )}
+          {canManagePlan ? (
           <button
             data-tour="plan-add-btn"
             type="button"
@@ -633,6 +638,8 @@ export default function TripPlanView({
             <Plus className="h-4 w-4" />
             Añadir plan
           </button>
+          ) : null}
+          {canManagePlan ? (
           <button data-tour="plan-explore-btn"
             type="button"
             onClick={() => setExploreOpen(true)}
@@ -642,6 +649,7 @@ export default function TripPlanView({
             <Compass className="h-4 w-4" />
             Explorar
           </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
@@ -794,7 +802,7 @@ export default function TripPlanView({
               <Trash2 className="h-4 w-4" aria-hidden />
               Eliminar{selectedActivityIds.size > 0 ? ` (${selectedActivityIds.size})` : ""}
             </button>
-          ) : (
+          ) : canManagePlan ? (
             <button
               type="button"
               onClick={() => {
@@ -808,7 +816,7 @@ export default function TripPlanView({
               <Trash2 className="h-4 w-4" aria-hidden />
               Eliminar
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -1228,7 +1236,7 @@ export default function TripPlanView({
         </div>
       </details>
 
-      {showForm ? (
+      {canManagePlan && showForm ? (
         <div ref={formAnchorRef} className="scroll-mt-24">
           <PlanForm
           saving={saving}
@@ -1413,13 +1421,13 @@ export default function TripPlanView({
                           return (
                             <SortableRow key={activity.id} id={activity.id} color={meta.color}>
                               {isLodging ? (
-                                <PlanLodgingCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
+                                <PlanLodgingCard activity={activity} onEdit={canManagePlan ? handleStartEdit : undefined} onDelete={canManagePlan ? (item) => deleteActivity(item.id) : undefined} selectable={canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
                               ) : (
                                 <PlanActivityCard
                                   activity={activity}
-                                  onEdit={handleStartEdit}
-                                  onDelete={(item) => deleteActivity(item.id)}
-                                  selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)}
+                                  onEdit={canManagePlan ? handleStartEdit : undefined}
+                                  onDelete={canManagePlan ? (item) => deleteActivity(item.id) : undefined}
+                                  selectable={canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity)}
                                   selected={selectedActivityIds.has(activity.id)}
                                   onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })}
                                   premiumEnabled={premiumEnabled}

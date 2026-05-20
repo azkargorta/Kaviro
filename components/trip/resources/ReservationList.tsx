@@ -21,9 +21,10 @@ export default function ReservationList({
   onDelete,
 }: {
   reservations: TripReservation[];
-  onEdit: (reservation: TripReservation) => void;
-  onDelete: (reservationId: string) => void;
+  onEdit?: (reservation: TripReservation) => void;
+  onDelete?: (reservationId: string) => void;
 }) {
+  const canMutate = Boolean(onEdit && onDelete);
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-4">
@@ -76,22 +77,24 @@ export default function ReservationList({
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex shrink-0 flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(reservation)}
-                      className="rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] dark:border-[#1E293B] dark:bg-[#0F1623] px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(reservation.id)}
-                      className="rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
+                  {canMutate ? (
+                    <div className="flex shrink-0 flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onEdit!(reservation)}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#1E293B] dark:bg-[#0F1623]"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete!(reservation.id)}
+                        className="rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

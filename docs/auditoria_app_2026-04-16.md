@@ -64,6 +64,7 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 
 - [x] P0: Unificar free/premium — `lib/tier.ts`, `lib/premium-copy.ts`, `tripCreationLimits`
 - [x] P0: Permisos por módulo — `trip-access-api.ts`; ~35 rutas API migradas a `requireTripAccessApi`
+- [x] P0 (parcial): Permisos `can_manage_*` en UI — plan, gastos, mapa/rutas, recursos; banner lectura; `GET /api/trip-access` ampliado; listas sin default permisivo
 - [x] P0 (parcial): Copy free/premium en dashboard — `lib/premium-copy.ts`
 - [x] P0: Gating Premium en módulos del viaje — `PremiumUpsell`, OCR/docs, gastos, rutas auto, asistente IA; nav IA visible con badge PRO
 - [x] P1: Landing/pricing pública — `PublicLanding`, `/pricing`, `lib/pricing-public.ts`, shell marketing

@@ -15,10 +15,17 @@ function fmtCount(counts: { total: number; done: number } | undefined) {
 type Props = {
   tripId: string;
   isPremium?: boolean;
+  /** Si no se pasa, se usa el valor de la API de listas (por defecto solo lectura). */
+  canManageResources?: boolean;
   onGenerateWithAi?: () => void;
 };
 
-export default function TripListsPanel({ tripId, isPremium = false, onGenerateWithAi }: Props) {
+export default function TripListsPanel({
+  tripId,
+  isPremium = false,
+  canManageResources: canManageResourcesProp,
+  onGenerateWithAi,
+}: Props) {
   const { lists, countsByList, access, loading, saving, error, createList, updateList, deleteList } =
     useTripLists(tripId);
 
@@ -71,7 +78,7 @@ export default function TripListsPanel({ tripId, isPremium = false, onGenerateWi
   }
 
   const canAi = Boolean(isPremium);
-  const canManageResources = access?.canManageResources ?? true;
+  const canManageResources = canManageResourcesProp ?? access?.canManageResources ?? false;
 
   return (
     <section className="min-w-0 max-w-full overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">

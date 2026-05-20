@@ -12,13 +12,16 @@ import { useTripExpenses } from "@/hooks/useTripExpenses";
 import { useTripData } from "@/hooks/useTripData";
 import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
+import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 
 export default function TripExpensesView({
   tripId,
   isPremium = true,
+  canManageExpenses = true,
 }: {
   tripId: string;
   isPremium?: boolean;
+  canManageExpenses?: boolean;
 }) {
   const {
     expenses,
@@ -75,7 +78,9 @@ export default function TripExpensesView({
   const [history, setHistory] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"list" | "charts">("list");
 
-  const shouldShowForm = isAddOpen || !!editingExpense || !!detectedData;
+  const shouldShowForm =
+    canManageExpenses && (isAddOpen || !!editingExpense || !!detectedData);
+  const showAnalyzePanel = canManageExpenses && isAnalyzeOpen;
 
   useEffect(() => {
     let cancelled = false;
@@ -173,33 +178,37 @@ export default function TripExpensesView({
           <Download className="h-4 w-4" aria-hidden />
           <span className="hidden sm:inline">Exportar</span> CSV
         </button>
-        <button
-          type="button"
-          className={primary}
-          onClick={() => {
-            setIsAddOpen((v) => !v);
-            setIsAnalyzeOpen(false);
-          }}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          {shouldShowForm ? "Cerrar añadir" : "Añadir ticket"}
-        </button>
-        <button
-          type="button"
-          className={secondary}
-          onClick={() => {
-            if (!isPremium) return;
-            setIsAnalyzeOpen((v) => !v);
-            if (!isAnalyzeOpen) setIsAddOpen(false);
-          }}
-          disabled={!isPremium}
-        >
-          <ScanText className="h-4 w-4" aria-hidden />
-          {isAnalyzeOpen ? "Cerrar análisis" : "Analizar ticket"}
-        </button>
+        {canManageExpenses ? (
+          <>
+            <button
+              type="button"
+              className={primary}
+              onClick={() => {
+                setIsAddOpen((v) => !v);
+                setIsAnalyzeOpen(false);
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              {shouldShowForm ? "Cerrar añadir" : "Añadir ticket"}
+            </button>
+            <button
+              type="button"
+              className={secondary}
+              onClick={() => {
+                if (!isPremium) return;
+                setIsAnalyzeOpen((v) => !v);
+                if (!isAnalyzeOpen) setIsAddOpen(false);
+              }}
+              disabled={!isPremium}
+            >
+              <ScanText className="h-4 w-4" aria-hidden />
+              {isAnalyzeOpen ? "Cerrar análisis" : "Analizar ticket"}
+            </button>
+          </>
+        ) : null}
       </div>
     );
-  }, [isAnalyzeOpen, shouldShowForm, isPremium]);
+  }, [canManageExpenses, isAnalyzeOpen, shouldShowForm, isPremium]);
 
   if (loading) {
     return (
@@ -248,6 +257,7 @@ export default function TripExpensesView({
 
   return (
     <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
+      {!canManageExpenses ? <TripReadOnlyBanner moduleLabel="gastos" /> : null}
 
       {/* Tab switcher */}
       {/* G5 — Pill toggle */}
@@ -331,16 +341,18 @@ export default function TripExpensesView({
             <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Añade el primer ticket para ver balances automáticos y quién debe a quién.
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAddOpen(true);
-                setIsAnalyzeOpen(false);
-              }}
-              className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
-            >
-              Añadir ticket
-            </button>
+            {canManageExpenses ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddOpen(true);
+                  setIsAnalyzeOpen(false);
+                }}
+                className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+              >
+                Añadir ticket
+              </button>
+            ) : null}
           </div>
         ) : null}
 
@@ -455,9 +467,10 @@ export default function TripExpensesView({
 
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div className="min-w-0 space-y-4">
+          {canManageExpenses ? (
           <details
             className="rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
-            open={isAnalyzeOpen}
+            open={showAnalyzePanel}
             onToggle={(e) => setIsAnalyzeOpen((e.currentTarget as HTMLDetailsElement).open)}
           >
             <summary className="flex min-w-0 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 hover:bg-violet-50/40 dark:hover:bg-slate-900/40 sm:px-5">
@@ -485,7 +498,9 @@ export default function TripExpensesView({
               )}
             </div>
           </details>
+          ) : null}
 
+          {canManageExpenses ? (
           <details
             className="rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
             open={shouldShowForm}
@@ -534,6 +549,7 @@ export default function TripExpensesView({
               />
             </div>
           </details>
+          ) : null}
 
           <details
             data-tour="expenses-currency-details"
@@ -573,21 +589,29 @@ export default function TripExpensesView({
             <div className="border-t border-slate-200 px-4 py-4 sm:px-5">
               <ExpenseList
                 expenses={expenses as any}
-                onEdit={(expense) => {
-                  setEditingExpense(expense);
-                  setDetectedData(null);
-                  setIsAddOpen(true);
-                }}
-                onDuplicate={(expense) => {
-                  setEditingExpense({
-                    ...expense,
-                    id: undefined,
-                    attachment_name: null,
-                  });
-                  setDetectedData(null);
-                  setIsAddOpen(true);
-                }}
-                onDelete={deleteExpense}
+                onEdit={
+                  canManageExpenses
+                    ? (expense) => {
+                        setEditingExpense(expense);
+                        setDetectedData(null);
+                        setIsAddOpen(true);
+                      }
+                    : undefined
+                }
+                onDuplicate={
+                  canManageExpenses
+                    ? (expense) => {
+                        setEditingExpense({
+                          ...expense,
+                          id: undefined,
+                          attachment_name: null,
+                        });
+                        setDetectedData(null);
+                        setIsAddOpen(true);
+                      }
+                    : undefined
+                }
+                onDelete={canManageExpenses ? deleteExpense : undefined}
               />
             </div>
           </details>

@@ -10,7 +10,7 @@ export default function ResourceList({
   onAdd,
 }: {
   resources: TripResource[];
-  onDelete: (resourceId: string) => void;
+  onDelete?: (resourceId: string) => void;
   onAdd?: () => void;
 }) {
   return (
@@ -62,13 +62,15 @@ export default function ResourceList({
                   ) : null}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onDelete(resource.id)}
-                  className="shrink-0 self-start rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 sm:self-auto"
-                >
-                  Eliminar
-                </button>
+                {onDelete ? (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(resource.id)}
+                    className="shrink-0 self-start rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 sm:self-auto"
+                  >
+                    Eliminar
+                  </button>
+                ) : null}
               </div>
             </div>
           ))}

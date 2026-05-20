@@ -20,6 +20,7 @@ import TransportReservationForm from "@/components/trip/resources/TransportReser
 import ActivityReservationForm from "@/components/trip/resources/ActivityReservationForm";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
+import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 
 function templateFromDetected(data: DetectedDocumentData): ReservationTemplateType {
   if (data.documentType === "hotel_reservation") return "lodging";
@@ -38,10 +39,12 @@ function templateFromDetected(data: DetectedDocumentData): ReservationTemplateTy
 export default function TripResourcesView({
   tripId,
   isPremium = false,
+  canManageResources = true,
 }: {
   tripId: string;
   /** Premium efectivo del viaje (usuario o participante). */
   isPremium?: boolean;
+  canManageResources?: boolean;
 }) {
   const {
     resources,
@@ -123,6 +126,7 @@ export default function TripResourcesView({
 
   return (
     <div className="min-w-0 max-w-full space-y-6">
+      {!canManageResources ? <TripReadOnlyBanner moduleLabel="documentos y reservas" /> : null}
       {error ? (
         <div className="break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -149,7 +153,7 @@ export default function TripResourcesView({
 
         {showLists ? (
           <div data-tour="resources-lists-panel">
-            <TripListsPanel tripId={tripId} isPremium={isPremium} />
+            <TripListsPanel tripId={tripId} isPremium={isPremium} canManageResources={canManageResources} />
           </div>
         ) : null}
       </section>
@@ -164,17 +168,19 @@ export default function TripResourcesView({
               </p>
             </div>
 
-            <button
-              data-tour="resources-upload-btn"
-              type="button"
-              onClick={() => setShowUploadForm((current) => !current)}
-              className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
-            >
-              {showUploadForm ? "Cerrar" : "Adjuntar documento"}
-            </button>
+            {canManageResources ? (
+              <button
+                data-tour="resources-upload-btn"
+                type="button"
+                onClick={() => setShowUploadForm((current) => !current)}
+                className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
+              >
+                {showUploadForm ? "Cerrar" : "Adjuntar documento"}
+              </button>
+            ) : null}
           </div>
 
-          {showUploadForm ? (
+          {canManageResources && showUploadForm ? (
             <div className="mt-5">
               <ResourceUploadForm
                 saving={saving}
@@ -204,18 +210,20 @@ export default function TripResourcesView({
               </p>
             </div>
 
-            <button
-              data-tour="resources-analyze-btn"
-              type="button"
-              onClick={() => {
-                if (!isPremium) return;
-                setShowAnalyzerForm((current) => !current);
-              }}
-              disabled={!isPremium}
-              className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
-            >
-              {showAnalyzerForm ? "Cerrar" : "Analizar documento"}
-            </button>
+            {canManageResources ? (
+              <button
+                data-tour="resources-analyze-btn"
+                type="button"
+                onClick={() => {
+                  if (!isPremium) return;
+                  setShowAnalyzerForm((current) => !current);
+                }}
+                disabled={!isPremium}
+                className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
+              >
+                {showAnalyzerForm ? "Cerrar" : "Analizar documento"}
+              </button>
+            ) : null}
           </div>
 
           {!isPremium ? (
@@ -224,7 +232,7 @@ export default function TripResourcesView({
             </div>
           ) : null}
 
-          {showAnalyzerForm && isPremium ? (
+          {canManageResources && showAnalyzerForm && isPremium ? (
             <div className="mt-5">
               <DocumentAnalyzerPanel
                 onUseDetectedData={(data) => {
@@ -240,18 +248,20 @@ export default function TripResourcesView({
         </div>
       </div>
 
-      <ReservationTemplateSelector
-        value={templateType || "lodging"}
-        onChange={setTemplateType}
-      />
+      {canManageResources ? (
+        <ReservationTemplateSelector
+          value={templateType || "lodging"}
+          onChange={setTemplateType}
+        />
+      ) : null}
 
-      {!showLodgingForm && !showTransportForm && !showActivityForm ? (
+      {canManageResources && !showLodgingForm && !showTransportForm && !showActivityForm ? (
         <div className="rounded-2xl border border-dashed border-slate-200 dark:border-[#334155] bg-slate-50 dark:bg-[#080C14] px-6 py-6 text-center">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-[#0F1623] text-xl shadow-sm">🗂️</div>
         </div>
       ) : null}
 
-      {showLodgingForm ? (
+      {canManageResources && showLodgingForm ? (
         <LodgingReservationForm
           saving={saving}
           detectedData={editingMode ? null : detectedData}
@@ -340,7 +350,7 @@ export default function TripResourcesView({
         />
       ) : null}
 
-      {showTransportForm ? (
+      {canManageResources && showTransportForm ? (
         <TransportReservationForm
           saving={saving}
           detectedData={detectedData}
@@ -380,7 +390,7 @@ export default function TripResourcesView({
         />
       ) : null}
 
-      {showActivityForm ? (
+      {canManageResources && showActivityForm ? (
         <ActivityReservationForm
           saving={saving}
           detectedData={detectedData}
@@ -421,28 +431,36 @@ export default function TripResourcesView({
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2">
         <ReservationList
           reservations={reservations}
-          onEdit={(reservation) => {
-            setEditingReservation(reservation);
-            setDetectedData(null);
-            setTemplateType(
-              reservation.reservation_type === "lodging"
-                ? "lodging"
-                : reservation.reservation_type === "transport"
-                ? "transport"
-                : "activity"
-            );
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          onDelete={deleteReservation}
+          {...(canManageResources
+            ? {
+                onEdit: (reservation: TripReservation) => {
+                  setEditingReservation(reservation);
+                  setDetectedData(null);
+                  setTemplateType(
+                    reservation.reservation_type === "lodging"
+                      ? "lodging"
+                      : reservation.reservation_type === "transport"
+                        ? "transport"
+                        : "activity"
+                  );
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                },
+                onDelete: deleteReservation,
+              }
+            : {})}
         />
 
         <ResourceList
           resources={resources}
-          onDelete={deleteResource}
-          onAdd={() => {
-            setShowUploadForm(true);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
+          {...(canManageResources
+            ? {
+                onDelete: deleteResource,
+                onAdd: () => {
+                  setShowUploadForm(true);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                },
+              }
+            : {})}
         />
       </div>
     </div>
