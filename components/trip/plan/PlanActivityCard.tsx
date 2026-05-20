@@ -4,6 +4,7 @@ import { Check, ExternalLink, Star, Ticket, CalendarPlus } from "lucide-react";
 import PlanCardActions from "@/components/trip/plan/PlanCardActions";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import { activityLikelyNeedsTicket, buildTicketOfficialSearchUrl } from "@/lib/trip-plan-ticket-hints";
+import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
 
 type PlanActivity = {
   trip_id?: string;
@@ -34,6 +35,10 @@ type Props = {
   premiumEnabled?: boolean;
   /** P5: actividades pasadas (viaje activo) — reducir opacidad y mostrar check */
   isPast?: boolean;
+  /** RSVP: necesario para mostrar ¿Te apuntas? dentro de la tarjeta */
+  tripId?: string;
+  currentUserId?: string | null;
+  displayName?: string;
 };
 
 // Fondo unificado para todas las tarjetas: limpio sin gradientes de color
@@ -122,6 +127,9 @@ export default function PlanActivityCard({
   onToggleSelect,
   premiumEnabled = false,
   isPast = false,
+  tripId,
+  currentUserId,
+  displayName = "Yo",
 }: Props) {
   const meta = getActivityMeta(activity.activity_kind);
   const googleMapsUrl = buildGoogleMapsUrl(activity);
@@ -288,6 +296,21 @@ export default function PlanActivityCard({
           </span>
         ) : null}
       </div>
+
+      {/* ¿Te apuntas? — RSVP inline dentro de la tarjeta */}
+      {tripId && (
+        <div
+          className="border-t border-slate-100 px-3.5 pb-3 pt-2.5 dark:border-[#1E293B]"
+          onClick={selectable ? (e) => e.stopPropagation() : undefined}
+        >
+          <ActivityReactions
+            tripId={tripId}
+            activityId={activity.id}
+            currentUserId={currentUserId ?? null}
+            displayName={displayName}
+          />
+        </div>
+      )}
     </div>
   );
 }

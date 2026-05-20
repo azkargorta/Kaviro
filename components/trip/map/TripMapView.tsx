@@ -645,6 +645,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
   const [routesDraft, setRoutesDraft] = useState<RoutesDraftPayload | null>(null);
   const [routesDraftIndex, setRoutesDraftIndex] = useState(0);
   const draftReviewActiveRef = useRef(false);
+  const [addingAllRoutes, setAddingAllRoutes] = useState(false);
 
   const [routesAutoNotes, setRoutesAutoNotes] = useState("");
   const [routesAutoQuestion, setRoutesAutoQuestion] = useState<string | null>(null);
@@ -1247,6 +1248,48 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
     }
   }
 
+  async function addAllDraftRoutes() {
+    if (!routesDraft?.routes?.length) return;
+    setAddingAllRoutes(true);
+    setError(null);
+    let savedCount = 0;
+    try {
+      for (const r of routesDraft.routes) {
+        const input: SaveRouteInput = {
+          routeDate: r.route_day,
+          routeName: r.title,
+          departureTime: r.departure_time || "",
+          mode: r.travel_mode,
+          originName: r.origin_name,
+          originAddress: r.origin_address || "",
+          originLatitude: r.origin_latitude,
+          originLongitude: r.origin_longitude,
+          destinationName: r.destination_name,
+          destinationAddress: r.destination_address || "",
+          destinationLatitude: r.destination_latitude,
+          destinationLongitude: r.destination_longitude,
+          distanceText: r.distance_text,
+          durationText: r.duration_text,
+          routePoints: r.route_points,
+          pathPoints: r.path_points,
+          notes: r.notes,
+        };
+        await saveRoute(input);
+        savedCount++;
+      }
+      try { window.sessionStorage.removeItem(`tripboard_routes_draft:${tripId}`); } catch { /* ignore */ }
+      setRoutesDraft(null);
+      setRoutesDraftIndex(0);
+      draftReviewActiveRef.current = false;
+      setInfo(`✅ ${savedCount} ruta${savedCount !== 1 ? "s" : ""} guardada${savedCount !== 1 ? "s" : ""} correctamente.`);
+      void reloadRoutes();
+    } catch {
+      setError("Error al guardar algunas rutas. Las rutas ya guardadas se mantienen.");
+    } finally {
+      setAddingAllRoutes(false);
+    }
+  }
+
   function loadDraftRoute(idx: number, draftOverride?: RoutesDraftPayload) {
     const draft = draftOverride ?? routesDraft;
     if (!draft?.routes?.length) return;
@@ -1559,10 +1602,10 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
       </section>
 
       {routesDraft?.routes?.length ? (
-        <div className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 px-5 py-4 shadow-sm">
+        <div className="rounded-3xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 px-5 py-4 shadow-sm dark:border-[#F87171]/20 dark:from-[#F87171]/8 dark:via-[#0F1623] dark:to-[#0F1623]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800">Borrador del asistente</div>
+              <div className="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)]">Borrador del asistente</div>
               <div className="mt-1 text-sm font-semibold text-slate-900">
                 {routesDraft.routes.length} ruta{routesDraft.routes.length === 1 ? "" : "s"} · {routesDraft.date}
               </div>
@@ -1604,9 +1647,18 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
               </details>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+              {/* ── Añadir todas de golpe ── */}
               <button
                 type="button"
-                className={`${btnPrimary} inline-flex min-h-[40px] items-center justify-center rounded-2xl px-4 py-2 text-sm`}
+                disabled={addingAllRoutes || savingRoute}
+                className={`${btnPrimary} inline-flex min-h-[40px] items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm disabled:opacity-60`}
+                onClick={() => void addAllDraftRoutes()}
+              >
+                {addingAllRoutes ? "Guardando…" : `Añadir todas (${routesDraft.routes.length})`}
+              </button>
+              <button
+                type="button"
+                className="inline-flex min-h-[40px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                 onClick={() => loadDraftRoute(routesDraftIndex)}
               >
                 Cargar actual

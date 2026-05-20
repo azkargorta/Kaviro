@@ -6,7 +6,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import PlanActivityCard from "@/components/trip/plan/PlanActivityCard";
-import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
+import { createClient } from "@/lib/supabase/client";
 import PlanLodgingCard from "@/components/trip/plan/PlanLodgingCard";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
@@ -230,7 +230,24 @@ export default function TripPlanView({
 }) {
   const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId);
-  const currentUserId: string | null = null; // TODO: wire from useTripActivities once hook is updated
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentDisplayName, setCurrentDisplayName] = useState("Yo");
+
+  useEffect(() => {
+    const supabase = createClient();
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUserId(user.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.display_name) setCurrentDisplayName(String(profile.display_name));
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const {
     kinds: customKinds,
     loading: customKindsLoading,
@@ -1413,17 +1430,18 @@ export default function TripPlanView({
                               {isLodging ? (
                                 <PlanLodgingCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
                               ) : (
-                                <>
-                                  <PlanActivityCard activity={activity} onEdit={handleStartEdit} onDelete={(item) => deleteActivity(item.id)} selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} premiumEnabled={premiumEnabled} />
-                                  {premiumEnabled && (
-                                    <ActivityReactions
-                                      tripId={tripId}
-                                      activityId={activity.id}
-                                      currentUserId={currentUserId}
-                                      displayName={trip?.name ?? "Yo"}
-                                    />
-                                  )}
-                                </>
+                                <PlanActivityCard
+                                  activity={activity}
+                                  onEdit={handleStartEdit}
+                                  onDelete={(item) => deleteActivity(item.id)}
+                                  selectable={bulkDeleteMode && canBulkDeletePlanActivity(activity)}
+                                  selected={selectedActivityIds.has(activity.id)}
+                                  onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })}
+                                  premiumEnabled={premiumEnabled}
+                                  tripId={tripId}
+                                  currentUserId={currentUserId}
+                                  displayName={currentDisplayName}
+                                />
                               )}
                             </SortableRow>
                           );
