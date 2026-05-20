@@ -1,11 +1,16 @@
+import Image from "next/image";
+
 export default function Loading() {
   return (
     <div className="min-h-[100svh] bg-slate-950 text-white">
       <div className="flex min-h-[100svh] flex-col items-center justify-center px-6">
-        <img
+        <Image
           src="/icons/icon-512.png"
           alt="Kaviro"
-          className="h-24 w-24 rounded-[28px] object-cover shadow-2xl"
+          width={96}
+          height={96}
+          priority
+          className="rounded-[28px] object-cover shadow-2xl"
         />
         <h1
           className="mt-6 text-3xl font-black tracking-tight"

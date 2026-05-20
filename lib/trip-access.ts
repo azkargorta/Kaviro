@@ -3,6 +3,19 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePermissions, normalizeRole } from "@/lib/permissions";
 
+type ParticipantRow = {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  role: string | null;
+  can_manage_trip: boolean | null;
+  can_manage_participants: boolean | null;
+  can_manage_expenses: boolean | null;
+  can_manage_plan: boolean | null;
+  can_manage_map: boolean | null;
+  can_manage_resources: boolean | null;
+};
+
 export type TripAccessResult = {
   userId: string;
   participantId: string;
@@ -47,20 +60,21 @@ export async function requireTripAccess(
     redirect("/dashboard");
   }
 
-  const role = normalizeRole((participant as any)?.role);
+  const row = participant as unknown as ParticipantRow;
+  const role = normalizeRole(row.role);
   const perms = normalizePermissions(role, {
-    can_manage_trip: (participant as any)?.can_manage_trip ?? undefined,
-    can_manage_participants: (participant as any)?.can_manage_participants ?? undefined,
-    can_manage_expenses: (participant as any)?.can_manage_expenses ?? undefined,
-    can_manage_plan: (participant as any)?.can_manage_plan ?? undefined,
-    can_manage_map: (participant as any)?.can_manage_map ?? undefined,
-    can_manage_resources: (participant as any)?.can_manage_resources ?? undefined,
+    can_manage_trip: row.can_manage_trip ?? undefined,
+    can_manage_participants: row.can_manage_participants ?? undefined,
+    can_manage_expenses: row.can_manage_expenses ?? undefined,
+    can_manage_plan: row.can_manage_plan ?? undefined,
+    can_manage_map: row.can_manage_map ?? undefined,
+    can_manage_resources: row.can_manage_resources ?? undefined,
   });
 
   return {
     userId: user.id,
-    participantId: participant.id,
-    tripId: participant.trip_id,
+    participantId: row.id,
+    tripId: row.trip_id,
     role,
     ...perms,
   };
@@ -104,22 +118,23 @@ export async function getTripAccessForApi(
     return { ok: false, status: 403, error: "No tienes acceso a este viaje." };
   }
 
-  const role = normalizeRole((participant as any)?.role);
+  const row = participant as unknown as ParticipantRow;
+  const role = normalizeRole(row.role);
   const perms = normalizePermissions(role, {
-    can_manage_trip: (participant as any)?.can_manage_trip ?? undefined,
-    can_manage_participants: (participant as any)?.can_manage_participants ?? undefined,
-    can_manage_expenses: (participant as any)?.can_manage_expenses ?? undefined,
-    can_manage_plan: (participant as any)?.can_manage_plan ?? undefined,
-    can_manage_map: (participant as any)?.can_manage_map ?? undefined,
-    can_manage_resources: (participant as any)?.can_manage_resources ?? undefined,
+    can_manage_trip: row.can_manage_trip ?? undefined,
+    can_manage_participants: row.can_manage_participants ?? undefined,
+    can_manage_expenses: row.can_manage_expenses ?? undefined,
+    can_manage_plan: row.can_manage_plan ?? undefined,
+    can_manage_map: row.can_manage_map ?? undefined,
+    can_manage_resources: row.can_manage_resources ?? undefined,
   });
 
   return {
     ok: true,
     access: {
       userId: user.id,
-      participantId: participant.id,
-      tripId: participant.trip_id,
+      participantId: row.id,
+      tripId: row.trip_id,
       role,
       ...perms,
     },

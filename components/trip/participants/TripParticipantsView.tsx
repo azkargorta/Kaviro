@@ -2,6 +2,7 @@
 
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
@@ -767,20 +768,20 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 </button>
               </div>
               <div className="flex flex-col items-center gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=0f172a&margin=8`}
                   alt="QR de invitación al viaje"
                   width={200}
                   height={200}
+                  unoptimized
                   className="rounded-2xl border border-slate-100 shadow-sm dark:hidden"
                 />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=0f1623&color=f1f5f9&margin=8`}
                   alt="QR de invitación al viaje"
                   width={200}
                   height={200}
+                  unoptimized
                   className="rounded-2xl border border-[#1E293B] shadow-sm hidden dark:block"
                 />
                 <p className="text-center text-xs text-slate-400 leading-snug max-w-[200px]">

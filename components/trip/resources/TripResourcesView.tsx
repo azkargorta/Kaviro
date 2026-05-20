@@ -67,7 +67,50 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
   const showActivityForm = !editingMode && templateType === "activity";
 
   if (loading) {
-    return <div className="p-4">Cargando recursos y reservas...</div>;
+    return (
+      <div className="min-w-0 max-w-full space-y-6" aria-busy="true" aria-label="Cargando recursos">
+        {/* Lists section skeleton */}
+        <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
+          <div className="flex items-center justify-between">
+            <div className="h-5 w-32 rounded bg-slate-200 dark:bg-slate-700" />
+            <div className="h-5 w-5 rounded bg-slate-200 dark:bg-slate-700" />
+          </div>
+        </div>
+        {/* Upload + analyzer grid */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-[#0F1623]">
+              <div className="mb-4 h-5 w-2/5 rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="h-28 rounded-xl bg-slate-200 dark:bg-slate-700" />
+            </div>
+          ))}
+        </div>
+        {/* Reservation template skeleton */}
+        <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
+          <div className="flex gap-3">
+            {[1, 2, 3].map((i) => <div key={i} className="h-12 flex-1 rounded-xl bg-slate-200 dark:bg-slate-700" />)}
+          </div>
+        </div>
+        {/* Resource + reservation lists */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="space-y-3">
+              {[1, 2, 3].map((j) => (
+                <div key={j} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-700" />
+                      <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

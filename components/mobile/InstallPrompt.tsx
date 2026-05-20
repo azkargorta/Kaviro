@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -36,10 +37,12 @@ export default function InstallPrompt() {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center gap-4">
-        <img
+        <Image
           src="/icons/icon-192.png"
           alt="Kaviro"
-          className="h-16 w-16 rounded-2xl object-cover"
+          width={64}
+          height={64}
+          className="rounded-2xl object-cover"
         />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">Instala Kaviro</p>

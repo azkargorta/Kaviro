@@ -14,7 +14,7 @@ async function getUserPremiumFlag(
     .eq("id", userId)
     .maybeSingle();
   if (error) return false;
-  return Boolean((data as any)?.is_premium);
+  return Boolean((data as { is_premium?: boolean } | null)?.is_premium);
 }
 
 /**
@@ -43,9 +43,9 @@ export async function isPremiumEnabledForTrip(params: {
     .neq("status", "removed");
   if (pErr) return false;
 
-  const ids = (participants || [])
-    .map((r: any) => r?.user_id)
-    .filter((x: any) => typeof x === "string" && x);
+  const ids = ((participants || []) as { user_id: string }[])
+    .map((r) => r.user_id)
+    .filter((x): x is string => typeof x === "string" && x.length > 0);
   if (!ids.length) return false;
 
   const { data: anyPremium, error: prErr } = await supabase
@@ -73,9 +73,10 @@ export async function getMyEntitlements(): Promise<Entitlements> {
 export async function requirePremiumOrThrow() {
   const ent = await getMyEntitlements();
   if (!ent.isPremium) {
-    const err = new Error("Necesitas Premium para usar esta función.");
-    (err as any).code = "PREMIUM_REQUIRED";
-    (err as any).httpStatus = 402;
+    const err = Object.assign(new Error("Necesitas Premium para usar esta función."), {
+      code: "PREMIUM_REQUIRED" as const,
+      httpStatus: 402,
+    });
     throw err;
   }
   return ent;

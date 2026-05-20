@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import Image from "next/image";
 import { useTripInvites } from "@/hooks/useTripInvites";
 import type { TripRole, TripParticipant } from "@/hooks/useTripParticipants";
 import { useToast } from "@/components/ui/toast";
@@ -184,20 +185,20 @@ export default function InviteParticipantPanel({
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                 Escanear para unirse
               </p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(inviteUrl)}&bgcolor=ffffff&color=0f172a&margin=8`}
                 alt="QR de invitación"
                 width={160}
                 height={160}
+                unoptimized
                 className="rounded-xl dark:hidden"
               />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(inviteUrl)}&bgcolor=0f1623&color=f1f5f9&margin=8`}
                 alt="QR de invitación"
                 width={160}
                 height={160}
+                unoptimized
                 className="rounded-xl hidden dark:block"
               />
               <p className="text-[10px] text-slate-400 dark:text-slate-500">Abre la cámara y apunta al código</p>

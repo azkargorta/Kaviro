@@ -471,7 +471,40 @@ export default function TripPlanView({
   }
 
   if (loading) {
-    return <div className="p-4">Cargando plan...</div>;
+    return (
+      <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden p-1" aria-busy="true" aria-label="Cargando plan">
+        {/* Toolbar skeleton */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="animate-pulse h-9 w-28 rounded-xl bg-slate-200 dark:bg-slate-700" />
+          <div className="animate-pulse h-9 w-36 rounded-xl bg-slate-200 dark:bg-slate-700" />
+          <div className="ml-auto animate-pulse h-9 w-24 rounded-xl bg-slate-200 dark:bg-slate-700" />
+        </div>
+        {/* Stat chips */}
+        <div className="flex gap-3">
+          <div className="animate-pulse h-16 rounded-2xl bg-slate-200 dark:bg-slate-700" style={{ width: 104 }} />
+          <div className="animate-pulse h-16 rounded-2xl bg-slate-200 dark:bg-slate-700" style={{ width: 120 }} />
+          <div className="animate-pulse h-16 rounded-2xl bg-slate-200 dark:bg-slate-700" style={{ width: 96 }} />
+        </div>
+        {/* Day sections */}
+        {[1, 2, 3].map((day) => (
+          <div key={day} className="space-y-3">
+            <div className="animate-pulse h-7 w-44 rounded-lg bg-slate-200 dark:bg-slate-700" />
+            {[1, 2].map((card) => (
+              <div key={card} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-700" />
+                    <div className="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
+                  </div>
+                  <div className="h-6 w-16 rounded-full bg-slate-200 dark:bg-slate-700" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   const isEmpty = activities.length === 0;
