@@ -1,6 +1,11 @@
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import type { TripAiUsage } from "@/lib/trip-ai/providers";
-import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
+import type { ExecutableItineraryPayload, ItineraryItemPayload } from "@/lib/trip-ai/tripCreationTypes";
+import {
+  countNonTransportItems,
+  isTransportItineraryItem,
+  itineraryItemStartTime,
+} from "@/lib/trip-ai/itineraryItemUtils";
 import type { ResolvedTripCreation } from "@/lib/trip-ai/tripCreationResolve";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
@@ -989,8 +994,8 @@ ${baseContext.optimizeHint}
     if (prevBase.toLowerCase() === curBase.toLowerCase()) continue;
     const tr = transferByDay.get(dayNum) || null;
     const day = daysOut[i]!;
-    const items = Array.isArray(day.items) ? [...(day.items as any[])] : [];
-    const hasTransport = items.some((it) => String((it as any)?.activity_kind || "").toLowerCase() === "transport");
+    const items: ItineraryItemPayload[] = Array.isArray(day.items) ? [...day.items] : [];
+    const hasTransport = items.some(isTransportItineraryItem);
     if (hasTransport) continue;
 
     const mins = tr?.durationMin ?? 180;
@@ -1028,7 +1033,7 @@ ${baseContext.optimizeHint}
     const items = Array.isArray(day.items) ? [...day.items] : [];
     const transfer = transferByDay.get(dayNum);
     const hasLongTransfer = Boolean(transfer && transfer.durationMin >= 180);
-    const hasTransport = items.some((it) => String((it as any)?.activity_kind || "").toLowerCase() === "transport");
+    const hasTransport = items.some(isTransportItineraryItem);
     const isTransferDay = hasLongTransfer || hasTransport;
     const minItemsTarget = isTransferDay ? Math.max(2, cfg.pace.itemsPerDayMin - 1) : Math.max(3, cfg.pace.itemsPerDayMin);
     const maxItemsTarget = Math.max(minItemsTarget, cfg.pace.itemsPerDayMax);
@@ -1066,10 +1071,11 @@ ${baseContext.optimizeHint}
       return { ...picked };
     };
 
-    const realItemCount = items.filter((it) => String((it as any)?.activity_kind || "").toLowerCase() !== "transport").length;
+    const realItemCount = countNonTransportItems(items);
     if (realItemCount < 2) {
       while (items.length < minItemsTarget) {
-        const lastTime = parseHHMM((items[items.length - 1] as any)?.start_time) ?? (isTransferDay ? 16 * 60 : 17 * 60);
+        const lastItem = items[items.length - 1];
+        const lastTime = parseHHMM(lastItem ? itineraryItemStartTime(lastItem) : null) ?? (isTransferDay ? 16 * 60 : 17 * 60);
         const nextTime = toHHMM(Math.min(lastTime + 120, 21 * 60));
         const extra = nextSpecificFallback(parseHHMM(nextTime) ?? undefined);
         if (!extra) break;

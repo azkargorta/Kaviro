@@ -72,4 +72,6 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] P1 (parcial): E2E smoke — Playwright `e2e/public-pages.spec.ts` en CI
 - [x] P1 (parcial): Centralización helpers (access) — `trip-access-api.ts` ampliado
 - [x] Bloque calidad (parcial): `next/image` en recap/dashboard/summary; `TripMapView` sin `as any` en normalización de rutas
+- [x] E2E auth (público): `e2e/auth.spec.ts` — redirect dashboard, formularios login/register
+- [x] trip-ai (parcial): `parse-unknown`, `itineraryItemUtils`, `tripAutoConfig`/`tripCreationResolve` tipados
 

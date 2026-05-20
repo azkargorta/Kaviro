@@ -3,23 +3,44 @@ import { addDaysIso, daysBetweenInclusive, defaultTripStartDate, isIsoDate } fro
 
 const LONG_TRIP_WARNING_DAYS = 30;
 
+const ARRAY_KEYS = ["interests", "travelStyle", "constraints", "mustSee"] as const;
+
+function mergeStringArrays(prev: string[] | undefined, next: string[] | null | undefined): string[] | undefined {
+  if (next === undefined) return prev;
+  if (next === null) return prev?.length ? prev : undefined;
+  const merged = [...new Set([...(prev || []), ...next].map((s) => String(s || "").trim()).filter(Boolean))];
+  return merged.length ? merged : undefined;
+}
+
 export function mergeTripCreationIntent(base: TripCreationIntent, patch: TripCreationIntent): TripCreationIntent {
   const out: TripCreationIntent = { ...base };
-  (Object.keys(patch) as (keyof TripCreationIntent)[]).forEach((k) => {
-    const v = patch[k];
-    if (v === undefined) return;
-    if (v === null && typeof (out as any)[k] === "string" && String((out as any)[k]).trim()) {
-      return;
+
+  for (const key of ARRAY_KEYS) {
+    out[key] = mergeStringArrays(out[key], patch[key]);
+  }
+
+  const assign = <K extends keyof TripCreationIntent>(key: K, value: TripCreationIntent[K] | undefined) => {
+    if (value === undefined) return;
+    if (value === null) {
+      const existing = out[key];
+      if (typeof existing === "string" && existing.trim()) return;
     }
-    if (k === "interests" || k === "travelStyle" || k === "constraints" || k === "mustSee") {
-      const prev = (out[k] as string[] | undefined) || [];
-      const next = (v as string[] | undefined) || [];
-      const merged = [...new Set([...prev, ...next].map((s) => String(s || "").trim()).filter(Boolean))];
-      (out as any)[k] = merged.length ? merged : undefined;
-    } else {
-      (out as any)[k] = v;
-    }
-  });
+    out[key] = value as TripCreationIntent[K];
+  };
+
+  assign("destination", patch.destination);
+  assign("startLocation", patch.startLocation);
+  assign("endLocation", patch.endLocation);
+  assign("durationDays", patch.durationDays);
+  assign("startDate", patch.startDate);
+  assign("endDate", patch.endDate);
+  assign("travelersCount", patch.travelersCount);
+  assign("travelersType", patch.travelersType);
+  assign("budgetLevel", patch.budgetLevel);
+  assign("wantsRouteOptimization", patch.wantsRouteOptimization);
+  assign("wantsBudgetPlan", patch.wantsBudgetPlan);
+  assign("suggestedTripName", patch.suggestedTripName);
+
   return out;
 }
 
@@ -33,7 +54,6 @@ export function getTripCreationFollowUp(intent: TripCreationIntent): TripCreatio
   }
 
   const dur = typeof intent.durationDays === "number" && Number.isFinite(intent.durationDays) ? Math.round(intent.durationDays) : null;
-  // Sin límite “duro” de días: si el usuario indica duración, la aceptamos (y mostraremos aviso si es muy larga).
   const hasDuration = dur != null && dur > 0;
   const hasRange = isIsoDate(intent.startDate) && isIsoDate(intent.endDate);
   const hasStartAndDuration = isIsoDate(intent.startDate) && hasDuration;
@@ -51,14 +71,10 @@ export type ResolvedTripCreation = {
   destination: string;
   startDate: string;
   endDate: string;
-  /** Duración real del viaje (rango completo). */
   tripDurationDays: number;
-  /** Alias por compatibilidad (duración real del viaje). */
   durationDays: number;
-  /** Aviso UI (p.ej. viajes muy largos). */
   durationWarning?: string | null;
   intent: TripCreationIntent;
-  /** `true` si las fechas se han rellenado con un default (no venían del usuario). */
   datesInferred?: boolean;
 };
 
@@ -68,7 +84,7 @@ export function resolveTripCreationDates(intent: TripCreationIntent): ResolvedTr
 
   let startDate: string | null = isIsoDate(intent.startDate) ? intent.startDate : null;
   let endDate: string | null = isIsoDate(intent.endDate) ? intent.endDate : null;
-  let rawDur =
+  const rawDur =
     typeof intent.durationDays === "number" && Number.isFinite(intent.durationDays) ? Math.round(intent.durationDays) : null;
 
   if (startDate && endDate) {
