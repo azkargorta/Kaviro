@@ -92,34 +92,38 @@ export async function POST(request: Request) {
 
     if (!rows.length) return NextResponse.json({ error: "No hay filas válidas para insertar." }, { status: 400 });
 
-    // ── Geocode fallback for rows with null/zero coordinates ──────────────────
-    // Run in parallel — only rows that need it get a geocode call.
-    // Uses place_name or title + city as the query so Gemini-generated names resolve well.
-    await Promise.all(
-      rows.map(async (row: any) => {
-        if (coordsValid(row.latitude, row.longitude)) return; // already has good coords
-        if (row.activity_kind === "transport") return;         // transit rows intentionally have no coords
+    const skipGeocode = body?.skipGeocode === true;
+    const bulkFromAiPlanner =
+      rows.length >= 6 && rows.every((r: { source?: string | null }) => r.source === "ai_planner");
 
-        const query = cleanString(row.place_name || row.title);
-        if (!query) return;
+    // Geocode en bulk masivo (p. ej. autocreador) puede superar timeout → omitir si el cliente lo pide
+    // o si son muchas actividades del planificador IA (suelen traer coords o se rellenan en mapa después).
+    if (!skipGeocode && !bulkFromAiPlanner) {
+      await Promise.all(
+        rows.map(async (row: any) => {
+          if (coordsValid(row.latitude, row.longitude)) return;
+          if (row.activity_kind === "transport") return;
 
-        try {
-          const g = await geocodePhotonPreferred(query, {
-            anchor,
-            regionHints,
-            maxDistanceKm: 50000,
-          });
-          if (g && coordsValid(g.lat, g.lng)) {
-            row.latitude = g.lat;
-            row.longitude = g.lng;
-            // Also improve address if we only had the raw title
-            if (!row.address && g.label) row.address = g.label;
+          const query = cleanString(row.place_name || row.title);
+          if (!query) return;
+
+          try {
+            const g = await geocodePhotonPreferred(query, {
+              anchor,
+              regionHints,
+              maxDistanceKm: 50000,
+            });
+            if (g && coordsValid(g.lat, g.lng)) {
+              row.latitude = g.lat;
+              row.longitude = g.lng;
+              if (!row.address && g.label) row.address = g.label;
+            }
+          } catch {
+            /* geocode opcional */
           }
-        } catch {
-          // Geocode failed — leave null, not a blocker
-        }
-      })
-    );
+        })
+      );
+    }
 
     const { data, error } = await supabase.from("trip_activities").insert(rows).select("id, title");
     if (error) throw new Error(error.message || "No se pudieron crear actividades.");

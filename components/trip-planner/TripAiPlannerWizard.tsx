@@ -594,14 +594,59 @@ export default function TripAiPlannerWizard() {
     const name = (tripName.trim() || `${destinationLabel} (${startDate} → ${endDate})`).trim();
     setSaving(true); setError(null);
     try {
-      const createRes = await fetch("/api/trips", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, destination: destinationLabel, start_date: startDate, end_date: endDate, base_currency: inferredCurrency }) });
+      const fetchOpts = { credentials: "include" as const, headers: { "Content-Type": "application/json" } };
+      const createRes = await fetch("/api/trips", {
+        method: "POST",
+        ...fetchOpts,
+        body: JSON.stringify({
+          name,
+          destination: destinationLabel,
+          start_date: startDate,
+          end_date: endDate,
+          base_currency: inferredCurrency,
+        }),
+      });
       const createPayload = await createRes.json().catch(() => null);
       if (!createRes.ok) throw new Error(createPayload?.error || "No se pudo crear el viaje.");
-      const tripId = String(createPayload?.tripId || ""); if (!tripId) throw new Error("No se pudo crear el viaje.");
-      for (const k of CATEGORY_KINDS) await fetch("/api/trip-activity-kinds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tripId, kind_key: k.key, label: k.label, emoji: k.emoji, color: k.color }) }).catch(() => null);
-      const bulk = draft.days.flatMap((d) => (d.items || []).map((it) => ({ title: it.title, description: it.description, activity_date: it.activity_date, activity_time: it.activity_time, place_name: it.place_name, address: it.address, latitude: it.latitude, longitude: it.longitude, activity_type: it.activity_type, activity_kind: it.activity_kind, source: "ai_planner" })));
-      const bulkRes = await fetch("/api/trip-activities/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tripId, activities: bulk }) });
-      if (!bulkRes.ok) { const p = await bulkRes.json().catch(() => null); throw new Error(p?.error || "No se pudieron crear los planes."); }
+      const tripId = String(createPayload?.tripId || "");
+      if (!tripId) throw new Error("No se pudo crear el viaje.");
+      for (const k of CATEGORY_KINDS) {
+        await fetch("/api/trip-activity-kinds", {
+          method: "POST",
+          ...fetchOpts,
+          body: JSON.stringify({ tripId, kind_key: k.key, label: k.label, emoji: k.emoji, color: k.color }),
+        }).catch(() => null);
+      }
+      const bulk = draft.days.flatMap((d) =>
+        (d.items || []).map((it) => ({
+          title: it.title,
+          description: it.description,
+          activity_date: it.activity_date,
+          activity_time: it.activity_time,
+          place_name: it.place_name,
+          address: it.address,
+          latitude: it.latitude,
+          longitude: it.longitude,
+          activity_type: it.activity_type,
+          activity_kind: it.activity_kind,
+          source: "ai_planner",
+        }))
+      );
+      const bulkRes = await fetch("/api/trip-activities/bulk", {
+        method: "POST",
+        ...fetchOpts,
+        body: JSON.stringify({ tripId, activities: bulk, skipGeocode: true }),
+      });
+      const bulkPayload = await bulkRes.json().catch(() => null);
+      if (!bulkRes.ok) {
+        const errMsg = bulkPayload?.error || "No se pudieron crear los planes.";
+        if (bulkRes.status === 503 && errMsg === "Sin conexión") {
+          throw new Error(
+            "No se pudo guardar el itinerario (fallo de red o caché del navegador). Recarga la página e inténtalo de nuevo."
+          );
+        }
+        throw new Error(errMsg);
+      }
       toast.success("¡Viaje creado!", "Tu itinerario está listo en el panel de plan.");
       router.push(`/trip/${encodeURIComponent(tripId)}/plan`); router.refresh();
     } catch (e) { const msg = e instanceof Error ? e.message : "No se pudo crear el viaje."; setError(msg); toast.error("Error", msg); } finally { setSaving(false); }
