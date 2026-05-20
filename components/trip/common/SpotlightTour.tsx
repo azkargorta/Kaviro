@@ -216,7 +216,7 @@ export default function SpotlightTour({ steps, tripId, currentTab, filterToTab =
 
           {/* Nav footer */}
           <div style={{ borderTop: "1px solid #f8fafc", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ flex: 1, height: 5, borderRadius: 3, background: "#f1f5f9", overflow: "hidden" }}><div style={{ height: "100%", borderRadius: 3, background: "#F87171", width: `${((idx + 1) / steps.length) * 100}%`, transition: "width 0.35s ease" }} /></div>
+            <div style={{ flex: 1, height: 5, borderRadius: 3, background: "#f1f5f9", overflow: "hidden" }}><div style={{ height: "100%", borderRadius: 3, background: "#F87171", width: `${((idx + 1) / effectiveSteps.length) * 100}%`, transition: "width 0.35s ease" }} /></div>
             <div style={{ display: "flex", gap: 6 }}>
               {!isFirst && (
                 <button type="button" onClick={() => setIdx(i => i-1)} style={{ height: 32, width: 32, borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }} aria-label="Anterior">
