@@ -59,7 +59,9 @@ Consulta `.env.example`. Mínimo para que la app funcione:
 - Premium mensual: **3,99€ / mes**
 - Premium anual: **39,99€ / año**
 
-Nota: el cobro real lo determina Stripe (Price IDs).
+El cobro real lo determina Stripe (`STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_YEARLY`). Los textos están en `lib/pricing-public.ts`.
+
+**¿Stripe no te deja editar el precio porque hay suscripciones activas?** Es el comportamiento esperado: crea **nuevos** Price, actualiza las variables de entorno y sigue `docs/STRIPE_CAMBIAR_PRECIOS.md` (incluye script opcional para migrar suscriptores).
 
 ## CI
 

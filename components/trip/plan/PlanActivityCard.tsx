@@ -170,43 +170,45 @@ export default function PlanActivityCard({
           <Check className="h-4 w-4 stroke-[3]" />
         </button>
       ) : null}
-      <PlanCardActions
-        placement="topRight"
-        googleMapsUrl={googleMapsUrl}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        item={activity}
-        accent="emerald"
-        stopPropagation={Boolean(selectable)}
-      />
-
-      {/* Layout: kind icon left, content center, time chip right */}
+      {/* Icono + contenido; acciones en fila propia para evitar solapes con hora/título */}
       <div className="flex items-start gap-3 p-3.5">
-        {/* Kind icon badge — ligeramente más grande */}
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-white/80 mt-0.5"
+          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-white/80"
           style={{ backgroundColor: meta.dot ? `${meta.dot}18` : "#f1f5f9", color: meta.dot || "#64748b" }}
           aria-hidden
         >
           <span style={{ fontSize: 18 }}>{meta.icon}</span>
         </div>
 
-        <div className="min-w-0 flex-1">
-          {/* Kind badge + past indicator */}
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.badge}`}>
               {meta.label}
             </span>
-            {isPast && (
+            {isPast ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                 <Check className="h-2.5 w-2.5" aria-hidden />
                 Realizado
               </span>
-            )}
+            ) : null}
+            {activity.activity_time ? (
+              <span className="ml-auto shrink-0 inline-flex items-center rounded-lg bg-[#F87171]/10 px-2.5 py-1 text-[12px] font-bold tabular-nums text-[#EF4444] dark:bg-[#F87171]/20 dark:text-[#F87171]">
+                {activity.activity_time.slice(0, 5)}
+              </span>
+            ) : null}
           </div>
 
-          {/* Title — main element */}
-          <div className="mt-1.5 text-[14px] font-semibold leading-snug text-slate-900 dark:text-white" role="heading" aria-level={4}>
+          <PlanCardActions
+            placement="inline"
+            googleMapsUrl={googleMapsUrl}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            item={activity}
+            accent="emerald"
+            stopPropagation={Boolean(selectable)}
+          />
+
+          <div className="text-[14px] font-semibold leading-snug text-slate-900 dark:text-white" role="heading" aria-level={4}>
             <LongTextSheet
               text={activity.title}
               modalTitle="Actividad"
@@ -288,13 +290,6 @@ export default function PlanActivityCard({
             ) : null}
           </div>
         </div>
-
-        {/* Hora — chip coral a la derecha, alineado al top */}
-        {activity.activity_time ? (
-          <span className="shrink-0 self-start mt-0.5 inline-flex items-center rounded-lg bg-[#F87171]/10 px-2.5 py-1 text-[12px] font-bold tabular-nums text-[#EF4444] dark:bg-[#F87171]/20 dark:text-[#F87171]">
-            {activity.activity_time.slice(0, 5)}
-          </span>
-        ) : null}
       </div>
 
       {/* ¿Te apuntas? — RSVP inline dentro de la tarjeta */}

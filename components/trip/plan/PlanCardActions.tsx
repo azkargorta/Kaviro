@@ -12,7 +12,7 @@ type Props<T> = {
   disableEdit?: boolean;
   disableDelete?: boolean;
   disabledReason?: string;
-  placement?: "topRight" | "bottom";
+  placement?: "topRight" | "bottom" | "inline";
   /** Evita que los clics en acciones activen el contenedor (p. ej. modo selección múltiple). */
   stopPropagation?: boolean;
 };
@@ -47,14 +47,16 @@ export default function PlanCardActions<T>({
 
   const containerClass =
     placement === "topRight"
-      ? "absolute right-3 top-3 flex flex-nowrap gap-2"
-      : "mt-4 flex flex-wrap gap-2";
+      ? "absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap justify-end gap-1.5"
+      : placement === "inline"
+        ? "flex w-full flex-wrap justify-end gap-1.5"
+        : "mt-4 flex flex-wrap gap-2";
 
   const buttonClass =
-    placement === "topRight" ? `${btnBase} ${compact}` : btnBase;
+    placement === "topRight" || placement === "inline" ? `${btnBase} ${compact}` : btnBase;
 
   const labelClass =
-    placement === "topRight" ? "hidden md:inline" : "";
+    placement === "topRight" || placement === "inline" ? "hidden sm:inline" : "";
 
   return (
     <div

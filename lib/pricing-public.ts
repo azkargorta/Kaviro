@@ -6,10 +6,16 @@ import { FREE_TRIP_LIMIT } from "@/lib/premium-copy";
 
 const free = PLAN_LIMITS.free;
 
+/** Importes mostrados en la web (deben coincidir con los Price creados en Stripe). */
 export const PRICING_PRICES = {
   monthly: "3,99€",
   yearly: "39,99€",
   yearlyNote: "2 meses gratis",
+} as const;
+
+export const PRICING_PRICE_LABELS = {
+  monthly: `${PRICING_PRICES.monthly} / mes`,
+  yearly: `${PRICING_PRICES.yearly} / año`,
 } as const;
 
 export const FREE_PLAN_FEATURES = [

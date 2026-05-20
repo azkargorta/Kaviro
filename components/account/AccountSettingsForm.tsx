@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isValidPassword, isValidUsername, normalizeUsername } from "@/lib/validators/auth";
 import { withTimeout } from "@/lib/with-timeout";
+import { PRICING_PRICE_LABELS, PRICING_PRICES } from "@/lib/pricing-public";
 
 type Props = {
   initial: {
@@ -29,8 +30,8 @@ export default function AccountSettingsForm({ initial }: Props) {
   const planLabel = initial.isPremium ? "Premium" : "Gratis";
   const [billingStatus, setBillingStatus] = useState<string | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
-  const monthlyPriceLabel = "3,99€ / mes";
-  const yearlyPriceLabel = "39,99€ / año";
+  const monthlyPriceLabel = PRICING_PRICE_LABELS.monthly;
+  const yearlyPriceLabel = PRICING_PRICE_LABELS.yearly;
   const [highlightPlans, setHighlightPlans] = useState(false);
 
   const normalized = useMemo(() => normalizeUsername(username), [username]);
@@ -262,7 +263,7 @@ export default function AccountSettingsForm({ initial }: Props) {
                     <div className="space-y-1">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{yearlyPriceLabel}</div>
                       <div className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                        2 meses gratis
+                        {PRICING_PRICES.yearlyNote}
                       </div>
                     </div>
                     <div className="inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-slate-800">

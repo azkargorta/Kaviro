@@ -82,36 +82,40 @@ export default function PlanLodgingCard({
           <Check className="h-4 w-4 stroke-[3]" />
         </button>
       ) : null}
-      <PlanCardActions
-        placement="topRight"
-        googleMapsUrl={googleMapsUrl}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        item={activity}
-        accent="violet"
-        disableEdit={!onEdit}
-        disableDelete={!onDelete}
-        disabledReason={!onEdit || !onDelete ? "No disponible" : undefined}
-        stopPropagation={Boolean(selectable)}
-      />
       <div className="flex items-start gap-3 pl-4 pr-3 py-3">
-        {/* Bed icon */}
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-lg mt-0.5" aria-hidden>
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-lg" aria-hidden>
           🏨
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
-            Alojamiento
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
+              Alojamiento
+            </span>
+            {activity.activity_time ? (
+              <span className="ml-auto shrink-0 inline-flex items-center rounded-lg bg-violet-100 px-2.5 py-1 text-[12px] font-bold tabular-nums text-violet-800">
+                {activity.activity_time.slice(0, 5)}
+              </span>
+            ) : null}
           </div>
 
-          <h4 className="mt-1.5 text-[14px] font-semibold leading-snug text-slate-900 dark:text-white">{activity.title}</h4>
+          <PlanCardActions
+            placement="inline"
+            googleMapsUrl={googleMapsUrl}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            item={activity}
+            accent="violet"
+            disableEdit={!onEdit}
+            disableDelete={!onDelete}
+            disabledReason={!onEdit || !onDelete ? "No disponible" : undefined}
+            stopPropagation={Boolean(selectable)}
+          />
+
+          <h4 className="text-[14px] font-semibold leading-snug text-slate-900 dark:text-white">{activity.title}</h4>
 
           <div className="mt-1.5 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-            {activity.activity_date || activity.activity_time ? (
-              <p>
-                {activity.activity_date || "Sin fecha"}
-                {activity.activity_time ? ` · ${activity.activity_time}` : ""}
-              </p>
+            {activity.activity_date ? (
+              <p>{activity.activity_date}</p>
             ) : null}
             {activity.place_name ? <p>{activity.place_name}</p> : null}
             {activity.address ? <p>{activity.address}</p> : null}

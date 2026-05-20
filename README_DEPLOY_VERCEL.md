@@ -21,8 +21,7 @@
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `STRIPE_SECRET_KEY`
    - `STRIPE_WEBHOOK_SECRET`
-   - `STRIPE_PRICE_ID_MONTHLY`
-   - `STRIPE_PRICE_ID_YEARLY`
+   - `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_YEARLY` (si cambias precio con suscripciones activas, crea Price nuevos en Stripe — ver `docs/STRIPE_CAMBIAR_PRECIOS.md`)
    - `OCR_SPACE_API_KEY`
    - `AI_PROVIDER` (opcional; por defecto `gemini`)
    - `GEMINI_API_KEY` (si usas el asistente con Gemini)
