@@ -54,11 +54,26 @@ export async function generateMetadata({ params }: Props) {
     const dest = trip.destination ? ` — ${trip.destination}` : "";
     const title = `${trip.name}${dest} | Itinerario compartido en Kaviro`;
     const description = `Ver el plan, rutas y actividades de ${trip.name}${dest}. Organizado con Kaviro.`;
+    // Build og:image URL using the recap image API
+    const ogImageParams = new URLSearchParams({
+      tripName: trip.name || "Mi viaje",
+      destination: trip.destination || "",
+      startDate: trip.start_date || "",
+      format: "square",
+    });
+    const ogImage = `/api/trip-recap-image?${ogImageParams.toString()}`;
+
     return {
       title,
       description,
-      openGraph: { title, description, type: "website", siteName: "Kaviro" },
-      twitter: { card: "summary", title, description },
+      openGraph: {
+        title,
+        description,
+        type: "website",
+        siteName: "Kaviro",
+        images: [{ url: ogImage, width: 1080, height: 1080, alt: title }],
+      },
+      twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     };
   } catch {
     return { title: "Itinerario compartido | Kaviro" };

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Users } from "lucide-react";
 
 type Step = {
   id: string;
@@ -10,6 +11,45 @@ type Step = {
   desc: string;
   done: boolean;
 };
+
+
+function ReferralButton() {
+  const [data, setData] = useState<{ inviteUrl: string | null; monthsEarned: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/referral/status")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.inviteUrl) setData(d); })
+      .catch(() => {});
+  }, []);
+
+  if (!data?.inviteUrl) return null;
+
+  function copy() {
+    navigator.clipboard.writeText(data!.inviteUrl!).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {data.monthsEarned > 0 && (
+        <p className="text-[11px] font-semibold text-[#F87171]">
+          🎉 Has ganado {data.monthsEarned} mes{data.monthsEarned > 1 ? "es" : ""} Premium
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={copy}
+        className="flex min-h-[36px] items-center justify-center gap-2 rounded-xl bg-[#F87171] px-3 text-xs font-bold text-white transition hover:bg-[#EF4444]"
+      >
+        {copied ? "¡Enlace copiado! ✓" : "Copiar enlace de invitación"}
+      </button>
+    </div>
+  );
+}
 
 export default function OnboardingNudge({
   hasTrips,
@@ -134,6 +174,20 @@ export default function OnboardingNudge({
             </Link>
           </div>
         )}
+
+        {/* Referral CTA */}
+        <div className="mt-4 rounded-2xl border border-[#F87171]/20 bg-[#F87171]/5 p-4">
+          <div className="flex items-center gap-2.5">
+            <Users className="h-4 w-4 shrink-0 text-[#F87171]" />
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+              Invita a amigos, gana Premium
+            </p>
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Por cada amigo que se registre con tu enlace, tú y él recibís 1 mes de Premium gratis.
+          </p>
+          <ReferralButton />
+        </div>
       </div>
     </div>
   );
