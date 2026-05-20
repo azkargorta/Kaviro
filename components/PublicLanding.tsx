@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import TripBoardLogo from "@/components/brand/TripBoardLogo";
-import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import PublicMarketingHeader from "@/components/marketing/PublicMarketingHeader";
+import PublicMarketingFooter from "@/components/marketing/PublicMarketingFooter";
+import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 import {
   ArrowRight, CalendarDays, MapPinned, Wallet, Sparkles,
   Users, Share2, CheckCircle2, Star,
@@ -113,29 +114,7 @@ export default function PublicLanding() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-[#080C14] overflow-x-hidden">
 
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-[#1E293B] dark:bg-[#080C14]/95">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="block dark:hidden">
-            <TripBoardLogo href="/" variant="dark" size="lg" withWordmark imageClassName="h-9 max-h-9" />
-          </div>
-          <div className="hidden dark:block">
-            <TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="h-9 max-h-9 brightness-200" />
-          </div>
-          <nav className="flex items-center gap-2">
-            <Link href="/pricing" className="hidden sm:block text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 py-2 transition">
-              Precios
-            </Link>
-            <Link href="/auth/login" className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 py-2 transition">
-              Entrar
-            </Link>
-            <Link href="/auth/register" className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[#F87171] px-4 text-sm font-bold text-white transition hover:bg-[#EF4444]">
-              Empezar gratis
-            </Link>
-            <DarkModeToggle />
-          </nav>
-        </div>
-      </header>
+      <PublicMarketingHeader />
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden">
@@ -152,7 +131,7 @@ export default function PublicLanding() {
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#F87171]/30 bg-[#F87171]/10 px-3 py-1.5 text-xs font-bold text-[#F87171]">
                 <Sparkles className="h-3 w-3" />
-                Asistente IA incluido
+                Premium · Asistente IA
               </div>
 
               <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
@@ -162,7 +141,7 @@ export default function PublicLanding() {
               </h1>
 
               <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-                Plan día a día, rutas en el mapa, gastos del grupo y asistente IA. Todo en un solo lugar, sin caos, sin Excel.
+                Plan día a día, rutas en el mapa y gastos del grupo en un solo lugar. Con Premium, añade asistente IA y análisis de documentos.
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -259,7 +238,7 @@ export default function PublicLanding() {
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             <Stat value="2 min" label="Para crear tu primer viaje" />
             <Stat value="100%" label="Gratis para empezar" />
-            <Stat value="∞" label="Actividades por viaje" />
+            <Stat value={`${FREE_TRIP_LIMIT}`} label="Viajes en plan gratis" />
             <Stat value="1 clic" label="Para compartir el plan" />
           </div>
         </div>
@@ -297,9 +276,9 @@ export default function PublicLanding() {
           />
           <FeatureCard
             icon={<Sparkles className="h-6 w-6 text-white" />}
-            color="bg-indigo-500"
-            title="Asistente IA"
-            desc="Pide un plan completo en lenguaje natural. Sugiere actividades, rutas y horarios."
+            color="bg-[#F87171]"
+            title="Asistente IA (Premium)"
+            desc="Itinerarios en lenguaje natural, rutas automáticas y análisis de tickets. También activo si un compañero tiene Premium."
           />
           <FeatureCard
             icon={<Users className="h-6 w-6 text-white" />}
@@ -325,7 +304,7 @@ export default function PublicLanding() {
           <div className="grid gap-8 sm:grid-cols-3">
             {[
               { step: "01", title: "Crea el viaje", desc: "Ponle nombre, destino y fechas. Invita a los compañeros con un enlace.", icon: "✈️" },
-              { step: "02", title: "Planifica con IA", desc: "Pide un itinerario al asistente o añade actividades una a una sobre el mapa.", icon: "🤖" },
+              { step: "02", title: "Arma el plan", desc: "Añade actividades en el mapa o pide un itinerario al asistente IA (Premium).", icon: "🗺️" },
               { step: "03", title: "Viaja sin caos", desc: "Consulta el plan offline, registra gastos y comparte el recap al volver.", icon: "🎉" },
             ].map((item) => (
               <div key={item.step} className="relative text-center">
@@ -398,19 +377,17 @@ export default function PublicLanding() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#080C14]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            <span className="font-bold text-slate-900 dark:text-white">Kaviro</span> · Organiza viajes, gastos y rutas
-          </div>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <Link href="/pricing" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Precios</Link>
-            <Link href="/auth/login" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Entrar</Link>
-            <Link href="/auth/register" className="font-semibold text-[#F87171] hover:text-[#EF4444] transition">Crear cuenta gratis</Link>
-          </div>
-        </div>
-      </footer>
+      {/* Pricing teaser */}
+      <section className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+        <p className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-5 py-4 text-center text-sm text-slate-700 dark:text-slate-300">
+          {freePlanBanner()}{" "}
+          <Link href="/pricing" className="font-semibold text-[var(--brand)] hover:underline">
+            Ver comparativa de planes
+          </Link>
+        </p>
+      </section>
+
+      <PublicMarketingFooter />
     </main>
   );
 }

@@ -30,3 +30,11 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E smoke (landing + pricing)
+        run: npm run test:e2e
+        env:
+          CI: "true"
+

@@ -66,9 +66,9 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] P0: Permisos por módulo — `trip-access-api.ts`; ~35 rutas API migradas a `requireTripAccessApi`
 - [x] P0 (parcial): Copy free/premium en dashboard — `lib/premium-copy.ts`
 - [x] P0: Gating Premium en módulos del viaje — `PremiumUpsell`, OCR/docs, gastos, rutas auto, asistente IA; nav IA visible con badge PRO
-- [ ] P1: Landing/pricing pública
+- [x] P1: Landing/pricing pública — `PublicLanding`, `/pricing`, `lib/pricing-public.ts`, shell marketing
 - [x] P1 (parcial): Tests API permisos — mocks `requireTripAccessApi` en `app/api/__tests__/*`
 - [x] P1 (parcial): CI — `.github/workflows/ci.yml` (typecheck + vitest en PR/push main)
-- [ ] P1: Tests E2E en pipeline
+- [x] P1 (parcial): E2E smoke — Playwright `e2e/public-pages.spec.ts` en CI
 - [x] P1 (parcial): Centralización helpers (access) — `trip-access-api.ts` ampliado
 
