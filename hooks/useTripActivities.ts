@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { notifyTripParticipants } from "@/lib/pushNotify";
 export type TripActivity = {
   id: string;
   trip_id?: string;
@@ -162,7 +163,7 @@ export function useTripActivities(tripId: string) {
       setSaving(true);
       setError(null);
       try {
-        await apiRequest<{ activity: TripActivity }>(
+        const created = await apiRequest<{ activity: TripActivity }>(
           "/api/trip-activities",
           {
             method: "POST",
@@ -188,6 +189,16 @@ export function useTripActivities(tripId: string) {
         );
 
         await load();
+        // Notify other participants (best-effort)
+        if (tripId) {
+          void notifyTripParticipants({
+            tripId,
+            event: "activity_added",
+            actorName: "Un participante",
+            detail: input.title?.trim() || "nueva actividad",
+            url: `/trip/${tripId}/plan`,
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo crear la actividad.");
         throw err;
