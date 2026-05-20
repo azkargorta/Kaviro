@@ -374,6 +374,14 @@ export default function TripPlanView({
 
   const singleDayList = grouped.length === 1;
 
+  /** Días únicos con actividad (post-filtro de tipo/búsqueda, pre-filtro de fecha).
+   *  Usados para los tabs "Día 1, Día 2…" */
+  const allDaysWithActivity = useMemo(
+    () =>
+      [...new Set(filtered.map((a) => a.activity_date).filter((d): d is string => Boolean(d)))].sort(),
+    [filtered]
+  );
+
   const selectableActivityIds = useMemo(
     () => filteredWithCalendarDate.filter(canBulkDeletePlanActivity).map((a) => a.id),
     [filteredWithCalendarDate]
@@ -1242,6 +1250,48 @@ export default function TripPlanView({
         />
         </div>
       ) : null}
+
+      {/* Day tabs — visible solo en vista lista cuando hay más de 1 día */}
+      {viewMode === "list" && allDaysWithActivity.length > 1 && (
+        <div
+          className="relative flex gap-0 overflow-x-auto no-scrollbar rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] shadow-sm"
+          role="tablist"
+          aria-label="Días del itinerario"
+        >
+          {allDaysWithActivity.map((date, i) => {
+            const isActive = selectedDate === date;
+            const isToday = date === todayYMD();
+            return (
+              <button
+                key={date}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                title={formatPlanDayHeading(date).full}
+                onClick={() => setSelectedDate(isActive ? null : date)}
+                className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition whitespace-nowrap focus:outline-none ${
+                  isActive
+                    ? "text-[#EF4444] dark:text-[#F87171]"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  Día {i + 1}
+                  {isToday && (
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-label="Hoy" />
+                  )}
+                </span>
+                {isActive && (
+                  <span
+                    aria-hidden
+                    className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-[#F87171]"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {grouped.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] shadow-sm">

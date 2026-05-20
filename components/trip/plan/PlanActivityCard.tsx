@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, ExternalLink, Star, Ticket, CalendarPlus } from "lucide-react";
+import { Check, ExternalLink, Star, Ticket, CalendarPlus } from "lucide-react";
 import PlanCardActions from "@/components/trip/plan/PlanCardActions";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import { activityLikelyNeedsTicket, buildTicketOfficialSearchUrl } from "@/lib/trip-plan-ticket-hints";
@@ -36,84 +36,43 @@ type Props = {
   isPast?: boolean;
 };
 
+// Fondo unificado para todas las tarjetas: limpio sin gradientes de color
+const CARD_BASE = "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]";
+
 function getActivityMeta(kind?: string | null) {
   switch (kind) {
     case "culture":
-      return { icon: "🏛️", label: "Cultura",        badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",   card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#f59e0b" };
+      return { icon: "🏛️", label: "Cultura",       badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",   card: CARD_BASE, dot: "#f59e0b" };
     case "nature":
-      return { icon: "🌿", label: "Naturaleza",      badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#10b981" };
+      return { icon: "🌿", label: "Naturaleza",     badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", card: CARD_BASE, dot: "#10b981" };
     case "viewpoint":
-      return { icon: "🌄", label: "Mirador",         badge: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300",       card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#0ea5e9" };
+      return { icon: "🌄", label: "Mirador",        badge: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300",       card: CARD_BASE, dot: "#0ea5e9" };
     case "neighborhood":
-      return { icon: "🧭", label: "Barrio",          badge: "bg-slate-100 text-slate-700 dark:bg-[#1E293B] dark:text-slate-300",   card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#64748b" };
+      return { icon: "🧭", label: "Barrio",         badge: "bg-slate-100 text-slate-700 dark:bg-[#1E293B] dark:text-slate-300",   card: CARD_BASE, dot: "#64748b" };
     case "market":
-      return { icon: "🧺", label: "Mercado",         badge: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300", card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#f97316" };
+      return { icon: "🧺", label: "Mercado",        badge: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300", card: CARD_BASE, dot: "#f97316" };
     case "excursion":
-      return { icon: "🚌", label: "Excursión",       badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",     card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#2563eb" };
+      return { icon: "🚌", label: "Excursión",      badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",     card: CARD_BASE, dot: "#2563eb" };
     case "gastro_experience":
-      return {
-        icon: "🍷",
-        label: "Gastronomía (experiencia)",
-        badge: "bg-fuchsia-100 text-fuchsia-800",
-        card: "border-fuchsia-200/60 bg-gradient-to-br from-fuchsia-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🍷", label: "Gastronomía",    badge: "bg-fuchsia-100 text-fuchsia-800",                                     card: CARD_BASE, dot: "#d946ef" };
     case "shopping":
-      return {
-        icon: "🛍️",
-        label: "Compras",
-        badge: "bg-violet-100 text-violet-800",
-        card: "border-violet-200/60 bg-gradient-to-br from-violet-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🛍️", label: "Compras",        badge: "bg-violet-100 text-violet-800",                                       card: CARD_BASE, dot: "#8b5cf6" };
     case "night":
-      return {
-        icon: "🌙",
-        label: "Noche",
-        badge: "bg-slate-200 text-slate-800",
-        card: "border-slate-300/60 bg-gradient-to-br from-slate-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🌙", label: "Noche",          badge: "bg-slate-200 text-slate-800",                                         card: CARD_BASE, dot: "#475569" };
     case "museum":
-      return {
-        icon: "🏛️",
-        label: "Museo",
-        badge: "bg-amber-100 text-amber-700",
-        card: "border-amber-200/60 bg-gradient-to-br from-amber-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🏛️", label: "Museo",          badge: "bg-amber-100 text-amber-700",                                         card: CARD_BASE, dot: "#d97706" };
     case "restaurant":
-      return {
-        icon: "🍽️",
-        label: "Restaurante",
-        badge: "bg-rose-100 text-rose-700",
-        card: "border-rose-200/60 bg-gradient-to-br from-rose-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🍽️", label: "Restaurante",    badge: "bg-rose-100 text-rose-700",                                           card: CARD_BASE, dot: "#f43f5e" };
     case "transport":
-      return {
-        icon: "🚆",
-        label: "Transporte",
-        badge: "bg-sky-100 text-sky-700",
-        card: "border-sky-200/60 bg-gradient-to-br from-sky-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🚆", label: "Transporte",     badge: "bg-sky-100 text-sky-700",                                             card: CARD_BASE, dot: "#0284c7" };
     case "lodging":
-      return {
-        icon: "🏨",
-        label: "Alojamiento",
-        badge: "bg-violet-100 text-violet-700",
-        card: "border-violet-200/60 bg-gradient-to-br from-violet-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🏨", label: "Alojamiento",    badge: "bg-violet-100 text-violet-700",                                       card: CARD_BASE, dot: "#7c3aed" };
     case "activity":
-      return {
-        icon: "🎟️",
-        label: "Actividad",
-        badge: "bg-emerald-100 text-emerald-700",
-        card: "border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-white dark:border-[#1E293B] dark:from-[#0F1623] dark:to-[#0F1623]",
-      };
+      return { icon: "🎟️", label: "Actividad",      badge: "bg-emerald-100 text-emerald-700",                                     card: CARD_BASE, dot: "#059669" };
     case "visit":
     default:
-      return {
-        icon: "📍",
-        label: "Visita",
-        badge: "bg-slate-100 text-slate-700 dark:bg-[#1E293B] dark:text-slate-300",   card: "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]", dot: "#64748b",
-      };
-    }
+      return { icon: "📍", label: "Visita",         badge: "bg-slate-100 text-slate-700 dark:bg-[#1E293B] dark:text-slate-300",   card: CARD_BASE, dot: "#64748b" };
+  }
 }
 
 function buildGoogleMapsUrl(activity: PlanActivity) {
@@ -213,30 +172,23 @@ export default function PlanActivityCard({
         stopPropagation={Boolean(selectable)}
       />
 
-      {/* P3 — Layout: kind icon left, content right */}
+      {/* Layout: kind icon left, content center, time chip right */}
       <div className="flex items-start gap-3 p-3.5">
-        {/* Kind icon badge */}
+        {/* Kind icon badge — ligeramente más grande */}
         <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg ring-1 ring-white/80 mt-0.5"
-          style={{ backgroundColor: (meta as any).dot ? `${(meta as any).dot}18` : "#f1f5f9", color: (meta as any).dot || "#64748b" }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-white/80 mt-0.5"
+          style={{ backgroundColor: meta.dot ? `${meta.dot}18` : "#f1f5f9", color: meta.dot || "#64748b" }}
           aria-hidden
         >
-          <span style={{ fontSize: 16 }}>{meta.icon}</span>
+          <span style={{ fontSize: 18 }}>{meta.icon}</span>
         </div>
 
         <div className="min-w-0 flex-1">
-          {/* Time + kind badge row */}
+          {/* Kind badge + past indicator */}
           <div className="flex items-center gap-2 flex-wrap">
-            {activity.activity_time ? (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700 tabular-nums">
-                <Clock className="h-2.5 w-2.5 text-slate-500" aria-hidden />
-                {activity.activity_time.slice(0, 5)}
-              </span>
-            ) : null}
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.badge}`}>
               {meta.label}
             </span>
-            {/* P5 — Past indicator */}
             {isPast && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                 <Check className="h-2.5 w-2.5" aria-hidden />
@@ -328,6 +280,13 @@ export default function PlanActivityCard({
             ) : null}
           </div>
         </div>
+
+        {/* Hora — chip coral a la derecha, alineado al top */}
+        {activity.activity_time ? (
+          <span className="shrink-0 self-start mt-0.5 inline-flex items-center rounded-lg bg-[#F87171]/10 px-2.5 py-1 text-[12px] font-bold tabular-nums text-[#EF4444] dark:bg-[#F87171]/20 dark:text-[#F87171]">
+            {activity.activity_time.slice(0, 5)}
+          </span>
+        ) : null}
       </div>
     </div>
   );

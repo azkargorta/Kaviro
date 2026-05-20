@@ -1,0 +1,121 @@
+import TripHeroActions from "@/components/trip/common/TripHeroActions";
+
+// ---------------------------------------------------------------------------
+// Helpers de avatar (misma lógica que TripParticipantsView)
+// ---------------------------------------------------------------------------
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
+  if (parts.length === 1 && parts[0]!.length >= 2) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]?.[0] || "?").toUpperCase();
+}
+
+const AVATAR_PALETTE = [
+  { bg: "#ddd6fe", text: "#3730a3" }, // violet
+  { bg: "#bae6fd", text: "#0c4a6e" }, // sky
+  { bg: "#a7f3d0", text: "#064e3b" }, // emerald
+  { bg: "#fde68a", text: "#78350f" }, // amber
+  { bg: "#fbcfe8", text: "#831843" }, // pink
+  { bg: "#fed7aa", text: "#7c2d12" }, // orange
+  { bg: "#c7d2fe", text: "#312e81" }, // indigo
+  { bg: "#99f6e4", text: "#134e4a" }, // teal
+];
+
+function avatarColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length]!;
+}
+
+// ---------------------------------------------------------------------------
+// Componente
+// ---------------------------------------------------------------------------
+
+type Props = {
+  tripId: string;
+  tripName: string;
+  destination: string | null;
+  /** Nombres de pantalla de participantes (máx 5 mostrados) */
+  participants: string[];
+};
+
+function formatDestination(raw: string | null): string {
+  if (!raw) return "";
+  // "Paris, France" → "PARIS · FRANCE"
+  const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0]!.toUpperCase()} · ${parts[1]!.toUpperCase()}`;
+  return raw.toUpperCase();
+}
+
+export default function TripHeroCard({ tripId, tripName, destination, participants }: Props) {
+  const destLabel = formatDestination(destination);
+  const shown = participants.slice(0, 5);
+  const overflow = participants.length - shown.length;
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl shadow-sm"
+      style={{
+        background: "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)",
+      }}
+    >
+      {/* Decorative circles */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full"
+        style={{ background: "rgba(255,255,255,0.08)" }}
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-10 -left-6 h-28 w-28 rounded-full"
+        style={{ background: "rgba(255,255,255,0.06)" }}
+      />
+
+      {/* Top strip: back + actions */}
+      <TripHeroActions tripId={tripId} />
+
+      {/* Content */}
+      <div className="flex items-end justify-between px-4 pb-4 pt-2">
+        {/* Left: destination + trip name */}
+        <div className="min-w-0">
+          {destLabel && (
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
+              {destLabel}
+            </p>
+          )}
+          <h1 className="truncate text-xl font-black leading-tight text-white sm:text-2xl">
+            {tripName}
+          </h1>
+        </div>
+
+        {/* Right: participant avatars */}
+        {shown.length > 0 && (
+          <div className="ml-4 flex shrink-0 items-center -space-x-2">
+            {shown.map((name, i) => {
+              const color = avatarColor(name);
+              return (
+                <span
+                  key={i}
+                  title={name}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-extrabold ring-2 ring-white/60"
+                  style={{ background: color.bg, color: color.text }}
+                >
+                  {initials(name)}
+                </span>
+              );
+            })}
+            {overflow > 0 && (
+              <span
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-[11px] font-bold text-white ring-2 ring-white/60"
+                title={`+${overflow} más`}
+              >
+                +{overflow}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
