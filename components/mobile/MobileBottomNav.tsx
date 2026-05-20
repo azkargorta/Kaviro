@@ -53,9 +53,7 @@ export default function MobileBottomNav({
     return today >= startDate && today <= endDate;
   })();
 
-  const primaryItems = isPremium
-    ? PRIMARY_ITEMS
-    : PRIMARY_ITEMS.filter((i) => i.key !== "chat");
+  const primaryItems = PRIMARY_ITEMS;
 
   function isActivePath(href: string, key: string) {
     if (pathname === href) return true;
@@ -186,6 +184,13 @@ export default function MobileBottomNav({
                   {/* Unseen changes dot */}
                   {item.key === "plan" && unseenCount > 0 && !active && !isTripActiveToday && (
                     <span className="absolute top-1.5 right-2.5 h-2 w-2 rounded-full bg-[#F87171] animate-pulse ring-1 ring-white dark:ring-[#080C14]" aria-hidden />
+                  )}
+
+                  {/* PRO badge — IA sin premium en el viaje */}
+                  {item.isAI && !isPremium && !active && (
+                    <span className="absolute top-1 right-1 rounded-full bg-[var(--brand-light)] px-1 py-0 text-[8px] font-bold text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
+                      PRO
+                    </span>
                   )}
 
                   {/* Active dot */}

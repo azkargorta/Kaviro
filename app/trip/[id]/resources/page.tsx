@@ -16,7 +16,7 @@ export default async function TripResourcesPage({
   // (Si no, el endpoint del asistente también lo rechazará.)
   const access = await requireTripAccess(tripId);
   const supabase = await createClient();
-  const aiEnabled = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
+  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
 
   return (
     <main className="space-y-6">
@@ -29,7 +29,7 @@ export default async function TripResourcesPage({
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripResourcesView tripId={tripId} aiEnabled={aiEnabled} />
+      <TripResourcesView tripId={tripId} isPremium={isPremium} />
     </main>
   );
 }

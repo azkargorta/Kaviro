@@ -15,6 +15,7 @@ import type { TripAssistantSurface } from "@/lib/trip-assistant-context";
 import { parseTravelDocsChecklistFromAnswer } from "@/lib/trip-ai/travelDocsChecklist";
 import TravelDocsChecklistCard from "@/components/trip/ai/TravelDocsChecklistCard";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import PremiumUpsell from "@/components/premium/PremiumUpsell";
 
 type TripAiChatLayout = "page" | "drawer";
 
@@ -453,35 +454,17 @@ export default function TripAiChatView({
         <TripBoardPageHeader
           section="Asistente personal del viaje"
           title="Asistente personal"
-          description="Esta página está reservada a usuarios Premium."
+          description="Requiere Premium en este viaje."
           iconKey="chat"
           iconAlt="Asistente personal"
           actions={<TripScreenActions tripId={tripId} />}
         />
-
-        <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
-          <div className="text-sm font-semibold text-amber-950">
-            Esta página está reservada a usuarios premium.
-          </div>
-          <div className="mt-2 text-sm text-amber-900/80">
-            Mejora a Premium para habilitar el asistente personal, memoria, acciones y optimización del viaje.
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/account?upgrade=premium&focus=premium#premium-plans"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-hover)]"
-            >
-              Mejorar a Premium
-            </Link>
-            <Link
-              href={`/trip/${encodeURIComponent(tripId)}`}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50 dark:border-amber-900/40 dark:bg-[#0F1623] dark:text-amber-300"
-            >
-              Volver al viaje
-            </Link>
-          </div>
-        </section>
+        <PremiumUpsell
+          feature="aiAssistant"
+          className="rounded-3xl p-6"
+          secondaryHref={`/trip/${encodeURIComponent(tripId)}/summary`}
+          secondaryLabel="Volver al resumen"
+        />
       </main>
     );
   }

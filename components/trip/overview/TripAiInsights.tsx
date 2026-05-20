@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { CountryBrief } from "@/app/api/trips/ai-brief/route";
 import type { PackingCategory } from "@/app/api/trips/ai-packing-list/route";
 import { Sparkles, Globe, Backpack, ChevronDown, ChevronUp, Loader2, CheckSquare, Square } from "lucide-react";
+import PremiumUpsell from "@/components/premium/PremiumUpsell";
+import { PREMIUM_UPGRADE_HREF } from "@/lib/premium-copy";
 
 // ─── Country Brief ─────────────────────────────────────────────────────────────
 
@@ -259,11 +261,24 @@ export default function TripAiInsights({ tripId, isPremium }: { tripId: string; 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-violet-500" />
-        <span className="text-xs font-bold uppercase tracking-widest text-violet-600">Asistente Premium</span>
+        <Sparkles className="w-4 h-4 text-[var(--brand)]" />
+        <span className="text-xs font-bold uppercase tracking-widest text-[var(--brand)]">Funciones IA</span>
       </div>
-      <CountryBriefCard tripId={tripId} isPremium={isPremium} />
-      <PackingListCard tripId={tripId} isPremium={isPremium} />
+      {!isPremium ? (
+        <PremiumUpsell feature="aiInsights" />
+      ) : (
+        <>
+          <CountryBriefCard tripId={tripId} isPremium={isPremium} />
+          <PackingListCard tripId={tripId} isPremium={isPremium} />
+        </>
+      )}
+      {!isPremium ? (
+        <p className="text-center text-xs text-slate-500">
+          <a href={PREMIUM_UPGRADE_HREF} className="font-semibold text-[var(--brand)] hover:underline">
+            Ver planes Premium
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
   readDemoOnboardingProfile,
   shouldRedirectToDemoTour,
 } from "@/lib/onboarding/createDemoTrip";
-import { freePlanBanner } from "@/lib/premium-copy";
+import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
 type Trip = {
   id: string;
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
 
   const { current, future, past, unscheduled } = categorizeTrips(realTrips);
   const lockedTripIds = new Set<string>();
-  const freeTripLimitReached = !isPremium && realTrips.length >= 3;
+  const freeTripLimitReached = !isPremium && realTrips.length >= FREE_TRIP_LIMIT;
 
   const currentIds = new Set(current.map((t) => t.id));
   const futureIds = new Set(future.map((t) => t.id));

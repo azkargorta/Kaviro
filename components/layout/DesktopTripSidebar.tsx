@@ -86,7 +86,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
     const today = new Date().toISOString().slice(0, 10);
     return today >= startDate && today <= endDate;
   })();
-  const visibleItems = isPremium ? items : items.filter((i) => !i.isPremiumGated);
+  const visibleItems = items;
 
   return (
     <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">

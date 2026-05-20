@@ -7,6 +7,7 @@ import { CalendarDays, Check, Clock, Copy, GripVertical, MapPin, Plus, RefreshCw
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { useTripRoutes, type RoutePoint, type SaveRouteInput } from "@/hooks/useTripRoutes";
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
 import DuplicateRouteDialog from "@/components/trip/map/DuplicateRouteDialog";
@@ -1546,11 +1547,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
           </div>
         </div>
         <div className="grid gap-3 px-4 py-4">
-          {!isPremium ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Necesitas Premium (o que haya un participante Premium en este viaje) para crear rutas automáticamente.
-            </div>
-          ) : null}
+          {!isPremium ? <PremiumUpsell feature="autoRoutes" showTripCoopHint /> : null}
           {(routesAutoError || routesAutoQuestion) ? (
             <div
               className={`rounded-2xl border px-4 py-3 text-sm ${

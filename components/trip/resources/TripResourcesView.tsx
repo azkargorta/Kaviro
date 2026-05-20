@@ -19,6 +19,7 @@ import LodgingReservationForm from "@/components/trip/resources/LodgingReservati
 import TransportReservationForm from "@/components/trip/resources/TransportReservationForm";
 import ActivityReservationForm from "@/components/trip/resources/ActivityReservationForm";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import PremiumUpsell from "@/components/premium/PremiumUpsell";
 
 function templateFromDetected(data: DetectedDocumentData): ReservationTemplateType {
   if (data.documentType === "hotel_reservation") return "lodging";
@@ -34,7 +35,14 @@ function templateFromDetected(data: DetectedDocumentData): ReservationTemplateTy
   return "activity";
 }
 
-export default function TripResourcesView({ tripId, aiEnabled = false }: { tripId: string; aiEnabled?: boolean }) {
+export default function TripResourcesView({
+  tripId,
+  isPremium = false,
+}: {
+  tripId: string;
+  /** Premium efectivo del viaje (usuario o participante). */
+  isPremium?: boolean;
+}) {
   const {
     resources,
     reservations,
@@ -141,7 +149,7 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
 
         {showLists ? (
           <div data-tour="resources-lists-panel">
-            <TripListsPanel tripId={tripId} isPremium={aiEnabled} />
+            <TripListsPanel tripId={tripId} isPremium={isPremium} />
           </div>
         ) : null}
       </section>
@@ -199,14 +207,24 @@ export default function TripResourcesView({ tripId, aiEnabled = false }: { tripI
             <button
               data-tour="resources-analyze-btn"
               type="button"
-              onClick={() => setShowAnalyzerForm((current) => !current)}
-              className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
+              onClick={() => {
+                if (!isPremium) return;
+                setShowAnalyzerForm((current) => !current);
+              }}
+              disabled={!isPremium}
+              className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
             >
               {showAnalyzerForm ? "Cerrar" : "Analizar documento"}
             </button>
           </div>
 
-          {showAnalyzerForm ? (
+          {!isPremium ? (
+            <div className="mt-5">
+              <PremiumUpsell feature="documentAnalyzer" />
+            </div>
+          ) : null}
+
+          {showAnalyzerForm && isPremium ? (
             <div className="mt-5">
               <DocumentAnalyzerPanel
                 onUseDetectedData={(data) => {

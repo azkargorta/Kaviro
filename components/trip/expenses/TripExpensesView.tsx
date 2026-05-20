@@ -11,7 +11,7 @@ import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useTripExpenses } from "@/hooks/useTripExpenses";
 import { useTripData } from "@/hooks/useTripData";
 import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
-import Link from "next/link";
+import PremiumUpsell from "@/components/premium/PremiumUpsell";
 
 export default function TripExpensesView({
   tripId,
@@ -344,22 +344,7 @@ export default function TripExpensesView({
           </div>
         ) : null}
 
-      {!isPremium ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
-          <div className="font-semibold">Desbloquea esta funcionalidad con el plan Premium.</div>
-          <div className="mt-1 text-amber-900/80">
-            En la versión gratuita puedes registrar y dividir gastos, pero el análisis de documentos (PDF/imagen) está deshabilitado.
-          </div>
-          <div className="mt-3">
-            <Link
-              href="/account?upgrade=premium&focus=premium#premium-plans"
-              className="inline-flex items-center justify-center rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
-            >
-              Mejorar a Premium
-            </Link>
-          </div>
-        </div>
-      ) : null}
+      {!isPremium ? <PremiumUpsell feature="expenseOcr" /> : null}
 
       {exportOpen ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
@@ -496,20 +481,7 @@ export default function TripExpensesView({
                   }}
                 />
               ) : (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-                  <div className="font-semibold">Desbloquea esta funcionalidad con el plan Premium.</div>
-                  <div className="mt-1 text-amber-900/80">
-                    El análisis de documentos está deshabilitado en la versión gratuita.
-                  </div>
-                  <div className="mt-3">
-                    <Link
-                      href="/account?upgrade=premium&focus=premium#premium-plans"
-                      className="inline-flex items-center justify-center rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
-                    >
-                      Mejorar a Premium
-                    </Link>
-                  </div>
-                </div>
+                <PremiumUpsell feature="expenseOcr" showTripCoopHint={false} />
               )}
             </div>
           </details>
