@@ -208,7 +208,7 @@ export default function PlanForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
             >
               <X className={iconInline16} />
               {isEditing ? "Cancelar edición" : "Cerrar"}
@@ -222,7 +222,7 @@ export default function PlanForm({
             <input
               value={form.title}
               onChange={(e) => update("title", e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
             />
           </label>
 
@@ -233,7 +233,7 @@ export default function PlanForm({
                 <button
                   type="button"
                   onClick={() => setKindMode("select")}
-                  className={`flex-1 rounded-xl border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
+                  className={`flex-1 rounded-xl border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
                     kindMode === "select"
                       ? "border-slate-900 bg-slate-900 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
@@ -244,9 +244,9 @@ export default function PlanForm({
                 <button
                   type="button"
                   onClick={() => setKindMode("custom")}
-                  className={`flex-1 rounded-xl border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
+                  className={`flex-1 rounded-xl border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
                     kindMode === "custom"
-                      ? "border-violet-300 bg-violet-50 text-violet-900"
+                      ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                   }`}
                 >
@@ -258,7 +258,7 @@ export default function PlanForm({
                 <select
                   value={typeof form.activityKind === "string" ? form.activityKind : "visit"}
                   onChange={(e) => update("activityKind", e.target.value as ActivityKind)}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
                 >
                   {[
                     "visit",
@@ -290,7 +290,7 @@ export default function PlanForm({
                 <input
                   value={customKind}
                   onChange={(e) => setCustomKind(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
                   placeholder="Ej. Playa, Senderismo, Compras…"
                 />
               )}
@@ -303,7 +303,7 @@ export default function PlanForm({
           <input
             value={form.placeName}
             onChange={(e) => update("placeName", e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
           />
         </label>
 
@@ -340,7 +340,7 @@ export default function PlanForm({
               type="date"
               value={form.activityDate}
               onChange={(e) => update("activityDate", e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
             />
           </label>
 
@@ -350,7 +350,7 @@ export default function PlanForm({
               type="time"
               value={form.activityTime}
               onChange={(e) => update("activityTime", e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
             />
           </label>
         </div>
@@ -361,7 +361,7 @@ export default function PlanForm({
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
             rows={4}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
           />
         </label>
 
@@ -376,7 +376,7 @@ export default function PlanForm({
                     key={n}
                     type="button"
                     onClick={() => update("rating", form.rating === n ? 0 : n)}
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${iconSlotFill40} ${
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${iconSlotFill40} ${
                       active ? "border-amber-200 bg-amber-50 text-amber-600" : "border-slate-200 bg-white text-slate-400 hover:bg-slate-50"
                     }`}
                     aria-label={`Valorar con ${n} estrellas`}
@@ -390,7 +390,7 @@ export default function PlanForm({
                 <button
                   type="button"
                   onClick={() => update("rating", 0)}
-                  className="ml-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                  className="ml-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
                 >
                   Quitar
                 </button>
@@ -405,7 +405,7 @@ export default function PlanForm({
               onChange={(e) => update("comment", e.target.value)}
               rows={3}
               placeholder="Qué te ha parecido, consejos, cosas a recordar…"
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
             />
           </label>
         </div>
@@ -420,7 +420,7 @@ export default function PlanForm({
           <button
             type="submit"
             disabled={saving}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
               saving ? "bg-slate-200 text-slate-500" : "bg-slate-950 text-white hover:bg-slate-800"
             }`}
           >
@@ -432,7 +432,7 @@ export default function PlanForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
             >
               <X className={iconInline16} />
               Cancelar

@@ -194,7 +194,7 @@ export default function DuplicateTripDialog({
             <button
               type="submit"
               disabled={loading || !name.trim()}
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:pointer-events-none disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-700"
+              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-hover)] disabled:pointer-events-none disabled:opacity-60"
             >
               <Copy className="h-4 w-4" aria-hidden />
               {loading ? "Duplicando…" : "Duplicar viaje"}

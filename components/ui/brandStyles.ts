@@ -1,6 +1,6 @@
 /**
  * Tokens de marca usando CSS variables.
- * Light: Indigo #4F46E5 · Dark: Coral #F87171
+ * Light + Dark: Coral #F87171 — identidad unificada con TripHeroCard.
  */
 
 export const surfaceCard =

@@ -197,8 +197,8 @@ function Chip({
       type="button"
       onClick={onClick}
       title={title}
-      className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
-        active ? "border-violet-300 bg-violet-50 text-violet-900" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+      className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
+        active ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
       }`}
     >
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/70" style={{ backgroundColor: color }}>
@@ -594,7 +594,7 @@ export default function TripPlanView({
                 type="button"
                 onClick={() => setSelectedActivityIds(new Set(selectableActivityIds))}
                 disabled={!selectableActivityIds.length || saving}
-                className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 Seleccionar todos
               </button>
@@ -643,7 +643,7 @@ export default function TripPlanView({
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             data-tour="plan-history-btn" title="Ver historial de cambios"
           >
             <Clock className="h-4 w-4" />
@@ -880,9 +880,9 @@ export default function TripPlanView({
         <p className="text-[11px] font-semibold leading-tight text-slate-500 md:text-sm dark:text-slate-400">Actividades totales</p>
           <p className="mt-0.5 text-2xl font-bold leading-none text-slate-950 md:mt-2 md:text-3xl">{activities.length}</p>
         </div>
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-2 shadow-sm md:p-4">
-          <p className="text-[11px] font-semibold leading-tight text-violet-800 md:text-sm">Alojamientos</p>
-          <p className="mt-0.5 text-2xl font-bold leading-none text-violet-950 md:mt-2 md:text-3xl">{lodgingCount}</p>
+        <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 shadow-sm md:p-4">
+          <p className="text-[11px] font-semibold leading-tight text-[var(--brand-text)] md:text-sm">Alojamientos</p>
+          <p className="mt-0.5 text-2xl font-bold leading-none text-[var(--brand-text)] md:mt-2 md:text-3xl">{lodgingCount}</p>
         </div>
       </div>
 
@@ -892,7 +892,7 @@ export default function TripPlanView({
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-auto sm:justify-start"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] sm:w-auto sm:justify-start"
           >
             <SlidersHorizontal className="h-4 w-4 shrink-0 text-slate-700" aria-hidden />
             Filtros
@@ -942,8 +942,8 @@ export default function TripPlanView({
                 <button
                   type="button"
                   onClick={() => setShowLodging((v) => !v)}
-                  className={`inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
-                    showLodging ? "border-violet-200 bg-violet-50 text-violet-950" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  className={`inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
+                    showLodging ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   }`}
                   title="Mostrar/ocultar alojamientos"
                 >
@@ -960,7 +960,7 @@ export default function TripPlanView({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar por título, lugar o dirección…"
-                  className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+                  className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
                 />
               </div>
 
@@ -973,7 +973,7 @@ export default function TripPlanView({
                 <button
                   type="button"
                   onClick={() => setKindFilter(new Set())}
-                  className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-violet-200 ${
+                  className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
                     kindFilter.size === 0 ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   }`}
                   title="Todos los tipos"
@@ -1305,7 +1305,7 @@ export default function TripPlanView({
           ) : isEmpty ? (
             // P7 — Empty state rediseñado
             <div className="px-6 py-10 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-indigo-100 text-3xl shadow-sm">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#FEF2F2] to-[#F87171]/20 text-3xl shadow-sm">
                 🗺️
               </div>
               <p className="text-lg font-extrabold text-slate-900">Empieza a planificar</p>
@@ -1316,7 +1316,7 @@ export default function TripPlanView({
                 <button
                   type="button"
                   onClick={handleStartCreate}
-                  className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                  className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
                 >
                   <Plus className="h-4 w-4" />
                   Añadir actividad
@@ -1324,7 +1324,7 @@ export default function TripPlanView({
                 <button
                   type="button"
                   onClick={() => setExploreOpen(true)}
-                  className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-2.5 text-sm font-semibold text-violet-900 shadow-sm transition hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                  className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-5 py-2.5 text-sm font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
                 >
                   <Compass className="h-4 w-4" />
                   Explorar lugares
@@ -1383,7 +1383,7 @@ export default function TripPlanView({
                       {activityCountLabel(items.length)}
                     </span>
                     {date === today && (
-                      <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                      <span className="inline-flex items-center rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--brand-text)]">
                         Hoy
                       </span>
                     )}

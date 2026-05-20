@@ -180,10 +180,10 @@ export default function TripOverviewClient({
       {/* ── Stats grid ──────────────────────────────────────────────────── */}
       <div data-tour="summary-stats" className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 no-scrollbar">
         {/* Activities */}
-        <Link href={`/trip/${tripId}/plan`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-violet-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
+        <Link href={`/trip/${tripId}/plan`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-[var(--brand-border)] transition-colors group min-w-[140px] snap-start sm:min-w-0">
           <div className="flex items-center justify-between">
             <CalendarDays className="w-4 h-4 text-[var(--brand)]" />
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-violet-400 transition-colors" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--brand)] transition-colors" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 mt-1">{activitiesCount}</p>
           <p className="text-xs font-semibold text-slate-500">Planes</p>
@@ -232,10 +232,10 @@ export default function TripOverviewClient({
         <div className="card-soft p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-violet-500" />
+              <Clock className="w-4 h-4 text-[var(--brand)]" />
               <span className="text-sm font-extrabold text-slate-900">Hoy</span>
             </div>
-            <Link href={`/trip/${tripId}/plan`} className="text-xs font-semibold text-violet-600 hover:text-violet-800">
+            <Link href={`/trip/${tripId}/plan`} className="text-xs font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]">
               Ver plan →
             </Link>
           </div>
@@ -261,7 +261,7 @@ export default function TripOverviewClient({
 
       {/* ── Next activity (before / during) ─────────────────────────────── */}
       {nextActivity && phase !== "after" && (
-        <Link href={`/trip/${tripId}/plan`} className="card-soft p-5 flex items-start gap-4 hover:border-violet-200 transition-colors group">
+        <Link href={`/trip/${tripId}/plan`} className="card-soft p-5 flex items-start gap-4 hover:border-[var(--brand-border)] transition-colors group">
           <div data-tour="summary-next-activity" className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg ${kindMeta(nextActivity.activity_kind).color}`}>
             {kindMeta(nextActivity.activity_kind).icon}
           </div>
@@ -274,7 +274,7 @@ export default function TripOverviewClient({
               {nextActivity.place_name && <span>· {nextActivity.place_name}</span>}
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-violet-400 mt-1 shrink-0 transition-colors" />
+          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[var(--brand)] mt-1 shrink-0 transition-colors" />
         </Link>
       )}
 
@@ -297,8 +297,8 @@ export default function TripOverviewClient({
       <div className="card-soft p-5">
         <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Accesos rápidos</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <Link href={`/trip/${tripId}/plan`} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 hover:border-violet-300 hover:bg-violet-50 transition-colors">
-            <CalendarDays className="w-3.5 h-3.5 text-violet-500" />Plan del viaje
+          <Link href={`/trip/${tripId}/plan`} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)] transition-colors">
+            <CalendarDays className="w-3.5 h-3.5 text-[var(--brand)]" />Plan del viaje
           </Link>
           <Link href={`/trip/${tripId}/map`} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
             <MapPin className="w-3.5 h-3.5 text-emerald-500" />Mapa y rutas
@@ -313,11 +313,11 @@ export default function TripOverviewClient({
             <FileText className="w-3.5 h-3.5 text-orange-500" />Documentos
           </Link>
           {isPremium ? (
-            <Link href={`/trip/${tripId}/ai-chat`} className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors">
-              <Sparkles className="w-3.5 h-3.5 text-violet-500" />Asistente IA
+            <Link href={`/trip/${tripId}/ai-chat`} className="flex items-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2.5 text-xs font-semibold text-[var(--brand-text)] hover:bg-[var(--brand-light)] hover:border-[var(--brand)] transition-colors">
+              <Sparkles className="w-3.5 h-3.5 text-[var(--brand)]" />Asistente IA
             </Link>
           ) : (
-            <Link href="/pricing" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-400 hover:border-violet-200 transition-colors">
+            <Link href="/pricing" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-400 hover:border-[var(--brand-border)] transition-colors">
               <Sparkles className="w-3.5 h-3.5 text-slate-300" />Premium
             </Link>
           )}

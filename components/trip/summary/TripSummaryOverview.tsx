@@ -249,7 +249,7 @@ export default function TripSummaryOverview({
                 <p className="mt-1 text-xs text-slate-300">Crea tu primer plan o usa el asistente IA para generar el itinerario completo.</p>
                 <Link
                   href={planHref}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-violet-700 dark:bg-[var(--brand)] dark:hover:bg-[var(--brand-hover)]"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
                 >
                   Ir al Plan →
                 </Link>
@@ -286,12 +286,12 @@ export default function TripSummaryOverview({
             {/* R4 — Next activity as featured card */}
             {nextPlan && (
               <div
-                className={`mt-5 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-600/25 to-transparent p-4 ring-1 ring-violet-400/20
+                className={`mt-5 rounded-2xl border border-[#F87171]/30 bg-gradient-to-br from-[#F87171]/20 to-transparent p-4 ring-1 ring-[#F87171]/15
                 dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)] dark:ring-[color:var(--brand-light)]`}
               >
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-violet-200 dark:text-[var(--accent)]">Próximo en el calendario</p>
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#FCA5A5] dark:text-[var(--accent)]">Próximo en el calendario</p>
                 <p className="mt-1.5 text-xl font-extrabold text-white leading-snug">{nextPlan.title}</p>
-                <p className="mt-1 text-sm font-semibold text-violet-200/90 dark:text-[var(--brand-text)]">{formatActivityWhen(nextPlan)}</p>
+                <p className="mt-1 text-sm font-semibold text-white/70 dark:text-[var(--brand-text)]">{formatActivityWhen(nextPlan)}</p>
                 {(nextPlan.place_name || nextPlan.address) && (
                   <p className="mt-0.5 text-xs text-slate-300">{nextPlan.place_name || nextPlan.address}</p>
                 )}
@@ -391,11 +391,11 @@ export default function TripSummaryOverview({
                         style={{ scrollSnapAlign: "start" }}
                         className={`w-[84px] shrink-0 rounded-2xl border px-2.5 py-3 text-center shadow-sm transition-all ${
                           isToday
-                            ? "border-violet-300 bg-violet-50 ring-1 ring-violet-200 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/55 dark:ring-[color:var(--brand-light)]"
+                            ? "border-[#F87171]/40 bg-[#FEF2F2] ring-1 ring-[#F87171]/25 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/55 dark:ring-[color:var(--brand-light)]"
                             : "border-slate-200 bg-white dark:border-[color:var(--border-default)] dark:bg-[var(--surface-card)]"
                         }`}
                       >
-                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-violet-600 dark:text-[var(--accent)]" : "text-slate-400 dark:text-slate-400"}`}>
+                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-[var(--brand)] dark:text-[var(--accent)]" : "text-slate-400 dark:text-slate-400"}`}>
                           {isToday ? "HOY" : formatShortWeekday(day.date)}
                         </p>
                         <p className="mt-1.5 text-2xl leading-none">{vis.emoji}</p>

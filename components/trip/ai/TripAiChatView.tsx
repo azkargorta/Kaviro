@@ -1428,10 +1428,10 @@ export default function TripAiChatView({
       ) : null}
 
       {onboardingActive ? (
-        <section className="rounded-2xl border border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-4 shadow-sm">
+        <section className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 p-4 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800">Plan vacío</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)]">Plan vacío</p>
               <p className="mt-1 text-sm font-semibold text-slate-900">Montemos el viaje sin formularios largos</p>
               <p className="mt-1 text-sm text-slate-600">
                 Un clic genera un <span className="font-semibold text-slate-800">borrador de 5 días</span> (ritmo mixto, 2 personas) usando el destino del viaje; luego lo cambias todo por chat. O escribe abajo lo que quieras y seguimos desde ahí: la primera respuesta cierra este aviso.
@@ -1479,7 +1479,7 @@ export default function TripAiChatView({
                 type="button"
                 disabled={onboardingBusy || loading}
                 onClick={() => void quickBootstrapPlan(city)}
-                className="rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-950 hover:bg-violet-50 disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                className="rounded-full border border-[var(--brand-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--brand-text)] hover:bg-[var(--brand-light)] disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 {city}
               </button>
@@ -1538,10 +1538,10 @@ export default function TripAiChatView({
       ) : null}
 
       {itineraryDraft ? (
-        <section className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-5 shadow-sm">
+        <section className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-violet-700">Itinerario propuesto</div>
+              <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">Itinerario propuesto</div>
               <div className="mt-1 text-sm font-semibold text-slate-900">
                 {itineraryDraft.title || `${itineraryDraft.days.length} días`}
               </div>
@@ -1551,7 +1551,7 @@ export default function TripAiChatView({
               {dayStripEdges.right || dayStripEdges.left ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {dayStripEdges.right ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-300/80 bg-violet-100/90 px-2.5 py-1 text-[11px] font-semibold text-violet-950 shadow-sm">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand-border)] bg-[var(--brand-light)] px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-text)] shadow-sm">
                       <ChevronRight className="h-3.5 w-3.5 shrink-0 motion-safe:animate-pulse" aria-hidden />
                       Hay más días a la derecha (desliza o usa las flechas)
                     </span>
@@ -1572,13 +1572,13 @@ export default function TripAiChatView({
               <div className="relative mt-3 min-w-0">
                 {dayStripEdges.left ? (
                   <div
-                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 rounded-l-lg bg-gradient-to-r from-violet-50 via-violet-50/75 to-transparent sm:w-16"
+                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 rounded-l-lg bg-gradient-to-r from-[#FFF8F8] via-white/75 to-transparent sm:w-16"
                     aria-hidden
                   />
                 ) : null}
                 {dayStripEdges.right ? (
                   <div
-                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-lg bg-gradient-to-l from-violet-50 via-violet-50/75 to-transparent sm:w-16"
+                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-lg bg-gradient-to-l from-[#FFF8F8] via-white/75 to-transparent sm:w-16"
                     aria-hidden
                   />
                 ) : null}
@@ -1587,7 +1587,7 @@ export default function TripAiChatView({
                     type="button"
                     aria-label="Ver días anteriores"
                     onClick={() => scrollDayStrip("left")}
-                    className="absolute left-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-violet-200/90 bg-white p-1.5 text-violet-800 shadow-md transition hover:bg-violet-50 sm:left-2 sm:p-2 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
+                    className="absolute left-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-1.5 text-slate-700 shadow-md transition hover:bg-slate-50 sm:left-2 sm:p-2 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
                   >
                     <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
                   </button>
@@ -1597,14 +1597,14 @@ export default function TripAiChatView({
                     type="button"
                     aria-label="Ver más días"
                     onClick={() => scrollDayStrip("right")}
-                    className="absolute right-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-violet-200/90 bg-white p-1.5 text-violet-800 shadow-md transition hover:bg-violet-50 sm:right-2 sm:p-2 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
+                    className="absolute right-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-1.5 text-slate-700 shadow-md transition hover:bg-slate-50 sm:right-2 sm:p-2 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
                   >
                     <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
                   </button>
                 ) : null}
                 <div
                   ref={dayStripRef}
-                  className="flex gap-2 overflow-x-auto overflow-y-visible py-1 pl-2 pr-2 pt-0.5 [scrollbar-color:rgba(139,92,246,0.45)_transparent] [scrollbar-width:thin] sm:snap-x sm:snap-mandatory sm:pl-10 sm:pr-10 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-300/80 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-violet-100/50"
+                  className="flex gap-2 overflow-x-auto overflow-y-visible py-1 pl-2 pr-2 pt-0.5 [scrollbar-color:rgba(248,113,113,0.45)_transparent] [scrollbar-width:thin] sm:snap-x sm:snap-mandatory sm:pl-10 sm:pr-10 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#F87171]/60 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-100/50"
                 >
                   {itineraryDraft.days.map((d) => (
                     <button
@@ -1613,7 +1613,7 @@ export default function TripAiChatView({
                       onClick={() => setExpandedDay((prev) => (prev === d.day ? null : d.day))}
                       className={`min-w-[148px] shrink-0 snap-start rounded-xl border px-3 py-2 text-left text-xs transition sm:min-w-[160px] ${
                         expandedDay === d.day
-                          ? "border-violet-300 bg-violet-50 dark:border-[#F87171]/40 dark:bg-[#F87171]/10"
+                          ? "border-[var(--brand-border)] bg-[var(--brand-light)] dark:border-[#F87171]/40 dark:bg-[#F87171]/10"
                           : "border-slate-200 bg-white hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:bg-[#1E293B]"
                       }`}
                     >
@@ -2049,11 +2049,11 @@ export default function TripAiChatView({
                       layout === "drawer" ? "min-h-[64px]" : "min-h-[88px]"
                     } ${
                       selected
-                        ? "border-violet-400 bg-violet-50 text-violet-950 shadow-sm ring-1 ring-violet-200"
+                        ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)] shadow-sm ring-1 ring-[var(--brand-border)]"
                         : "border-slate-200 bg-slate-50/80 text-slate-800 hover:border-slate-300 hover:bg-white"
                     }`}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${selected ? "text-violet-700" : "text-slate-500"}`} aria-hidden />
+                    <Icon className={`h-4 w-4 shrink-0 ${selected ? "text-[var(--brand)]" : "text-slate-500"}`} aria-hidden />
                     <span className="text-xs font-bold leading-tight">{preset.label}</span>
                     <span className="text-[10px] font-medium leading-snug text-slate-600">{preset.description}</span>
                   </button>
@@ -2145,8 +2145,8 @@ export default function TripAiChatView({
             }
           >
             {mode === "day_planner" && (!hasAnyPlans || !hasAnyLodging) ? (
-              <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-4 shadow-sm">
-                <div className="text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800">
+              <div className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 p-4 shadow-sm">
+                <div className="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)]">
                   Para crear rutas automáticamente
                 </div>
                 <div className="mt-2 text-sm font-semibold text-slate-900">

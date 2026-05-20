@@ -2,15 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design tokens — LIGHT (Indigo #4F46E5) ───────────────────────────── */
+/* ─── Design tokens — LIGHT (Coral #F87171) ────────────────────────────── */
 :root {
   color-scheme: light;
 
-  --brand:           #4F46E5;
-  --brand-hover:     #4338CA;
-  --brand-light:     #EEF2FF;
-  --brand-border:    #C7D2FE;
-  --brand-text:      #3730A3;
+  --brand:           #F87171;
+  --brand-hover:     #EF4444;
+  --brand-light:     rgba(248,113,113,0.10);
+  --brand-border:    rgba(248,113,113,0.28);
+  --brand-text:      #DC2626;
 
   --accent:          #F87171;
   --accent-hover:    #EF4444;
@@ -71,11 +71,11 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Light body tint */
+/* Light body tint — very subtle coral warmth */
 body:not(.dark body) {
   background-image:
-    radial-gradient(ellipse 80% 40% at 60% -10%, rgba(79,70,229,0.04), transparent),
-    radial-gradient(ellipse 60% 60% at -10% 60%, rgba(79,70,229,0.02), transparent);
+    radial-gradient(ellipse 80% 40% at 60% -10%, rgba(248,113,113,0.03), transparent),
+    radial-gradient(ellipse 60% 60% at -10% 60%, rgba(248,113,113,0.015), transparent);
 }
 
 /* Dark body — deep navy-black */

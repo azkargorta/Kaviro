@@ -181,7 +181,7 @@ export default function TripShareButton({
         >
           {menuRow ? (
             <span className={mobileMenuRowIconWrap}>
-              <Link2 className="text-violet-700 dark:text-[#F87171]" aria-hidden />
+              <Link2 className="text-[var(--brand)]" aria-hidden />
             </span>
           ) : (
             <span className={desktopIconTile} aria-hidden>

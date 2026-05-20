@@ -381,7 +381,7 @@ function PageHelpVisualHeader({ pageId }: { pageId: string }) {
     return (
       <div className="mb-5 flex flex-col items-center text-center">
         <HelpVisualBadge visual={{ type: "emoji", value: "⚙️" }} />
-        <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800/90 dark:text-violet-300">
+        <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)] dark:text-[var(--brand)]">
           Estás en
         </p>
         <p className="text-lg font-bold text-slate-950 dark:text-slate-50">Ajustes</p>
@@ -394,7 +394,7 @@ function PageHelpVisualHeader({ pageId }: { pageId: string }) {
   return (
     <div className="mb-5 flex flex-col items-center text-center">
       <HelpVisualBadge visual={step.visual} />
-      <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-violet-800/90 dark:text-violet-300">
+      <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)] dark:text-[var(--brand)]">
         Estás en
       </p>
       <p className="text-lg font-bold text-slate-950 dark:text-slate-50">{step.title}</p>
@@ -421,7 +421,7 @@ const PAGE_TO_SPOTLIGHT_TAB: Record<string, string> = {
   ai: "ai-chat",
 };
 
-export default function TripPageHelp() {
+export default function TripPageHelp({ heroMode = false }: { heroMode?: boolean } = {}) {
   const pathname = usePathname();
   const params = useParams();
   const isDemoTrip = useIsDemoTrip();
@@ -471,23 +471,36 @@ export default function TripPageHelp() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openManual}
-        className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-violet-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
-        aria-label={`Ayuda: ${entry.title}`}
-        title={`Ayuda de ${entry.title}`}
-      >
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50">
-          <LifeBuoy className="h-5 w-5 text-violet-700 dark:text-[#F87171]" aria-hidden />
-        </span>
-        <span className="flex flex-col items-start gap-0 leading-tight">
-          <span className="text-[8px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">Ayuda</span>
-          <span className="leading-none">
-            {activeTour.find((s) => s.id === pageId)?.title ?? entry.title}
+      {heroMode ? (
+        <button
+          type="button"
+          onClick={openManual}
+          data-tour="topbar-help"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white transition hover:bg-white/30"
+          aria-label={`Ayuda: ${entry.title}`}
+          title={`Ayuda: ${entry.title}`}
+        >
+          <LifeBuoy className="h-4 w-4" aria-hidden />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={openManual}
+          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-[var(--brand-light)] hover:border-[var(--brand)] hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
+          aria-label={`Ayuda: ${entry.title}`}
+          title={`Ayuda de ${entry.title}`}
+        >
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50">
+            <LifeBuoy className="h-5 w-5 text-[var(--brand)]" aria-hidden />
           </span>
-        </span>
-      </button>
+          <span className="flex flex-col items-start gap-0 leading-tight">
+            <span className="text-[8px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">Ayuda</span>
+            <span className="leading-none">
+              {activeTour.find((s) => s.id === pageId)?.title ?? entry.title}
+            </span>
+          </span>
+        </button>
+      )}
 
       {/* Spotlight — demo: recorrido completo cross-tab | normal: solo pasos de la pestaña actual */}
       {mounted && spotlightOpen && tripId && pageId && (

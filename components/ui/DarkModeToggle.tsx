@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function DarkModeToggle() {
+export default function DarkModeToggle({ heroMode = false }: { heroMode?: boolean }) {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -20,11 +20,15 @@ export default function DarkModeToggle() {
     localStorage.setItem("kaviro-theme", next ? "dark" : "light");
   }
 
+  const btnClass = heroMode
+    ? "inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white transition hover:bg-white/30"
+    : "inline-flex h-11 w-11 items-center justify-center rounded-full border transition border-[var(--brand)] bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]";
+
   return (
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-full border transition border-[#4F46E5] bg-[#4F46E5] text-white hover:bg-[#4338CA] dark:border-[#F87171] dark:bg-[#F87171] dark:text-white dark:hover:bg-[#EF4444] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+      className={btnClass}
       title={dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       aria-label={dark ? "Modo claro" : "Modo oscuro"}
     >

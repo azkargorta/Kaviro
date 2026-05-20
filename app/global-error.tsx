@@ -19,7 +19,7 @@ export default function GlobalError({
       <body className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
         <main className="mx-auto flex min-h-screen max-w-[820px] flex-col items-center justify-center px-6 py-16 text-center">
           <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
-            <div className="text-sm font-extrabold uppercase tracking-[0.12em] text-violet-700 dark:text-violet-300">
+            <div className="text-sm font-extrabold uppercase tracking-[0.12em] text-[#EF4444] dark:text-[#FCA5A5]">
               Algo ha fallado
             </div>
             <h1 className="mt-2 text-2xl font-extrabold tracking-tight">
@@ -33,14 +33,14 @@ export default function GlobalError({
               <button
                 type="button"
                 onClick={() => reset()}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-300/60"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#F87171] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#EF4444] focus:outline-none focus:ring-2 focus:ring-[#F87171]/40"
               >
                 Reintentar
               </button>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-300/60 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#F87171]/30 dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-900/40"
               >
                 Recargar página
               </button>

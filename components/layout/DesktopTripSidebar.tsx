@@ -191,7 +191,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
         {!isPremium && (
           <Link
             href="/pricing"
-            className="group flex items-center gap-2.5 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3.5 py-3 transition hover:border-violet-300 hover:shadow-sm"
+            className="group flex items-center gap-2.5 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3.5 py-3 transition hover:border-[var(--brand)] hover:shadow-sm"
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] shadow-sm">
               <span className="text-sm">✦</span>

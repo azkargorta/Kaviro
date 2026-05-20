@@ -63,7 +63,7 @@ export default function CurrencyConverterCard({
             type="number"
             value={amount}
             onChange={(e) => { setAmount(e.target.value); setResult(null); }}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-base font-semibold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-base font-semibold text-slate-900 outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             placeholder="100"
             min="0"
           />
@@ -78,7 +78,7 @@ export default function CurrencyConverterCard({
             <select
               value={from}
               onChange={(e) => { setFrom(e.target.value); setResult(null); }}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             >
               {ALL_CURRENCIES.map((item) => (
                 <option key={item.code} value={item.code}>{item.code} · {item.name}</option>
@@ -90,7 +90,7 @@ export default function CurrencyConverterCard({
             type="button"
             onClick={swapCurrencies}
             title="Intercambiar monedas"
-            className="mb-0.5 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-500 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:border-[#334155] dark:bg-[#0F1623]"
+            className="mb-0.5 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-500 transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)] hover:text-[var(--brand-text)] dark:border-[#334155] dark:bg-[#0F1623]"
           >
             <ArrowRightLeft className="h-4 w-4" />
           </button>
@@ -102,7 +102,7 @@ export default function CurrencyConverterCard({
             <select
               value={to}
               onChange={(e) => { setTo(e.target.value); setResult(null); }}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
             >
               {ALL_CURRENCIES.map((item) => (
                 <option key={item.code} value={item.code}>{item.code} · {item.name}</option>
@@ -119,7 +119,7 @@ export default function CurrencyConverterCard({
           className={`w-full rounded-xl py-3 text-sm font-bold transition ${
             loading
               ? "bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-[#1E293B] dark:text-slate-500"
-              : "bg-slate-950 text-white hover:bg-slate-800 dark:bg-violet-600 dark:hover:bg-violet-500"
+              : "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
           }`}
         >
           {loading ? "Convirtiendo..." : `Convertir ${amount || "0"} ${from} → ${to}`}
@@ -153,7 +153,7 @@ export default function CurrencyConverterCard({
           <select
             value={balanceCurrency}
             onChange={(e) => onChangeBalanceCurrency(e.target.value)}
-            className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:border-[#334155] dark:bg-[#0F1623] dark:text-white"
+            className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623] dark:text-white"
           >
             {ALL_CURRENCIES.map((item) => (
               <option key={item.code} value={item.code}>{item.code} · {item.name}</option>

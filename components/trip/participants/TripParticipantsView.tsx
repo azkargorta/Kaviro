@@ -506,7 +506,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por nombre, @usuario, email o teléfono…"
-                className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-violet-200 transition focus:border-violet-300 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+                className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-[var(--brand-border)] transition focus:border-[var(--brand)] focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
           </div>
@@ -523,7 +523,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             <button
               type="button"
               onClick={() => setFiltersOpen((v) => !v)}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-semibold text-violet-950 shadow-sm transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-2 text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
               aria-expanded={filtersOpen}
             >
               {filtersOpen ? "Ocultar filtros" : "Mostrar filtros"}
@@ -601,7 +601,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 <article
                   key={participant.id}
                   className={`group rounded-3xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
-                    isYou ? "border-violet-200 ring-1 ring-violet-100" : "border-slate-200"
+                    isYou ? "border-[var(--brand-border)] ring-1 ring-[var(--brand-border)]" : "border-slate-200"
                   }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -624,7 +624,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                             />
                           </div>
                           {isYou ? (
-                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-violet-800">
+                            <span className="rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
                               Tú
                             </span>
                           ) : null}
@@ -731,7 +731,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   type="button"
                   onClick={handleCreateQr}
                   disabled={qrLoading}
-                  className="col-span-full inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 shadow-sm transition hover:bg-violet-100 disabled:opacity-50"
+                  className="col-span-full inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-2.5 text-sm font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] disabled:opacity-50"
                 >
                   <QrCode className="h-4 w-4" aria-hidden />
                   {qrLoading ? "Generando QR..." : showQr ? "Ocultar QR" : "Crear QR de invitación"}
@@ -752,7 +752,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           )}
 
           {canManageParticipants && showQr && qrUrl ? (
-            <div data-tour="participants-qr" className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <div data-tour="participants-qr" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
               <div className="flex items-center justify-between gap-2 mb-4">
                 <div>
                   <p className="text-sm font-extrabold text-slate-900 dark:text-white">QR de invitación</p>
@@ -828,7 +828,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           ) : null}
 
           {canManageParticipants && linkingParticipant ? (
-            <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-1 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-1 shadow-sm">
               <ParticipantLinkProfilePanel
                 participant={linkingParticipant}
                 onSearchProfiles={searchProfiles}

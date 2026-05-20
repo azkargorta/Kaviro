@@ -81,7 +81,7 @@ function actionLabel(a: string) {
   return a || "Cambio";
 }
 
-export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
+export default function TripActivityFeedButton({ tripId, heroMode = false }: { tripId: string; heroMode?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -148,11 +148,13 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
     markSeen();
   }
 
-  const buttonClass =
-    "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm transition hover:bg-[var(--surface-page)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
+  const buttonClass = heroMode
+    ? "relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white transition hover:bg-white/30"
+    : "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm transition hover:bg-[var(--surface-page)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
 
-  const iconTile =
-    `relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50 ${iconSlotFill40}`;
+  const iconTile = heroMode
+    ? `relative inline-flex h-5 w-5 items-center justify-center text-white ${iconSlotFill40}`
+    : `relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50 ${iconSlotFill40}`;
 
   const modal =
     mounted && open ? (
@@ -277,7 +279,7 @@ export default function TripActivityFeedButton({ tripId }: { tripId: string }) {
         title="Novedades"
       >
         <span className={iconTile} aria-hidden>
-          <Bell className="h-5 w-5 text-violet-700 dark:text-[var(--accent)]" aria-hidden />
+          <Bell className={`h-5 w-5 ${heroMode ? "text-white" : "text-[var(--brand)]"}`} aria-hidden />
           {unseenCount > 0 ? (
             <span
               className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--brand)] px-1 text-[10px] font-extrabold text-white"

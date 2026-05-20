@@ -454,7 +454,7 @@ export default function ExpenseBalancePanel({
                                   onClick={() => void togglePrefer(toName)}
                                   className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${
                                     prefer
-                                      ? "border-violet-200 bg-violet-50 text-violet-900"
+                                      ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
                                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
                                   }`}
                                   title={prefer ? "Preferido (click para quitar)" : "Marcar como preferido"}

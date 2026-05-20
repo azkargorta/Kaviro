@@ -33,8 +33,8 @@ export default function DemoTripBanner() {
   }
 
   return (
-    <div className="rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 via-white to-cyan-50 px-4 py-3 shadow-sm dark:border-violet-900/40 dark:from-violet-950/40 dark:via-[#0F1623] dark:to-cyan-950/20">
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-violet-800 dark:text-violet-300">
+    <div className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-r from-[var(--brand-light)] via-white to-slate-50 px-4 py-3 shadow-sm dark:border-[#F87171]/20 dark:from-[#F87171]/10 dark:via-[#0F1623] dark:to-[#0F1623]">
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-text)] dark:text-[#FCA5A5]">
         Viaje de práctica
       </p>
       <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
