@@ -1,4 +1,4 @@
-# Auditoría TripBoard / Kaviro (2026-04-16)
+# Auditoría Kaviro (2026-04-16)
 
 Este documento guarda la auditoría del producto y sirve como checklist de mejora continua.
 
@@ -31,7 +31,7 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - **Conversión “antes del login”**: falta landing/pricing pública potente (funnel empieza demasiado pronto en login).
 - **Permisos finos a medio implementar**: endpoints que solo miran `role` (viewer/editor/owner) sin `can_manage_*`.
 - **Calidad/Proceso**: E2E autenticado opcional en CI; más cobertura de integración; warnings ESLint (`any`, hooks deps) por reducir.
-- **Branding/naming**: convivencia TripBoard/Kaviro puede generar incoherencia en UI/comunicación.
+- **Branding/naming**: componentes internos con prefijo `TripBoard*` (legado de código); la marca visible es Kaviro (`lib/brand.ts`).
 
 ## Qué falta para subir de nivel
 
@@ -83,4 +83,5 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] P1 (parcial): Observabilidad + rate limiting — `lib/rate-limit.ts`, `lib/api-observability.ts`, middleware ampliado (IA, OCR, share GET, geocode/places/osm/osrm); tests `lib/__tests__/rate-limit.test.ts`
 - [x] P1 (parcial): E2E flujos autenticados — `e2e/demo-tour.spec.ts`, `trip-create.spec.ts`, `rsvp.spec.ts` + helper `e2e/helpers/auth.ts` (opcional `E2E_USER_*` en CI)
 - [x] P1 (parcial): Refresco checklist onboarding — `GET /api/trips/[id]/onboarding-counts`, evento `kaviro:trip-onboarding-refresh` tras crear actividad/gasto
+- [x] P1: Branding Kaviro — `lib/brand.ts`, `KaviroLogo`, metadata/manifest/ICS/calendar, `KAVIRO_ADMIN_EMAILS`, docs y README
 

@@ -1,6 +1,6 @@
-# Kaviro (TripBoard)
+# Kaviro
 
-Kaviro es una web app para **organizar viajes en grupo**: plan/itinerario, rutas sobre mapa, gastos + balances, documentos/recursos, participantes y (en Premium) **asistente personal** + análisis de documentos.
+**Kaviro** es la web app para **organizar viajes en grupo** (el repositorio se llama TripBoard por legado interno): plan/itinerario, rutas sobre mapa, gastos + balances, documentos/recursos, participantes y (en Premium) **asistente personal** + análisis de documentos.
 
 ## Stack
 
@@ -69,6 +69,10 @@ Workflow en `.github/workflows/ci.yml` (push/PR a `main` o `master`):
 2. `npm run lint`
 3. `npm test` (Vitest)
 4. `npm run test:e2e` (Playwright; secrets `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` opcionales en el repo)
+
+## Marca
+
+La app se llama **Kaviro** en toda la UI. Convenciones y legado interno: `docs/BRANDING.md`.
 
 ## Despliegue (Vercel)
 

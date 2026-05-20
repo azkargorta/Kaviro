@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export default function PublicMarketingFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#080C14]">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          <span className="font-bold text-slate-900 dark:text-white">Kaviro</span> · Organiza viajes, gastos y rutas
+          <span className="font-bold text-slate-900 dark:text-white">{APP_NAME}</span> · {APP_TAGLINE}
         </p>
         <div className="flex flex-wrap gap-4 text-sm">
           <Link href="/" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">

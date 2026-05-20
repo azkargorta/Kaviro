@@ -1,7 +1,7 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 function adminEmailsFromEnv(): string[] {
-  const raw = process.env.TRIPBOARD_ADMIN_EMAILS || "";
+  const raw = process.env.KAVIRO_ADMIN_EMAILS || process.env.TRIPBOARD_ADMIN_EMAILS || "";
   return raw
     .split(",")
     .map((s) => s.trim().toLowerCase())

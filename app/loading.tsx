@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { APP_NAME } from "@/lib/brand";
 
 export default function Loading() {
   return (
@@ -6,7 +7,7 @@ export default function Loading() {
       <div className="flex min-h-[100svh] flex-col items-center justify-center px-6">
         <Image
           src="/icons/icon-512.png"
-          alt="Kaviro"
+          alt={APP_NAME}
           width={96}
           height={96}
           priority
@@ -21,7 +22,7 @@ export default function Loading() {
             color: "transparent",
           }}
         >
-          Kaviro
+          {APP_NAME}
         </h1>
         <p className="mt-2 max-w-xs text-center text-sm text-slate-300">
           Preparando tu viaje, rutas, gastos y documentos…

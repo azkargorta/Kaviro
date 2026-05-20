@@ -1,5 +1,5 @@
 /**
- * Tamaños unificados de iconos TripBoard.
+ * Tamaños unificados de iconos Kaviro.
  * - Ranura 40×40: SVG e imagen ocupan 32×32 (size-8) centrados.
  * - Botón redondo 40×40 solo icono: mismo trazo visual.
  * - Inline junto a texto en botones compactos: 16px (size-4).

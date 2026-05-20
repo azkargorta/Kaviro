@@ -2,21 +2,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PublicLanding from "@/components/PublicLanding";
 import type { Metadata } from "next";
+import { APP_MARKETING_DESCRIPTION, APP_MARKETING_TITLE, APP_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Kaviro — Organiza viajes en grupo sin esfuerzo",
-  description: "Plan del viaje, gastos compartidos, mapa de rutas y asistente IA. Todo en un solo lugar para que tu grupo viaje sin líos.",
+  title: APP_MARKETING_TITLE,
+  description: APP_MARKETING_DESCRIPTION,
   openGraph: {
-    title: "Kaviro — Organiza viajes en grupo sin esfuerzo",
-    description: "Plan del viaje, gastos compartidos, mapa de rutas y asistente IA. Todo en un solo lugar.",
+    title: APP_MARKETING_TITLE,
+    description: APP_MARKETING_DESCRIPTION,
     type: "website",
-    siteName: "Kaviro",
-    images: [{ url: "/brand/kaviro-lockup-fullcolor.png", width: 1200, height: 630, alt: "Kaviro" }],
+    siteName: APP_NAME,
+    images: [{ url: "/brand/kaviro-lockup-fullcolor.png", width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kaviro — Organiza viajes en grupo sin esfuerzo",
-    description: "Plan del viaje, gastos compartidos, mapa de rutas y asistente IA.",
+    title: APP_MARKETING_TITLE,
+    description: APP_MARKETING_DESCRIPTION,
     images: ["/brand/kaviro-lockup-fullcolor.png"],
   },
   keywords: ["organizar viaje", "viaje en grupo", "gastos viaje", "itinerario viaje", "planificador viaje"],

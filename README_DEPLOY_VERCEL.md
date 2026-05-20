@@ -30,7 +30,7 @@
    - `AI_USER_MONTHLY_BUDGET_EUR` (opcional)
    - `AI_ENHANCE_ANALYSIS` (opcional)
    - `NEXT_PUBLIC_APP_URL` (recomendado)
-   - `TRIPBOARD_ADMIN_EMAILS` (opcional)
+   - `KAVIRO_ADMIN_EMAILS` (opcional; `TRIPBOARD_ADMIN_EMAILS` legado)
 6. En Supabase > Authentication > URL Configuration:
    - Site URL: `https://TU-DOMINIO.vercel.app`
    - Redirect URLs:

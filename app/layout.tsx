@@ -7,16 +7,17 @@ import AnalyticsRoot from "@/components/analytics/AnalyticsRoot";
 import { ToastProvider } from "@/components/ui/toast";
 import RootTopBar from "@/components/layout/RootTopBar";
 import PwaServiceWorker from "@/components/pwa/PwaServiceWorker";
+import { APP_DESCRIPTION_SHORT, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Kaviro",
-  description: "Organiza viajes, gastos y rutas",
-  applicationName: "Kaviro",
+  title: APP_NAME,
+  description: APP_TAGLINE,
+  applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Kaviro",
+    title: APP_NAME,
   },
   formatDetection: {
     telephone: false,

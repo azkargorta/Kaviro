@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import TripBoardLogo from "@/components/brand/TripBoardLogo";
+import { APP_NAME } from "@/lib/brand";
 import { useTripBoardHeader } from "@/components/layout/TripBoardHeaderContext";
 import TripPageHelp from "@/components/trip/common/TripPageHelp";
 import TripActivityFeedButton from "@/components/trip/common/TripActivityFeedButton";
@@ -43,7 +43,7 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
               >
                 <Image
                   src="/brand/icon.png"
-                  alt="Kaviro"
+                  alt={APP_NAME}
                   width={32}
                   height={32}
                   sizes="32px"

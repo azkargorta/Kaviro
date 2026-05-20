@@ -1,4 +1,4 @@
-# Smoke test del Mapa (TripBoard)
+# Smoke test del Mapa (Kaviro)
 
 Objetivo: detectar regresiones del mapa rápido (2–5 min) antes de meter cambios nuevos.
 

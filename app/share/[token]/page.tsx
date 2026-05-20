@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { APP_NAME } from "@/lib/brand";
 
 type Props = { params: { token: string } };
 
@@ -50,10 +51,10 @@ export async function generateMetadata({ params }: Props) {
       .eq("token", params.token)
       .maybeSingle();
     const trip = (share as any)?.trips;
-    if (!trip) return { title: "Itinerario | Kaviro" };
+    if (!trip) return { title: `Itinerario | ${APP_NAME}` };
     const dest = trip.destination ? ` — ${trip.destination}` : "";
-    const title = `${trip.name}${dest} | Itinerario compartido en Kaviro`;
-    const description = `Ver el plan, rutas y actividades de ${trip.name}${dest}. Organizado con Kaviro.`;
+    const title = `${trip.name}${dest} | Itinerario compartido en ${APP_NAME}`;
+    const description = `Ver el plan, rutas y actividades de ${trip.name}${dest}. Organizado con ${APP_NAME}.`;
     // Build og:image URL using the recap image API
     const ogImageParams = new URLSearchParams({
       tripName: trip.name || "Mi viaje",
@@ -70,13 +71,13 @@ export async function generateMetadata({ params }: Props) {
         title,
         description,
         type: "website",
-        siteName: "Kaviro",
+        siteName: APP_NAME,
         images: [{ url: ogImage, width: 1080, height: 1080, alt: title }],
       },
       twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     };
   } catch {
-    return { title: "Itinerario compartido | Kaviro" };
+    return { title: `Itinerario compartido | ${APP_NAME}` };
   }
 }
 
@@ -123,7 +124,7 @@ export default async function SharePage({ params }: Props) {
                 href="/auth/login"
                 className="inline-flex min-h-[40px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
-                Abrir en Kaviro
+                Abrir en {APP_NAME}
               </Link>
             </div>
           </div>

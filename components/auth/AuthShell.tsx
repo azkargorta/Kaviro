@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import TripBoardLogo from "@/components/brand/TripBoardLogo";
+import KaviroLogo from "@/components/brand/KaviroLogo";
+import { APP_NAME } from "@/lib/brand";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 
 type AuthShellProps = {
@@ -39,7 +40,7 @@ export default function AuthShell({
 
             <div className="relative z-10">
               <div className="max-w-md">
-                <TripBoardLogo variant="light" size="lg" withWordmark imageClassName="scale-[1.04] origin-left" />
+                <KaviroLogo variant="light" size="lg" withWordmark imageClassName="scale-[1.04] origin-left" />
                 <p className="mt-3 text-sm text-white/80">Organiza tus viajes en un solo lugar</p>
               </div>
 
@@ -47,7 +48,7 @@ export default function AuthShell({
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/90 ring-1 ring-white/20">
                   <span>Acceso</span>
                   <span>•</span>
-                  <span>Kaviro</span>
+                  <span>{APP_NAME}</span>
                 </div>
 
                 <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight">
@@ -89,10 +90,10 @@ export default function AuthShell({
                 <div className="mb-6 text-center sm:mb-8">
                   <div className="mb-4 flex justify-center sm:mb-5">
                     <span className="block dark:hidden">
-                      <TripBoardLogo href="/" variant="dark" size="lg" withWordmark />
+                      <KaviroLogo href="/" variant="dark" size="lg" withWordmark />
                     </span>
                     <span className="hidden dark:block">
-                      <TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="brightness-200" />
+                      <KaviroLogo href="/" variant="light" size="lg" withWordmark imageClassName="brightness-200" />
                     </span>
                   </div>
                   <h3 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">

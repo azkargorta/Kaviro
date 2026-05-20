@@ -118,7 +118,7 @@ export async function GET(
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//Kaviro//TripBoard//ES",
+      "PRODID:-//Kaviro//Kaviro//ES",
       `X-WR-CALNAME:${calName}`,
       "X-WR-TIMEZONE:Europe/Madrid",
       "CALSCALE:GREGORIAN",

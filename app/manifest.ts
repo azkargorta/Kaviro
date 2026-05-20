@@ -1,10 +1,11 @@
-import { MetadataRoute } from 'next'
+import { MetadataRoute } from "next";
+import { APP_DESCRIPTION_SHORT, APP_NAME } from "@/lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Kaviro',
-    short_name: 'Kaviro',
-    description: 'Organiza tu viaje, rutas, gastos y documentos',
+    name: APP_NAME,
+    short_name: APP_NAME,
+    description: APP_DESCRIPTION_SHORT,
     start_url: '/',
     scope: '/',
     id: '/',

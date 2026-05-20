@@ -367,7 +367,8 @@ export default function AdminPanel() {
           <li>
             Inserta tu <code className="rounded bg-white/80 px-1">user_id</code> en{" "}
             <code className="rounded bg-white/80 px-1">platform_admins</code>, o define{" "}
-            <code className="rounded bg-white/80 px-1">TRIPBOARD_ADMIN_EMAILS</code> en el servidor.
+            <code className="rounded bg-white/80 px-1">KAVIRO_ADMIN_EMAILS</code> en el servidor (o{" "}
+            <code className="rounded bg-white/80 px-1">TRIPBOARD_ADMIN_EMAILS</code> legado).
           </li>
         </ol>
       </section>
