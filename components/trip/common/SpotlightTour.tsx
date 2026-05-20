@@ -156,7 +156,11 @@ export default function SpotlightTour({ steps, tripId, currentTab, filterToTab =
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); isLast ? onComplete() : setIdx(i => i+1); }
+      if (e.key === "ArrowRight" || e.key === "Enter") {
+        e.preventDefault();
+        if (isLast) onComplete();
+        else setIdx((i) => i + 1);
+      }
       if (e.key === "ArrowLeft" && !isFirst) { e.preventDefault(); setIdx(i => i-1); }
     };
     document.addEventListener("keydown", k);

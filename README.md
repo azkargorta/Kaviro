@@ -41,7 +41,9 @@ npm run dev
 - `npm run build`: build
 - `npm run start`: producción local
 - `npm run typecheck`: TypeScript sin emitir
+- `npm run lint`: ESLint (Next.js); falla solo con errores, no con warnings
 - `npm test`: tests unitarios (vitest)
+- `npm run test:e2e`: Playwright (smoke público; con `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` también flujos autenticados)
 
 ## Variables de entorno
 
@@ -61,7 +63,12 @@ Nota: el cobro real lo determina Stripe (Price IDs).
 
 ## CI
 
-Hay workflow de GitHub Actions en `.github/workflows/ci.yml` que ejecuta `typecheck` y `test`.
+Workflow en `.github/workflows/ci.yml` (push/PR a `main` o `master`):
+
+1. `npm run typecheck`
+2. `npm run lint`
+3. `npm test` (Vitest)
+4. `npm run test:e2e` (Playwright; secrets `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` opcionales en el repo)
 
 ## Despliegue (Vercel)
 

@@ -13,7 +13,7 @@ La app está por encima de un MVP: cubre el ciclo completo de un viaje en grupo 
 Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 
 - **Coherencia**: reglas y mensajes de free/premium dispersos o contradictorios.
-- **Madurez operativa**: CI, lint/typecheck, tests de integración/E2E y observabilidad.
+- **Madurez operativa**: ampliar cobertura E2E/integración; reducir deuda ESLint; export PDF itinerario.
 - **Permisos**: existen permisos finos por módulo (`can_manage_*`), pero no se aplican de forma homogénea en APIs y UI.
 
 ## Puntos fuertes (pros)
@@ -30,7 +30,7 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - **Free/premium inconsistente**: copy, navegación y algunos endpoints no cuentan una historia única.
 - **Conversión “antes del login”**: falta landing/pricing pública potente (funnel empieza demasiado pronto en login).
 - **Permisos finos a medio implementar**: endpoints que solo miran `role` (viewer/editor/owner) sin `can_manage_*`.
-- **Calidad/Proceso**: falta CI visible, scripts estándar de lint/typecheck, más pruebas de integración/E2E, README canónico.
+- **Calidad/Proceso**: E2E autenticado opcional en CI; más cobertura de integración; warnings ESLint (`any`, hooks deps) por reducir.
 - **Branding/naming**: convivencia TripBoard/Kaviro puede generar incoherencia en UI/comunicación.
 
 ## Qué falta para subir de nivel
@@ -69,8 +69,10 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] P0: Gating Premium en módulos del viaje — `PremiumUpsell`, OCR/docs, gastos, rutas auto, asistente IA; nav IA visible con badge PRO
 - [x] P1: Landing/pricing pública — `PublicLanding`, `/pricing`, `lib/pricing-public.ts`, shell marketing
 - [x] P1 (parcial): Tests API permisos — mocks `requireTripAccessApi` en `app/api/__tests__/*`
-- [x] P1 (parcial): CI — `.github/workflows/ci.yml` (typecheck + vitest en PR/push main)
-- [x] P1 (parcial): E2E smoke — Playwright `e2e/public-pages.spec.ts` en CI
+- [x] P1: CI — `.github/workflows/ci.yml` (typecheck + lint + vitest + Playwright en PR/push main)
+- [x] P1: Lint — `npm run lint` (`eslint-config-next`), errores bloqueantes corregidos (`TripAiChatView` hooks, `SpotlightTour` teclado)
+- [x] P1: README canónico — scripts `lint`/`test:e2e`, pipeline CI documentado
+- [x] P1 (parcial): E2E — smoke público + flujos autenticados opcionales (`E2E_USER_*`)
 - [x] P1 (parcial): Centralización helpers (access) — `trip-access-api.ts` ampliado
 - [x] Bloque calidad (parcial): `next/image` en recap/dashboard/summary; `TripMapView` sin `as any` en normalización de rutas
 - [x] E2E auth (público): `e2e/auth.spec.ts` — redirect dashboard, formularios login/register

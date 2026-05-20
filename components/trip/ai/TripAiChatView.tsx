@@ -448,26 +448,6 @@ export default function TripAiChatView({
   const ctxPreset = assistantContext ? assistantContextPreset(assistantContext) : null;
   const router = useRouter();
   const pathname = usePathname();
-  if (!isPremium) {
-    return (
-      <main className="space-y-6">
-        <TripBoardPageHeader
-          section="Asistente personal del viaje"
-          title="Asistente personal"
-          description="Requiere Premium en este viaje."
-          iconKey="chat"
-          iconAlt="Asistente personal"
-          actions={<TripScreenActions tripId={tripId} />}
-        />
-        <PremiumUpsell
-          feature="aiAssistant"
-          className="rounded-3xl p-6"
-          secondaryHref={`/trip/${encodeURIComponent(tripId)}/summary`}
-          secondaryLabel="Volver al resumen"
-        />
-      </main>
-    );
-  }
 
   const [mode, setMode] = useState<TripAiMode>(() => ctxPreset?.mode ?? defaultAssistantMode ?? "general");
   const [provider, setProvider] = useState<"auto" | "gemini" | "ollama">("auto");
@@ -1396,6 +1376,27 @@ export default function TripAiChatView({
     layout === "drawer"
       ? "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-3 overflow-x-hidden overflow-y-hidden"
       : "w-full min-w-0 max-w-full space-y-6 overflow-x-hidden";
+
+  if (!isPremium) {
+    return (
+      <main className="space-y-6">
+        <TripBoardPageHeader
+          section="Asistente personal del viaje"
+          title="Asistente personal"
+          description="Requiere Premium en este viaje."
+          iconKey="chat"
+          iconAlt="Asistente personal"
+          actions={<TripScreenActions tripId={tripId} />}
+        />
+        <PremiumUpsell
+          feature="aiAssistant"
+          className="rounded-3xl p-6"
+          secondaryHref={`/trip/${encodeURIComponent(tripId)}/summary`}
+          secondaryLabel="Volver al resumen"
+        />
+      </main>
+    );
+  }
 
   return (
     <Root className={rootClass}>
