@@ -227,6 +227,25 @@ function rowNum(row: UnknownRow, key: string) {
   return Number.isFinite(n) ? n : null;
 }
 
+function rowPointArray(row: UnknownRow, key: "route_points" | "path_points"): RoutePoint[] | null {
+  const v = row[key];
+  return Array.isArray(v) ? (v as RoutePoint[]) : null;
+}
+
+type RouteChecklistRaw = { id?: unknown; text?: unknown; done?: unknown };
+
+function parseRouteChecklist(raw: unknown) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => {
+    const row = item && typeof item === "object" ? (item as RouteChecklistRaw) : {};
+    return {
+      id: String(row.id || randomId()),
+      text: typeof row.text === "string" ? row.text : "",
+      done: Boolean(row.done),
+    };
+  });
+}
+
 function normalizePlanPlaces(rows: unknown[] | undefined, prefix: string): PlanPlace[] {
   const list: PlanPlace[] = [];
   for (const raw of rows || []) {
@@ -272,7 +291,7 @@ function normalizeRoutes(rows: unknown[] | undefined, source: "trip_routes" | "l
     list.push({
       id,
       source,
-      route_order: typeof (row as any).route_order === "number" ? (row as any).route_order : null,
+      route_order: rowNum(row, "route_order"),
       route_day: rowStr(row, "route_day") || rowStr(row, "route_date") || null,
       route_date: rowStr(row, "route_date") || rowStr(row, "route_day") || null,
       departure_time: rowStr(row, "departure_time") || null,
@@ -295,8 +314,8 @@ function normalizeRoutes(rows: unknown[] | undefined, source: "trip_routes" | "l
       distance_text: rowStr(row, "distance_text") || null,
       duration_text: rowStr(row, "duration_text") || null,
       arrival_time: rowStr(row, "arrival_time") || null,
-      route_points: Array.isArray((row as any).route_points) ? ((row as any).route_points as RoutePoint[]) : null,
-      path_points: Array.isArray((row as any).path_points) ? ((row as any).path_points as RoutePoint[]) : null,
+      route_points: rowPointArray(row, "route_points"),
+      path_points: rowPointArray(row, "path_points"),
       notes: rowStr(row, "notes") || null,
     });
   }
@@ -561,7 +580,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
             ...normalizePlanPlaces(planSources.tripActivities, "trip"),
             ...normalizePlanPlaces(planSources.legacyActivities, "legacy"),
           ]
-        : normalizePlanPlaces(points as any[], "legacy-page");
+        : normalizePlanPlaces(points, "legacy-page");
     const byId = new Map<string, PlanPlace>();
     for (const p of fromSources) byId.set(p.id, p);
     return Array.from(byId.values());
@@ -573,7 +592,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
         ? [
             ...normalizeRoutes(routeSources.tripRoutes, "trip_routes"),
           ]
-        : normalizeRoutes(routes as any[], "trip_routes");
+        : normalizeRoutes(routes, "trip_routes");
 
     const byKey = new Map<string, TripMapRoute>();
     for (const r of fromSources) byKey.set(`${r.source || "trip_routes"}:${r.id}`, r);
@@ -765,7 +784,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
       const resp = await fetch(`/api/trip-routes?tripId=${encodeURIComponent(tripId)}`, { cache: "no-store" });
       const payload = await resp.json().catch(() => null);
       if (resp.ok && Array.isArray(payload?.routes)) {
-        const nextTripRoutes = normalizeRoutes(payload.routes as any[], "trip_routes");
+        const nextTripRoutes = normalizeRoutes(payload.routes, "trip_routes");
         setRoutesState(nextTripRoutes);
       }
     } catch {
@@ -1068,13 +1087,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
     const notes = parseRouteNotes(route.notes);
     const restStops = notes?.restStops;
     const noteText = typeof notes?.noteText === "string" ? notes.noteText : "";
-    const checklist = Array.isArray(notes?.checklist)
-      ? (notes.checklist as any[]).map((x) => ({
-          id: String(x?.id || randomId()),
-          text: typeof x?.text === "string" ? x.text : "",
-          done: !!x?.done,
-        }))
-      : [];
+    const checklist = parseRouteChecklist(notes?.checklist);
 
     setForm((prev) => ({
       ...prev,
@@ -2449,7 +2462,7 @@ export default function TripMapView({ tripId, tripDates = [], planSources, route
 
       <DuplicateRouteDialog
         open={duplicateOpen}
-        route={duplicateRoute as any}
+        route={duplicateRoute}
         tripId={tripId}
         tripDates={Array.isArray(tripDates) ? tripDates : []}
         defaultDate={selectedDate !== "all" ? selectedDate : undefined}

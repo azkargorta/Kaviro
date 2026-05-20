@@ -167,8 +167,7 @@ export default function TripRecapClient({
         <div className="relative w-full h-44 bg-slate-800 group">
           {coverImage ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={coverImage} alt="Portada" className="w-full h-full object-cover" />
+              <Image src={coverImage} alt="Portada" fill className="object-cover" unoptimized sizes="400px" />
               <button
                 type="button"
                 onClick={() => setCoverImage(null)}
@@ -213,8 +212,7 @@ export default function TripRecapClient({
         <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-6 pt-6 pb-5 text-white">
           {/* Kaviro branding — real logo */}
           <div className="flex items-center gap-2.5 mb-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full" />
+            <Image src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full" />
             <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.15em", fontFamily: "sans-serif" }}>KAVIRO</span>
             <span className="ml-auto text-white/40 text-[10px] font-semibold uppercase tracking-widest">✈ Viaje completado</span>
           </div>
@@ -303,8 +301,7 @@ export default function TripRecapClient({
         {/* ── Footer Kaviro ── */}
         <div className="bg-slate-900 px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/icon.png" alt="Kaviro" width={20} height={20} className="rounded-full" />
+            <Image src="/brand/icon.png" alt="Kaviro" width={20} height={20} className="rounded-full" />
             <p className="text-slate-400 text-xs font-semibold">
               Organizado con <span className="text-[#F87171] font-bold">Kaviro</span>
             </p>

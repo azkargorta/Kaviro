@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Download, Share2, ImageIcon, Star, Camera } from "lucide-react";
 
@@ -49,8 +50,7 @@ export default function RecapHelpPage() {
           </Link>
 
           <div className="flex items-center gap-3 mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/icon.png" alt="Kaviro" width={40} height={40} className="rounded-full" />
+            <Image src="/brand/icon.png" alt="Kaviro" width={40} height={40} className="rounded-full" />
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Kaviro · Ayuda</p>
               <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">El Recap del viaje</h1>

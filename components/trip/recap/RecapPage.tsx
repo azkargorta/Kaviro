@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useId } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Download, ImagePlus, X, Loader2, MapPin } from "lucide-react";
 import html2canvas from "html2canvas";
@@ -37,6 +38,7 @@ function calcDays(start: string, end: string) {
 }
 
 // ── Shared card sub-elements (inline styles for html2canvas) ──────────────────
+// Nota: dentro de RecapCard se usa <img> nativo (crossOrigin / data URLs) para export PNG fiable.
 
 const BRAND_IMG = "/brand/kaviro-lockup-white.png";
 
@@ -469,8 +471,13 @@ export default function RecapPage(props: RecapData) {
           <h1 className="text-sm font-bold text-slate-900 dark:text-slate-50">Crear Recap</h1>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">{tripName}</p>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/kaviro-lockup-fullcolor.png" alt="Kaviro" className="ml-auto h-5 opacity-80" />
+        <Image
+          src="/brand/kaviro-lockup-fullcolor.png"
+          alt="Kaviro"
+          width={120}
+          height={20}
+          className="ml-auto h-5 w-auto opacity-80"
+        />
       </div>
 
       {/* ── Main grid ── */}

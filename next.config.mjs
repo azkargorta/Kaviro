@@ -7,6 +7,8 @@ const nextConfig = {
         hostname: "api.qrserver.com",
         pathname: "/v1/create-qr-code/**",
       },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "source.unsplash.com" },
     ],
   },
   async headers() {

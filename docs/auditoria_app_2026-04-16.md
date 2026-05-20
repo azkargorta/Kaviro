@@ -71,4 +71,5 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] P1 (parcial): CI — `.github/workflows/ci.yml` (typecheck + vitest en PR/push main)
 - [x] P1 (parcial): E2E smoke — Playwright `e2e/public-pages.spec.ts` en CI
 - [x] P1 (parcial): Centralización helpers (access) — `trip-access-api.ts` ampliado
+- [x] Bloque calidad (parcial): `next/image` en recap/dashboard/summary; `TripMapView` sin `as any` en normalización de rutas
 
