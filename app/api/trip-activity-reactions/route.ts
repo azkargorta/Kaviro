@@ -1,25 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { getTripAccessForApi } from "@/lib/trip-access";
 
 export const runtime = "nodejs";
-
-// Reactions use a simple JSONB column on trip_activities via a separate
-// reactions table. If the table doesn't exist yet, we gracefully fall back.
-// The table schema to create in Supabase:
-//
-//   create table trip_activity_reactions (
-//     id uuid primary key default gen_random_uuid(),
-//     trip_id uuid references trips(id) on delete cascade,
-//     activity_id uuid references trip_activities(id) on delete cascade,
-//     user_id uuid references auth.users(id) on delete cascade,
-//     display_name text not null default 'Anónimo',
-//     reaction text not null,  -- 'join' | 'skip' | 'maybe'
-//     comment text,
-//     created_at timestamptz default now(),
-//     unique(activity_id, user_id)
-//   );
-//   create index on trip_activity_reactions(activity_id);
 
 export type Reaction = {
   id: string;
@@ -29,39 +13,67 @@ export type Reaction = {
   comment: string | null;
 };
 
+function isMissingTableError(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  const msg = (error.message || "").toLowerCase();
+  const code = error.code || "";
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    msg.includes("does not exist") ||
+    msg.includes("could not find the table") ||
+    msg.includes("schema cache")
+  );
+}
+
+function apiError(message: string, status: number) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+async function requireTripParticipant(tripId: string) {
+  const supabase = await createClient();
+  const result = await getTripAccessForApi(supabase, tripId);
+  if (!result.ok) {
+    return { ok: false as const, status: result.status, error: result.error };
+  }
+  return { ok: true as const, access: result.access };
+}
+
 // GET /api/trip-activity-reactions?tripId=X&activityId=Y
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const tripId = searchParams.get("tripId") ?? "";
     const activityId = searchParams.get("activityId") ?? "";
-    if (!tripId || !activityId) return NextResponse.json({ reactions: [] });
+    if (!tripId || !activityId) return NextResponse.json({ reactions: [], tableReady: true });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const accessResult = await requireTripParticipant(tripId);
+    if (!accessResult.ok) {
+      return apiError(accessResult.error, accessResult.status);
+    }
 
-    const { data, error } = await supabase
+    const admin = getServiceRoleClient();
+    const { data, error } = await admin
       .from("trip_activity_reactions")
       .select("id, user_id, display_name, reaction, comment")
       .eq("activity_id", activityId)
       .order("created_at");
 
     if (error) {
-      // Table might not exist yet — return empty gracefully
-      if (error.message?.includes("does not exist") || error.code === "42P01") {
+      if (isMissingTableError(error)) {
         return NextResponse.json({ reactions: [], tableReady: false });
       }
-      throw error;
+      return apiError(error.message || "No se pudieron cargar las respuestas.", 500);
     }
 
     return NextResponse.json({ reactions: data ?? [], tableReady: true });
   } catch (e) {
-    return NextResponse.json({ reactions: [], error: e instanceof Error ? e.message : "Error" });
+    const msg = e instanceof Error ? e.message : "No se pudieron cargar las respuestas.";
+    return apiError(msg, 500);
   }
 }
 
 // POST /api/trip-activity-reactions
-// Body: { tripId, activityId, reaction: 'join'|'skip'|'maybe', comment?, displayName? }
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
@@ -72,32 +84,46 @@ export async function POST(req: Request) {
     const displayName = body?.displayName ? String(body.displayName).trim().slice(0, 60) : "Anónimo";
 
     if (!tripId || !activityId || !["join", "skip", "maybe"].includes(reaction)) {
-      return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
+      return apiError("Datos inválidos.", 400);
     }
 
-    const access = await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const accessResult = await requireTripParticipant(tripId);
+    if (!accessResult.ok) {
+      return apiError(accessResult.error, accessResult.status);
+    }
 
-    // Upsert — one reaction per user per activity
-    const { error } = await supabase.from("trip_activity_reactions").upsert({
-      trip_id: tripId,
-      activity_id: activityId,
-      user_id: access.userId,
-      display_name: displayName,
-      reaction,
-      comment,
-    }, { onConflict: "activity_id,user_id" });
+    const admin = getServiceRoleClient();
+    const { error } = await admin.from("trip_activity_reactions").upsert(
+      {
+        trip_id: tripId,
+        activity_id: activityId,
+        user_id: accessResult.access.userId,
+        display_name: displayName,
+        reaction,
+        comment,
+      },
+      { onConflict: "activity_id,user_id" }
+    );
 
     if (error) {
-      if (error.message?.includes("does not exist") || error.code === "42P01") {
-        return NextResponse.json({ ok: false, tableReady: false, error: "La tabla de reacciones no existe aún. Créala en Supabase." }, { status: 503 });
+      if (isMissingTableError(error)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            tableReady: false,
+            error:
+              "Falta la tabla de respuestas. Ejecuta docs/tripboard_activity_reactions.sql en Supabase.",
+          },
+          { status: 503 }
+        );
       }
-      throw error;
+      return apiError(error.message || "No se pudo guardar tu respuesta.", 500);
     }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : "No se pudo guardar tu respuesta.";
+    return apiError(msg, 500);
   }
 }
 
@@ -107,18 +133,30 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const tripId = searchParams.get("tripId") ?? "";
     const activityId = searchParams.get("activityId") ?? "";
-    if (!tripId || !activityId) return NextResponse.json({ error: "Faltan params." }, { status: 400 });
+    if (!tripId || !activityId) return apiError("Faltan parámetros.", 400);
 
-    const access = await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const accessResult = await requireTripParticipant(tripId);
+    if (!accessResult.ok) {
+      return apiError(accessResult.error, accessResult.status);
+    }
 
-    await supabase.from("trip_activity_reactions")
+    const admin = getServiceRoleClient();
+    const { error } = await admin
+      .from("trip_activity_reactions")
       .delete()
       .eq("activity_id", activityId)
-      .eq("user_id", access.userId);
+      .eq("user_id", accessResult.access.userId);
+
+    if (error) {
+      if (isMissingTableError(error)) {
+        return NextResponse.json({ ok: false, tableReady: false }, { status: 503 });
+      }
+      return apiError(error.message || "No se pudo quitar tu respuesta.", 500);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : "No se pudo quitar tu respuesta.";
+    return apiError(msg, 500);
   }
 }

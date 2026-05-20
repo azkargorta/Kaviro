@@ -99,7 +99,14 @@ export function ActivityReactions({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setVoteError(typeof data?.error === "string" ? data.error : "No se pudo guardar tu respuesta.");
+        if (data?.tableReady === false) setTableReady(false);
+        const msg =
+          typeof data?.error === "string" && data.error.trim()
+            ? data.error
+            : res.status === 503
+              ? "Falta configurar la base de datos. Ejecuta docs/tripboard_activity_reactions.sql en Supabase."
+              : "No se pudo guardar tu respuesta.";
+        setVoteError(msg);
         return;
       }
       await load();
@@ -180,8 +187,9 @@ export function ActivityReactions({
       {open && (
         <div className="mt-2.5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5">
           {tableReady === false && (
-            <p className="text-xs font-semibold text-amber-700">
-              ⚠️ Crea la tabla <code>trip_activity_reactions</code> en Supabase para activar esta función.
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+              ⚠️ Falta la tabla en Supabase. Ejecuta el script{" "}
+              <code className="rounded bg-amber-100 px-1">docs/tripboard_activity_reactions.sql</code> en el SQL Editor y vuelve a probar.
             </p>
           )}
 
