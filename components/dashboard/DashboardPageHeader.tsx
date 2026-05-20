@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Menu, Shield, Tag, User } from "lucide-react";
+import { HelpCircle, Menu, Shield, Tag, User } from "lucide-react";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { iconInline16 } from "@/components/ui/iconTokens";
 
@@ -71,6 +71,12 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
                     Admin
                   </Link>
                 ) : null}
+                <Link href="/help" role="menuitem" className={dropItem}>
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-sm">
+                    <HelpCircle className={iconInline16} aria-hidden />
+                  </span>
+                  Ayuda
+                </Link>
                 <Link href="/pricing" role="menuitem" className={dropItem}>
                   <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
                     <Tag className={iconInline16} aria-hidden />

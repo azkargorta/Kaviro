@@ -73,6 +73,12 @@ export default function AuthShell({
                     Volver a inicio
                   </Link>
                   <Link
+                    href="/help"
+                    className="inline-flex items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-page)]"
+                  >
+                    Ayuda
+                  </Link>
+                  <Link
                     href="/pricing"
                     className="inline-flex items-center justify-center rounded-full bg-[var(--brand)] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]"
                   >

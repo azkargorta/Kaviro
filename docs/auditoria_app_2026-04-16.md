@@ -75,4 +75,5 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] E2E auth (público): `e2e/auth.spec.ts` — redirect dashboard, formularios login/register
 - [x] trip-ai (parcial): `parse-unknown`, `itineraryItemUtils`, `tripAutoConfig`/`tripCreationResolve` tipados
 - [x] P1: Onboarding checklist por viaje — `TripOnboardingChecklist` en layout, progreso persistente hasta completar
+- [x] P1: Centro de ayuda — `/help`, FAQ por módulos (IA/OCR), feedback mailto, enlaces en footer/dashboard/auth
 

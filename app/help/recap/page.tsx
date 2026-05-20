@@ -41,13 +41,15 @@ export default function RecapHelpPage() {
 
         {/* Header */}
         <div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition mb-4"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </Link>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Link
+              href="/help"
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Centro de ayuda
+            </Link>
+          </div>
 
           <div className="flex items-center gap-3 mb-2">
             <Image src="/brand/icon.png" alt="Kaviro" width={40} height={40} className="rounded-full" />
@@ -152,8 +154,11 @@ export default function RecapHelpPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 pb-4">
-          ¿Tienes más preguntas? Escríbenos desde el viaje usando el{" "}
-          <span className="font-semibold text-[#F87171]">Asistente IA</span>.
+          ¿Más preguntas?{" "}
+          <Link href="/help" className="font-semibold text-[#F87171] hover:underline">
+            Centro de ayuda
+          </Link>{" "}
+          o el asistente IA dentro del viaje.
         </p>
       </div>
     </main>

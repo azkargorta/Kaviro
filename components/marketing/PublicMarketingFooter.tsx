@@ -11,6 +11,9 @@ export default function PublicMarketingFooter() {
           <Link href="/" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Inicio
           </Link>
+          <Link href="/help" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+            Ayuda
+          </Link>
           <Link href="/pricing" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Precios
           </Link>
