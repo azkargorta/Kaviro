@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Users } from "lucide-react";
+import { openCreateTripForm } from "@/lib/open-create-trip";
 
 type Step = {
   id: string;
@@ -166,12 +167,13 @@ export default function OnboardingNudge({
         {/* CTA */}
         {!hasTrips && (
           <div className="mt-4">
-            <Link
-              href="#create-trip"
+            <button
+              type="button"
+              onClick={() => openCreateTripForm()}
               className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#F87171] px-5 text-sm font-bold text-white transition hover:bg-[#EF4444]"
             >
               Crear mi primer viaje →
-            </Link>
+            </button>
           </div>
         )}
 

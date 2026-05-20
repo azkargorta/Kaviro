@@ -1,6 +1,7 @@
 "use client";
 
 import { btnPrimary } from "@/components/ui/brandStyles";
+import { openCreateTripForm } from "@/lib/open-create-trip";
 import { Plus } from "lucide-react";
 
 type Props = {
@@ -14,13 +15,7 @@ export default function DashboardCreateTripCta({ disabled }: Props) {
       disabled={disabled}
       onClick={() => {
         if (disabled) return;
-        window.dispatchEvent(new CustomEvent("kaviro:open-create-trip"));
-        if (window.location.hash !== "#create-trip") {
-          window.location.hash = "create-trip";
-        }
-        window.requestAnimationFrame(() => {
-          document.getElementById("create-trip")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
+        openCreateTripForm();
       }}
       className={`animate-dash-primary-once w-full motion-reduce:animate-none ${btnPrimary}`}
     >

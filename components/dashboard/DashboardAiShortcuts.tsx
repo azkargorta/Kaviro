@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Sparkles, Wand2, X } from "lucide-react";
 import { iconInline16, iconSlotFill40 } from "@/components/ui/iconTokens";
+import { openCreateTripForm } from "@/lib/open-create-trip";
 
 export type DashboardAiTrip = {
   id: string;
@@ -38,20 +39,6 @@ function tripSubtitle(t: DashboardAiTrip) {
 }
 
 type Intent = "optimize" | "auto_plans";
-
-function openDashboardCreateTripForm() {
-  try {
-    window.dispatchEvent(new CustomEvent("kaviro:open-create-trip"));
-    if (window.location.hash !== "#create-trip") {
-      window.location.hash = "create-trip";
-    }
-    window.requestAnimationFrame(() => {
-      document.getElementById("create-trip")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  } catch {
-    /* */
-  }
-}
 
 export default function DashboardAiShortcuts({
   trips,
@@ -114,7 +101,7 @@ export default function DashboardAiShortcuts({
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
         <button
           type="button"
-          onClick={openDashboardCreateTripForm}
+          onClick={() => openCreateTripForm()}
           className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] sm:min-w-[200px] sm:flex-none sm:text-sm"
           title="Abre el formulario para crear un viaje; al guardar con Premium puedes seguir en el asistente"
         >

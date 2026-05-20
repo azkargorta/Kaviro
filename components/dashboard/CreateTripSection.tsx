@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import CreateTripForm from "./CreateTripForm";
+import DashboardCreateTripCta from "./DashboardCreateTripCta";
 import Link from "next/link";
 import { FREE_TRIP_LIMIT, freeTripLimitMessage } from "@/lib/premium-copy";
 
@@ -65,7 +66,9 @@ export default function CreateTripSection({
             Cerrar formulario
           </button>
         </div>
-      ) : null}
+      ) : (
+        <DashboardCreateTripCta />
+      )}
     </div>
   );
 }
