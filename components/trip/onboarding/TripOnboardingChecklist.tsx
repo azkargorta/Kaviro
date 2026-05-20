@@ -10,6 +10,7 @@ import {
   dispatchFirstRunDismissed,
   isOnboardingStepDone,
   KAVIRO_FIRST_RUN_DISMISSED_EVENT,
+  KAVIRO_TRIP_ONBOARDING_REFRESH_EVENT,
   onboardingProgress,
   shouldShowTripOnboarding,
   tripOnboardingCollapsedKey,
@@ -23,8 +24,9 @@ type Props = {
   counts: TripOnboardingCounts;
 };
 
-export default function TripOnboardingChecklist({ tripId, tripName, isPremium, counts }: Props) {
+export default function TripOnboardingChecklist({ tripId, tripName, isPremium, counts: initialCounts }: Props) {
   const pathname = usePathname();
+  const [counts, setCounts] = useState(initialCounts);
   const steps = useMemo(() => buildOnboardingSteps(tripId, isPremium), [tripId, isPremium]);
   const { done, total } = useMemo(() => onboardingProgress(counts, steps), [counts, steps]);
   const progressPct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -39,6 +41,15 @@ export default function TripOnboardingChecklist({ tripId, tripName, isPremium, c
   }, [tripId, counts, steps]);
 
   useEffect(() => {
+    setCounts(initialCounts);
+  }, [initialCounts]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    syncVisibility();
+  }, [counts, mounted, syncVisibility]);
+
+  useEffect(() => {
     setMounted(true);
     syncVisibility();
     try {
@@ -49,6 +60,28 @@ export default function TripOnboardingChecklist({ tripId, tripName, isPremium, c
       /* */
     }
   }, [tripId, syncVisibility]);
+
+  useEffect(() => {
+    const onRefresh = (e: Event) => {
+      const detail = (e as CustomEvent<{ tripId?: string }>).detail;
+      if (detail?.tripId && detail.tripId !== tripId) return;
+      void (async () => {
+        try {
+          const res = await fetch(
+            `/api/trips/${encodeURIComponent(tripId)}/onboarding-counts`,
+            { cache: "no-store" }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data?.counts) setCounts(data.counts as TripOnboardingCounts);
+        } catch {
+          /* */
+        }
+      })();
+    };
+    window.addEventListener(KAVIRO_TRIP_ONBOARDING_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(KAVIRO_TRIP_ONBOARDING_REFRESH_EVENT, onRefresh);
+  }, [tripId]);
 
   useEffect(() => {
     const onDismiss = (e: Event) => {

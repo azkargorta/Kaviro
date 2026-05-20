@@ -33,8 +33,10 @@ jobs:
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
-      - name: E2E smoke (landing + pricing)
+      - name: E2E (smoke público; autenticado si hay secrets)
         run: npm run test:e2e
         env:
           CI: "true"
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
 

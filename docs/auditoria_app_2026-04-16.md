@@ -77,4 +77,6 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] P1: Onboarding checklist por viaje — `TripOnboardingChecklist` en layout, progreso persistente hasta completar
 - [x] P1: Centro de ayuda — `/help`, FAQ por módulos (IA/OCR), feedback mailto, enlaces en footer/dashboard/auth
 - [x] P1 (parcial): Observabilidad + rate limiting — `lib/rate-limit.ts`, `lib/api-observability.ts`, middleware ampliado (IA, OCR, share GET, geocode/places/osm/osrm); tests `lib/__tests__/rate-limit.test.ts`
+- [x] P1 (parcial): E2E flujos autenticados — `e2e/demo-tour.spec.ts`, `trip-create.spec.ts`, `rsvp.spec.ts` + helper `e2e/helpers/auth.ts` (opcional `E2E_USER_*` en CI)
+- [x] P1 (parcial): Refresco checklist onboarding — `GET /api/trips/[id]/onboarding-counts`, evento `kaviro:trip-onboarding-refresh` tras crear actividad/gasto
 

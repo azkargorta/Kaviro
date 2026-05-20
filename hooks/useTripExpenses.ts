@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import {
   buildBalances,
   buildSettlementSuggestions,
@@ -548,6 +549,7 @@ export function useTripExpenses(tripId: string) {
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
         "crear gasto"
       );
+      dispatchTripOnboardingRefresh(tripId);
       // No bloqueamos el flujo esperando a recargar (puede tardar por red/Supabase).
       void load();
     } catch (err) {

@@ -64,6 +64,18 @@ export function dispatchFirstRunDismissed(tripId: string): void {
   }
 }
 
+/** Pide al checklist que vuelva a cargar conteos (p. ej. tras crear actividad o gasto). */
+export function dispatchTripOnboardingRefresh(tripId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent(KAVIRO_TRIP_ONBOARDING_REFRESH_EVENT, { detail: { tripId } })
+    );
+  } catch {
+    /* */
+  }
+}
+
 export type OnboardingStepId = "participants" | "plan" | "expenses" | "map" | "resources" | "ai";
 
 export type OnboardingStep = {

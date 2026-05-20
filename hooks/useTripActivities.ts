@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { notifyTripParticipants } from "@/lib/pushNotify";
+import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 export type TripActivity = {
   id: string;
   trip_id?: string;
@@ -189,6 +190,7 @@ export function useTripActivities(tripId: string) {
         );
 
         await load();
+        dispatchTripOnboardingRefresh(tripId);
         // Notify other participants (best-effort)
         if (tripId) {
           void notifyTripParticipants({

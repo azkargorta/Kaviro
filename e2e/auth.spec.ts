@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { e2eCredentials, loginE2E } from "./helpers/auth";
 
 test.describe("Auth (sin sesión)", () => {
   test("dashboard redirige a login", async ({ page }) => {
@@ -29,17 +30,10 @@ test.describe("Auth (sin sesión)", () => {
 });
 
 test.describe("Auth (opcional con credenciales E2E)", () => {
-  const email = process.env.E2E_USER_EMAIL;
-  const password = process.env.E2E_USER_PASSWORD;
-
-  test.skip(!email || !password, "Define E2E_USER_EMAIL y E2E_USER_PASSWORD para este test");
+  test.skip(!e2eCredentials().configured, "Define E2E_USER_EMAIL y E2E_USER_PASSWORD para este test");
 
   test("login con credenciales llega al dashboard", async ({ page }) => {
-    await page.goto("/auth/login");
-    await page.getByLabel("Email").fill(email!);
-    await page.getByLabel("Contraseña").fill(password!);
-    await page.getByRole("button", { name: "Iniciar sesión" }).click();
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 });
-    await expect(page.getByText(/Mis viajes|viajes/i).first()).toBeVisible();
+    await loginE2E(page);
+    await expect(page.getByRole("heading", { name: /Mis viajes/i })).toBeVisible();
   });
 });
