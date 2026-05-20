@@ -2,6 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 import { fetchProjectOsrmRoute } from "@/lib/osrm/projectOsrmRoute";
+import {
+  itineraryItemCoords,
+  itineraryItemDurationMin,
+  itineraryItemRequiresTicket,
+  itineraryItemTicketNotes,
+  itineraryItemTransportMode,
+  itineraryItemVisitType,
+} from "@/lib/trip-ai/itineraryItemUtils";
 
 type ItineraryItem = ExecutableItineraryPayload["days"][number]["items"][number];
 type ItineraryDay = ExecutableItineraryPayload["days"][number];
@@ -82,13 +90,12 @@ function inferKindFromVisitType(params: {
 
 function buildAiMetaDescription(item: ItineraryItem): string | null {
   const lines: string[] = [];
-  const visitType = typeof (item as any)?.visit_type === "string" ? String((item as any).visit_type).trim() : "";
-  const dur =
-    typeof (item as any)?.duration_min === "number" && Number.isFinite((item as any).duration_min) ? Math.round((item as any).duration_min) : null;
-  const requiresTicket = typeof (item as any)?.requires_ticket === "boolean" ? Boolean((item as any).requires_ticket) : null;
-  const ticketNotes = typeof (item as any)?.ticket_notes === "string" ? String((item as any).ticket_notes).trim() : "";
-  const transportMode = typeof (item as any)?.transport_mode === "string" ? String((item as any).transport_mode).trim() : "";
-  const kind = String((item as any)?.activity_kind || "").toLowerCase();
+  const visitType = itineraryItemVisitType(item);
+  const dur = itineraryItemDurationMin(item);
+  const requiresTicket = itineraryItemRequiresTicket(item);
+  const ticketNotes = itineraryItemTicketNotes(item);
+  const transportMode = itineraryItemTransportMode(item);
+  const kind = String(item.activity_kind || "").toLowerCase();
 
   if (visitType) lines.push(`Tipo: ${visitType}`);
   if (dur != null && dur > 0) lines.push(`Duración aprox: ${dur} min`);
@@ -350,11 +357,10 @@ export async function executePlanOnTrip(params: {
         const place_name = typeof item?.place_name === "string" ? item.place_name.trim() : null;
         const address = typeof item?.address === "string" ? item.address.trim() : null;
       const baseKind = normalizeKind(item?.activity_kind ?? null);
-      const visitType = typeof (item as any)?.visit_type === "string" ? String((item as any).visit_type).trim() : "";
-      const transportMode = typeof (item as any)?.transport_mode === "string" ? String((item as any).transport_mode).trim() : "";
+      const visitType = itineraryItemVisitType(item);
+      const transportMode = itineraryItemTransportMode(item);
       const activity_kind = inferKindFromVisitType({ kind: baseKind, visitType, title, transportMode });
-        const latHint = validCoord((item as any)?.latitude) ? Number((item as any).latitude) : null;
-        const lngHint = validCoord((item as any)?.longitude) ? Number((item as any).longitude) : null;
+        const { lat: latHint, lng: lngHint } = itineraryItemCoords(item);
         prepared.push({ date, item, title, place_name, address, activity_kind, latHint, lngHint });
       }
     }
@@ -396,7 +402,7 @@ export async function executePlanOnTrip(params: {
     for (const r of geocoded) {
       const activity_time = normalizeTime(r.item.start_time ?? null);
       const notes = typeof r.item?.notes === "string" ? r.item.notes.trim() : null;
-      const aiMeta = buildAiMetaDescription(r.item as any);
+      const aiMeta = buildAiMetaDescription(r.item);
       const row: Record<string, unknown> = {
         trip_id: tripId,
         title: r.title,

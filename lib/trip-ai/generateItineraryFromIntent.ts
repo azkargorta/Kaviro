@@ -3,7 +3,10 @@ import type { TripAiUsage } from "@/lib/trip-ai/providers";
 import type { ExecutableItineraryPayload, ItineraryItemPayload } from "@/lib/trip-ai/tripCreationTypes";
 import {
   countNonTransportItems,
+  extractNestedItineraryItems,
   isTransportItineraryItem,
+  itineraryDayItems,
+  itineraryDayNumber,
   itineraryItemStartTime,
 } from "@/lib/trip-ai/itineraryItemUtils";
 import type { ResolvedTripCreation } from "@/lib/trip-ai/tripCreationResolve";
@@ -223,20 +226,6 @@ function isGenericFoodItem(it: any): boolean {
     place.length < 6;
   const genericAddr = !addr || /\b(microcentro|centro|barrio)\b/i.test(addr);
   return genericPlace && genericAddr;
-}
-
-function extractNestedItems(obj: any): any[] {
-  const out: any[] = [];
-  if (!obj || typeof obj !== "object") return out;
-  for (const k of Object.keys(obj)) {
-    const v = (obj as any)[k];
-    if (!v || typeof v !== "object") continue;
-    if (typeof v.title === "string" && typeof v.place_name === "string" && typeof v.activity_kind === "string") {
-      out.push(v);
-      delete (obj as any)[k];
-    }
-  }
-  return out;
 }
 
 function validateItinerary(x: unknown): ExecutableItineraryPayload {
@@ -970,7 +959,7 @@ ${baseContext.optimizeHint}
     const dayNum = i + 1;
     const got = dayMap.get(dayNum);
     if (got && Array.isArray(got.items) && got.items.length) {
-      daysOut.push({ day: dayNum, date: addDaysIso(resolvedForPrompt.startDate, i), items: got.items as any });
+      daysOut.push({ day: dayNum, date: addDaysIso(resolvedForPrompt.startDate, i), items: got.items });
     } else {
       const baseCity = String(baseCitySchedule[i] || resolvedForPrompt.destination).trim() || resolvedForPrompt.destination;
       daysOut.push({
@@ -1059,12 +1048,12 @@ ${baseContext.optimizeHint}
       });
       const minStart = typeof preferredAfterMin === "number" ? preferredAfterMin : 0;
       const picked =
-        candidates.find((cand: any) => {
+        candidates.find((cand) => {
           const key = itemIdentity(cand);
-          const when = parseHHMM(cand?.start_time) ?? 0;
+          const when = parseHHMM(cand.start_time) ?? 0;
           return !used.has(key) && when >= minStart;
         }) ||
-        candidates.find((cand: any) => !used.has(itemIdentity(cand))) ||
+        candidates.find((cand) => !used.has(itemIdentity(cand))) ||
         null;
       if (!picked) return null;
       used.add(itemIdentity(picked));
@@ -1084,13 +1073,13 @@ ${baseContext.optimizeHint}
           extra.address = `${baseCity}, ${destinationCountryHint(resolvedForPrompt.destination)}`;
         }
         extra.notes = extra.notes || "Ajuste automático para mantener un ritmo de día completo.";
-        items.push(extra as any);
+        items.push(extra);
       }
     }
     if (items.length > maxItemsTarget) items.splice(maxItemsTarget);
 
     if (!isTransferDay) {
-      const times = items.map((it) => parseHHMM((it as any)?.start_time)).filter((x): x is number => typeof x === "number");
+      const times = items.map((it) => parseHHMM(itineraryItemStartTime(it))).filter((x): x is number => typeof x === "number");
       const last = times.length ? Math.max(...times) : null;
       if (last !== null && last < 17 * 60 + 30) {
         const t = toHHMM(Math.min(last + 180, 20 * 60));
@@ -1101,7 +1090,7 @@ ${baseContext.optimizeHint}
             closePlan.address = `${baseCity}, ${destinationCountryHint(resolvedForPrompt.destination)}`;
           }
           closePlan.notes = closePlan.notes || "Ajuste automático para evitar días que terminan demasiado pronto.";
-          items.push(closePlan as any);
+          items.push(closePlan);
         }
       }
     }
@@ -1120,12 +1109,11 @@ ${baseContext.optimizeHint}
   const mustSeePoolAll = normalizeMustSeeTokens(resolvedForPrompt.intent.mustSee || []);
   const sanitizedDays = densifiedDays.map((day, i) => {
     const baseCity = String(baseCitySchedule[i] || resolvedForPrompt.destination).trim() || resolvedForPrompt.destination;
-    const items0 = Array.isArray(day.items) ? [...(day.items as any[])] : [];
-    const itemsFlat: any[] = [];
+    const items0 = itineraryDayItems(day);
+    const itemsFlat: ItineraryItemPayload[] = [];
     for (const it of items0) {
-      if (!it || typeof it !== "object") continue;
       itemsFlat.push(it);
-      for (const nested of extractNestedItems(it)) itemsFlat.push(nested);
+      for (const nested of extractNestedItineraryItems(it)) itemsFlat.push(nested);
     }
 
     // Limpieza + normalización básica
@@ -1388,7 +1376,7 @@ function fallbackDayItems(params: {
   styleHints?: string[];
   minItems?: number;
   maxItems?: number;
-}) {
+}): ItineraryItemPayload[] {
   const city = params.baseCity || params.destination;
   const country = params.destination;
   const dayIndex = typeof params.dayIndex === "number" ? params.dayIndex : 0;
@@ -1523,9 +1511,9 @@ function fallbackDayItems(params: {
       address: `${city}, ${country}`,
       start_time: sliced.length === 4 ? "21:00" : "18:00",
       notes: null,
-    } as any);
+    });
   }
-  return sliced as any[];
+  return sliced;
 }
 
 function normalizeChunkDays(
@@ -1536,14 +1524,15 @@ function normalizeChunkDays(
   const wanted = new Set(requiredDayNums.map((x) => Math.round(x)));
   const rawDays = Array.isArray(itinerary?.days) ? itinerary.days : [];
   const outDays: ExecutableItineraryPayload["days"] = [];
-  for (const d of rawDays) {
-    const dayNum = typeof (d as any)?.day === "number" ? Math.round((d as any).day) : null;
-    if (!dayNum || !wanted.has(dayNum)) continue;
+  for (let di = 0; di < rawDays.length; di++) {
+    const d = rawDays[di]!;
+    const dayNum = itineraryDayNumber(d, di);
+    if (!wanted.has(dayNum)) continue;
     const idx = dayNum - 1;
     outDays.push({
       day: dayNum,
       date: addDaysIso(resolved.startDate, idx),
-      items: Array.isArray((d as any)?.items) ? ((d as any).items as any[]) : [],
+      items: itineraryDayItems(d),
     });
   }
   outDays.sort((a, b) => a.day - b.day);

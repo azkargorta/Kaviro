@@ -1,4 +1,13 @@
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
+import {
+  isTransportItineraryItem,
+  itineraryDayItems,
+  itineraryDayNumber,
+  itineraryItemAddress,
+  itineraryItemPlaceName,
+  itineraryItemStartTime,
+  itineraryItemTitle,
+} from "@/lib/trip-ai/itineraryItemUtils";
 
 function normalizeTimeToMinutes(raw: string): number | null {
   const s = String(raw || "").trim().replace(".", ":");
@@ -146,11 +155,11 @@ export function sanityCheckItinerary(
 
   for (let di = 0; di < days.length; di++) {
     const day = days[di]!;
-    const items = Array.isArray(day?.items) ? day.items : [];
+    const items = itineraryDayItems(day);
 
     // 1) Horas crecientes (si hay start_time)
     const mins = items
-      .map((it) => normalizeTimeToMinutes(String((it as any)?.start_time || "")))
+      .map((it) => normalizeTimeToMinutes(itineraryItemStartTime(it) || ""))
       .filter((x): x is number => typeof x === "number");
     const sorted = [...mins].sort((a, b) => a - b);
     if (mins.length >= 2 && mins.join("|") !== sorted.join("|")) {
@@ -162,16 +171,16 @@ export function sanityCheckItinerary(
     }
 
     // 2) Mezcla de ciudades el mismo día (heurística por address), permitiendo transporte
-    const hasTransport = items.some((it) => String((it as any)?.activity_kind || "").toLowerCase() === "transport");
+    const hasTransport = items.some((it) => isTransportItineraryItem(it));
     if (hasTransport) continue;
 
     const cities = new Set<string>();
     let genericAddrCount = 0;
     let wrongCountryCount = 0;
     for (const it of items) {
-      const addr = String((it as any)?.address || "");
-      const place = String((it as any)?.place_name || "");
-      const title = String((it as any)?.title || "");
+      const addr = itineraryItemAddress(it);
+      const place = itineraryItemPlaceName(it);
+      const title = itineraryItemTitle(it);
 
       const addrCity = normalizeCity(cityFromAddress(addr));
       const addrCountry = extractCountryFromAddress(addr);
@@ -223,7 +232,8 @@ export function sanityCheckItinerary(
     }
 
     // 3) Si tenemos ciudad base por día, exigimos que no aparezcan ciudades claramente distintas.
-    const baseIdx = typeof (day as any)?.day === "number" ? Math.max(0, Number((day as any).day) - 1) : di;
+    const dayNum = itineraryDayNumber(day, di);
+    const baseIdx = Math.max(0, dayNum - 1);
     const base = normalizeCity(String(opts?.baseCityByDay?.[baseIdx] || ""));
     if (base && cities.size === 1) {
       const only = Array.from(cities.values())[0] || "";
@@ -231,7 +241,7 @@ export function sanityCheckItinerary(
         issues.push({
           code: "day_city_mix",
           dayIndex: di,
-          message: `Día ${typeof (day as any)?.day === "number" ? (day as any).day : di + 1}: planes en "${only}" pero la ciudad base prevista es "${base}".`,
+          message: `Día ${dayNum}: planes en "${only}" pero la ciudad base prevista es "${base}".`,
         });
       }
     }
@@ -250,10 +260,10 @@ export function sanityCheckPlaceholders(
   const dest = normalizeCity(params.destinationLabel);
   let placeholders = 0;
   for (let i = 0; i < g; i++) {
-    const items = Array.isArray(days[i]?.items) ? (days[i]!.items as any[]) : [];
+    const items = itineraryDayItems(days[i]!);
     if (items.length !== 1) continue;
-    const title = String(items[0]?.title || "");
-    const addr = normalizeCity(String(items[0]?.address || ""));
+    const title = itineraryItemTitle(items[0]!);
+    const addr = normalizeCity(itineraryItemAddress(items[0]!));
     if (/^\s*explorar\s+/i.test(title) && (addr.includes(dest) || !addr.trim())) {
       placeholders += 1;
     }

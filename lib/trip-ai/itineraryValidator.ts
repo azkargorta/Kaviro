@@ -1,4 +1,9 @@
-import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
+import type { ExecutableItineraryPayload, ItineraryItemPayload } from "@/lib/trip-ai/tripCreationTypes";
+import {
+  itineraryItemAddress,
+  itineraryItemPlaceName,
+  itineraryItemTitle,
+} from "@/lib/trip-ai/itineraryItemUtils";
 import type { TripAutoGeoStrictness } from "@/lib/trip-ai/tripAutoConfig";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 
@@ -58,7 +63,7 @@ function buildQuery(params: {
   return parts.join(", ");
 }
 
-function fallbackLocalItem(params: { destination: string; baseCity: string; idx: number }) {
+function fallbackLocalItem(params: { destination: string; baseCity: string; idx: number }): ItineraryItemPayload {
   const city = clean(params.baseCity) || clean(params.destination) || "Destino";
   const country = clean(params.destination) || "Destino";
   const slots = [
@@ -110,13 +115,13 @@ export async function validateAndRepairItinerary(params: {
 
     const pts: Array<{ idx: number; pt: Point | null }> = [];
     for (let ii = 0; ii < day.items.length; ii++) {
-      const item = day.items[ii] as any;
-      const title = clean(item?.title);
+      const item = day.items[ii]!;
+      const title = itineraryItemTitle(item);
       if (!title) continue;
       const q = buildQuery({
         title,
-        place_name: typeof item?.place_name === "string" ? item.place_name : null,
-        address: typeof item?.address === "string" ? item.address : null,
+        place_name: itineraryItemPlaceName(item) || null,
+        address: itineraryItemAddress(item) || null,
         baseCity,
         country,
       });
@@ -129,20 +134,20 @@ export async function validateAndRepairItinerary(params: {
         const hit2 = await geocode(q2);
         const ok2 = hit2.pt && hit2.label && lc(hit2.label).includes(lc(country));
         if (!ok2) {
-          day.items[ii] = fallbackLocalItem({ destination, baseCity, idx: ii }) as any;
+          day.items[ii] = fallbackLocalItem({ destination, baseCity, idx: ii });
           repairedCount += 1;
           pts.push({ idx: ii, pt: null });
           continue;
         }
         // Reparar address para que sea consistente
-        day.items[ii] = { ...(day.items[ii] as any), address: hit2.label || `${baseCity}, ${country}` };
+        day.items[ii] = { ...item, address: hit2.label || `${baseCity}, ${country}` };
         repairedCount += 1;
         pts.push({ idx: ii, pt: hit2.pt });
         continue;
       }
       // Normalizar address si falta
-      if (!clean(item?.address) && hit.label) {
-        day.items[ii] = { ...(day.items[ii] as any), address: hit.label };
+      if (!itineraryItemAddress(item) && hit.label) {
+        day.items[ii] = { ...item, address: hit.label };
         repairedCount += 1;
       }
       pts.push({ idx: ii, pt: hit.pt });
@@ -158,7 +163,7 @@ export async function validateAndRepairItinerary(params: {
         const dist = haversineKm(origin.pt, cur.pt);
         if (dist > maxKm) {
           const ii = cur.idx;
-          day.items[ii] = fallbackLocalItem({ destination, baseCity, idx: ii }) as any;
+          day.items[ii] = fallbackLocalItem({ destination, baseCity, idx: ii });
           repairedCount += 1;
         }
       }
