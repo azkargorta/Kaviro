@@ -30,7 +30,7 @@ export default function TripPlacesFields({ places, onChange, className = "" }: P
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50/80 px-2.5 py-1 text-xs font-semibold text-violet-950 transition hover:bg-violet-50"
+          className="inline-flex items-center gap-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-light)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-text)] transition hover:border-[var(--brand)]"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           Añadir lugar

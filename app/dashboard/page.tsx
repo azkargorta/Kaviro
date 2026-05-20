@@ -10,6 +10,7 @@ import { isPlatformAdmin } from "@/lib/platform-admin";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
+import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
 import {
   ensureDemoTripForUser,
@@ -204,9 +205,14 @@ export default async function DashboardPage() {
 
   return (
     <main className="page-shell space-y-4 pb-8 md:space-y-5 md:pb-10">
-      <OnboardingNudge hasTrips={realTrips.length > 0} hasParticipants={hasParticipants} hasExpenses={hasExpenses} />
+      <div className="relative">
+        <DashboardHero tripCount={realTrips.length} isPremium={isPremium} />
+        <div className="absolute right-0 top-3 z-10 sm:top-4">
+          <DashboardPageHeader isAdmin={isAdmin} />
+        </div>
+      </div>
 
-      <DashboardPageHeader isAdmin={isAdmin} />
+      <OnboardingNudge hasTrips={realTrips.length > 0} hasParticipants={hasParticipants} hasExpenses={hasExpenses} />
 
       <section
         className={`mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}

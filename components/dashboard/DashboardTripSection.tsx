@@ -42,7 +42,7 @@ export default function DashboardTripSection({
 
   return (
     <section className="mx-auto max-w-2xl space-y-3">
-      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/90 bg-white dark:bg-[#0F1623] p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+      <div className="flex flex-col gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-bold tracking-tight text-slate-950 dark:text-white sm:text-lg">{title}</h2>
           <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{subtitle}</p>
@@ -69,7 +69,7 @@ export default function DashboardTripSection({
         ) : (
           <div
             ref={expandedRef}
-            className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:p-4"
+            className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-page)] p-3 sm:p-4"
           >
             <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {trips.map((trip) => (

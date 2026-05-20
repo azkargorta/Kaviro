@@ -92,7 +92,7 @@ export default function LoginForm() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white dark:bg-[#0F1623] px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
               placeholder="••••••••"
               autoComplete="current-password"
             />

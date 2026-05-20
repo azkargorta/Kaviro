@@ -276,7 +276,7 @@ textarea.input { resize: vertical; min-height: 120px; }
 
 /* Root layout header */
 .dark .root-header {
-  background: linear-gradient(to right, #080C14, #0F1623, #0A0014);
+  background: linear-gradient(90deg, #DC2626 0%, #EF4444 50%, #F87171 100%) !important;
 }
 
 /* Map isolation */

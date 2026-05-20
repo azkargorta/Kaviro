@@ -42,14 +42,12 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
     "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:bg-[#080C14]";
 
   return (
-    <div ref={rootRef} className="relative -mt-4 pb-0.5 md:-mt-5 md:pb-1">
-      {/* Perfil: esquina superior derecha, sin descentrar el bloque marca + título */}
-      <div className="absolute right-0 top-0 z-10 sm:top-0.5">
-        <div className="relative shrink-0">
+    <div ref={rootRef} className="relative">
+      <div className="relative shrink-0">
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/[0.04] transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 [&_svg]:text-white"
             aria-expanded={open}
             aria-haspopup="menu"
             aria-controls="dashboard-account-menu"
@@ -80,7 +78,7 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
                   Precios
                 </Link>
                 <Link href="/account" role="menuitem" className={dropItem}>
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#F87171] to-[#EF4444] text-white shadow-sm">
                     <User className={iconInline16} aria-hidden />
                   </span>
                   Cuenta
@@ -94,7 +92,6 @@ export default function DashboardPageHeader({ isAdmin }: Props) {
               </div>
             </div>
           ) : null}
-        </div>
       </div>
     </div>
   );

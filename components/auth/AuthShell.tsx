@@ -15,50 +15,66 @@ export default function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <main className="min-h-dvh min-w-0 bg-gradient-to-br from-slate-100 via-slate-50 to-cyan-100 dark:from-[#080C14] dark:via-[#080C14] dark:to-[#080C14]">
+    <main className="min-h-dvh min-w-0 bg-[var(--surface-page)]">
       <div className="mx-auto flex min-h-dvh max-w-7xl items-start justify-center py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:py-8 sm:pl-6 sm:pr-6 md:py-10">
-        <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-2xl backdrop-blur sm:rounded-[28px] md:grid-cols-[1.05fr_0.95fr] md:rounded-[32px] dark:border-[#1E293B] dark:bg-[#0F1623]/95">
+        <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-[var(--shadow-raised)] sm:rounded-[28px] md:grid-cols-[1.05fr_0.95fr] md:rounded-[32px]">
 
-          <section className="relative hidden overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-900 p-10 text-white md:flex md:flex-col md:justify-between dark:from-[#0A0212] dark:via-[#0f0a2e] dark:to-[#0d1535]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.22),transparent_30%)]" />
+          {/* Panel izquierdo — gradiente coral como TripHeroCard */}
+          <section
+            className="relative hidden overflow-hidden p-10 text-white md:flex md:flex-col md:justify-between"
+            style={{
+              background: "linear-gradient(135deg, #F87171 0%, #EF4444 55%, #DC2626 100%)",
+            }}
+          >
+            <div aria-hidden className="pointer-events-none absolute inset-0">
+              <span
+                className="absolute -right-12 -top-12 h-48 w-48 rounded-full"
+                style={{ background: "rgba(255,255,255,0.1)" }}
+              />
+              <span
+                className="absolute bottom-8 left-8 h-32 w-32 rounded-full"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              />
+            </div>
 
             <div className="relative z-10">
               <div className="max-w-md">
                 <TripBoardLogo variant="light" size="lg" withWordmark imageClassName="scale-[1.04] origin-left" />
-                <p className="mt-3 text-sm text-white/70">Organiza tus viajes en un solo lugar</p>
+                <p className="mt-3 text-sm text-white/80">Organiza tus viajes en un solo lugar</p>
               </div>
 
               <div className="mt-12 max-w-md">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/90 ring-1 ring-white/20">
                   <span>Acceso</span>
                   <span>•</span>
                   <span>Kaviro</span>
                 </div>
 
                 <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight">
-                  Organiza y disfruta de tu viaje gracias a tu planificador personal.
+                  Planifica y disfruta cada viaje con tu asistente personal.
                 </h1>
 
-                <p className="mt-4 text-base leading-7 text-white/75">
-                  Gestiona itinerarios, gastos, mapa, recursos, OCR y asistente personal desde tu panel de Kaviro.
+                <p className="mt-4 text-base leading-7 text-white/80">
+                  Itinerarios, gastos compartidos, mapa, rutas y asistente IA en una sola app.
                 </p>
               </div>
             </div>
           </section>
 
-          <section className="flex min-w-0 items-start justify-center p-4 sm:p-8 md:p-10 dark:bg-[#0F1623]">
+          {/* Formulario */}
+          <section className="flex min-w-0 items-start justify-center bg-[var(--surface-card)] p-4 sm:p-8 md:p-10">
             <div className="w-full min-w-0 max-w-xl">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:rounded-[28px] sm:p-8 dark:border-[#1E293B] dark:bg-[#0D1117] dark:shadow-none">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-[var(--shadow-card)] sm:rounded-[28px] sm:p-8">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6 sm:gap-3">
                   <Link
                     href="/"
-                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300 dark:hover:bg-[#334155]"
+                    className="inline-flex items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-page)]"
                   >
                     Volver a inicio
                   </Link>
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center justify-center rounded-full bg-[#F87171] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#EF4444] dark:bg-[#F87171] dark:hover:bg-[#EF4444]"
+                    className="inline-flex items-center justify-center rounded-full bg-[var(--brand)] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]"
                   >
                     Ver precios
                   </Link>
@@ -66,14 +82,18 @@ export default function AuthShell({
                 </div>
                 <div className="mb-6 text-center sm:mb-8">
                   <div className="mb-4 flex justify-center sm:mb-5">
-                    <span className="block dark:hidden"><TripBoardLogo href="/" variant="dark" size="lg" withWordmark /></span>
-                    <span className="hidden dark:block"><TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="brightness-200" /></span>
+                    <span className="block dark:hidden">
+                      <TripBoardLogo href="/" variant="dark" size="lg" withWordmark />
+                    </span>
+                    <span className="hidden dark:block">
+                      <TripBoardLogo href="/" variant="light" size="lg" withWordmark imageClassName="brightness-200" />
+                    </span>
                   </div>
-                  <h3 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl dark:text-white">
+                  <h3 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
                     {title}
                   </h3>
                   {subtitle ? (
-                    <p className="mt-2 text-sm text-slate-600 sm:mt-3 sm:text-base dark:text-slate-400">{subtitle}</p>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)] sm:mt-3 sm:text-base">{subtitle}</p>
                   ) : null}
                 </div>
 

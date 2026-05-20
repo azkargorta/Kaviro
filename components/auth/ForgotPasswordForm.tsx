@@ -55,7 +55,7 @@ export default function ForgotPasswordForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white dark:bg-[#0F1623] px-4 py-3 text-sm shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
             placeholder="tu@email.com"
             autoComplete="email"
           />
@@ -64,13 +64,13 @@ export default function ForgotPasswordForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50"
+          className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
           {loading ? "Enviando..." : "Enviar email de recuperación"}
         </button>
       </form>
 
-      <Link href="/auth/login" className="block text-center text-sm font-semibold text-violet-600 hover:text-violet-700">
+      <Link href="/auth/login" className="block text-center text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]">
         Volver al login
       </Link>
     </div>

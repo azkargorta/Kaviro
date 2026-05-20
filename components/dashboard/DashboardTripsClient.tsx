@@ -146,8 +146,8 @@ export default function DashboardTripsClient({
               onClick={() => setFilter(tab.key)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                 filter === tab.key
-                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-[#0f1623] dark:text-slate-300 dark:hover:bg-slate-800"
+                  ? "bg-[var(--brand)] text-white shadow-sm"
+                  : "border border-slate-200 bg-white text-slate-600 hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)] dark:border-slate-700 dark:bg-[#0f1623] dark:text-slate-300"
               }`}
             >
               {tab.icon}

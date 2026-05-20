@@ -7,7 +7,7 @@ function StepCircle({ active, n }: { active: boolean; n: number }) {
     <span
       className={
         active
-          ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white shadow-sm sm:h-7 sm:w-7 sm:text-[11px] dark:bg-violet-500"
+          ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white shadow-sm sm:h-7 sm:w-7 sm:text-[11px]"
           : "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-[10px] font-bold text-slate-600 sm:h-7 sm:w-7 sm:text-[11px] dark:border-slate-700/60 dark:bg-slate-900/50 dark:text-slate-200"
       }
     >
@@ -21,7 +21,7 @@ function StepCircleSm({ active, n }: { active: boolean; n: number }) {
     <span
       className={
         active
-          ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white shadow-sm sm:h-7 sm:w-7 sm:text-[11px] dark:bg-violet-500"
+          ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white shadow-sm sm:h-7 sm:w-7 sm:text-[11px]"
           : "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-[10px] font-bold text-slate-600 sm:h-7 sm:w-7 sm:text-[11px] dark:border-slate-700/60 dark:bg-slate-900/50 dark:text-slate-200"
       }
     >

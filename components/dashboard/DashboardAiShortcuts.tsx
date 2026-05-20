@@ -115,10 +115,10 @@ export default function DashboardAiShortcuts({
         <button
           type="button"
           onClick={openDashboardCreateTripForm}
-          className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-violet-300 bg-violet-50/80 px-3 py-2 text-center text-xs font-semibold text-violet-950 shadow-sm transition hover:bg-violet-50 sm:min-w-[200px] sm:flex-none sm:text-sm"
+          className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] sm:min-w-[200px] sm:flex-none sm:text-sm"
           title="Abre el formulario para crear un viaje; al guardar con Premium puedes seguir en el asistente"
         >
-          <Sparkles className={`${iconInline16} text-violet-700`} aria-hidden />
+          <Sparkles className={`${iconInline16} text-[var(--brand)]`} aria-hidden />
           Crear viaje (manual)
         </button>
         {trips.length === 1 ? (
@@ -194,7 +194,7 @@ export default function DashboardAiShortcuts({
                   <Link
                     href={hrefFor(t.id, picker)}
                     onClick={closePicker}
-                    className="block rounded-xl border border-transparent px-4 py-3 transition hover:border-violet-200 hover:bg-violet-50/60"
+                    className="block rounded-xl border border-transparent px-4 py-3 transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)]"
                   >
                     <span className="block font-semibold text-slate-900">{t.name}</span>
                     <span className="mt-0.5 block text-xs text-slate-600">{tripSubtitle(t)}</span>

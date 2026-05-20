@@ -90,49 +90,49 @@ export default function RegisterForm() {
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-1 block text-sm font-medium">Nombre de usuario</label>
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Nombre de usuario</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
-            className="w-full rounded-lg border px-3 py-2"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
             placeholder="gori_123"
             autoComplete="username"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Email</label>
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
             placeholder="tu@email.com"
             autoComplete="email"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Contraseña</label>
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Contraseña</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
             autoComplete="new-password"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Confirmar contraseña</label>
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Confirmar contraseña</label>
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
             autoComplete="new-password"
           />
         </div>
@@ -140,7 +140,7 @@ export default function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-black px-4 py-2 text-white disabled:opacity-50"
+          className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
           {loading ? "Creando cuenta..." : "Crear cuenta"}
         </button>
@@ -148,7 +148,7 @@ export default function RegisterForm() {
 
       <p className="text-sm text-slate-600 dark:text-slate-400">
         ¿Ya tienes cuenta?{" "}
-        <Link href={loginHref} className="font-medium underline">
+        <Link href={loginHref} className="font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]">
           Inicia sesión
         </Link>
       </p>

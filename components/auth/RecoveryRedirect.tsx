@@ -52,13 +52,13 @@ export default function RecoveryRedirect() {
       </div>
       <Link
         href="/auth/forgot-password"
-        className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-md hover:from-violet-700 hover:to-indigo-700"
+        className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md hover:bg-[var(--brand-hover)]"
       >
         Volver a solicitar recuperación
       </Link>
       <Link
         href="/auth/login"
-        className="block text-center text-sm font-semibold text-violet-600 hover:text-violet-700"
+        className="block text-center text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]"
       >
         Ir al inicio de sesión
       </Link>

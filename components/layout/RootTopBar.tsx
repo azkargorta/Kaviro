@@ -15,11 +15,16 @@ export default function RootTopBar() {
 
   return (
     <div className="sticky top-0 z-50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-      <div className="root-header bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 dark:from-[#080C14] dark:via-[#0F1623] dark:to-[#080C14]">
+      <div
+        className="root-header shadow-sm"
+        style={{
+          background: "linear-gradient(90deg, #F87171 0%, #EF4444 50%, #DC2626 100%)",
+        }}
+      >
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:py-4 sm:pl-6 sm:pr-6">
           <Link
             href="/dashboard"
-            className="min-w-0 shrink outline-none ring-white/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-violet-300/70"
+            className="min-w-0 shrink outline-none ring-white/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
             aria-label="Ir al panel de viajes"
           >
             <TripBoardLogo variant="light" size="md" withWordmark imageClassName="h-8 max-h-8 sm:h-9 sm:max-h-9" />

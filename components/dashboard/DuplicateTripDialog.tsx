@@ -113,8 +113,8 @@ export default function DuplicateTripDialog({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 pb-4 pt-5 dark:border-slate-700/60">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/30">
-              <Copy className="h-5 w-5 text-violet-700 dark:text-violet-300" aria-hidden />
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)]">
+              <Copy className="h-5 w-5 text-[var(--brand-text)]" aria-hidden />
             </span>
             <div className="min-w-0">
               <h2 id="dup-trip-title" className="text-base font-bold text-slate-950 dark:text-slate-50">
@@ -152,7 +152,7 @@ export default function DuplicateTripDialog({
               }}
               placeholder="Nombre único para el viaje"
               maxLength={120}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-200 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus:border-violet-500/60 dark:focus:ring-violet-900/30"
+              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 transition focus:border-[var(--brand)] focus:bg-white focus:ring-2 focus:ring-[var(--brand-border)] dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-50 dark:placeholder:text-slate-500"
               autoComplete="off"
               spellCheck
             />
