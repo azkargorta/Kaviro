@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { safeInsertAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -26,8 +26,9 @@ export async function PATCH(request: Request, { params }: { params: { itemId: st
     if (rowError) throw new Error(rowError.message);
     if (!row?.trip_id) return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
 
-    const access = await requireTripAccess(String(row.trip_id));
-    const userId = actor?.user?.id || access.userId;
+    const gate = await requireTripAccessApi(String(row.trip_id));
+    if (!gate.ok) return gate.response;
+    const userId = actor?.user?.id || gate.access.userId;
     const email = actor?.user?.email ?? null;
 
     const patch: Record<string, unknown> = {};
@@ -87,8 +88,9 @@ export async function DELETE(_request: Request, { params }: { params: { itemId: 
     if (rowError) throw new Error(rowError.message);
     if (!row?.trip_id) return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
 
-    const access = await requireTripAccess(String(row.trip_id));
-    const userId = actor?.user?.id || access.userId;
+    const gate = await requireTripAccessApi(String(row.trip_id));
+    if (!gate.ok) return gate.response;
+    const userId = actor?.user?.id || gate.access.userId;
     const email = actor?.user?.email ?? null;
 
     const { error } = await supabase.from("trip_list_items").delete().eq("id", params.itemId);

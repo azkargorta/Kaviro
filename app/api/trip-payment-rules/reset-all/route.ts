@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageExpenses, requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -18,12 +17,12 @@ export async function POST(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!participants.length) return NextResponse.json({ error: "Faltan participants" }, { status: 400 });
 
-    const access = await requireTripAccess(tripId);
-    if (!access.can_manage_expenses) {
-      return NextResponse.json({ error: "No tienes permisos para configurar reglas." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageExpenses(gate.access, "No tienes permisos para configurar reglas.");
+    if (forbidden) return forbidden;
 
-    const supabase = await createClient();
+    const { supabase } = gate;
     const now = new Date().toISOString();
 
     const names = participants

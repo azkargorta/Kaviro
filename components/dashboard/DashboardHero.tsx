@@ -1,3 +1,5 @@
+import { freePlanBadge } from "@/lib/premium-copy";
+
 type Props = {
   tripCount: number;
   isPremium: boolean;
@@ -40,7 +42,7 @@ export default function DashboardHero({ tripCount, isPremium }: Props) {
           </span>
         ) : (
           <span className="mt-3 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
-            Plan gratuito · hasta 3 viajes
+            {freePlanBadge()}
           </span>
         )}
       </div>

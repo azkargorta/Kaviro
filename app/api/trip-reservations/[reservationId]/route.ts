@@ -1,6 +1,6 @@
  import { NextResponse } from "next/server";
  import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
+ import { forbidUnlessCanManageResources, requireTripAccessApi } from "@/lib/trip-access-api";
  
  function calculateNights(checkInDate?: string | null, checkOutDate?: string | null) {
    if (!checkInDate || !checkOutDate) return null;
@@ -68,10 +68,10 @@
      if (rowError) throw new Error(rowError.message);
      if (!row?.trip_id) return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
  
-     const access = await requireTripAccess(row.trip_id);
-    if (!access.can_manage_resources) {
-       return NextResponse.json({ error: "No tienes permisos para editar reservas." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(String(row.trip_id));
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManageResources(gate.access, "No tienes permisos para editar reservas.");
+     if (forbidden) return forbidden;
  
      const patch: Record<string, unknown> = {};
      const assign = (k: string, v: unknown) => {
@@ -132,10 +132,10 @@
      if (rowError) throw new Error(rowError.message);
      if (!row?.trip_id) return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
  
-     const access = await requireTripAccess(row.trip_id);
-    if (!access.can_manage_resources) {
-       return NextResponse.json({ error: "No tienes permisos para borrar reservas." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(String(row.trip_id));
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManageResources(gate.access, "No tienes permisos para borrar reservas.");
+     if (forbidden) return forbidden;
  
      if (row.reservation_type === "lodging") {
        await removeLodgingPlanActivity(supabase, params.reservationId).catch(() => null);

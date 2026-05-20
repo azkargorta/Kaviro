@@ -62,10 +62,12 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 
 ## Checklist (vamos “una a una”)
 
-- [x] P0 (parcial): Unificar free/premium — `lib/tier.ts` + `tripCreationLimits` delegado
-- [x] P0 (parcial): Permisos por módulo — helpers en `trip-access-api.ts`; APIs plan/gastos/rutas/actividades/geocode migradas a `requireTripAccessApi`
-- [ ] P0: Resto de endpoints API (~30 rutas) sin `redirect()` en acceso
+- [x] P0: Unificar free/premium — `lib/tier.ts`, `lib/premium-copy.ts`, `tripCreationLimits`
+- [x] P0: Permisos por módulo — `trip-access-api.ts`; ~35 rutas API migradas a `requireTripAccessApi`
+- [x] P0 (parcial): Copy free/premium en dashboard — `lib/premium-copy.ts`
+- [ ] P0: Revisar gating Premium en módulos del viaje (IA, OCR, etc.)
 - [ ] P1: Landing/pricing pública
-- [ ] P1: CI/lint/typecheck + tests
+- [x] P1 (parcial): Tests API permisos — mocks `requireTripAccessApi` en `app/api/__tests__/*`
+- [ ] P1: CI/lint/typecheck + tests E2E en pipeline
 - [x] P1 (parcial): Centralización helpers (access) — `trip-access-api.ts` ampliado
 

@@ -16,11 +16,11 @@ vi.mock("next/server", () => {
 const safeInsertAudit = vi.fn(async () => undefined);
 vi.mock("@/lib/audit", () => ({ safeInsertAudit }));
 
-const requireTripAccess = vi.fn();
-vi.mock("@/lib/trip-access", () => ({ requireTripAccess }));
-
-const createClient = vi.fn();
-vi.mock("@/lib/supabase/server", () => ({ createClient }));
+const requireTripAccessApi = vi.fn();
+vi.mock("@/lib/trip-access-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/trip-access-api")>();
+  return { ...actual, requireTripAccessApi };
+});
 
 function makeSupabaseMock(params: {
   insertOk?: boolean;
@@ -47,9 +47,13 @@ function makeSupabaseMock(params: {
   });
 
   return {
-    auth: { getUser: vi.fn(async () => ({ data: { user: { id: "u1", email: "a@b.com" } } })) },
     from,
+    auth: { getUser: vi.fn(async () => ({ data: { user: { id: "u1", email: "a@b.com" } } })) },
   };
+}
+
+function gateWithAccess(access: Record<string, unknown>, supabase = makeSupabaseMock({ insertOk: true })) {
+  return { ok: true as const, access, supabase };
 }
 
 async function readJson(resp: Response) {
@@ -63,19 +67,20 @@ describe("POST /api/trip-expenses", () => {
   });
 
   it("devuelve 403 si no tiene can_manage_expenses", async () => {
-    requireTripAccess.mockResolvedValueOnce({
-      userId: "u1",
-      participantId: "p1",
-      tripId: "t1",
-      role: "viewer",
-      can_manage_expenses: false,
-      can_manage_trip: false,
-      can_manage_participants: false,
-      can_manage_plan: false,
-      can_manage_map: false,
-      can_manage_resources: false,
-    });
-    createClient.mockResolvedValueOnce(makeSupabaseMock({ insertOk: true }));
+    requireTripAccessApi.mockResolvedValueOnce(
+      gateWithAccess({
+        userId: "u1",
+        participantId: "p1",
+        tripId: "t1",
+        role: "viewer",
+        can_manage_expenses: false,
+        can_manage_trip: false,
+        can_manage_participants: false,
+        can_manage_plan: false,
+        can_manage_map: false,
+        can_manage_resources: false,
+      })
+    );
 
     const { POST } = await import("../trip-expenses/route");
     const req = new Request("http://localhost/api/trip-expenses", {
@@ -92,19 +97,20 @@ describe("POST /api/trip-expenses", () => {
   });
 
   it("inserta gasto y llama a safeInsertAudit cuando hay permisos", async () => {
-    requireTripAccess.mockResolvedValueOnce({
-      userId: "u1",
-      participantId: "p1",
-      tripId: "t1",
-      role: "editor",
-      can_manage_expenses: true,
-      can_manage_trip: false,
-      can_manage_participants: false,
-      can_manage_plan: true,
-      can_manage_map: true,
-      can_manage_resources: true,
-    });
-    createClient.mockResolvedValueOnce(makeSupabaseMock({ insertOk: true }));
+    requireTripAccessApi.mockResolvedValueOnce(
+      gateWithAccess({
+        userId: "u1",
+        participantId: "p1",
+        tripId: "t1",
+        role: "editor",
+        can_manage_expenses: true,
+        can_manage_trip: false,
+        can_manage_participants: false,
+        can_manage_plan: true,
+        can_manage_map: true,
+        can_manage_resources: true,
+      })
+    );
 
     const { POST } = await import("../trip-expenses/route");
     const req = new Request("http://localhost/api/trip-expenses", {

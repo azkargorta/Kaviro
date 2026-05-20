@@ -12,11 +12,11 @@ vi.mock("next/server", () => {
   };
 });
 
-const requireTripAccess = vi.fn();
-vi.mock("@/lib/trip-access", () => ({ requireTripAccess }));
-
-const createClient = vi.fn();
-vi.mock("@/lib/supabase/server", () => ({ createClient }));
+const requireTripAccessApi = vi.fn();
+vi.mock("@/lib/trip-access-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/trip-access-api")>();
+  return { ...actual, requireTripAccessApi };
+});
 
 function makeSupabaseMock() {
   const from = vi.fn((table: string) => {
@@ -35,6 +35,14 @@ function makeSupabaseMock() {
   return { from };
 }
 
+function gateWithAccess(access: Record<string, unknown>) {
+  return {
+    ok: true as const,
+    access,
+    supabase: makeSupabaseMock(),
+  };
+}
+
 async function readJson(resp: Response) {
   const text = await resp.text();
   return text ? JSON.parse(text) : null;
@@ -46,19 +54,20 @@ describe("POST /api/trip-resources", () => {
   });
 
   it("devuelve 403 si no tiene can_manage_resources", async () => {
-    requireTripAccess.mockResolvedValueOnce({
-      userId: "u1",
-      participantId: "p1",
-      tripId: "t1",
-      role: "viewer",
-      can_manage_resources: false,
-      can_manage_trip: false,
-      can_manage_participants: false,
-      can_manage_expenses: false,
-      can_manage_plan: false,
-      can_manage_map: false,
-    });
-    createClient.mockResolvedValueOnce(makeSupabaseMock());
+    requireTripAccessApi.mockResolvedValueOnce(
+      gateWithAccess({
+        userId: "u1",
+        participantId: "p1",
+        tripId: "t1",
+        role: "viewer",
+        can_manage_resources: false,
+        can_manage_trip: false,
+        can_manage_participants: false,
+        can_manage_expenses: false,
+        can_manage_plan: false,
+        can_manage_map: false,
+      })
+    );
 
     const { POST } = await import("../trip-resources/route");
     const req = new Request("http://localhost/api/trip-resources", {
@@ -74,19 +83,20 @@ describe("POST /api/trip-resources", () => {
   });
 
   it("inserta recurso cuando hay permisos", async () => {
-    requireTripAccess.mockResolvedValueOnce({
-      userId: "u1",
-      participantId: "p1",
-      tripId: "t1",
-      role: "editor",
-      can_manage_resources: true,
-      can_manage_trip: false,
-      can_manage_participants: false,
-      can_manage_expenses: true,
-      can_manage_plan: true,
-      can_manage_map: true,
-    });
-    createClient.mockResolvedValueOnce(makeSupabaseMock());
+    requireTripAccessApi.mockResolvedValueOnce(
+      gateWithAccess({
+        userId: "u1",
+        participantId: "p1",
+        tripId: "t1",
+        role: "editor",
+        can_manage_resources: true,
+        can_manage_trip: false,
+        can_manage_participants: false,
+        can_manage_expenses: true,
+        can_manage_plan: true,
+        can_manage_map: true,
+      })
+    );
 
     const { POST } = await import("../trip-resources/route");
     const req = new Request("http://localhost/api/trip-resources", {
@@ -101,4 +111,3 @@ describe("POST /api/trip-resources", () => {
     expect(payload?.resource?.id).toBe("res1");
   });
 });
-

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { safeInsertAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -20,8 +20,9 @@ export async function PATCH(request: Request, { params }: { params: { listId: st
     if (rowError) throw new Error(rowError.message);
     if (!row?.trip_id) return NextResponse.json({ error: "Lista no encontrada." }, { status: 404 });
 
-    const access = await requireTripAccess(String(row.trip_id));
-    const userId = actor?.user?.id || access.userId;
+    const gate = await requireTripAccessApi(String(row.trip_id));
+    if (!gate.ok) return gate.response;
+    const userId = actor?.user?.id || gate.access.userId;
     const email = actor?.user?.email ?? null;
 
     // Solo owner de la lista (y por tu regla, el owner decide la editabilidad)
@@ -87,8 +88,9 @@ export async function DELETE(_request: Request, { params }: { params: { listId: 
     if (rowError) throw new Error(rowError.message);
     if (!row?.trip_id) return NextResponse.json({ error: "Lista no encontrada." }, { status: 404 });
 
-    const access = await requireTripAccess(String(row.trip_id));
-    const userId = actor?.user?.id || access.userId;
+    const gate = await requireTripAccessApi(String(row.trip_id));
+    if (!gate.ok) return gate.response;
+    const userId = actor?.user?.id || gate.access.userId;
     const email = actor?.user?.email ?? null;
 
     if (String(row.owner_user_id) !== String(userId)) {

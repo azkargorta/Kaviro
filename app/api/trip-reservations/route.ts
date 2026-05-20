@@ -1,6 +1,6 @@
  import { NextResponse } from "next/server";
  import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
+ import { forbidUnlessCanManageResources, requireTripAccessApi } from "@/lib/trip-access-api";
  
  function calculateNights(checkInDate?: string | null, checkOutDate?: string | null) {
    if (!checkInDate || !checkOutDate) return null;
@@ -61,12 +61,12 @@
      const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
      if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
  
-     const access = await requireTripAccess(tripId);
-    if (!access.can_manage_resources) {
-       return NextResponse.json({ error: "No tienes permisos para crear reservas." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(tripId);
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManageResources(gate.access, "No tienes permisos para crear reservas.");
+     if (forbidden) return forbidden;
  
-     const supabase = await createClient();
+     const { access, supabase } = gate;
      const reservationType = typeof body?.reservation_type === "string" ? body.reservation_type : "lodging";
      const payload = {
        trip_id: tripId,

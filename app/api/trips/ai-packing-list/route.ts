@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 
@@ -19,12 +18,12 @@ export async function GET(req: Request) {
     const tripId = searchParams.get("tripId") ?? "";
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
     const [{ data: trip }, { data: activities }] = await Promise.all([
-      supabase.from("trips").select("destination, start_date, end_date").eq("id", tripId).maybeSingle(),
-      supabase.from("trip_activities").select("activity_kind, title").eq("trip_id", tripId).limit(60),
+      gate.supabase.from("trips").select("destination, start_date, end_date").eq("id", tripId).maybeSingle(),
+      gate.supabase.from("trip_activities").select("activity_kind, title").eq("trip_id", tripId).limit(60),
     ]);
 
     const destination = trip?.destination?.trim() || "destino desconocido";

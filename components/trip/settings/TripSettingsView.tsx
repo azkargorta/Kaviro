@@ -59,7 +59,23 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
   }
 
   if (loading) {
-    return <div className="p-4 text-sm text-[var(--text-tertiary)]">Cargando ajustes…</div>;
+    return (
+      <div className="space-y-5 animate-pulse" aria-busy="true" aria-label="Cargando ajustes">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 space-y-4">
+          <div className="h-4 w-40 rounded-lg bg-slate-200 dark:bg-slate-700" />
+          <div className="h-10 w-full rounded-xl bg-slate-100 dark:bg-slate-800" />
+          <div className="h-10 w-full rounded-xl bg-slate-100 dark:bg-slate-800" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
+            <div className="h-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 space-y-3">
+          <div className="h-4 w-32 rounded-lg bg-slate-200 dark:bg-slate-700" />
+          <div className="h-10 w-full rounded-xl bg-slate-100 dark:bg-slate-800" />
+        </div>
+      </div>
+    );
   }
 
   const inputClass = "w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] transition";

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { executePlanOnTrip } from "@/lib/trip-ai/executePlanOnTrip";
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
@@ -20,12 +19,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Itinerario inválido." }, { status: 400 });
     }
 
-    const access = await requireTripAccess(tripId);
-    if (!access.can_manage_plan) {
-      return NextResponse.json({ error: "No tienes permisos para ejecutar el plan." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos para ejecutar el plan.");
+    if (forbidden) return forbidden;
 
-    const supabase = await createClient();
+    const { access, supabase } = gate;
 
     const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
     if (!isPremium) {

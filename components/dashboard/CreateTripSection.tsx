@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import CreateTripForm from "./CreateTripForm";
 import Link from "next/link";
+import { FREE_TRIP_LIMIT, freeTripLimitMessage } from "@/lib/premium-copy";
 
 export default function CreateTripSection({
   isPremium,
@@ -11,7 +12,6 @@ export default function CreateTripSection({
   isPremium: boolean;
   tripCount: number;
 }) {
-  const FREE_TRIP_LIMIT = 3;
   const locked = !isPremium && tripCount >= FREE_TRIP_LIMIT;
   const [showForm, setShowForm] = useState(false);
 
@@ -43,7 +43,7 @@ export default function CreateTripSection({
       {locked ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
           <div>
-            El plan gratuito permite hasta <strong>{FREE_TRIP_LIMIT} viajes</strong>. Hazte Premium para crear más viajes.
+            {freeTripLimitMessage()}
           </div>
           <div className="mt-2">
             <Link

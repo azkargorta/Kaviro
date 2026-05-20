@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,10 +15,10 @@ export async function GET(request: Request) {
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
-    let query = supabase
+    let query = gate.supabase
       .from("trip_audit_log")
       .select("id, trip_id, entity_type, entity_id, action, summary, diff, actor_user_id, actor_email, created_at")
       .eq("trip_id", tripId)

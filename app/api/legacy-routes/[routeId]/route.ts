@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageMap, requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,12 +23,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Ruta legacy no encontrada." }, { status: 404 });
     }
 
-    const access = await requireTripAccess(String(routeRow.trip_id));
-    if (!access.can_manage_map) {
-      return NextResponse.json({ error: "No tienes permisos para borrar esta ruta." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(String(routeRow.trip_id));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageMap(gate.access, "No tienes permisos para borrar esta ruta.");
+    if (forbidden) return forbidden;
 
-    const { error } = await supabase.from("routes").delete().eq("id", params.routeId);
+    const { error } = await gate.supabase.from("routes").delete().eq("id", params.routeId);
     if (error) throw new Error(error.message);
 
     return NextResponse.json({ ok: true });
@@ -39,4 +39,3 @@ export async function DELETE(
     );
   }
 }
-

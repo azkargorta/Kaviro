@@ -1,6 +1,5 @@
  import { NextResponse } from "next/server";
- import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
+ import { forbidUnlessCanManageResources, requireTripAccessApi } from "@/lib/trip-access-api";
  
  export async function GET(request: Request) {
    try {
@@ -8,17 +7,17 @@
      const tripId = searchParams.get("tripId");
      if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
  
-     await requireTripAccess(tripId);
-     const supabase = await createClient();
+     const gate = await requireTripAccessApi(tripId);
+     if (!gate.ok) return gate.response;
  
      const [{ data: resources, error: resourcesError }, { data: reservations, error: reservationsError }] =
        await Promise.all([
-         supabase
+         gate.supabase
            .from("trip_resources")
            .select("*")
            .eq("trip_id", tripId)
            .order("created_at", { ascending: false }),
-         supabase
+         gate.supabase
            .from("trip_reservations")
            .select("*")
            .eq("trip_id", tripId)
@@ -43,12 +42,12 @@
      const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
      if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
  
-     const access = await requireTripAccess(tripId);
-    if (!access.can_manage_resources) {
-       return NextResponse.json({ error: "No tienes permisos para crear recursos." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(tripId);
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManageResources(gate.access, "No tienes permisos para crear recursos.");
+     if (forbidden) return forbidden;
  
-     const supabase = await createClient();
+     const { access, supabase } = gate;
      const payload = {
        trip_id: tripId,
        title: typeof body?.title === "string" ? body.title.trim() : null,

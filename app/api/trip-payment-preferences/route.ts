@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageExpenses, requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,10 +20,10 @@ export async function GET(request: Request) {
     const tripId = searchParams.get("tripId");
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
-    const { data, error } = await supabase
+    const { data, error } = await gate.supabase
       .from("trip_payment_preferences")
       .select("id, trip_id, participant_name, send_methods, receive_methods, updated_at")
       .eq("trip_id", tripId)
@@ -48,16 +47,15 @@ export async function POST(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!participantName) return NextResponse.json({ error: "Falta participantName" }, { status: 400 });
 
-    const access = await requireTripAccess(tripId);
-    if (!access.can_manage_expenses) {
-      return NextResponse.json({ error: "No tienes permisos para configurar pagos." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageExpenses(gate.access, "No tienes permisos para configurar pagos.");
+    if (forbidden) return forbidden;
 
     const sendMethods = normalizeMethods(body?.send_methods ?? body?.sendMethods);
     const receiveMethods = normalizeMethods(body?.receive_methods ?? body?.receiveMethods);
 
-    const supabase = await createClient();
-    const { data, error } = await supabase
+    const { data, error } = await gate.supabase
       .from("trip_payment_preferences")
       .upsert(
         {

@@ -17,6 +17,7 @@ import {
   readDemoOnboardingProfile,
   shouldRedirectToDemoTour,
 } from "@/lib/onboarding/createDemoTrip";
+import { freePlanBanner } from "@/lib/premium-copy";
 
 type Trip = {
   id: string;
@@ -275,8 +276,7 @@ export default async function DashboardPage() {
 
       {!isPremium ? (
         <section className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-700 md:text-sm dark:border-slate-700/50 dark:bg-slate-950/40 dark:text-slate-200">
-          <span className="font-semibold text-slate-900 dark:text-slate-50">Plan gratuito:</span> hasta 3 viajes. Premium desbloquea el
-          asistente personal y el análisis de documentos.
+          {freePlanBanner()}
         </section>
       ) : null}
 

@@ -1,6 +1,5 @@
  import { NextResponse } from "next/server";
- import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
+ import { forbidUnlessCanManageExpenses, requireTripAccessApi } from "@/lib/trip-access-api";
  
  export async function POST(request: Request) {
    try {
@@ -8,12 +7,12 @@
      const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
      if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
  
-     const access = await requireTripAccess(tripId);
-    if (!access.can_manage_expenses) {
-       return NextResponse.json({ error: "No tienes permisos para actualizar pagos." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(tripId);
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManageExpenses(gate.access, "No tienes permisos para actualizar pagos.");
+     if (forbidden) return forbidden;
  
-     const supabase = await createClient();
+     const { supabase } = gate;
      const settlement = body?.settlement;
      if (!settlement) return NextResponse.json({ error: "Falta settlement" }, { status: 400 });
  

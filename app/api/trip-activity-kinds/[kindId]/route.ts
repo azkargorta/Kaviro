@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,8 +33,10 @@ export async function PATCH(request: Request, { params }: { params: { kindId: st
     if (rowError) throw rowError;
     if (!row?.trip_id) return NextResponse.json({ error: "Tipo no encontrado." }, { status: 404 });
 
-    const access = await requireTripAccess(String(row.trip_id));
-    if (!access.can_manage_plan) return NextResponse.json({ error: "No tienes permisos." }, { status: 403 });
+    const gate = await requireTripAccessApi(String(row.trip_id));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos.");
+    if (forbidden) return forbidden;
 
     const patch: Record<string, unknown> = {};
     if (body?.kind_key != null || body?.key != null) {
@@ -85,8 +87,10 @@ export async function DELETE(_request: Request, { params }: { params: { kindId: 
     if (rowError) throw rowError;
     if (!row?.trip_id) return NextResponse.json({ error: "Tipo no encontrado." }, { status: 404 });
 
-    const access = await requireTripAccess(String(row.trip_id));
-    if (!access.can_manage_plan) return NextResponse.json({ error: "No tienes permisos." }, { status: 403 });
+    const gate = await requireTripAccessApi(String(row.trip_id));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos.");
+    if (forbidden) return forbidden;
 
     const { error } = await supabase.from("trip_activity_kinds").delete().eq("id", params.kindId);
     if (error) throw error;

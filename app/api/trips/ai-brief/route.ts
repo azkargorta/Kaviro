@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 
@@ -29,10 +28,10 @@ export async function GET(req: Request) {
     const tripId = searchParams.get("tripId") ?? "";
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    const access = await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
-    const { data: trip } = await supabase
+    const { data: trip } = await gate.supabase
       .from("trips")
       .select("destination, start_date")
       .eq("id", tripId)

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 import { safeInsertAudit } from "@/lib/audit";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 
@@ -50,10 +49,12 @@ export async function POST(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!activities.length) return NextResponse.json({ error: "Faltan activities" }, { status: 400 });
 
-    const access = await requireTripAccess(String(tripId));
-    if (!access.can_manage_plan) return NextResponse.json({ error: "No tienes permisos." }, { status: 403 });
+    const gate = await requireTripAccessApi(String(tripId));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos.");
+    if (forbidden) return forbidden;
 
-    const supabase = await createClient();
+    const { access, supabase } = gate;
     const { data: actor } = await supabase.auth.getUser();
 
     // Fetch trip destination for geocode anchor (improves accuracy)

@@ -1,6 +1,6 @@
  import { NextResponse } from "next/server";
  import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
+ import { forbidUnlessCanManageResources, requireTripAccessApi } from "@/lib/trip-access-api";
  
  export async function DELETE(_request: Request, { params }: { params: { resourceId: string } }) {
    try {
@@ -14,12 +14,12 @@
      if (rowError) throw new Error(rowError.message);
      if (!row?.trip_id) return NextResponse.json({ error: "Recurso no encontrado." }, { status: 404 });
  
-     const access = await requireTripAccess(row.trip_id);
-    if (!access.can_manage_resources) {
-       return NextResponse.json({ error: "No tienes permisos para borrar recursos." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(String(row.trip_id));
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManageResources(gate.access, "No tienes permisos para borrar recursos.");
+     if (forbidden) return forbidden;
  
-     const { error } = await supabase.from("trip_resources").delete().eq("id", params.resourceId);
+     const { error } = await gate.supabase.from("trip_resources").delete().eq("id", params.resourceId);
      if (error) throw new Error(error.message);
  
      return NextResponse.json({ ok: true });

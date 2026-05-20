@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { PLAN_LIMITS, PREMIUM_REQUIRED, checkTripLimit } from "@/lib/tier";
+import { checkTripLimit, PREMIUM_REQUIRED } from "@/lib/tier";
 
-/** @deprecated Usa PLAN_LIMITS.free.trips desde lib/tier */
-export const FREE_TRIP_LIMIT = PLAN_LIMITS.free.trips;
+export { FREE_TRIP_LIMIT } from "@/lib/premium-copy";
 
 /** Comprueba límite de viajes en plan gratuito (misma regla que POST /api/trips). */
 export async function ensureUserCanCreateTrip(

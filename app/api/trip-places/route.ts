@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageMap, requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,10 +11,10 @@ export async function GET(request: Request) {
     const folderId = searchParams.get("folderId");
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
-    let q = supabase.from("trip_places").select("*").eq("trip_id", tripId).order("created_at", { ascending: false });
+    let q = gate.supabase.from("trip_places").select("*").eq("trip_id", tripId).order("created_at", { ascending: false });
     if (folderId) q = q.eq("folder_id", folderId);
     const { data, error } = await q;
     if (error) throw error;
@@ -44,10 +43,12 @@ export async function POST(request: Request) {
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!name) return NextResponse.json({ error: "Falta nombre del lugar." }, { status: 400 });
 
-    const access = await requireTripAccess(String(tripId));
-    if (!access.can_manage_map) return NextResponse.json({ error: "No tienes permisos." }, { status: 403 });
+    const gate = await requireTripAccessApi(String(tripId));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageMap(gate.access, "No tienes permisos.");
+    if (forbidden) return forbidden;
 
-    const supabase = await createClient();
+    const { access, supabase } = gate;
 
     const { data, error } = await supabase
       .from("trip_places")

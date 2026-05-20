@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageMap, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { fetchProjectOsrmRoute, type OsrmProfile } from "@/lib/osrm/projectOsrmRoute";
 
@@ -86,12 +85,12 @@ export async function POST(request: Request) {
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    const access = await requireTripAccess(tripId);
-    if (!access.can_manage_map) {
-      return NextResponse.json({ error: "No tienes permisos para crear rutas." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageMap(gate.access, "No tienes permisos para crear rutas.");
+    if (forbidden) return forbidden;
 
-    const supabase = await createClient();
+    const { supabase } = gate;
     const {
       data: { user },
     } = await supabase.auth.getUser();

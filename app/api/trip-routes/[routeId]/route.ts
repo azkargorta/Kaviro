@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManageMap, requireTripAccessApi } from "@/lib/trip-access-api";
 import { safeInsertAudit } from "@/lib/audit";
 
 function buildPatchPayload(body: any) {
@@ -87,10 +87,10 @@ export async function PATCH(request: Request, { params }: { params: { routeId: s
     if (!routeRow?.trip_id) {
       return NextResponse.json({ error: "Ruta no encontrada." }, { status: 404 });
     }
-    const access = await requireTripAccess(routeRow.trip_id);
-    if (!access.can_manage_map) {
-      return NextResponse.json({ error: "No tienes permisos para editar rutas." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(String(routeRow.trip_id));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageMap(gate.access, "No tienes permisos para editar rutas.");
+    if (forbidden) return forbidden;
 
     const response = await patchWithFallback(supabase, params.routeId, payload);
 
@@ -133,10 +133,10 @@ export async function DELETE(
     if (!routeRow?.trip_id) {
       return NextResponse.json({ error: "Ruta no encontrada." }, { status: 404 });
     }
-    const access = await requireTripAccess(routeRow.trip_id);
-    if (!access.can_manage_map) {
-      return NextResponse.json({ error: "No tienes permisos para borrar rutas." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(String(routeRow.trip_id));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageMap(gate.access, "No tienes permisos para borrar rutas.");
+    if (forbidden) return forbidden;
 
     const response = await supabase.from("trip_routes").delete().eq("id", params.routeId);
     if (response.error) throw new Error(response.error.message);

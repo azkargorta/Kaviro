@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
@@ -59,10 +58,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Diff inválido." }, { status: 400 });
     }
 
-    const access = await requireTripAccess(tripId);
-    if (!access.can_manage_plan) {
-      return NextResponse.json({ error: "No tienes permisos para aplicar cambios." }, { status: 403 });
-    }
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos para aplicar cambios.");
+    if (forbidden) return forbidden;
+
+    const { access, supabase } = gate;
 
     const needsMap = diff.operations.some((opRaw: any) => {
       const op = typeof opRaw?.op === "string" ? opRaw.op : "";
@@ -78,7 +79,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = await createClient();
     const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
     if (!isPremium) {
       return NextResponse.json(

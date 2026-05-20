@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import {
@@ -391,8 +392,7 @@ function RecapCta({
   return (
     <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-[#1E293B] shadow-sm">
       <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-5 py-4 flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full shrink-0" />
+        <Image src="/brand/icon.png" alt="Kaviro" width={32} height={32} className="rounded-full shrink-0" />
         <div data-tour="summary-recap-cta" className="min-w-0">
           <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Kaviro · Recap</p>
           <p className="text-base font-extrabold text-white leading-tight">Crea el recap de tu viaje</p>

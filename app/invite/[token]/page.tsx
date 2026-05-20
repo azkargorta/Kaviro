@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
@@ -31,9 +32,7 @@ export default async function InvitePage({ params }: Props) {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-[var(--surface-page)] px-6 text-center">
       <div className="w-full max-w-sm space-y-6">
-        {/* Logo */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/icon.png" alt="Kaviro" width={64} height={64} className="mx-auto rounded-2xl" />
+        <Image src="/brand/icon.png" alt="Kaviro" width={64} height={64} className="mx-auto rounded-2xl" />
 
         <div>
           <p className="text-sm font-semibold text-[#F87171]">Invitación de {referrerName}</p>

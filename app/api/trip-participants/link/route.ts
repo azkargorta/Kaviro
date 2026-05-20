@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,12 +23,13 @@ export async function POST(request: Request) {
     if (participantError) throw new Error(participantError.message);
     if (!participant?.trip_id) return NextResponse.json({ error: "Participante no encontrado." }, { status: 404 });
 
-    const access = await requireTripAccess(participant.trip_id);
-    if (access.role !== "owner") {
+    const gate = await requireTripAccessApi(String(participant.trip_id));
+    if (!gate.ok) return gate.response;
+    if (gate.access.role !== "owner") {
       return NextResponse.json({ error: "Solo el owner puede gestionar participantes." }, { status: 403 });
     }
 
-    const { data: duplicate, error: duplicateError } = await supabase
+    const { data: duplicate, error: duplicateError } = await gate.supabase
       .from("trip_participants")
       .select("id")
       .eq("trip_id", participant.trip_id)
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await gate.supabase
       .from("trip_participants")
       .update({
         user_id: profile.id,

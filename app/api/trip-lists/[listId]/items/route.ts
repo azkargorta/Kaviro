@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { safeInsertAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -18,10 +18,10 @@ export async function GET(request: Request, { params }: { params: { listId: stri
     const tripId = searchParams.get("tripId");
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
-    const { data, error } = await supabase
+    const { data, error } = await gate.supabase
       .from("trip_list_items")
       .select("*")
       .eq("trip_id", tripId)
@@ -45,8 +45,9 @@ export async function POST(request: Request, { params }: { params: { listId: str
     const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
-    const access = await requireTripAccess(tripId);
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const { access, supabase } = gate;
     const { data: actor } = await supabase.auth.getUser();
     const userId = actor?.user?.id || access.userId;
     const email = actor?.user?.email ?? null;
