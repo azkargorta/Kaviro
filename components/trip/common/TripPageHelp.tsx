@@ -411,6 +411,16 @@ async function completeDemoOnboarding() {
   });
 }
 
+/**
+ * Traduce el pageId interno (usado en HELP y TAB_TOUR) al tab-key
+ * que usan los pasos de DEMO_SPOTLIGHT_TOUR y SpotlightTour.
+ * "home" → página de resumen/summary; "ai" → ai-chat.
+ */
+const PAGE_TO_SPOTLIGHT_TAB: Record<string, string> = {
+  home: "summary",
+  ai: "ai-chat",
+};
+
 export default function TripPageHelp() {
   const pathname = usePathname();
   const params = useParams();
@@ -436,6 +446,13 @@ export default function TripPageHelp() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Cierra el spotlight al cambiar de página (solo viajes normales;
+  // en el demo el propio SpotlightTour navega entre tabs y debe seguir abierto).
+  useEffect(() => {
+    if (isDemoTrip) return;
+    setSpotlightOpen(false);
+  }, [pathname, isDemoTrip]);
 
   // Auto-open spotlight when arriving from ?tutorial=demo (onboarding nuevo usuario)
   useEffect(() => {
@@ -477,7 +494,7 @@ export default function TripPageHelp() {
         <SpotlightTour
           steps={DEMO_SPOTLIGHT_TOUR}
           tripId={tripId}
-          currentTab={pageId}
+          currentTab={PAGE_TO_SPOTLIGHT_TAB[pageId] ?? pageId}
           filterToTab={!isDemoTrip}
           onClose={() => setSpotlightOpen(false)}
           onComplete={() => setSpotlightOpen(false)}
