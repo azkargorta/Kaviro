@@ -6,7 +6,6 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import PlanActivityCard from "@/components/trip/plan/PlanActivityCard";
-import { createClient } from "@/lib/supabase/client";
 import PlanLodgingCard from "@/components/trip/plan/PlanLodgingCard";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
@@ -214,6 +213,8 @@ function Chip({
 export default function TripPlanView({
   tripId,
   premiumEnabled,
+  currentUserId = null,
+  currentDisplayName = "Yo",
   initialExploreOpen = false,
   initialTripDescription = null,
   canEditTripNotes = false,
@@ -222,6 +223,8 @@ export default function TripPlanView({
 }: {
   tripId: string;
   premiumEnabled: boolean;
+  currentUserId?: string | null;
+  currentDisplayName?: string;
   initialExploreOpen?: boolean;
   initialTripDescription?: string | null;
   canEditTripNotes?: boolean;
@@ -230,24 +233,6 @@ export default function TripPlanView({
 }) {
   const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentDisplayName, setCurrentDisplayName] = useState("Yo");
-
-  useEffect(() => {
-    const supabase = createClient();
-    void (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setCurrentUserId(user.id);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.display_name) setCurrentDisplayName(String(profile.display_name));
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const {
     kinds: customKinds,
     loading: customKindsLoading,

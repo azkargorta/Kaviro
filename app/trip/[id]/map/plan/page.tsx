@@ -13,6 +13,13 @@ export default async function TripPlanPage({
   const access = await requireTripAccess(params.id);
   const supabase = await createClient();
   const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId: params.id });
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", access.userId)
+    .maybeSingle();
+  const currentDisplayName =
+    (profileRow as { display_name?: string | null } | null)?.display_name?.trim() || "Yo";
 
   return (
     <main className="space-y-8">
@@ -25,7 +32,12 @@ export default async function TripPlanPage({
         actions={<TripTabActions tripId={params.id} />}
       />
 
-      <TripPlanView tripId={params.id} premiumEnabled />
+      <TripPlanView
+        tripId={params.id}
+        premiumEnabled={isPremium}
+        currentUserId={access.userId}
+        currentDisplayName={currentDisplayName}
+      />
     </main>
   );
 }

@@ -33,9 +33,14 @@ export default async function TripPlanPage({
         : "";
   const initialSelectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
 
-  const { data: tripNoteRow } = await supabase.from("trips").select("description").eq("id", params.id).maybeSingle();
+  const [{ data: tripNoteRow }, { data: profileRow }] = await Promise.all([
+    supabase.from("trips").select("description").eq("id", params.id).maybeSingle(),
+    supabase.from("profiles").select("display_name").eq("id", access.userId).maybeSingle(),
+  ]);
   const rawDesc = (tripNoteRow as { description?: string | null } | null)?.description;
   const tripDescription = typeof rawDesc === "string" ? rawDesc : null;
+  const currentDisplayName =
+    (profileRow as { display_name?: string | null } | null)?.display_name?.trim() || "Yo";
 
   const canEditTripNotes = access.role === "owner" || access.can_manage_trip || access.can_manage_plan;
 
@@ -53,6 +58,8 @@ export default async function TripPlanPage({
       <TripPlanView
         tripId={params.id}
         premiumEnabled={isPremium}
+        currentUserId={access.userId}
+        currentDisplayName={currentDisplayName}
         initialExploreOpen={initialExploreOpen}
         initialTripDescription={tripDescription}
         canEditTripNotes={canEditTripNotes}
