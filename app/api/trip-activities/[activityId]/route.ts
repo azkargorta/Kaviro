@@ -1,7 +1,10 @@
- import { NextResponse } from "next/server";
- import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
- import { safeInsertAudit } from "@/lib/audit";
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { safeInsertAudit } from "@/lib/audit";
+import {
+  forbidUnlessCanManagePlan,
+  requireTripAccessApi,
+} from "@/lib/trip-access-api";
 
  function calculateNights(checkInDate?: string | null, checkOutDate?: string | null) {
    if (!checkInDate || !checkOutDate) return null;
@@ -42,10 +45,11 @@
      if (rowError) throw new Error(rowError.message);
      if (!row?.trip_id) return NextResponse.json({ error: "Actividad no encontrada." }, { status: 404 });
  
-     const access = await requireTripAccess(row.trip_id);
-    if (!access.can_manage_plan) {
-       return NextResponse.json({ error: "No tienes permisos para editar actividades." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(String(row.trip_id));
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos para editar actividades.");
+     if (forbidden) return forbidden;
+     const access = gate.access;
  
      const patch: Record<string, unknown> = {};
      const assign = (k: string, v: unknown) => {
@@ -167,10 +171,11 @@
      if (rowError) throw new Error(rowError.message);
      if (!row?.trip_id) return NextResponse.json({ error: "Actividad no encontrada." }, { status: 404 });
  
-     const access = await requireTripAccess(row.trip_id);
-    if (!access.can_manage_plan) {
-       return NextResponse.json({ error: "No tienes permisos para borrar actividades." }, { status: 403 });
-     }
+     const gate = await requireTripAccessApi(String(row.trip_id));
+     if (!gate.ok) return gate.response;
+     const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos para borrar actividades.");
+     if (forbidden) return forbidden;
+     const access = gate.access;
 
     const linkedReservationId =
       typeof (row as any)?.linked_reservation_id === "string" ? String((row as any).linked_reservation_id) : null;

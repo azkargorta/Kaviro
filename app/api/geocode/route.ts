@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 
 export const runtime = "nodejs";
@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     }
 
     if (tripId) {
-      await requireTripAccess(tripId);
+      const gate = await requireTripAccessApi(tripId);
+      if (!gate.ok) return gate.response;
     }
 
     let tripDestination: string | null = null;

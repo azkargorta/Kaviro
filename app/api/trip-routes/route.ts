@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
 import { safeInsertAudit } from "@/lib/audit";
+import {
+  forbidUnlessCanManageMap,
+  requireTripAccessApi,
+} from "@/lib/trip-access-api";
 
 function buildPayload(body: any) {
   return {
@@ -75,11 +78,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     }
 
-    const access = await requireTripAccess(tripId);
-    if (!access.can_manage_map) {
-      return NextResponse.json({ error: "No tienes permisos para crear rutas." }, { status: 403 });
-    }
-    const supabase = await createClient();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+
+    const forbidden = forbidUnlessCanManageMap(gate.access, "No tienes permisos para crear rutas.");
+    if (forbidden) return forbidden;
+
+    const { supabase } = gate;
     const { data: actor } = await supabase.auth.getUser();
     const payload = buildPayload(body);
     const response = await insertWithFallback(supabase, payload);
@@ -115,9 +120,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     }
 
-    await requireTripAccess(tripId);
-    const supabase = await createClient();
-    const { data, error } = await supabase
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+
+    const { data, error } = await gate.supabase
       .from("trip_routes")
       .select("*")
       .eq("trip_id", tripId)

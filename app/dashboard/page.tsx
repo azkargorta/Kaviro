@@ -123,7 +123,7 @@ export default async function DashboardPage() {
     .select("is_premium")
     .eq("id", user.id)
     .maybeSingle();
-  const isPremium = Boolean((profileRow as any)?.is_premium);
+  const isPremium = Boolean((profileRow as { is_premium?: boolean } | null)?.is_premium);
 
   const { data: participantRows, error: participantsError } = await supabase
     .from("trip_participants")

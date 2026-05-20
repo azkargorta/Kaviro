@@ -393,7 +393,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   if (loading) {
     return (
       <main className="space-y-6">
-        <div className="h-40 animate-pulse rounded-3xl bg-gradient-to-r from-slate-200 via-slate-100 to-violet-100" />
+        <div className="h-40 animate-pulse rounded-3xl bg-gradient-to-r from-[#FEF2F2] via-white to-[#FECACA]" />
         <div className="grid gap-3 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-[#1E293B]" />

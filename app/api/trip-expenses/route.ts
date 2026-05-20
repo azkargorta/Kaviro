@@ -1,7 +1,10 @@
- import { NextResponse } from "next/server";
- import { createClient } from "@/lib/supabase/server";
- import { requireTripAccess } from "@/lib/trip-access";
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { safeInsertAudit } from "@/lib/audit";
+import {
+  forbidUnlessCanManageExpenses,
+  requireTripAccessApi,
+} from "@/lib/trip-access-api";
  
  async function extractNamesFromRows(rows: Record<string, unknown>[]) {
    const names = new Set<string>();
@@ -49,8 +52,9 @@ import { safeInsertAudit } from "@/lib/audit";
      const tripId = searchParams.get("tripId");
      if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
  
-     await requireTripAccess(tripId);
-     const supabase = await createClient();
+     const gate = await requireTripAccessApi(tripId);
+     if (!gate.ok) return gate.response;
+     const supabase = gate.supabase;
  
     const [expensesRes, settlementsRes, tripRes, travelers] = await Promise.all([
        supabase
@@ -115,12 +119,13 @@ import { safeInsertAudit } from "@/lib/audit";
      const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
      if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
  
-     const access = await requireTripAccess(tripId);
-    if (!access.can_manage_expenses) {
-       return NextResponse.json({ error: "No tienes permisos para crear gastos." }, { status: 403 });
-     }
- 
-     const supabase = await createClient();
+     const gate = await requireTripAccessApi(tripId);
+     if (!gate.ok) return gate.response;
+
+     const forbidden = forbidUnlessCanManageExpenses(gate.access, "No tienes permisos para crear gastos.");
+     if (forbidden) return forbidden;
+
+     const { access, supabase } = gate;
     const { data: actor } = await supabase.auth.getUser();
  
      const payload = {

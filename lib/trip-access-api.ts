@@ -54,3 +54,38 @@ export function forbidUnlessCanManageParticipants(
   if (access.role === "owner" || access.can_manage_participants) return null;
   return NextResponse.json({ error: message, code: "FORBIDDEN" }, { status: 403 });
 }
+
+export function forbidUnlessCanManagePlan(
+  access: TripAccessResult,
+  message = "No tienes permisos para gestionar el plan."
+): NextResponse | null {
+  return forbidUnlessCan(access, "can_manage_plan", message);
+}
+
+export function forbidUnlessCanManageExpenses(
+  access: TripAccessResult,
+  message = "No tienes permisos para gestionar gastos."
+): NextResponse | null {
+  return forbidUnlessCan(access, "can_manage_expenses", message);
+}
+
+export function forbidUnlessCanManageMap(
+  access: TripAccessResult,
+  message = "No tienes permisos para gestionar el mapa y las rutas."
+): NextResponse | null {
+  return forbidUnlessCan(access, "can_manage_map", message);
+}
+
+export function forbidUnlessCanManageResources(
+  access: TripAccessResult,
+  message = "No tienes permisos para gestionar recursos y documentos."
+): NextResponse | null {
+  return forbidUnlessCan(access, "can_manage_resources", message);
+}
+
+export function forbidUnlessCanManageTrip(
+  access: TripAccessResult,
+  message = "No tienes permisos para gestionar la configuración del viaje."
+): NextResponse | null {
+  return forbidUnlessCan(access, "can_manage_trip", message);
+}

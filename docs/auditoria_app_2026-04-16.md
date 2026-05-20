@@ -62,9 +62,10 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 
 ## Checklist (vamos “una a una”)
 
-- [ ] P0: Unificar free/premium (gating + copy + navegación)
-- [ ] P0: Permisos por módulo en endpoints + UI (`can_manage_*`)
+- [x] P0 (parcial): Unificar free/premium — `lib/tier.ts` + `tripCreationLimits` delegado
+- [x] P0 (parcial): Permisos por módulo — helpers en `trip-access-api.ts`; APIs plan/gastos/rutas/actividades/geocode migradas a `requireTripAccessApi`
+- [ ] P0: Resto de endpoints API (~30 rutas) sin `redirect()` en acceso
 - [ ] P1: Landing/pricing pública
 - [ ] P1: CI/lint/typecheck + tests
-- [ ] P1: Centralización helpers (access/audit)
+- [x] P1 (parcial): Centralización helpers (access) — `trip-access-api.ts` ampliado
 
