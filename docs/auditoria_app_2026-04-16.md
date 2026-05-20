@@ -74,4 +74,5 @@ Lo que más limita el crecimiento ahora mismo no es “más features”, sino:
 - [x] Bloque calidad (parcial): `next/image` en recap/dashboard/summary; `TripMapView` sin `as any` en normalización de rutas
 - [x] E2E auth (público): `e2e/auth.spec.ts` — redirect dashboard, formularios login/register
 - [x] trip-ai (parcial): `parse-unknown`, `itineraryItemUtils`, `tripAutoConfig`/`tripCreationResolve` tipados
+- [x] P1: Onboarding checklist por viaje — `TripOnboardingChecklist` en layout, progreso persistente hasta completar
 

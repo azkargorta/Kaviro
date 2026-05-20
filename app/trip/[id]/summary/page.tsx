@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireTripAccess } from "@/lib/trip-access";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
-import TripFirstRunPanel from "@/components/trip/home/TripFirstRunPanel";
 import TripSummaryOverview, {
   type TripSummaryActivityPreview,
   type TripSummaryTabDef,
@@ -362,21 +361,6 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         iconAlt="Resumen"
         actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}
       />
-
-      {!isDemoTrip ? (
-        <TripFirstRunPanel
-          tripId={tripId}
-          tripName={currentTrip.name}
-          isPremium={isPremium}
-          counts={{
-            participants: participantsCount ?? 0,
-            activities: activitiesCount ?? 0,
-            routes: routesCount ?? 0,
-            expenses: expensesCount ?? 0,
-            resources: resourcesCount ?? 0,
-          }}
-        />
-      ) : null}
 
       <TripSummaryOverview
         tripId={tripId}

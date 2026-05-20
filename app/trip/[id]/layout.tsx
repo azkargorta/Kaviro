@@ -10,6 +10,8 @@ import CommandPalette from "@/components/layout/CommandPalette";
 import { TripDemoProvider } from "@/components/trip/TripDemoContext";
 import DemoTripBanner from "@/components/trip/DemoTripBanner";
 import TripHeroCard from "@/components/trip/common/TripHeroCard";
+import TripOnboardingChecklist from "@/components/trip/onboarding/TripOnboardingChecklist";
+import { fetchTripOnboardingCounts } from "@/lib/trip-onboarding";
 
 type TripLayoutProps = {
   children: ReactNode;
@@ -44,6 +46,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
     })
     .filter((n): n is string => Boolean(n));
   const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId: params.id });
+  const onboardingCounts = isDemo ? null : await fetchTripOnboardingCounts(supabase, params.id);
 
   return (
     <TripBoardHeaderProvider>
@@ -69,6 +72,14 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
               />
               <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:space-y-10">
                 {isDemo ? <DemoTripBanner /> : null}
+                {!isDemo && onboardingCounts ? (
+                  <TripOnboardingChecklist
+                    tripId={params.id}
+                    tripName={tripName}
+                    isPremium={isPremium}
+                    counts={onboardingCounts}
+                  />
+                ) : null}
                 {children}
               </div>
             </div>
