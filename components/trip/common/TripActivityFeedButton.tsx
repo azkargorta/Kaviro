@@ -289,7 +289,7 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
             </span>
           ) : null}
         </span>
-        <span>Novedades</span>
+        {!heroMode && <span>Novedades</span>}
       </button>
       {modal ? createPortal(modal, document.body) : null}
     </>

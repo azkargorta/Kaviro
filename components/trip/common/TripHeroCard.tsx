@@ -55,22 +55,25 @@ export default function TripHeroCard({ tripId, tripName, destination, participan
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl shadow-sm"
+      className="relative rounded-2xl shadow-sm"
       style={{
         background: "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)",
       }}
     >
-      {/* Decorative circles */}
-      <span
+      {/* Decorative circles — overflow-hidden isolado para no cortar el dropdown */}
+      <div
         aria-hidden
-        className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full"
-        style={{ background: "rgba(255,255,255,0.08)" }}
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -bottom-10 -left-6 h-28 w-28 rounded-full"
-        style={{ background: "rgba(255,255,255,0.06)" }}
-      />
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
+      >
+        <span
+          className="absolute -right-8 -top-8 h-36 w-36 rounded-full"
+          style={{ background: "rgba(255,255,255,0.08)" }}
+        />
+        <span
+          className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full"
+          style={{ background: "rgba(255,255,255,0.06)" }}
+        />
+      </div>
 
       {/* Top strip: back + actions */}
       <TripHeroActions tripId={tripId} />
