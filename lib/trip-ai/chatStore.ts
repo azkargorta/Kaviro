@@ -41,7 +41,8 @@ export type ChatMode =
   | "optimizer"
   | "actions"
   | "day_planner"
-  | "travel_docs";
+  | "travel_docs"
+  | "search";
 
 export async function listConversations(tripId: string) {
   const supabase = createServerSupabase();
