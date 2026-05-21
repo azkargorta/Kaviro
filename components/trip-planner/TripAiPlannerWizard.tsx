@@ -147,6 +147,12 @@ function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDay
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || "No se pudieron cargar sugerencias.");
       const places: SuggestedPlace[] = Array.isArray(data?.places) ? data.places : [];
+      if (!places.length) {
+        throw new Error(
+          data?.error ||
+            "La IA no devolvió ciudades para esta zona. Pulsa «Reintentar» o escribe una ciudad concreta en el destino."
+        );
+      }
       setSuggestions((prev) => (append ? [...prev, ...places] : places));
       setHasMore(places.length >= 6);
     } catch (e) {

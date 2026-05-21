@@ -632,7 +632,16 @@ export async function POST(req: Request) {
       }
       try {
         const places = await suggestAccommodationBasesWithAi(query, limit, exclude);
-        if (places.length > 0) cacheSet(cacheKey, places);
+        if (!places.length) {
+          return NextResponse.json(
+            {
+              error:
+                "No se obtuvieron ciudades o pueblos para esta zona. Inténtalo de nuevo o escribe una ciudad concreta.",
+            },
+            { status: 502 }
+          );
+        }
+        cacheSet(cacheKey, places);
         return NextResponse.json({
           ok: true,
           places,
