@@ -401,7 +401,6 @@ const MODE_OPTIONS: ModeOption[] = [
 
 const MODE_LABELS: Record<TripAiMode, string> = {
   general: "General",
-  search: "Buscar",
   planning: "Planificación",
   expenses: "Gastos",
   optimizer: "Optimizador",
@@ -419,10 +418,10 @@ const PLACEHOLDERS: Record<TripAiMode, string> = {
   actions: "Ej.: añade una cena el viernes en el plan o crea una ruta entre dos puntos…",
   day_planner:
     "Ej.: organízame el 2026-06-15 en Ámsterdam, andando, de 10:00 a 21:00… (luego «Aplicar cambios» para guardar)",
+  search:
+    "Ej.: busca hoteles con piscina cerca del centro, menos de 100€/noche…",
   travel_docs:
     "Ej.: pasaporte español, viajo a Marruecos y Turquía en junio — ¿qué documentos y trámites necesito?",
-  search:
-    "Ej.: busca hoteles con piscina cerca del centro, menos de 100€/noche — o vuelos baratos para el viaje…",
 };
 
 export default function TripAiChatView({
