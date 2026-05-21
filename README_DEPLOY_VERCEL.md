@@ -28,21 +28,22 @@
    - `GEMINI_MODEL` (opcional)
    - `AI_USER_MONTHLY_BUDGET_EUR` (opcional)
    - `AI_ENHANCE_ANALYSIS` (opcional)
-   - `NEXT_PUBLIC_APP_URL` (recomendado)
+   - `NEXT_PUBLIC_APP_URL` y `NEXT_PUBLIC_SITE_URL` (producción: `https://www.kaviro.app`)
    - `KAVIRO_ADMIN_EMAILS` (opcional; `TRIPBOARD_ADMIN_EMAILS` legado)
-6. En Supabase > Authentication > URL Configuration:
-   - Site URL: `https://TU-DOMINIO.vercel.app`
+6. **Email (Resend):** los correos de Auth los envía **Resend** vía SMTP de Supabase. Guía paso a paso: [`docs/RESEND_EMAIL_SETUP.md`](docs/RESEND_EMAIL_SETUP.md). Remitente: `hola@kaviro.app`.
+7. En Supabase > Authentication > URL Configuration:
+   - Site URL: `https://www.kaviro.app` (o tu dominio canónico)
    - Redirect URLs:
-     - `https://TU-DOMINIO.vercel.app/auth/callback` (Google OAuth y PKCE por correo si aplica)
-     - `https://TU-DOMINIO.vercel.app/auth/recovery`
-     - `https://TU-DOMINIO.vercel.app/auth/reset-password`
+     - `https://www.kaviro.app/auth/callback`
+     - `https://www.kaviro.app/auth/recovery`
+     - `https://www.kaviro.app/auth/reset-password`
+     - `https://www.kaviro.app/auth/verify`
      - `http://localhost:3000/auth/callback`
      - `http://localhost:3000/auth/recovery`
      - `http://localhost:3000/auth/reset-password`
-     - `https://TU-DOMINIO.vercel.app/auth/verify`
      - `http://localhost:3000/auth/verify`
 
-7. **Recuperación de contraseña (importante):** en Supabase → **Authentication → Email templates** → **Reset password**, sustituye el enlace del botón por uno que use `token_hash` (no depende de PKCE ni del mismo navegador). Ejemplo:
+8. **Recuperación de contraseña (importante):** en Supabase → **Authentication → Email templates** → **Reset password**, sustituye el enlace del botón por uno que use `token_hash` (no depende de PKCE ni del mismo navegador). Ejemplo:
 
    ```html
    <a href="{{ .SiteURL }}/auth/verify?token_hash={{ .TokenHash }}&type=recovery">Restablecer contraseña</a>
@@ -50,7 +51,7 @@
 
    Sin este cambio, el correo seguirá llevando el flujo antiguo (`?code=` + PKCE) y verás errores de verificador.
 
-8. **Confirmar registro (crear cuenta):** en **Email templates** → **Confirm signup**, sustituye `{{ .ConfirmationURL }}` por un enlace con `token_hash` (evita quedarse en «Validando enlace…» en `/auth/callback`). Ejemplo:
+9. **Confirmar registro (crear cuenta):** en **Email templates** → **Confirm signup**, sustituye `{{ .ConfirmationURL }}` por un enlace con `token_hash` (evita quedarse en «Validando enlace…» en `/auth/callback`). Ejemplo:
 
    ```html
    <a href="{{ .SiteURL }}/auth/verify?token_hash={{ .TokenHash }}&type=signup">Confirmar cuenta</a>

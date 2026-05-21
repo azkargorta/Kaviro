@@ -6,3 +6,4 @@
 - **Componentes de layout** con prefijo `TripBoard*` (p. ej. `TripBoardPageHeader`): nombres internos; no cambian la marca visible.
 - **Marcadores IA** `TRIPBOARD_*_JSON_*`: protocolo estable con el modelo; no renombrar sin migración.
 - **Variables de entorno**: preferir `KAVIRO_ADMIN_EMAILS`; `TRIPBOARD_ADMIN_EMAILS` sigue funcionando.
+- **Email transaccional**: proveedor **Resend** (SMTP en Supabase Auth); remitente `hola@kaviro.app`. Ver `docs/RESEND_EMAIL_SETUP.md`.
