@@ -25,6 +25,7 @@ export default function RegisterForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,6 +51,11 @@ export default function RegisterForm() {
 
     if (password !== confirmPassword) {
       setError("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (!acceptedLegal) {
+      setError("Debes aceptar los términos y la política de privacidad para crear la cuenta.");
       return;
     }
 
@@ -137,9 +143,29 @@ export default function RegisterForm() {
           />
         </div>
 
+        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 text-sm text-slate-700 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={acceptedLegal}
+            onChange={(e) => setAcceptedLegal(e.target.checked)}
+            className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-[var(--brand)] focus:ring-[var(--brand-border)]"
+          />
+          <span>
+            Acepto los{" "}
+            <Link href="/terms" target="_blank" className="font-semibold text-[var(--brand)] hover:underline">
+              términos y condiciones
+            </Link>{" "}
+            y la{" "}
+            <Link href="/privacy" target="_blank" className="font-semibold text-[var(--brand)] hover:underline">
+              política de privacidad
+            </Link>
+            .
+          </span>
+        </label>
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !acceptedLegal}
           className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
           {loading ? "Creando cuenta..." : "Crear cuenta"}

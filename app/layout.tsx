@@ -7,6 +7,7 @@ import AnalyticsRoot from "@/components/analytics/AnalyticsRoot";
 import { ToastProvider } from "@/components/ui/toast";
 import RootTopBar from "@/components/layout/RootTopBar";
 import PwaServiceWorker from "@/components/pwa/PwaServiceWorker";
+import CookieConsentBanner from "@/components/legal/CookieConsentBanner";
 import { APP_DESCRIPTION_SHORT, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -56,6 +57,7 @@ export default function RootLayout({
           <RootTopBar />
           <PwaServiceWorker />
           <div className="min-h-0 min-w-0">{children}</div>
+          <CookieConsentBanner />
         </ToastProvider>
       </body>
     </html>

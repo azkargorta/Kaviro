@@ -92,6 +92,13 @@ export async function GET(request: Request) {
     return redirectWithSessionCookies(`${origin}/auth/reset-password`, cookieWrites);
   }
 
+  /** Registro / confirmación email: sesión activa y tour demo vía dashboard. */
+  if (type === "signup" || type === "email" || type === "email_confirmation") {
+    const welcome = new URL("/dashboard", origin);
+    welcome.searchParams.set("welcome", "1");
+    return redirectWithSessionCookies(welcome.toString(), cookieWrites);
+  }
+
   const ok = new URL("/auth/confirmed", origin);
   ok.searchParams.set("status", "ok");
   ok.searchParams.set("next", nextPath);

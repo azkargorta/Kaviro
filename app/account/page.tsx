@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import TripBoardPremiumHero from "@/components/layout/TripBoardPremiumHero";
 import AccountSettingsForm from "@/components/account/AccountSettingsForm";
+import AccountReferralsSection from "@/components/account/AccountReferralsSection";
+import AccountDeleteSection from "@/components/account/AccountDeleteSection";
 import Link from "next/link";
 import { getMonthlyAiBudgetEur, monthKeyUtc } from "@/lib/ai-usage";
 
@@ -13,15 +16,44 @@ export default async function AccountPage() {
 
   if (!user) redirect("/auth/login?next=/account");
 
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("username, email, is_premium")
-    .eq("id", user.id)
-    .maybeSingle();
+  const admin = createSupabaseAdmin();
+  const [{ data: profileRow }, { data: subRow }] = await Promise.all([
+    supabase.from("profiles").select("username, email, is_premium, premium_until").eq("id", user.id).maybeSingle(),
+    admin
+      .from("billing_subscriptions")
+      .select("status, current_period_end, cancel_at_period_end, price_id")
+      .eq("user_id", user.id)
+      .in("status", ["active", "trialing", "past_due"])
+      .order("current_period_end", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const username = typeof (profileRow as any)?.username === "string" ? String((profileRow as any).username) : "";
   const email = user.email || (typeof (profileRow as any)?.email === "string" ? String((profileRow as any).email) : "");
   const isPremium = Boolean((profileRow as any)?.is_premium);
+  const premiumUntilRaw = (profileRow as { premium_until?: string | null } | null)?.premium_until;
+  const premiumUntil =
+    typeof premiumUntilRaw === "string" && premiumUntilRaw
+      ? new Date(premiumUntilRaw).toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
+  const sub = subRow as {
+    status?: string;
+    current_period_end?: string | null;
+    cancel_at_period_end?: boolean;
+  } | null;
+  const renewalDate =
+    sub?.current_period_end && !Number.isNaN(Date.parse(sub.current_period_end))
+      ? new Date(sub.current_period_end).toLocaleDateString("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
 
   const monthKey = monthKeyUtc();
   const monthlyBudgetEur = getMonthlyAiBudgetEur();
@@ -64,6 +96,26 @@ export default async function AccountPage() {
         }
       />
 
+      <section className="card-soft p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Resumen del plan</p>
+        <p className="mt-1 text-2xl font-bold text-slate-950">{isPremium ? "Premium" : "Gratis"}</p>
+        {isPremium && renewalDate ? (
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            {sub?.cancel_at_period_end
+              ? `Acceso Premium hasta el ${renewalDate} (cancelación programada).`
+              : `Próxima renovación o fin de periodo: ${renewalDate}.`}
+          </p>
+        ) : null}
+        {isPremium && premiumUntil && !renewalDate ? (
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Premium activo hasta el {premiumUntil}.</p>
+        ) : null}
+        {!isPremium ? (
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Puedes pasar a Premium desde la sección de planes más abajo.
+          </p>
+        ) : null}
+      </section>
+
       {isPremium ? (
         <section className="card-soft p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -91,6 +143,10 @@ export default async function AccountPage() {
       ) : null}
 
       <AccountSettingsForm initial={{ username, email, isPremium }} />
+
+      <AccountReferralsSection />
+
+      <AccountDeleteSection />
     </main>
   );
 }

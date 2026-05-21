@@ -10,6 +10,11 @@ export const APP_DESCRIPTION_SHORT = "Organiza tu viaje, rutas, gastos y documen
 
 export const APP_DOMAIN = "kaviro.app" as const;
 
+/** Contacto legal y privacidad (RGPD). */
+export const LEGAL_CONTACT_EMAIL = "hola@kaviro.app" as const;
+
+export const LEGAL_CONTROLLER_LABEL = "Kaviro (responsable del tratamiento)" as const;
+
 export const APP_MARKETING_TITLE = `${APP_NAME} — Organiza viajes en grupo sin esfuerzo` as const;
 
 export const APP_MARKETING_DESCRIPTION =

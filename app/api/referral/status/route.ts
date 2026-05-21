@@ -25,13 +25,26 @@ export async function GET() {
       referred_by?: string | null;
     };
 
+    let referralsCount = 0;
+    if (p.referral_code) {
+      const { count } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("referred_by", p.referral_code);
+      referralsCount = typeof count === "number" ? count : 0;
+    }
+
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "";
+
     return NextResponse.json({
       referralCode: p.referral_code ?? null,
       monthsEarned: p.referral_months_earned ?? 0,
+      referralsCount,
       wasReferred: Boolean(p.referred_by),
-      inviteUrl: p.referral_code
-        ? `${process.env.NEXT_PUBLIC_SITE_URL || ""}/invite/${p.referral_code}`
-        : null,
+      inviteUrl: p.referral_code && siteUrl ? `${siteUrl.replace(/\/$/, "")}/invite/${p.referral_code}` : null,
     });
   } catch (err) {
     console.error("Referral status error:", err);
