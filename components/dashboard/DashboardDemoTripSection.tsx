@@ -17,22 +17,14 @@ type Trip = {
   base_currency: string | null;
 };
 
-const STORAGE_KEY = "kaviro_demo_section_collapsed";
-
 export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [resetting, setResetting] = useState(false);
   const router = useRouter();
 
-  // Por defecto expandido; solo colapsar si el usuario lo eligió antes
   useEffect(() => {
     setMounted(true);
-    try {
-      if (window.localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
-    } catch {
-      /* private mode */
-    }
   }, []);
 
   async function handleReset() {
@@ -56,9 +48,7 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
   }
 
   function toggle() {
-    const next = !collapsed;
-    setCollapsed(next);
-    try { window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0"); } catch { /* */ }
+    setCollapsed((c) => !c);
   }
 
   if (!trips.length) return null;

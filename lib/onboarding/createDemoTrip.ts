@@ -53,6 +53,13 @@ export function shouldRedirectToDemoTour(profile: DemoOnboardingProfile | null):
   return Boolean(profile.demo_trip_id);
 }
 
+/** Aún no ha completado ni saltado el tour demo (primera visita al panel). */
+export function isFirstDemoOnboardingVisit(profile: DemoOnboardingProfile | null): boolean {
+  if (!profile) return true;
+  if (profile.demo_onboarding_skipped_at || profile.demo_onboarding_completed_at) return false;
+  return true;
+}
+
 export async function ensureDemoTripForUser(user: User): Promise<{
   tripId: string;
   created: boolean;

@@ -14,6 +14,7 @@ import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
 import {
   ensureDemoTripForUser,
+  isFirstDemoOnboardingVisit,
   readDemoOnboardingProfile,
   shouldRedirectToDemoTour,
 } from "@/lib/onboarding/createDemoTrip";
@@ -108,10 +109,12 @@ export default async function DashboardPage() {
   const isAdmin = await isPlatformAdmin(user.id, user.email);
 
   let demoTripId: string | null = null;
+  let isFirstOnboardingVisit = true;
   try {
     const ensured = await ensureDemoTripForUser(user);
     demoTripId = ensured.tripId;
     const onboardingProfile = (await readDemoOnboardingProfile(user.id)) ?? ensured.profile;
+    isFirstOnboardingVisit = isFirstDemoOnboardingVisit(onboardingProfile);
     if (shouldRedirectToDemoTour(onboardingProfile)) {
       redirect(`/trip/${encodeURIComponent(ensured.tripId)}/summary?tutorial=demo`);
     }
@@ -213,14 +216,27 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <DashboardDemoTripSection trips={demoTrips} />
-
-      <OnboardingNudge
-        hasTrips={realTrips.length > 0}
-        hasParticipants={hasParticipants}
-        hasExpenses={hasExpenses}
-        demoTripId={demoTripId}
-      />
+      {isFirstOnboardingVisit ? (
+        <>
+          <OnboardingNudge
+            hasTrips={realTrips.length > 0}
+            hasParticipants={hasParticipants}
+            hasExpenses={hasExpenses}
+            demoTripId={demoTripId}
+          />
+          <DashboardDemoTripSection trips={demoTrips} />
+        </>
+      ) : (
+        <>
+          <DashboardDemoTripSection trips={demoTrips} />
+          <OnboardingNudge
+            hasTrips={realTrips.length > 0}
+            hasParticipants={hasParticipants}
+            hasExpenses={hasExpenses}
+            demoTripId={demoTripId}
+          />
+        </>
+      )}
 
       <section
         className={`mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
