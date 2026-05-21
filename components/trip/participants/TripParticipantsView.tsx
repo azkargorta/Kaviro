@@ -1,8 +1,6 @@
 "use client";
 
-import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
@@ -12,7 +10,6 @@ import {
   type TripParticipant,
   type TripRole,
 } from "@/hooks/useTripParticipants";
-import { useTripInvites } from "@/hooks/useTripInvites";
 import { supabase } from "@/lib/supabase";
 import ParticipantLinkProfilePanel from "./ParticipantLinkProfilePanel";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
@@ -37,8 +34,6 @@ import {
   UserPlus,
   Users,
   UserCheck,
-  QrCode,
-  X,
 } from "lucide-react";
 
 type TripParticipantsViewProps = {
@@ -128,6 +123,7 @@ function ActionMenu({
         {canInvite ? (
           <>
             <button
+            data-tour="participants-invite-btn"
               type="button"
               onClick={() => {
                 onInvite();
@@ -187,17 +183,8 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [serverCanManageParticipants, setServerCanManageParticipants] = useState<boolean | null>(null);
   const [serverAccessLoaded, setServerAccessLoaded] = useState(false);
 
-  const isDemoTrip = useIsDemoTrip();
   const [isCreating, setIsCreating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
-  const [showQr, setShowQr] = useState(false);
-  const [qrUrl, setQrUrl] = useState<string | null>(null);
-  const [qrLoading, setQrLoading] = useState(false);
-  const { createInvite, buildInviteUrl } = useTripInvites();
-
-  useEffect(() => {
-    if (isDemoTrip) setIsInviting(true);
-  }, [isDemoTrip]);
   const [inviteParticipant, setInviteParticipant] = useState<TripParticipant | null>(null);
   const [editingParticipant, setEditingParticipant] = useState<TripParticipant | null>(null);
   const [linkingParticipant, setLinkingParticipant] = useState<TripParticipant | null>(null);
@@ -363,17 +350,6 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     setIsInviting((prev) => !prev);
   }
 
-  async function handleCreateQr() {
-    if (showQr && qrUrl) { setShowQr(false); setQrUrl(null); return; }
-    setQrLoading(true);
-    try {
-      const invite = await createInvite({ trip_id: tripId, role: "viewer" });
-      setQrUrl(buildInviteUrl(invite.token));
-      setShowQr(true);
-    } catch { /* silent */ }
-    finally { setQrLoading(false); }
-  }
-
   function openParticipantInvite(participant: TripParticipant) {
     setEditingParticipant(null);
     setLinkingParticipant(null);
@@ -393,7 +369,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   if (loading) {
     return (
       <main className="space-y-6">
-        <div className="h-40 animate-pulse rounded-3xl bg-gradient-to-r from-[#FEF2F2] via-white to-[#FECACA]" />
+        <div className="h-40 animate-pulse rounded-3xl bg-gradient-to-r from-slate-200 via-slate-100 to-violet-100" />
         <div className="grid gap-3 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-[#1E293B]" />
@@ -506,7 +482,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por nombre, @usuario, email o teléfono…"
-                className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-[var(--brand-border)] transition focus:border-[var(--brand)] focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+                className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-violet-200 transition focus:border-violet-300 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
           </div>
@@ -523,7 +499,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             <button
               type="button"
               onClick={() => setFiltersOpen((v) => !v)}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-2 text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-semibold text-violet-950 shadow-sm transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
               aria-expanded={filtersOpen}
             >
               {filtersOpen ? "Ocultar filtros" : "Mostrar filtros"}
@@ -601,7 +577,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 <article
                   key={participant.id}
                   className={`group rounded-3xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
-                    isYou ? "border-[var(--brand-border)] ring-1 ring-[var(--brand-border)]" : "border-slate-200"
+                    isYou ? "border-violet-200 ring-1 ring-violet-100" : "border-slate-200"
                   }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -624,7 +600,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                             />
                           </div>
                           {isYou ? (
-                            <span className="rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
+                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-violet-800">
                               Tú
                             </span>
                           ) : null}
@@ -703,7 +679,6 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
-                  data-tour="participants-add-btn"
                   type="button"
                   onClick={() => {
                     setEditingParticipant(null);
@@ -718,7 +693,6 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   {isCreating ? "Cerrar" : "Añadir pasajero"}
                 </button>
                 <button
-                  data-tour="participants-invite-btn"
                   type="button"
                   onClick={openGenericInvite}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
@@ -726,20 +700,10 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   <MessageCircle className="h-4 w-4 text-emerald-600" aria-hidden />
                   {isInviting && !inviteParticipant ? "Cerrar invitación" : "Invitar por WhatsApp"}
                 </button>
-                <button
-                  data-tour="participants-qr-btn"
-                  type="button"
-                  onClick={handleCreateQr}
-                  disabled={qrLoading}
-                  className="col-span-full inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-2.5 text-sm font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] disabled:opacity-50"
-                >
-                  <QrCode className="h-4 w-4" aria-hidden />
-                  {qrLoading ? "Generando QR..." : showQr ? "Ocultar QR" : "Crear QR de invitación"}
-                </button>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                Envía un enlace único por WhatsApp o genera un QR para escanear en el momento.
+                Envía un enlace único por WhatsApp. La persona inicia sesión y Kaviro crea o vincula su pasajero automáticamente.
               </p>
             </div>
           ) : (
@@ -751,48 +715,8 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             </div>
           )}
 
-          {canManageParticipants && showQr && qrUrl ? (
-            <div data-tour="participants-qr" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <div>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">QR de invitación</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Escanea para unirte al viaje</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setShowQr(false); setQrUrl(null); }}
-                  className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50"
-                  aria-label="Cerrar QR"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="flex flex-col items-center gap-4">
-                <Image
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=0f172a&margin=8`}
-                  alt="QR de invitación al viaje"
-                  width={200}
-                  height={200}
-                  unoptimized
-                  className="rounded-2xl border border-slate-100 shadow-sm dark:hidden"
-                />
-                <Image
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=0f1623&color=f1f5f9&margin=8`}
-                  alt="QR de invitación al viaje"
-                  width={200}
-                  height={200}
-                  unoptimized
-                  className="rounded-2xl border border-[#1E293B] shadow-sm hidden dark:block"
-                />
-                <p className="text-center text-xs text-slate-400 leading-snug max-w-[200px]">
-                  Muéstralo en pantalla para que cualquier persona del grupo pueda escanear y unirse al instante.
-                </p>
-              </div>
-            </div>
-          ) : null}
-
           {canManageParticipants && isInviting ? (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
+            <div data-tour="participants-qr" className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
               <InviteParticipantPanel
                 tripId={tripId}
                 participant={inviteParticipant}
@@ -828,7 +752,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           ) : null}
 
           {canManageParticipants && linkingParticipant ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-1 shadow-sm">
+            <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-1 shadow-sm">
               <ParticipantLinkProfilePanel
                 participant={linkingParticipant}
                 onSearchProfiles={searchProfiles}

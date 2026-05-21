@@ -135,6 +135,7 @@ export default function TripSummaryOverview({
   tripEndDate,
   tripDestination,
   activitiesCount,
+  participantsCount,
 }: {
   tripId: string;
   tripName?: string | null;
@@ -149,6 +150,7 @@ export default function TripSummaryOverview({
   tripEndDate?: string | null;
   tripDestination?: string | null;
   activitiesCount?: number;
+  participantsCount?: number;
 }) {
   const isDark = useIsDarkMode();
   const planHref = `/trip/${tripId}/plan`;
@@ -434,15 +436,6 @@ export default function TripSummaryOverview({
           )}
         </section>
       </div>
-
-      {/* ── Search card ──────────────────────────────────────────── */}
-      <TripSearchCard
-        destination={tripDestination ?? null}
-        startDate={tripStartDate ?? null}
-        endDate={tripEndDate ?? null}
-        participants={Math.max(1, participantsCount ?? 1)}
-        tripId={tripId}
-      />
 
       {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}
             {/* ── Search card ──────────────────────────────────────────── */}
