@@ -5,14 +5,18 @@ import {
   PROFILE_AVATAR_EMOJIS,
   PROFILE_AVATAR_ILLUSTRATIONS,
   normalizeProfileAvatar,
+  resolveIllustration,
   type ProfileAvatarKind,
+  type ProfileIllustrationId,
 } from "@/lib/profile-avatar";
 import UserAvatar from "@/components/profile/UserAvatar";
 
 export default function ProfileAvatarPicker() {
   const [kind, setKind] = useState<ProfileAvatarKind>("emoji");
   const [emoji, setEmoji] = useState<string>(PROFILE_AVATAR_EMOJIS[0]);
-  const [illustration, setIllustration] = useState(PROFILE_AVATAR_ILLUSTRATIONS[0]!.id);
+  const [illustration, setIllustration] = useState<ProfileIllustrationId>(
+    PROFILE_AVATAR_ILLUSTRATIONS[0]!.id
+  );
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -25,7 +29,7 @@ export default function ProfileAvatarPicker() {
           const n = normalizeProfileAvatar(d.avatar);
           setKind(n.avatar_kind);
           if (n.avatar_emoji) setEmoji(n.avatar_emoji);
-          if (n.avatar_illustration) setIllustration(n.avatar_illustration);
+          if (n.avatar_illustration) setIllustration(resolveIllustration(n.avatar_illustration).id);
         }
       })
       .catch(() => {})
