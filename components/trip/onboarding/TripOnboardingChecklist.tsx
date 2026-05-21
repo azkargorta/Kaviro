@@ -128,7 +128,7 @@ export default function TripOnboardingChecklist({ tripId, tripName, isPremium, c
       aria-label="Checklist del viaje"
       data-tour="trip-onboarding-checklist"
     >
-      <div className="flex flex-wrap items-center gap-3 border-b border-[var(--brand-border)]/60 bg-white/60 px-4 py-3 dark:bg-[#0F1623]/80">
+      <div className="flex flex-col gap-3 border-b border-[var(--brand-border)]/60 bg-white/60 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center dark:bg-[#0F1623]/80">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand)]">Configura tu viaje</p>
           <p className="truncate text-sm font-extrabold text-slate-900 dark:text-white">
@@ -138,12 +138,12 @@ export default function TripOnboardingChecklist({ tripId, tripName, isPremium, c
         {nextStep ? (
           <Link
             href={nextStep.href}
-            className="inline-flex min-h-[36px] shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
+            className="inline-flex min-h-[40px] w-full shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] sm:w-auto"
           >
             Siguiente: {nextStep.title}
           </Link>
         ) : null}
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:justify-start">
           <button
             type="button"
             onClick={toggleExpanded}

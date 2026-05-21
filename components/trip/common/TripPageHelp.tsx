@@ -518,7 +518,7 @@ export default function TripPageHelp({ heroMode = false }: { heroMode?: boolean 
         <button
           type="button"
           onClick={() => setSpotlightOpen(true)}
-          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#F87171]/30 bg-[#F87171]/10 px-4 text-[10px] font-semibold text-[#F87171] shadow-sm transition hover:bg-[#F87171]/20"
+          className={`inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#F87171]/30 bg-[#F87171]/10 px-4 text-[10px] font-semibold text-[#F87171] shadow-sm transition hover:bg-[#F87171]/20 ${heroMode ? "hidden sm:inline-flex" : ""}`}
           aria-label="Tour de esta pestaña"
         >
           <span className="text-sm">🗺️</span>

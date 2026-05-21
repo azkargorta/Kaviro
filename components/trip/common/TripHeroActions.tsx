@@ -36,10 +36,10 @@ export default function TripHeroActions({ tripId }: { tripId: string }) {
       <Link
         href="/dashboard"
         data-tour="topbar-mis-viajes"
-        className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/20 px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-white/30"
+        className="inline-flex max-w-[42vw] items-center gap-1 rounded-full border border-white/30 bg-white/20 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white/30 sm:max-w-none sm:gap-1.5 sm:px-3 sm:text-[12px]"
       >
         <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-        Mis viajes
+        <span className="truncate">Mis viajes</span>
       </Link>
 
       {/* Right: utility + dropdown */}

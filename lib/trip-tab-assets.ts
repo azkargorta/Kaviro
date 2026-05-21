@@ -26,5 +26,9 @@ export function getTripTabIconSrc(key: TripTabKey, isDark: boolean) {
 export const tripTabIconCoralFilterDark =
   "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
 
+/** Tiñe assets raster azules al coral de marca (#F87171) — logos lockup, etc. */
+export const kaviroCoralImageFilter =
+  "[filter:brightness(0)_saturate(100%)_invert(54%)_sepia(93%)_saturate(4590%)_hue-rotate(346deg)_brightness(101%)_contrast(97%)]";
+
 /** Compat: callers antiguos que esperaban el src directo de Resumen. */
 export const TRIP_TAB_SUMMARY_SRC = "/brand/tabs/summary.png";

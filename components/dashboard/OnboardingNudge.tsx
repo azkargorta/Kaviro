@@ -104,7 +104,7 @@ export default function OnboardingNudge({
   if (!mounted || dismissed || (hasTrips && hasParticipants && hasExpenses)) return null;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 md:px-5">
+    <div className="mx-auto max-w-2xl min-w-0 px-4 md:px-5">
       <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">

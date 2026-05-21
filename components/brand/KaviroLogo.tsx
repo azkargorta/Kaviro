@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/brand";
+import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
 
 type Props = {
   /** Se mantiene por compatibilidad con usos previos. */
@@ -18,6 +19,7 @@ type Props = {
 
 const KAVIRO_LOCKUP_FULLCOLOR_SRC = "/brand/kaviro-lockup-fullcolor.png";
 const KAVIRO_LOCKUP_WHITE_SRC = "/brand/kaviro-lockup-white.png";
+const KAVIRO_ICON_SRC = "/brand/icon.png";
 
 const lockupHeightClass = {
   sm: "h-7 max-h-7 sm:h-8 sm:max-h-8",
@@ -47,9 +49,10 @@ export default function KaviroLogo({
     "max-w-[min(840px,96vw)]",
     isLight
       ? "opacity-[0.98] drop-shadow-[0_1px_0_rgba(0,0,0,0.35)] drop-shadow-[0_10px_24px_rgba(0,0,0,0.22)]"
-      : "opacity-[0.98] drop-shadow-[0_10px_18px_rgba(2,6,23,0.10)]",
+      : ["opacity-[0.98] drop-shadow-[0_10px_18px_rgba(2,6,23,0.10)]", kaviroCoralImageFilter],
     imageClassName,
   ]
+    .flat()
     .filter(Boolean)
     .join(" ");
 
@@ -74,7 +77,7 @@ export default function KaviroLogo({
         aria-hidden
       >
         <Image
-          src="/brand/kaviro-globe-pin.png"
+          src={KAVIRO_ICON_SRC}
           width={px}
           height={px}
           alt=""

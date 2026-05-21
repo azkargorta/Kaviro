@@ -16,6 +16,6 @@ test.describe("Tour demo (requiere E2E_USER_*)", () => {
     await expect(page).toHaveURL(/tutorial=demo/, { timeout: 15_000 });
     await expect(page.getByText("Bienvenido a Kaviro")).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Siguiente" }).click();
-    await expect(page.getByText("Barra superior")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Barra del viaje/i)).toBeVisible({ timeout: 10_000 });
   });
 });

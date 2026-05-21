@@ -46,7 +46,7 @@ export default function DemoTripBanner() {
         Explora Londres de ejemplo con plan, gastos en GBP/EUR/USD y balances. Al terminar el recorrido volverás al panel.
         Puedes <strong>saltar la demo</strong> cuando quieras.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {tourHref ? (
           <Link
             href={tourHref}
