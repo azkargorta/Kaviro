@@ -375,6 +375,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         tripEndDate={currentTrip.end_date}
         tripDestination={currentTrip.destination}
         activitiesCount={activitiesCount ?? 0}
+        participantsCount={participantsCount ?? 1}
       />
 
       {alerts.length ? (

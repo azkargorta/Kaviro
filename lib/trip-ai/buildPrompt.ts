@@ -1,6 +1,7 @@
 export type TripAiMode =
   | "general"
   | "planning"
+  | "search"
   | "expenses"
   | "optimizer"
   | "actions"
@@ -9,6 +10,7 @@ export type TripAiMode =
 
 export function buildTripPrompt(context: string, question: string, mode: TripAiMode) {
   const modeInstructions: Record<TripAiMode, string> = {
+    search: `Eres un asistente de búsqueda de viajes. El usuario quiere encontrar hoteles, vuelos, trenes, ferries o autobuses para su viaje. Contexto del viaje: {context}. Cuando el usuario describa lo que busca: 1) Identifica el tipo (hotel/vuelo/tren/ferry/bus), 2) Usa los datos del viaje (destino, fechas, participantes), 3) Sugiere 3-4 opciones concretas con nombre, descripción breve, rango de precio estimado y URL directa. Formatea las opciones como lista con nombre en negrita, descripción, precio aproximado y enlace. Si el usuario no especifica, pregunta primero qué tipo de búsqueda quiere hacer.`,
     general:
       [
         "Responde como asistente general del viaje.",
