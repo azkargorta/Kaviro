@@ -4,32 +4,56 @@ import { useEffect, useState } from "react";
 import {
   PROFILE_AVATAR_EMOJIS,
   PROFILE_AVATAR_ILLUSTRATIONS,
+  DICEBEAR_STYLES,
+  DICEBEAR_PREVIEW_SEEDS,
   normalizeProfileAvatar,
   resolveIllustration,
+  dicebearUrl,
   type ProfileAvatarKind,
   type ProfileIllustrationId,
+  type DiceBearStyle,
 } from "@/lib/profile-avatar";
 import UserAvatar from "@/components/profile/UserAvatar";
 
+type Tab = ProfileAvatarKind;
+
+const CATEGORY_LABELS = { personas: "Personas", emojis: "Emojis", animales: "Animales y robots" };
+
 export default function ProfileAvatarPicker() {
-  const [kind, setKind] = useState<ProfileAvatarKind>("emoji");
-  const [emoji, setEmoji] = useState<string>(PROFILE_AVATAR_EMOJIS[0]);
+  const [tab, setTab] = useState<Tab>("dicebear");
+  const [emoji, setEmoji] = useState<string>(PROFILE_AVATAR_EMOJIS[0]!);
   const [illustration, setIllustration] = useState<ProfileIllustrationId>(
     PROFILE_AVATAR_ILLUSTRATIONS[0]!.id
   );
+  const [dicebearStyle, setDicebearStyle] = useState<DiceBearStyle>("fun-emoji");
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [userId, setUserId] = useState<string>("kaviro-preview");
 
+  // Load current avatar + userId on mount
   useEffect(() => {
-    fetch("/api/account/profile-avatar", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.avatar) {
-          const n = normalizeProfileAvatar(d.avatar);
-          setKind(n.avatar_kind);
+    Promise.all([
+      fetch("/api/account/profile-avatar", { credentials: "include" }).then((r) =>
+        r.ok ? r.json() : null
+      ),
+      fetch("/api/auth/me", { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ])
+      .then(([avatarData, meData]) => {
+        if (meData?.id) setUserId(meData.id);
+        if (avatarData?.avatar) {
+          const n = normalizeProfileAvatar(avatarData.avatar);
+          setTab(n.avatar_kind);
           if (n.avatar_emoji) setEmoji(n.avatar_emoji);
-          if (n.avatar_illustration) setIllustration(resolveIllustration(n.avatar_illustration).id);
+          if (n.avatar_illustration) {
+            if (n.avatar_kind === "dicebear") {
+              setDicebearStyle((n.avatar_illustration as DiceBearStyle) || "fun-emoji");
+            } else {
+              setIllustration(resolveIllustration(n.avatar_illustration).id);
+            }
+          }
         }
       })
       .catch(() => {})
@@ -40,15 +64,18 @@ export default function ProfileAvatarPicker() {
     setSaving(true);
     setStatus(null);
     try {
+      const body =
+        tab === "dicebear"
+          ? { avatar_kind: "dicebear", avatar_emoji: null, avatar_illustration: dicebearStyle }
+          : tab === "illustration"
+          ? { avatar_kind: "illustration", avatar_emoji: null, avatar_illustration: illustration }
+          : { avatar_kind: "emoji", avatar_emoji: emoji, avatar_illustration: null };
+
       const res = await fetch("/api/account/profile-avatar", {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          avatar_kind: kind,
-          avatar_emoji: emoji,
-          avatar_illustration: illustration,
-        }),
+        body: JSON.stringify(body),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.error || "Error al guardar");
@@ -60,48 +87,126 @@ export default function ProfileAvatarPicker() {
     }
   }
 
-  const previewName = "Tú";
+  // Preview props
+  const previewProps =
+    tab === "dicebear"
+      ? { avatarKind: "dicebear" as Tab, avatarIllustration: dicebearStyle, avatarSeed: userId }
+      : tab === "illustration"
+      ? { avatarKind: "illustration" as Tab, avatarIllustration: illustration }
+      : { avatarKind: "emoji" as Tab, avatarEmoji: emoji };
+
+  // Group dicebear styles by category
+  const dicebearByCategory = DICEBEAR_STYLES.reduce<Record<string, typeof DICEBEAR_STYLES>>((acc, s) => {
+    (acc[s.category] = acc[s.category] || []).push(s);
+    return acc;
+  }, {});
 
   return (
-    <section className="card-soft space-y-4 p-6">
+    <section className="card-soft space-y-5 p-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Personalización</p>
         <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">Tu avatar de viajero</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Elige un emoji o una ilustración. Se verá en participantes, invitaciones y tu perfil en el grupo.
+          Elige entre ilustraciones de personas, animales, emojis o gradientes.
+          Se verá en participantes, invitaciones y tu perfil.
         </p>
       </div>
 
+      {/* Preview */}
       <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
         <UserAvatar
-          displayName={previewName}
-          avatarKind={kind}
-          avatarEmoji={emoji}
-          avatarIllustration={illustration}
+          displayName="Tú"
+          {...previewProps}
           size="lg"
           ringClassName="ring-2 ring-[#F87171]/30"
         />
-        <p className="text-sm text-slate-600 dark:text-slate-300">Vista previa</p>
+        <div>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Vista previa</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {tab === "dicebear" ? "Ilustración única para tu cuenta"
+              : tab === "illustration" ? "Gradiente personalizado"
+              : "Emoji seleccionado"}
+          </p>
+        </div>
       </div>
 
-      <div className="flex gap-2">
-        {(["emoji", "illustration"] as const).map((k) => (
+      {/* Tab selector */}
+      <div className="flex flex-wrap gap-2">
+        {([
+          { id: "dicebear",     label: "✨ Ilustraciones" },
+          { id: "emoji",        label: "😎 Emojis" },
+          { id: "illustration", label: "🎨 Gradientes" },
+        ] as const).map((t) => (
           <button
-            key={k}
+            key={t.id}
             type="button"
-            onClick={() => setKind(k)}
+            onClick={() => setTab(t.id as Tab)}
             className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-              kind === k
+              tab === t.id
                 ? "bg-[#F87171] text-white"
                 : "border border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
             }`}
           >
-            {k === "emoji" ? "Emoji" : "Ilustración"}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {kind === "emoji" ? (
+      {/* ── DiceBear panel ───────────────────────────────────────────────── */}
+      {tab === "dicebear" && (
+        <div className="space-y-5">
+          {(Object.entries(dicebearByCategory) as [string, typeof DICEBEAR_STYLES][]).map(
+            ([cat, styles]) => (
+              <div key={cat}>
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat}
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {styles.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setDicebearStyle(st.id)}
+                      className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                        dicebearStyle === st.id
+                          ? "border-[#F87171] bg-[#F87171]/5 ring-1 ring-[#F87171]/40"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
+                      }`}
+                    >
+                      {/* 6 preview seeds */}
+                      <div className="flex shrink-0 gap-0.5">
+                        {DICEBEAR_PREVIEW_SEEDS.slice(0, 4).map((seed) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={seed}
+                            src={dicebearUrl(st.id, seed, 56)}
+                            alt=""
+                            width={28}
+                            height={28}
+                            className="h-7 w-7 rounded-full border border-white/60 object-cover"
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold text-slate-800 dark:text-slate-100">
+                          {st.label}
+                        </span>
+                        <span className="block text-[10px] text-slate-400">
+                          {st.id}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {/* ── Emoji panel ──────────────────────────────────────────────────── */}
+      {tab === "emoji" && (
         <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
           {PROFILE_AVATAR_EMOJIS.map((e) => (
             <button
@@ -111,7 +216,7 @@ export default function ProfileAvatarPicker() {
               className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl transition ${
                 emoji === e
                   ? "bg-[#F87171]/15 ring-2 ring-[#F87171]"
-                  : "bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-600"
+                  : "border border-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-600"
               }`}
               aria-label={`Emoji ${e}`}
             >
@@ -119,7 +224,10 @@ export default function ProfileAvatarPicker() {
             </button>
           ))}
         </div>
-      ) : (
+      )}
+
+      {/* ── Illustration panel ───────────────────────────────────────────── */}
+      {tab === "illustration" && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {PROFILE_AVATAR_ILLUSTRATIONS.map((ill) => (
             <button
@@ -143,6 +251,7 @@ export default function ProfileAvatarPicker() {
         </div>
       )}
 
+      {/* Save */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -152,7 +261,7 @@ export default function ProfileAvatarPicker() {
         >
           {saving ? "Guardando…" : "Guardar avatar"}
         </button>
-        {status ? <p className="text-sm text-slate-600 dark:text-slate-400">{status}</p> : null}
+        {status && <p className="text-sm text-slate-600 dark:text-slate-400">{status}</p>}
       </div>
     </section>
   );
