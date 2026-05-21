@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
 import TravelMatesInvitePanel from "./TravelMatesInvitePanel";
@@ -196,6 +196,41 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [linkFilter, setLinkFilter] = useState<"all" | "linked" | "unlinked">("all");
   const [roleFilter, setRoleFilter] = useState<"all" | TripRole>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const participantFormRef = useRef<HTMLDivElement | null>(null);
+
+  const showParticipantForm = Boolean(isCreating || editingParticipant);
+
+  useEffect(() => {
+    if (!showParticipantForm) return;
+    const t = window.setTimeout(() => {
+      participantFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [showParticipantForm, editingParticipant?.id, isCreating]);
+
+  function openCreateParticipant() {
+    setEditingParticipant(null);
+    setInviteParticipant(null);
+    setIsInviting(false);
+    setLinkingParticipant(null);
+    setIsCreating(true);
+  }
+
+  function closeCreateParticipant() {
+    setIsCreating(false);
+  }
+
+  function openEditParticipant(participant: TripParticipant) {
+    setIsCreating(false);
+    setInviteParticipant(null);
+    setIsInviting(false);
+    setLinkingParticipant(null);
+    setEditingParticipant(participant);
+  }
+
+  function closeEditParticipant() {
+    setEditingParticipant(null);
+  }
 
   useEffect(() => {
     if (isLoadedUser) return;
@@ -305,7 +340,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
       user_id: null,
       role: input.role ?? "viewer",
     });
-    setIsCreating(false);
+    closeCreateParticipant();
   }
 
   async function handleUpdate(input: {
@@ -325,7 +360,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
       joined_via: input.joined_via ?? null,
       role: input.role,
     });
-    setEditingParticipant(null);
+    closeEditParticipant();
   }
 
   async function handleRemove(id: string) {
@@ -660,7 +695,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                       <div className="flex items-start justify-end">
                         <ActionMenu
                           canInvite={canInviteThisParticipant}
-                          onEdit={() => setEditingParticipant(participant)}
+                          onEdit={() => openEditParticipant(participant)}
                           onInvite={() => openParticipantInvite(participant)}
                           onLink={() => openLinkProfile(participant)}
                           onRemove={() => void handleRemove(participant.id)}
@@ -673,6 +708,32 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             })}
           </div>
         )}
+
+        {canManageParticipants && showParticipantForm ? (
+          <div
+            ref={participantFormRef}
+            id="participant-form-panel"
+            className="scroll-mt-24 rounded-2xl border border-violet-200 bg-violet-50/30 p-1 shadow-sm dark:border-violet-900/40 dark:bg-violet-950/20"
+          >
+            {isCreating ? (
+              <ParticipantForm
+                tripId={tripId}
+                onSubmit={handleCreate}
+                onCancel={closeCreateParticipant}
+                submitLabel="Añadir participante"
+              />
+            ) : null}
+            {editingParticipant ? (
+              <ParticipantForm
+                tripId={tripId}
+                initialData={editingParticipant}
+                onSubmit={handleUpdate}
+                onCancel={closeEditParticipant}
+                submitLabel="Guardar cambios"
+              />
+            ) : null}
+          </div>
+        ) : null}
         </section>
 
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
@@ -693,17 +754,11 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditingParticipant(null);
-                    setInviteParticipant(null);
-                    setIsInviting(false);
-                    setLinkingParticipant(null);
-                    setIsCreating((prev) => !prev);
-                  }}
+                  onClick={() => (isCreating ? closeCreateParticipant() : openCreateParticipant())}
                   className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
                 >
                   <UserPlus className="h-4 w-4" aria-hidden />
-                  {isCreating ? "Cerrar" : "Añadir pasajero"}
+                  {isCreating ? "Cerrar formulario" : "Añadir pasajero"}
                 </button>
                 <button
                   type="button"
@@ -747,25 +802,6 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 }}
               />
             </div>
-          ) : null}
-
-          {canManageParticipants && isCreating ? (
-            <ParticipantForm
-              tripId={tripId}
-              onSubmit={handleCreate}
-              onCancel={() => setIsCreating(false)}
-              submitLabel="Añadir participante"
-            />
-          ) : null}
-
-          {canManageParticipants && editingParticipant ? (
-            <ParticipantForm
-              tripId={tripId}
-              initialData={editingParticipant}
-              onSubmit={handleUpdate}
-              onCancel={() => setEditingParticipant(null)}
-              submitLabel="Guardar cambios"
-            />
           ) : null}
 
           {canManageParticipants && linkingParticipant ? (
