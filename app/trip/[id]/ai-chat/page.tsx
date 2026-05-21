@@ -20,7 +20,7 @@ function parseLaunchIntent(
   return null;
 }
 
-/** `?modo=planificador|desplazamientos|general|documentos` para abrir el chat con un foco claro. */
+/** `?modo=planificador|desplazamientos|general|documentos|buscar` para abrir el chat con un foco claro. */
 function parseAssistantModo(
   searchParams: Record<string, string | string[] | undefined> | undefined
 ): TripAiMode | null {
@@ -30,6 +30,15 @@ function parseAssistantModo(
   if (v === "planificador" || v === "planning" || v === "plan") return "planning";
   if (v === "desplazamientos" || v === "desplazamiento" || v === "dia" || v === "day" || v === "day_planner") return "day_planner";
   if (v === "documentos" || v === "docs" || v === "travel_docs" || v === "visados" || v === "papeles") return "travel_docs";
+  if (
+    v === "buscar" ||
+    v === "search" ||
+    v === "reservar" ||
+    v === "hoteles" ||
+    v === "vuelos" ||
+    v === "transporte"
+  )
+    return "search";
   if (v === "general" || v === "chat") return "general";
   return null;
 }

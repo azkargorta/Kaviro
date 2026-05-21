@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildTripSummaryForAi } from "@/lib/trip-ai/buildTripSummary";
 import { buildTripPrompt, type TripAiMode } from "@/lib/trip-ai/buildPrompt";
+import { buildSearchModeContextHint } from "@/lib/trip-ai/travelSearchOffers";
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { appendMessage, createConversation, getConversation, getCachedResponse, setCachedResponse } from "@/lib/trip-ai/chatStore";
 import { inferAIActionFromQuestion, parseClientAIAction, resolveEffectiveTripAiMode, type AIActionId } from "@/lib/trip-ai/aiActions";
@@ -114,6 +115,8 @@ export async function POST(req: Request) {
         ? "\nEstás en modo documentación: prioriza lista de requisitos por país; pregunta nacionalidad si falta; recuerda verificar en fuentes oficiales."
         : "";
 
+    const searchHint = effectiveMode === "search" ? `\n${buildSearchModeContextHint()}` : "";
+
     const actionHint =
       actionResult
         ? `\nAcción ejecutada en la app: ${actionResult}\nExplícale al usuario qué has hecho y qué conviene revisar ahora.`
@@ -124,7 +127,7 @@ export async function POST(req: Request) {
       .join("\n\n");
 
     const prompt = buildTripPrompt(
-      `${tripSummary}${hintBlock ? `\n\n${hintBlock}` : ""}${optimizerHint}${travelDocsHint}${actionHint}`,
+      `${tripSummary}${hintBlock ? `\n\n${hintBlock}` : ""}${optimizerHint}${travelDocsHint}${searchHint}${actionHint}`,
       question,
       effectiveMode
     );

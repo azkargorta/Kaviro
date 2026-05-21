@@ -5,7 +5,7 @@ import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight, FileText, MessageCircle, Route } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, FileText, MessageCircle, Route, Search } from "lucide-react";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
 import { useTripData } from "@/hooks/useTripData";
 import { useTripActivities } from "@/hooks/useTripActivities";
@@ -14,6 +14,13 @@ import type { AIActionId } from "@/lib/trip-ai/aiActions";
 import type { TripAssistantSurface } from "@/lib/trip-assistant-context";
 import { parseTravelDocsChecklistFromAnswer } from "@/lib/trip-ai/travelDocsChecklist";
 import TravelDocsChecklistCard from "@/components/trip/ai/TravelDocsChecklistCard";
+import {
+  enrichTravelSearchOffers,
+  parseTravelSearchOffersFromAnswer,
+  SEARCH_JSON_END,
+  SEARCH_JSON_START,
+} from "@/lib/trip-ai/travelSearchOffers";
+import TravelSearchOffersCard from "@/components/trip/ai/TravelSearchOffersCard";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 
@@ -82,8 +89,14 @@ function assistantContextPreset(surface: TripAssistantSurface): AssistantContext
 
 const DEFAULT_PAGE_WELCOME =
   "Bienvenido ✈️\n\n" +
-  "Elige abajo el **foco** del asistente (planificador, un día y desplazamientos, chat general o documentos). Escribe con naturalidad o pulsa «Sugerir itinerario» si el plan está vacío.\n\n" +
+  "Elige abajo el **foco** del asistente (planificador, desplazamientos, buscar alojamiento/transporte, chat general o documentos). Escribe con naturalidad o pulsa «Sugerir itinerario» si el plan está vacío.\n\n" +
   "Cuando salga el itinerario en formato ejecutable, «Ejecutar plan» lo vuelca al mapa y al plan; los retoques puntuales van con «Aplicar cambios».";
+
+const SEARCH_FOCUS_WELCOME =
+  "Modo **buscar alojamiento y transporte**\n\n" +
+  "Puedo recomendarte **hoteles**, **vuelos**, **tren**, **ferry**, **autobús** o **coche de alquiler** usando las fechas y el destino de este viaje.\n\n" +
+  "Te daré opciones con **precios orientativos** (no en tiempo real) y enlaces para **reservar** en comparadores como Booking, Google Flights, Omio o Rentalcars.\n\n" +
+  "Ejemplos: «busca hoteles cerca del centro», «vuelos desde Barcelona ida y vuelta», «tren Madrid–Valencia» o «coche de alquiler en el aeropuerto».";
 
 const PLANNER_FOCUS_WELCOME =
   "Modo **Planificador (todo el viaje)**\n\n" +
@@ -117,6 +130,8 @@ function getManualModeWelcome(next: TripAiMode): string {
       return "Modo **optimizador**. Pide huecos en el plan, orden geográfico del día o ideas para aprovechar mejor el tiempo y las rutas.";
     case "actions":
       return "Modo **acciones**. Pide cambios concretos en actividades o rutas; si el asistente devuelve el bloque adecuado, podrás usar **«Aplicar cambios»**.";
+    case "search":
+      return SEARCH_FOCUS_WELCOME;
     default:
       return DEFAULT_PAGE_WELCOME;
   }
@@ -154,6 +169,9 @@ function buildInitialWelcomeMessages(params: {
   if (params.defaultAssistantMode === "travel_docs") {
     return [{ id: "welcome", role: "assistant", content: OPENING_TRAVEL_DOCS }];
   }
+  if (params.defaultAssistantMode === "search") {
+    return [{ id: "welcome", role: "assistant", content: SEARCH_FOCUS_WELCOME }];
+  }
   return [{ id: "welcome", role: "assistant", content: DEFAULT_PAGE_WELCOME }];
 }
 
@@ -182,6 +200,12 @@ const ASSISTANT_FOCUS_PRESETS: Array<{
     label: "Chat general",
     description: "Resúmenes, dudas amplias y recomendaciones.",
     Icon: MessageCircle,
+  },
+  {
+    id: "search",
+    label: "Buscar",
+    description: "Hoteles, vuelos, tren, ferry, bus o coche con enlaces.",
+    Icon: Search,
   },
   {
     id: "travel_docs",
@@ -339,6 +363,11 @@ function stripTripboardJsonBlocksForDisplay(content: string): string {
       start: "TRIPBOARD_TRAVEL_DOCS_JSON_START",
       end: "TRIPBOARD_TRAVEL_DOCS_JSON_END",
       label: "Checklist de documentos (tarjeta debajo del mensaje)",
+    },
+    {
+      start: SEARCH_JSON_START,
+      end: SEARCH_JSON_END,
+      label: "Opciones de búsqueda (tarjeta debajo del mensaje)",
     },
   ];
   let out = content;
@@ -516,7 +545,18 @@ export default function TripAiChatView({
     };
   }, []);
 
-  const { trip, reload: reloadTrip, loading: tripDataLoading } = useTripData(tripId);
+  const { trip, participants, reload: reloadTrip, loading: tripDataLoading } = useTripData(tripId);
+
+  const searchTripDefaults = useMemo(() => {
+    const dest = typeof trip?.destination === "string" && trip.destination.trim() ? trip.destination.trim() : "";
+    const start =
+      typeof trip?.start_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(trip.start_date) ? trip.start_date : "";
+    const end =
+      typeof trip?.end_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(trip.end_date) ? trip.end_date : start;
+    const adults = Math.max(1, participants?.length || 2);
+    if (!dest && !start) return undefined;
+    return { destination: dest || "Destino del viaje", startDate: start, endDate: end, adults };
+  }, [trip?.destination, trip?.start_date, trip?.end_date, participants?.length]);
   const { activities: tripPlanActivities, reload: reloadTripPlanActivities, loading: tripPlanActivitiesLoading } =
     useTripActivities(tripId);
 
@@ -2025,8 +2065,8 @@ export default function TripAiChatView({
               data-tour="ai-suggestions"
               className={
                 layout === "drawer"
-                  ? "mt-2 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4"
-                  : "mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4"
+                  ? "mt-2 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-3"
+                  : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
               }
             >
               {ASSISTANT_FOCUS_PRESETS.map((preset) => {
@@ -2231,6 +2271,9 @@ export default function TripAiChatView({
             {messages.map((message) => {
               const travelDocs =
                 message.role === "assistant" ? parseTravelDocsChecklistFromAnswer(message.content) : null;
+              const searchRaw =
+                message.role === "assistant" ? parseTravelSearchOffersFromAnswer(message.content) : null;
+              const searchOffers = searchRaw ? enrichTravelSearchOffers(searchRaw, searchTripDefaults) : null;
               return (
                 <div
                   key={message.id}
@@ -2252,6 +2295,7 @@ export default function TripAiChatView({
                       </div>
                     )}
                     {travelDocs ? <TravelDocsChecklistCard tripId={tripId} payload={travelDocs} /> : null}
+                    {searchOffers ? <TravelSearchOffersCard payload={searchOffers} /> : null}
                   </div>
                 </div>
               );

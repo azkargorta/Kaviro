@@ -10,23 +10,22 @@ export type TripAiMode =
 
 export function buildTripPrompt(context: string, question: string, mode: TripAiMode) {
   const modeInstructions: Record<TripAiMode, string> = {
-    search: `Eres un asistente especializado en búsqueda de alojamiento y transporte para viajes. CONTEXTO DEL VIAJE: {context}
-
-Cuando el usuario pida buscar algo, responde SIEMPRE con este formato exacto:
-
-**[Tipo]: [Descripción]**
-📍 Origen → Destino | Fechas | Viajeros
-
-Opciones recomendadas:
-1. **[Nombre]** — [descripción breve, 1 línea] | Precio estimado: [rango] | [URL directa]
-2. **[Nombre]** — [descripción breve] | Precio estimado: [rango] | [URL directa]
-3. **[Nombre]** — [descripción breve] | Precio estimado: [rango] | [URL directa]
-
-💡 Consejo: [un tip relevante sobre ese tipo de búsqueda]
-
-Tipos que puedes buscar: hotel, vuelo, tren, ferry, bus, alquiler de coche.
-Usa siempre los datos del viaje (destino, fechas, nº participantes) como base.
-Si el usuario no especifica origen, usa Madrid. Si no especifica tipo, pregunta.`,
+    search: [
+      "Modo «buscar alojamiento y transporte» (no tienes acceso a inventario en tiempo real).",
+      "Tipos: hotel, vuelo, tren, ferry, bus, coche (alquiler).",
+      "Usa destino, fechas y participantes del CONTEXTO DEL VIAJE. Si falta origen en vuelo/tren/bus, asume Madrid salvo que el usuario diga otra ciudad.",
+      "Si el usuario no especifica qué buscar, pregunta en una frase (hotel, vuelo, etc.).",
+      "Primero redacta 2–5 frases en markdown: resumen de la búsqueda, criterios y aviso de que los precios son orientativos (verificar en la web).",
+      "Cuando propongas opciones concretas (compañías, rutas, hoteles tipo, etc.), al FINAL incluye exactamente un bloque entre TRIPBOARD_SEARCH_JSON_START y TRIPBOARD_SEARCH_JSON_END.",
+      "Entre esos marcadores va solo JSON válido (sin markdown), forma:",
+      '{ "version": 1, "category": "hotel"|"vuelo"|"tren"|"ferry"|"bus"|"coche", "title": "string corto", "intro": "string|null", "tripLine": "Origen → Destino | fechas | N viajeros|null", "searchParams": { "origin": "string|null", "destination": "string|null", "startDate": "YYYY-MM-DD|null", "endDate": "YYYY-MM-DD|null", "adults": number|null, "tripType": "ida"|"ida-vuelta"|null, "pickup": "string|null", "dropoff": "string|null", "luggage": number|null }, "options": [ { "name": "string", "description": "string|null", "priceHint": "desde X€ o rango|null", "priceNote": "estimado"|"indicativo"|"verificar en web"|null, "bookingUrl": "https://...|null" } ], "tip": "string|null" }',
+      "Reglas del JSON:",
+      "- `options` debe tener 2–5 elementos cuando des recomendaciones; si solo haces preguntas sin opciones, omite el bloque TRIPBOARD_SEARCH_JSON.",
+      "- `priceHint` solo si puedes estimar con conocimiento general; si no, null y dilo en el texto.",
+      "- `priceNote` debe dejar claro que no es precio en vivo salvo que el usuario aporte un enlace con tarifa.",
+      "- `bookingUrl` solo si es una URL https real y estable; si no estás seguro, null (la app mostrará comparadores).",
+      "- No uses bloques TRIPBOARD_ITINERARY, TRIPBOARD_DIFF ni TRIPBOARD_TRAVEL_DOCS en este modo.",
+    ].join("\n"),
     general:
       [
         "Responde como asistente general del viaje.",

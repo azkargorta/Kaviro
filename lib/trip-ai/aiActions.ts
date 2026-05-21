@@ -173,6 +173,11 @@ export function resolveEffectiveTripAiMode(params: {
     return "travel_docs";
   }
 
+  /** Modo búsqueda: no forzar planificación ni optimizador. */
+  if (params.respectExplicitMode && explicit === "search") {
+    return "search";
+  }
+
   if (params.aiAction === "generate_trip") {
     return "planning";
   }
