@@ -25,7 +25,32 @@ export async function GET(request: Request) {
 
     if (error) throw new Error(error.message);
 
-    return NextResponse.json({ participants: data || [] });
+    const rows = (data ?? []) as Array<{ user_id?: string | null } & Record<string, unknown>>;
+    const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
+
+    let profileMap = new Map<string, Record<string, unknown>>();
+    if (userIds.length) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, avatar_kind, avatar_emoji, avatar_illustration")
+        .in("id", userIds);
+      profileMap = new Map(
+        ((profiles ?? []) as Array<{ id: string } & Record<string, unknown>>).map((p) => [p.id, p])
+      );
+    }
+
+    const participants = rows.map((row) => {
+      const uid = row.user_id as string | null | undefined;
+      const prof = uid ? profileMap.get(uid) : null;
+      return {
+        ...row,
+        profile_avatar_kind: prof?.avatar_kind ?? null,
+        profile_avatar_emoji: prof?.avatar_emoji ?? null,
+        profile_avatar_illustration: prof?.avatar_illustration ?? null,
+      };
+    });
+
+    return NextResponse.json({ participants });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudieron cargar los participantes." },

@@ -10,6 +10,7 @@ import { isPlatformAdmin } from "@/lib/platform-admin";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
+import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
 import {
@@ -215,6 +216,8 @@ export default async function DashboardPage() {
           <DashboardPageHeader isAdmin={isAdmin} />
         </div>
       </div>
+
+      <DashboardTripInvitesInbox />
 
       {isFirstOnboardingVisit ? (
         <>

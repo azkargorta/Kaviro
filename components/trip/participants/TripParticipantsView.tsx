@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
+import TravelMatesInvitePanel from "./TravelMatesInvitePanel";
+import UserAvatar from "@/components/profile/UserAvatar";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripTabActions from "@/components/trip/common/TripTabActions";
 import {
@@ -582,12 +584,23 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 flex-1 gap-3">
-                      {/* Ge2 — Avatar with deterministic hash color */}
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm ${avatarColor(participant.display_name || "?").bg} ${avatarColor(participant.display_name || "?").text}`}
-                      >
-                        {initials(participant.display_name || "?")}
-                      </div>
+                      {participant.user_id ? (
+                        <UserAvatar
+                          displayName={participant.display_name || "?"}
+                          avatarKind={participant.profile_avatar_kind}
+                          avatarEmoji={participant.profile_avatar_emoji}
+                          avatarIllustration={participant.profile_avatar_illustration}
+                          size="lg"
+                          className="rounded-2xl"
+                          ringClassName="ring-2 ring-slate-200 dark:ring-slate-600"
+                        />
+                      ) : (
+                        <div
+                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm ${avatarColor(participant.display_name || "?").bg} ${avatarColor(participant.display_name || "?").text}`}
+                        >
+                          {initials(participant.display_name || "?")}
+                        </div>
+                      )}
                       <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <div className="min-w-0 max-w-full text-base font-extrabold text-slate-900" role="heading" aria-level={3}>
@@ -705,6 +718,10 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               <p className="mt-3 text-xs text-slate-500">
                 Envía un enlace único por WhatsApp. La persona inicia sesión y Kaviro crea o vincula su pasajero automáticamente.
               </p>
+
+              <div className="mt-4">
+                <TravelMatesInvitePanel tripId={tripId} />
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 text-sm text-slate-600 shadow-sm">

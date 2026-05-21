@@ -1,6 +1,6 @@
 export type TripRole = "owner" | "editor" | "viewer";
 export type ParticipantStatus = "active" | "pending" | "removed";
-export type JoinedVia = "owner" | "manual" | "invite" | "whatsapp" | "linked";
+export type JoinedVia = "owner" | "manual" | "invite" | "whatsapp" | "linked" | "member_invite";
 
 export type ParticipantPermissions = {
   can_manage_trip: boolean;
@@ -25,6 +25,9 @@ export type TripParticipantRecord = {
   linked_at: string | null;
   created_at: string | null;
   updated_at: string | null;
+  profile_avatar_kind?: string | null;
+  profile_avatar_emoji?: string | null;
+  profile_avatar_illustration?: string | null;
 } & ParticipantPermissions;
 
 export const TRIP_ROLE_OPTIONS: { value: TripRole; label: string; description: string }[] = [

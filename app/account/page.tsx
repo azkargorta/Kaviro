@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import TripBoardPremiumHero from "@/components/layout/TripBoardPremiumHero";
 import AccountSettingsForm from "@/components/account/AccountSettingsForm";
+import ProfileAvatarPicker from "@/components/account/ProfileAvatarPicker";
 import AccountReferralsSection from "@/components/account/AccountReferralsSection";
 import AccountDeleteSection from "@/components/account/AccountDeleteSection";
 import Link from "next/link";
@@ -141,6 +142,8 @@ export default async function AccountPage() {
           </div>
         </section>
       ) : null}
+
+      <ProfileAvatarPicker />
 
       <AccountSettingsForm initial={{ username, email, isPremium }} />
 
