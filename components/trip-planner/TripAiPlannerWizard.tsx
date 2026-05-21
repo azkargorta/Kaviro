@@ -4,6 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import TripPlacesFields from "@/components/dashboard/TripPlacesFields";
 import { joinTripPlaces } from "@/lib/trip-places";
+import {
+  allBroadDestinationsHaveCities,
+  broadDestinationLabel,
+  broadDestinationMissingCities,
+  isBroadDestination,
+} from "@/lib/destination-region";
 import { useToast } from "@/components/ui/toast";
 import PlanActivityCard from "@/components/trip/plan/PlanActivityCard";
 import {
@@ -58,8 +64,6 @@ const CATEGORY_KINDS = [
   { key: "night" as const, label: "Noche", emoji: "🌙", color: "#334155" },
 ];
 
-function looksLikeCountryOrRegion(place: string) { const q = place.trim().toLowerCase(); if (q.length < 3 || /[0-9]/.test(q) || /[,\-–—/·]/.test(q)) return false; return q.split(/\s+/).length <= 3; }
-
 function dayIntroPhrase(day: DraftDay): string {
   const kc: Record<string, number> = {}; for (const it of day.items) { const k = it.activity_kind || "visit"; kc[k] = (kc[k] || 0) + 1; }
   const dominant = Object.entries(kc).sort((a, b) => b[1] - a[1])[0]?.[0], city = day.base, n = day.items.length;
@@ -79,45 +83,31 @@ function GeneratingSkeleton({ label }: { label: string }) {
     { icon: "✅", label: "Revisando coherencia geográfica…" },
   ];
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const stepId = setInterval(() => setActive((p) => (p + 1) % steps.length), 1800);
-    // Progress bar: 0→88% in 12s (leaves room for actual completion)
-    const progId = setInterval(() => setProgress((p) => Math.min(88, p + 1.2)), 160);
-    const timeId = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => { clearInterval(stepId); clearInterval(progId); clearInterval(timeId); };
+    const stepId = setInterval(() => setActive((p) => (p + 1) % steps.length), 2200);
+    return () => clearInterval(stepId);
   }, []);
 
   return (
     <div className="card-soft p-8 flex flex-col items-center justify-center gap-6 min-h-[300px]">
-      {/* Spinner */}
       <div className="relative">
         <div className="w-14 h-14 rounded-full border-4 border-[var(--brand-light)] border-t-[var(--brand)] animate-spin" />
         <Wand2 className="absolute inset-0 m-auto w-5 h-5 text-[var(--brand)]" />
       </div>
 
-      {/* Labels */}
-      <div className="text-center space-y-1.5 w-full max-w-xs">
+      <div className="text-center space-y-1.5 w-full max-w-sm">
         <p className="text-sm font-bold text-[var(--text-primary)]">{label}</p>
         <p className="text-xs font-medium text-[var(--text-tertiary)]">
           {steps[active]?.icon} {steps[active]?.label}
         </p>
+        <p className="text-[11px] text-[var(--text-tertiary)] pt-1">
+          Puede tardar un poco según los días y el destino. No cierres esta pestaña.
+        </p>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full max-w-xs space-y-2">
-        <div className="h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-[var(--brand)] transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-[10px] text-[var(--text-tertiary)]">
-          <span>{Math.round(progress)}%</span>
-          <span>~{Math.max(0, 12 - elapsed)}s restantes</span>
-        </div>
+      <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-[var(--border-subtle)]">
+        <div className="h-full w-2/5 animate-pulse rounded-full bg-[var(--brand)]" />
       </div>
     </div>
   );
@@ -144,15 +134,37 @@ function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDay
     } finally { setLoading(false); }
   }
 
-  const splitHint = useMemo(() => { if (!selectedPlaces.length) return null; const dpp = Math.max(1, Math.round(totalDays / selectedPlaces.length)); return `Con ${totalDays} días y ${selectedPlaces.length} destino${selectedPlaces.length !== 1 ? "s" : ""}, ~${dpp} día${dpp !== 1 ? "s" : ""} por lugar (la IA ajustará según importancia turística).`; }, [selectedPlaces.length, totalDays]);
+  const splitHint = useMemo(() => {
+    if (!selectedPlaces.length) return null;
+    const dpp = Math.max(1, Math.round(totalDays / selectedPlaces.length));
+    return `Con ${totalDays} días y ${selectedPlaces.length} destino${selectedPlaces.length !== 1 ? "s" : ""}, ~${dpp} día${dpp !== 1 ? "s" : ""} por lugar (la IA ajustará según importancia turística).`;
+  }, [selectedPlaces.length, totalDays]);
 
-  if (suggestions.length === 0 && !loading) return null;
+  const regionLabel = broadDestinationLabel(query);
 
   return (
-    <div className="mt-4 rounded-2xl border border-violet-100 bg-violet-50/50 p-4 space-y-3">
+    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 space-y-3 dark:border-amber-900/40 dark:bg-amber-950/30">
       <div className="flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
+            <span className="font-extrabold">{regionLabel}</span> es una región, no una ciudad
+          </p>
+          <p className="mt-0.5 text-xs font-medium text-amber-800 dark:text-amber-200/90">
+            Elige al menos un pueblo o ciudad donde dormir y visitar. Sin eso, el plan no puede calcular alojamientos bien.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start gap-2 border-t border-amber-200/80 pt-3 dark:border-amber-900/40">
         <Globe className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
-        <div><p className="text-sm font-bold text-violet-900">¿Qué lugares quieres visitar en <span className="font-extrabold">{query}</span>?</p><p className="text-xs font-medium text-violet-600 mt-0.5">Elige varios — la IA repartirá los días según la riqueza de cada lugar.</p></div>
+        <div>
+          <p className="text-sm font-bold text-violet-900 dark:text-violet-100">
+            ¿Qué ciudades o pueblos quieres visitar en {regionLabel}?
+          </p>
+          <p className="mt-0.5 text-xs font-medium text-violet-600 dark:text-violet-300">
+            Elige uno o varios — la IA repartirá los días según cada lugar.
+          </p>
+        </div>
       </div>
       {selectedPlaces.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -163,17 +175,29 @@ function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDay
           ))}
         </div>
       )}
+      {selectedPlaces.length === 0 ? (
+        <p className="rounded-xl bg-white/80 px-3 py-2 text-xs font-semibold text-amber-900 dark:bg-[#0F1623]/60 dark:text-amber-200">
+          Selecciona al menos un lugar para continuar.
+        </p>
+      ) : null}
       {loading && suggestions.length === 0 ? (
-        <div className="flex items-center gap-2 text-xs font-semibold text-violet-500"><Loader2 className="w-3.5 h-3.5 animate-spin" />Buscando lugares…</div>
+        <div className="flex items-center gap-2 text-xs font-semibold text-violet-500">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Buscando ciudades y pueblos…
+        </div>
+      ) : suggestions.length === 0 ? (
+        <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
+          No encontramos sugerencias automáticas. Escribe el nombre de una ciudad en el campo de destino o recarga la página.
+        </p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {suggestions.filter((s) => !selectedPlaces.includes(s.name)).map((s) => (
-            <button key={s.name} type="button" onClick={() => onAdd(s.name)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-100 transition-colors"><Plus className="w-3 h-3" />{s.name}</button>
+            <button key={s.name} type="button" onClick={() => onAdd(s.name)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-100 transition-colors dark:border-violet-800 dark:bg-[#0F1623] dark:text-violet-100"><Plus className="w-3 h-3" />{s.name}</button>
           ))}
-          {hasMore && <button type="button" disabled={loading} onClick={() => void load(offset)} className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-600 hover:bg-violet-50 disabled:opacity-50">{loading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : "+ Ver más"}</button>}
+          {hasMore && <button type="button" disabled={loading} onClick={() => void load(offset)} className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-600 hover:bg-violet-50 disabled:opacity-50 dark:border-violet-800 dark:bg-[#0F1623]">{loading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : "+ Ver más"}</button>}
         </div>
       )}
-      {splitHint && <p className="text-xs font-semibold text-violet-600 bg-violet-100 rounded-xl px-3 py-2">💡 {splitHint}</p>}
+      {splitHint ? <p className="text-xs font-semibold text-violet-600 bg-violet-100 rounded-xl px-3 py-2 dark:bg-violet-900/40 dark:text-violet-200">💡 {splitHint}</p> : null}
     </div>
   );
 }
@@ -546,10 +570,34 @@ export default function TripAiPlannerWizard() {
 
   const totalDays = useMemo(() => totalDaysBetween(startDate, endDate), [startDate, endDate]);
   const inferredCurrency = useMemo(() => inferCurrencyFromDestinations(places.map((x) => x.trim()).filter(Boolean)), [places]);
-  const countryLikePlaces = useMemo(() => places.map((p) => p.trim()).filter((p) => p.length > 0 && looksLikeCountryOrRegion(p)), [places]);
-  const effectiveDestinations = useMemo(() => { const result: string[] = []; for (const p of places) { const t = p.trim(); if (!t) continue; if (looksLikeCountryOrRegion(t) && subDestinations[t]?.length) result.push(...subDestinations[t]); else result.push(t); } return result.filter(Boolean); }, [places, subDestinations]);
+  const broadPlaces = useMemo(
+    () => places.map((p) => p.trim()).filter((p) => p.length > 0 && isBroadDestination(p)),
+    [places]
+  );
+  const effectiveDestinations = useMemo(() => {
+    const result: string[] = [];
+    for (const p of places) {
+      const t = p.trim();
+      if (!t) continue;
+      if (isBroadDestination(t) && subDestinations[t]?.length) result.push(...subDestinations[t]);
+      else if (!isBroadDestination(t)) result.push(t);
+    }
+    return result.filter(Boolean);
+  }, [places, subDestinations]);
   const destinationLabel = useMemo(() => joinTripPlaces(effectiveDestinations), [effectiveDestinations]);
-  const canGenerate = useMemo(() => effectiveDestinations.length > 0 && isoOk(startDate) && isoOk(endDate) && endDate >= startDate, [effectiveDestinations, startDate, endDate]);
+  const missingBroadCities = useMemo(
+    () => broadPlaces.filter((p) => broadDestinationMissingCities(p, subDestinations)),
+    [broadPlaces, subDestinations]
+  );
+  const canGenerate = useMemo(
+    () =>
+      effectiveDestinations.length > 0 &&
+      isoOk(startDate) &&
+      isoOk(endDate) &&
+      endDate >= startDate &&
+      allBroadDestinationsHaveCities(places.map((p) => p.trim()).filter(Boolean), subDestinations),
+    [effectiveDestinations, startDate, endDate, places, subDestinations]
+  );
 
   useEffect(() => { if (!isoOk(startDate)) return; if (!endDate || endDate < startDate) setEndDate(startDate); }, [startDate]); // eslint-disable-line
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
@@ -704,7 +752,16 @@ export default function TripAiPlannerWizard() {
           <div>
             <div className="flex items-center gap-2 mb-3"><MapPin className="w-4 h-4 text-slate-400" /><span className="text-sm font-bold text-slate-800">¿A dónde vas?</span></div>
             <TripPlacesFields places={places} onChange={setPlaces} />
-            {countryLikePlaces.map((cp) => <DestinationSuggester key={cp} query={cp} selectedPlaces={subDestinations[cp] || []} onAdd={(city) => addSubDestination(cp, city)} onRemove={(city) => removeSubDestination(cp, city)} totalDays={totalDays} />)}
+            {broadPlaces.map((cp) => (
+              <DestinationSuggester
+                key={cp}
+                query={cp}
+                selectedPlaces={subDestinations[cp] || []}
+                onAdd={(city) => addSubDestination(cp, city)}
+                onRemove={(city) => removeSubDestination(cp, city)}
+                totalDays={totalDays}
+              />
+            ))}
             {effectiveDestinations.length > 1 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <span className="text-xs font-bold text-slate-400 self-center">Se generará con:</span>
@@ -729,7 +786,13 @@ export default function TripAiPlannerWizard() {
           <button type="button" disabled={!canGenerate} onClick={fetchPlan} className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base disabled:opacity-40">
             <Wand2 className="w-5 h-5" />Calcular reparto de días<ArrowRight className="w-4 h-4" />
           </button>
-          {!canGenerate && <p className="text-xs text-center text-slate-400 -mt-3">Necesitas al menos un destino y las fechas para continuar.</p>}
+          {!canGenerate && (
+            <p className="-mt-3 text-center text-xs text-slate-500">
+              {missingBroadCities.length > 0
+                ? `Elige al menos una ciudad o pueblo en ${missingBroadCities.map(broadDestinationLabel).join(", ")}.`
+                : "Necesitas al menos un destino concreto y las fechas para continuar."}
+            </p>
+          )}
         </div>
       )}
 
