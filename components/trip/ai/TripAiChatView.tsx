@@ -393,6 +393,11 @@ const MODE_OPTIONS: ModeOption[] = [
     useFor: "Un solo día: horarios, comidas, desplazamientos; guardas con «Aplicar cambios» (no «Ejecutar plan»).",
   },
   {
+    id: "search",
+    label: "Buscar",
+    useFor: "Buscar hoteles, vuelos, trenes, ferries o autobuses con datos del viaje pre-rellenados.",
+  },
+  {
     id: "travel_docs",
     label: "Documentos del viaje",
     useFor: "Visados, seguros, tasas y requisitos según nacionalidad y países a visitar.",
@@ -419,7 +424,7 @@ const PLACEHOLDERS: Record<TripAiMode, string> = {
   day_planner:
     "Ej.: organízame el 2026-06-15 en Ámsterdam, andando, de 10:00 a 21:00… (luego «Aplicar cambios» para guardar)",
   search:
-    "Ej.: busca hoteles con piscina cerca del centro, menos de 100€/noche…",
+    "Ej.: busca hoteles con piscina cerca del centro, o vuelos baratos para estas fechas…",
   travel_docs:
     "Ej.: pasaporte español, viajo a Marruecos y Turquía en junio — ¿qué documentos y trámites necesito?",
 };

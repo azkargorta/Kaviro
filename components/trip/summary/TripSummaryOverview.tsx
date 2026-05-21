@@ -135,7 +135,6 @@ export default function TripSummaryOverview({
   tripEndDate,
   tripDestination,
   activitiesCount,
-  participantsCount,
 }: {
   tripId: string;
   tripName?: string | null;
@@ -150,7 +149,6 @@ export default function TripSummaryOverview({
   tripEndDate?: string | null;
   tripDestination?: string | null;
   activitiesCount?: number;
-  participantsCount?: number;
 }) {
   const isDark = useIsDarkMode();
   const planHref = `/trip/${tripId}/plan`;
@@ -437,7 +435,25 @@ export default function TripSummaryOverview({
         </section>
       </div>
 
+      {/* ── Search card ──────────────────────────────────────────── */}
+      <TripSearchCard
+        destination={tripDestination ?? null}
+        startDate={tripStartDate ?? null}
+        endDate={tripEndDate ?? null}
+        participants={Math.max(1, participantsCount ?? 1)}
+        tripId={tripId}
+      />
+
       {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}
+            {/* ── Search card ──────────────────────────────────────────── */}
+      <TripSearchCard
+        destination={tripDestination ?? null}
+        startDate={tripStartDate ?? null}
+        endDate={tripEndDate ?? null}
+        participants={Math.max(1, participantsCount ?? 1)}
+        tripId={tripId}
+      />
+
       <section className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -517,15 +533,6 @@ export default function TripSummaryOverview({
           })}
         </div>
       </section>
-
-      {/* ── Search card ─────────────────────────────────────────── */}
-      <TripSearchCard
-        destination={tripDestination ?? null}
-        startDate={tripStartDate ?? null}
-        endDate={tripEndDate ?? null}
-        participants={Math.max(1, participantsCount ?? 1)}
-        tripId={tripId}
-      />
 
       {/* ── Recap CTA ────────────────────────────────────────────── */}
       <SummaryRecapCta
