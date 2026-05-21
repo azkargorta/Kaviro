@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import TripCardItem from "@/components/dashboard/TripCardItem";
 import { ChevronDown, ChevronUp, MapPin, RefreshCw, Sparkles } from "lucide-react";
+import { DEMO_SPOTLIGHT_STEP_COUNT } from "@/lib/onboarding/demo-tour-copy";
 
 type Trip = {
   id: string;
@@ -24,12 +25,14 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
   const [resetting, setResetting] = useState(false);
   const router = useRouter();
 
-  // Restore collapsed state from localStorage
+  // Por defecto expandido; solo colapsar si el usuario lo eligió antes
   useEffect(() => {
     setMounted(true);
     try {
       if (window.localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
-    } catch { /* private mode */ }
+    } catch {
+      /* private mode */
+    }
   }, []);
 
   async function handleReset() {
@@ -78,7 +81,7 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
               Viaje demo · Londres
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Explora Kaviro sin crear nada · No cuenta para el límite gratuito
+              Empieza aquí · Visita guiada de {DEMO_SPOTLIGHT_STEP_COUNT} pasos · No cuenta en el límite free
             </p>
           </div>
         </div>
@@ -98,13 +101,14 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Visita guiada</p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  Tour de 7 pasos por todas las funciones
+                  {DEMO_SPOTLIGHT_STEP_COUNT} pasos por todas las pestañas
                 </p>
               </div>
             </div>
             <Link
               href={`/trip/${demoTrip.id}/summary?tutorial=demo`}
-              className="shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-[#F87171] px-3 text-xs font-bold text-white transition hover:bg-[#EF4444]"
+              data-tour="dashboard-demo-tour-cta"
+              className="shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-[#F87171] px-3 text-xs font-bold text-white shadow-md ring-2 ring-[#F87171]/30 transition hover:bg-[#EF4444] animate-pulse"
             >
               <Sparkles className="h-3 w-3" />
               Iniciar tour
@@ -121,6 +125,7 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
                 "📅 Plan día a día",
                 "🗺️ Rutas en el mapa",
                 "💶 Gastos del grupo",
+                "🔎 Buscar hotel/vuelos",
                 "👥 Participantes",
                 "📎 Documentos",
                 "✨ Asistente IA",

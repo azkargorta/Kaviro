@@ -18,17 +18,17 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "welcome", tab: "summary", target: null, placement: "center", emoji: "👋",
     title: "Bienvenido a Kaviro",
-    body: "Este es tu viaje de demostración. En los próximos pasos te mostraré todas las funciones pestaña por pestaña. Avanza con Siguiente →, retrocede con ← y cierra el tour con ✕ en cualquier momento. ¡Empezamos!",
+    body: "Este es tu viaje de demostración (Londres). Te guiaré por todas las pestañas con datos de ejemplo. Usa Siguiente →, Anterior ← o cierra con ✕. Si sales, vuelve desde Mis viajes → «Iniciar tour» o el botón 🗺️ Tour en cualquier pestaña del demo.",
   },
   {
-    id: "summary-topbar", tab: "summary", target: '[data-tour="topbar-bar"]', placement: "bottom", emoji: "🔧",
-    title: "Barra superior",
-    body: "Siempre visible en la parte superior. A la izquierda: el logo de Kaviro (vuelve a Mis Viajes), el nombre del viaje y la sección activa. A la derecha: el salvavidas 🛟 abre la ayuda contextual, la campana 🔔 muestra la actividad reciente del grupo, acciones rápidas como copiar el enlace del viaje o volver a Mis Viajes, y el toggle de modo oscuro/claro.",
+    id: "summary-hero-toolbar", tab: "summary", target: '[data-tour="trip-hero-toolbar"]', placement: "bottom", emoji: "🔧",
+    title: "Barra del viaje (arriba)",
+    body: "La franja coral de cada pestaña: «Mis viajes» vuelve al panel, el salvavidas 🛟 abre ayuda y este tour, la campana 🔔 trae novedades del grupo, el modo oscuro/claro y el menú 👤 (perfil, suscripción y compartir enlace del viaje).",
   },
   {
-    id: "summary-sidebar", tab: "summary", target: '[data-tour="sidebar-nav"]', placement: "right", emoji: "🗂️",
+    id: "summary-sidebar", tab: "summary", target: '[data-tour="sidebar-nav"]', targetAlt: '[data-tour="mobile-bottom-nav"]', placement: "top", emoji: "🗂️",
     title: "Navegación del viaje",
-    body: "Acceso directo a las 7 secciones: Resumen, Plan, Rutas, Gastos, Gente, Docs y Asistente IA. La activa se resalta. En móvil aparece como barra inferior con las secciones más usadas y un botón «Más» para el resto.",
+    body: "En escritorio: menú lateral con Resumen, Plan, Rutas, Gastos, Gente, Docs y Asistente IA. En móvil: barra inferior (Inicio, Plan, Gastos, IA) y «Más» para Rutas, Gente, Docs y Ajustes.",
   },
   {
     id: "summary-countdown", tab: "summary", target: '[data-tour="summary-countdown"]', placement: "right", emoji: "⏳",
@@ -44,6 +44,11 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     id: "summary-stats", tab: "summary", target: '[data-tour="summary-stats"]', placement: "top", emoji: "📊",
     title: "Tarjetas de módulos",
     body: "Acceso rápido al estado de cada módulo del viaje. Cada tarjeta muestra el dato más relevante: actividades planificadas, gastos del grupo, participantes y documentos. Pulsa cualquier tarjeta para ir directamente a esa sección.",
+  },
+  {
+    id: "summary-search", tab: "summary", target: '[data-tour="summary-search-travel"]', targetAlt: '[data-tour="summary-search-toggle"]', placement: "top", action: "open-summary-search", emoji: "🔎",
+    title: "Buscar hotel y transporte",
+    body: "Desde el resumen puedes abrir búsquedas con los datos del viaje ya rellenados: hotel, vuelo, tren, ferry, autobús o coche de alquiler. Elige categoría y pulsa una plataforma (Booking, Google Flights, Omio, etc.) para reservar en su web.",
   },
   {
     id: "summary-recap", tab: "summary", target: '[data-tour="summary-recap-cta"]', placement: "top", emoji: "🎬",
@@ -183,6 +188,8 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "ai-suggestions", tab: "ai-chat", target: '[data-tour="ai-suggestions"]', placement: "bottom", emoji: "⚡",
     title: "Modos del asistente",
-    body: "El asistente tiene 7 modos especializados: General (visión del viaje), Planificación (crear itinerarios en JSON ejecutable), Gastos (balances y repartos), Optimizador (detectar huecos y solapes), Acciones (crear o modificar actividades directamente), Organizar día (un solo día con horarios) y Documentos (visados, seguros y requisitos por país). Cambia de modo pulsando la píldora de color. ¡El tour ha terminado — ya conoces Kaviro completo!",
+    body: "Elige el foco del chat: Planificador, Desplazamientos (un día), Buscar (hoteles y transporte con enlaces), Documentos (visados y requisitos), o chat general. Premium desbloquea itinerarios ejecutables y análisis avanzados. ¡Tour completado — ya conoces Kaviro!",
   },
 ];
+
+export const DEMO_SPOTLIGHT_STEP_COUNT = DEMO_SPOTLIGHT_TOUR.length;

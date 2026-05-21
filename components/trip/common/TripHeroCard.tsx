@@ -75,8 +75,10 @@ export default function TripHeroCard({ tripId, tripName, destination, participan
         />
       </div>
 
-      {/* Top strip: back + actions */}
-      <TripHeroActions tripId={tripId} />
+      {/* Top strip: back + actions (tour demo: data-tour="trip-hero-toolbar") */}
+      <div data-tour="trip-hero-toolbar">
+        <TripHeroActions tripId={tripId} />
+      </div>
 
       {/* Content */}
       <div className="flex items-end justify-between px-4 pb-4 pt-2">

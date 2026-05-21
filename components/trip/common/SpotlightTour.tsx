@@ -23,14 +23,20 @@ const TAB_LABELS: Record<string, string> = {
 
 type Rect = { top: number; left: number; width: number; height: number };
 
-function getRect(sel: string | null): Rect | null {
-  if (!sel) return null;
-  try {
-    const el = document.querySelector(sel);
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return { top: r.top + scrollY - PAD, left: r.left + scrollX - PAD, width: r.width + PAD*2, height: r.height + PAD*2 };
-  } catch { return null; }
+function getRect(sel: string | null, alt?: string | null): Rect | null {
+  for (const q of [sel, alt]) {
+    if (!q) continue;
+    try {
+      const el = document.querySelector(q);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 && r.height < 2) continue;
+      return { top: r.top + scrollY - PAD, left: r.left + scrollX - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 };
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
 }
 
 function clamp(v: number, a: number, b: number) { return Math.max(a, Math.min(v, b)); }
@@ -86,6 +92,12 @@ function executeAction(action?: SpotlightStep["action"]) {
     const btn = document.querySelector('[data-tour="participants-qr-btn"]') as HTMLElement | null;
     btn?.click();
   }
+  if (action === "open-summary-search") {
+    const panel = document.querySelector('[data-tour="summary-search-travel"]');
+    if (panel?.getAttribute("data-search-open") === "1") return;
+    const toggle = document.querySelector('[data-tour="summary-search-toggle"]') as HTMLElement | null;
+    toggle?.click();
+  }
 }
 
 type Props = {
@@ -127,7 +139,7 @@ export default function SpotlightTour({ steps, tripId, currentTab, filterToTab =
         executeAction(step.action);
         const t2 = setTimeout(() => {
           if (step.target) document.querySelector(step.target)?.scrollIntoView({ behavior: "smooth", block: "center" });
-          const t3 = setTimeout(() => setRect(getRect(step.target)), 400);
+          const t3 = setTimeout(() => setRect(getRect(step.target, step.targetAlt)), 400);
           return () => clearTimeout(t3);
         }, 400);
         return () => clearTimeout(t2);
@@ -139,7 +151,7 @@ export default function SpotlightTour({ steps, tripId, currentTab, filterToTab =
     executeAction(step.action);
     const t = setTimeout(() => {
       if (step.target) document.querySelector(step.target)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      const t2 = setTimeout(() => setRect(getRect(step.target)), 350);
+      const t2 = setTimeout(() => setRect(getRect(step.target, step.targetAlt)), 350);
       return () => clearTimeout(t2);
     }, step.action ? 400 : 0);
     return () => clearTimeout(t);
@@ -147,7 +159,7 @@ export default function SpotlightTour({ steps, tripId, currentTab, filterToTab =
   }, [idx, mounted]);
 
   useEffect(() => {
-    const u = () => setRect(getRect(step?.target ?? null));
+    const u = () => setRect(getRect(step?.target ?? null, step?.targetAlt ?? null));
     window.addEventListener("resize", u);
     window.addEventListener("scroll", u, { passive: true });
     return () => { window.removeEventListener("resize", u); window.removeEventListener("scroll", u); };

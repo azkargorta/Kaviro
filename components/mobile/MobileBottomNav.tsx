@@ -133,6 +133,7 @@ export default function MobileBottomNav({
 
       {/* ── Bottom nav bar ───────────────────────────────────────────── */}
       <nav
+        data-tour="mobile-bottom-nav"
         className="fixed inset-x-0 bottom-0 z-40 md:hidden"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
         aria-label="Navegación del viaje"

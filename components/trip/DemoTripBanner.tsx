@@ -1,7 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 
 async function postDemoAction(action: "skip" | "complete") {
   const res = await fetch("/api/onboarding/demo", {
@@ -17,7 +19,10 @@ async function postDemoAction(action: "skip" | "complete") {
 
 export default function DemoTripBanner() {
   const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(false);
+  const tripId = pathname?.match(/^\/trip\/([^/]+)/)?.[1];
+  const tourHref = tripId ? `/trip/${tripId}/summary?tutorial=demo` : null;
 
   async function skipDemo() {
     try {
@@ -42,6 +47,15 @@ export default function DemoTripBanner() {
         Puedes <strong>saltar la demo</strong> cuando quieras.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
+        {tourHref ? (
+          <Link
+            href={tourHref}
+            className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-[#F87171] px-4 text-xs font-bold text-white transition hover:bg-[#EF4444]"
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            Iniciar visita guiada
+          </Link>
+        ) : null}
         <button
           type="button"
           disabled={loading}

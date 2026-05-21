@@ -124,9 +124,14 @@ export default function TripSearchCard({
   })();
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] overflow-hidden shadow-sm">
+    <div
+      data-tour="summary-search-travel"
+      data-search-open={open ? "1" : "0"}
+      className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] overflow-hidden shadow-sm"
+    >
       <button
         type="button"
+        data-tour="summary-search-toggle"
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3.5 text-left transition hover:bg-slate-50 dark:hover:bg-[#1E293B]/50"
       >

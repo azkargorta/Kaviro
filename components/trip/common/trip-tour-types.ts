@@ -16,6 +16,8 @@ export type SpotlightStep = {
   id: string;
   tab: string;
   target: string | null;
+  /** Si el target principal no existe (p. ej. sidebar en móvil), prueba este selector. */
+  targetAlt?: string | null;
   placement: "top" | "bottom" | "left" | "right" | "center";
   title: string;
   body: string;
@@ -28,5 +30,6 @@ export type SpotlightStep = {
     | "open-expenses-stats"
     | "open-resources-lists"
     | "open-participants-invite"
-    | "open-participants-qr";
+    | "open-participants-qr"
+    | "open-summary-search";
 };

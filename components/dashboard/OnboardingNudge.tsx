@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { Users, Sparkles } from "lucide-react";
+import { DEMO_SPOTLIGHT_STEP_COUNT } from "@/lib/onboarding/demo-tour-copy";
 import { openCreateTripForm } from "@/lib/open-create-trip";
 
 type Step = {
@@ -56,10 +57,13 @@ export default function OnboardingNudge({
   hasTrips,
   hasParticipants = false,
   hasExpenses = false,
+  demoTripId = null,
 }: {
   hasTrips: boolean;
   hasParticipants?: boolean;
   hasExpenses?: boolean;
+  /** Viaje demo del usuario: enlace directo al tour guiado */
+  demoTripId?: string | null;
 }) {
   const storageKey = useMemo(() => "kaviro_checklist_v2", []);
   const [dismissed, setDismissed] = useState(false);
@@ -124,6 +128,23 @@ export default function OnboardingNudge({
             </svg>
           </button>
         </div>
+
+        {demoTripId ? (
+          <div className="mt-4 rounded-2xl border border-[#F87171]/25 bg-gradient-to-r from-[#F87171]/10 to-transparent p-4">
+            <p className="text-sm font-bold text-[var(--text-primary)]">¿Primera vez en Kaviro?</p>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)] leading-relaxed">
+              Antes de crear tu viaje, prueba el <strong className="text-[#F87171]">viaje demo de Londres</strong> con una
+              visita guiada de {DEMO_SPOTLIGHT_STEP_COUNT} pasos (plan, gastos, mapa, búsqueda de vuelos, IA…).
+            </p>
+            <Link
+              href={`/trip/${encodeURIComponent(demoTripId)}/summary?tutorial=demo`}
+              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#F87171] px-4 text-sm font-bold text-white transition hover:bg-[#EF4444] sm:w-auto"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden />
+              Iniciar visita guiada
+            </Link>
+          </div>
+        ) : null}
 
         {/* Progress bar */}
         <div className="mt-3 h-1.5 rounded-full bg-[var(--surface-page)] overflow-hidden">

@@ -213,7 +213,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <OnboardingNudge hasTrips={realTrips.length > 0} hasParticipants={hasParticipants} hasExpenses={hasExpenses} />
+      <DashboardDemoTripSection trips={demoTrips} />
+
+      <OnboardingNudge
+        hasTrips={realTrips.length > 0}
+        hasParticipants={hasParticipants}
+        hasExpenses={hasExpenses}
+        demoTripId={demoTripId}
+      />
 
       <section
         className={`mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
@@ -279,8 +286,6 @@ export default async function DashboardPage() {
           {freePlanBanner()}
         </section>
       ) : null}
-
-      <DashboardDemoTripSection trips={demoTrips} />
 
       {realTrips.length === 0 ? null : (
         <DashboardTripsClient
