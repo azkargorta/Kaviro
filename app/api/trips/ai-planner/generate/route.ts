@@ -8,6 +8,20 @@ import {
 import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
 import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
+import {
+  dedupeDaysInCityBlock,
+  fillSparseDaysInBlock,
+  type NearbyPoi,
+  type PlannerDay,
+} from "@/lib/trip-ai/itineraryDedup";
+import {
+  allowsNearbyExcursions,
+  buildNearbyExcursionPromptLine,
+  buildStyleMixPromptLine,
+  enrichNotesWithPlannerPrefs,
+  parsePlannerPreferences,
+  type PlannerPreferences,
+} from "@/lib/trip-ai/plannerPreferences";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -54,16 +68,17 @@ function cacheSet(c: LatLng, r: number, pools: Record<Category, Poi[]>) {
 // Itinerary cache — keyed by city + nights + notes hash
 const ITIN_CACHE = new Map<string, { days: any[]; expiresAt: number }>();
 
-function itinKey(city: string, nights: number, notes: string) {
-  return `${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 80)}`;
+function itinKey(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
+  return `v3:${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 60)}:${prefs.nearbyExcursions}:${prefs.mixStylesWhenTime}:${prefs.tripStyle || "-"}`;
 }
-function itinCacheGet(city: string, nights: number, notes: string) {
-  const e = ITIN_CACHE.get(itinKey(city, nights, notes));
-  if (!e || Date.now() > e.expiresAt) { if (e) ITIN_CACHE.delete(itinKey(city, nights, notes)); return null; }
+function itinCacheGet(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
+  const key = itinKey(city, nights, notes, prefs);
+  const e = ITIN_CACHE.get(key);
+  if (!e || Date.now() > e.expiresAt) { if (e) ITIN_CACHE.delete(key); return null; }
   return e.days;
 }
-function itinCacheSet(city: string, nights: number, notes: string, days: any[]) {
-  ITIN_CACHE.set(itinKey(city, nights, notes), { days, expiresAt: Date.now() + CACHE_TTL_MS });
+function itinCacheSet(city: string, nights: number, notes: string, prefs: PlannerPreferences, days: any[]) {
+  ITIN_CACHE.set(itinKey(city, nights, notes, prefs), { days, expiresAt: Date.now() + CACHE_TTL_MS });
   if (ITIN_CACHE.size > 80) { const now = Date.now(); for (const [k, v] of ITIN_CACHE) if (now > v.expiresAt) ITIN_CACHE.delete(k); }
 }
 
@@ -193,7 +208,14 @@ function buildCityItineraryPrompt(
   city: string,
   days: Array<{ dayNum: number; date: string }>,
   notes: string,
-  prevCity: string | null
+  prevCity: string | null,
+  opts?: {
+    usedPlaces?: string[];
+    dayIndexInBlock?: number;
+    totalDaysInBlock?: number;
+    nearbyExcursionHints?: string[];
+    plannerPrefs?: PlannerPreferences;
+  }
 ): string {
   const profile = notes.trim()
     ? `Preferencias del viajero: "${notes}"`
@@ -205,13 +227,40 @@ function buildCityItineraryPrompt(
 
   const dateList = days.map((d) => `${d.dayNum}:${d.date}`).join(" ");
   const firstDate = days[0]?.date ?? "";
+  const dayIdx = opts?.dayIndexInBlock ?? 1;
+  const totalInBlock = opts?.totalDaysInBlock ?? 1;
+  const used = (opts?.usedPlaces || []).filter(Boolean).slice(-35);
+  const usedBlock =
+    used.length > 0
+      ? `\nYA PROGRAMADOS en días anteriores (PROHIBIDO repetir el mismo lugar/atracción): ${used.join("; ")}.`
+      : "";
+  const multiDayNote =
+    dayIdx > 1
+      ? `\nSolo repite un lugar si el viajero lo pidió en preferencias o es un recinto que necesita VARIOS DÍAS (ej. parque temático, parque nacional grande).`
+      : "";
+  const prefs = opts?.plannerPrefs;
+  const excursionHints = (opts?.nearbyExcursionHints || []).slice(0, 12);
+  const excursionBlock =
+    dayIdx > 1 && prefs
+      ? buildNearbyExcursionPromptLine(city, prefs, dayIdx, excursionHints)
+      : dayIdx > 1 && excursionHints.length
+        ? `\nSi ya cubriste lo esencial de ${city}, prioriza excursión de 1 día (k=excursion) a: ${excursionHints.join(", ")}.`
+        : dayIdx > 1
+          ? `\nSi agotaste ${city}, propón excursión de 1 día a pueblo, costa o lugar cercano verificable (k=excursion).`
+          : "";
+  const styleMixBlock = prefs ? buildStyleMixPromptLine(prefs) : "";
+
+  const iconicRule =
+    dayIdx === 1
+      ? `8. Día 1 en ${city}: prioriza lo más icónico e imprescindible.`
+      : `8. Día ${dayIdx}/${totalInBlock}: lugares DISTINTOS a los ya programados; barrios, museos o rutas que no hayas usado.`;
 
   // Valid kinds listed once — Gemini copies them verbatim (saves tokens vs re-explaining)
   const kinds = "culture|nature|viewpoint|neighborhood|market|excursion|gastro_experience|shopping|night";
 
   return `Guía local experto de ${city}. Plan para: ${dateList}.
 ${profile}
-${transitNote}
+${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}
 
 JSON COMPACTO — SOLO esto, sin markdown ni texto extra:
 {"days":[{"day":1,"date":"${firstDate}","items":[{"t":"Nombre real","d":"Tip en max 8 palabras","h":"09:30","k":"culture","lt":-34.0000,"lg":-58.0000}]}]}
@@ -224,8 +273,27 @@ REGLAS:
 5. "h": horario realista. Mínimo 1.5h entre actividades.
 6. 3-5 items por día. Distribuidos: mañana, tarde, noche.
 7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real: "Mercado de San Telmo", "Bodega Zuccardi", "Cata en Catena".
-8. Incluye los lugares más icónicos de ${city}.
+${iconicRule}
 9. Respeta TODO lo que indicó el viajero.`.trim();
+}
+
+function poisToNearbyPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
+  if (!pools) return [];
+  const raw = [...(pools.excursion || []), ...(pools.nature || []), ...(pools.culture || [])];
+  return dedupeByName(raw).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
+}
+
+function poisToInCityPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
+  if (!pools) return [];
+  const raw = [
+    ...(pools.culture || []),
+    ...(pools.nature || []),
+    ...(pools.viewpoint || []),
+    ...(pools.neighborhood || []),
+    ...(pools.market || []),
+    ...(pools.gastro_experience || []),
+  ];
+  return dedupeByName(raw).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
 }
 
 async function generateCityItinerary(
@@ -234,10 +302,13 @@ async function generateCityItinerary(
   startDateIso: string,
   notes: string,
   prevCity: string | null,
-  forceRegen = false
+  forceRegen = false,
+  excursionPool: NearbyPoi[] = [],
+  inCityPool: NearbyPoi[] = [],
+  plannerPrefs: PlannerPreferences = parsePlannerPreferences(null)
 ): Promise<{ days: any[]; prompt: string; rawOutput: string } | null> {
   if (!forceRegen) {
-    const cached = itinCacheGet(city, nights, notes);
+    const cached = itinCacheGet(city, nights, notes, plannerPrefs);
     if (cached) return { days: cached, prompt: "(from cache)", rawOutput: "(from cache)" };
   }
 
@@ -285,46 +356,74 @@ async function generateCityItinerary(
     }).filter(Boolean);
   }
 
-  // Call Gemini for each chunk in parallel
-  const chunkResults = await Promise.all(
-    chunks.map(async (chunk, ci) => {
-      const prompt = buildCityItineraryPrompt(city, chunk, notes, ci === 0 ? prevCity : null);
-      let raw = "";
-      try {
-        // 8192 tokens for a single day = plenty of room, never truncates
-        raw = await askGemini(prompt, "planning", { maxOutputTokens: 8192 });
-        const parsed = extractJsonObject(raw) as any;
-        if (!parsed?.days || !Array.isArray(parsed.days)) return { days: [], prompt, rawOutput: raw };
+  const nearbyHints = allowsNearbyExcursions(plannerPrefs)
+    ? excursionPool.map((p) => p.name).filter(Boolean)
+    : [];
+  const usedPlaces: string[] = [];
+  const chunkResults: Array<{ days: any[]; prompt: string; rawOutput: string }> = [];
 
-        const days = parsed.days.map((d: any, idx: number) => {
-          const date = chunk[idx]?.date ?? chunk[0]!.date;
-          const rawItems: any[] = Array.isArray(d.items) ? d.items : [];
-          const items = parseItems(rawItems, date);
-          return {
-            day: chunk[idx]?.dayNum ?? idx + 1,
-            date, base: city, items,
-            _raw_item_count: rawItems.length,
-            _filtered_count: rawItems.length - items.length,
-          };
-        });
-        return { days, prompt, rawOutput: raw };
-      } catch (e) {
-        console.error(`[ai-planner] chunk ${ci} failed for "${city}":`, e);
-        return { days: [], prompt, rawOutput: raw || String(e) };
+  // Secuencial: cada día conoce lo ya programado → menos repeticiones
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const chunk = chunks[ci]!;
+    const prompt = buildCityItineraryPrompt(city, chunk, notes, ci === 0 ? prevCity : null, {
+      usedPlaces,
+      dayIndexInBlock: ci + 1,
+      totalDaysInBlock: nights,
+      nearbyExcursionHints: ci > 0 ? nearbyHints : undefined,
+      plannerPrefs,
+    });
+    let raw = "";
+    try {
+      raw = await askGemini(prompt, "planning", { maxOutputTokens: 8192 });
+      const parsed = extractJsonObject(raw) as any;
+      if (!parsed?.days || !Array.isArray(parsed.days)) {
+        chunkResults.push({ days: [], prompt, rawOutput: raw });
+        continue;
       }
-    })
-  );
 
-  const allDays = chunkResults.flatMap((r) => r?.days ?? []);
+      const days = parsed.days.map((d: any, idx: number) => {
+        const date = chunk[idx]?.date ?? chunk[0]!.date;
+        const rawItems: any[] = Array.isArray(d.items) ? d.items : [];
+        const items = parseItems(rawItems, date);
+        for (const it of items) {
+          const t = String(it?.title || "").trim();
+          if (t) usedPlaces.push(t);
+        }
+        return {
+          day: chunk[idx]?.dayNum ?? idx + 1,
+          date,
+          base: city,
+          items,
+          _raw_item_count: rawItems.length,
+          _filtered_count: rawItems.length - items.length,
+        };
+      });
+      chunkResults.push({ days, prompt, rawOutput: raw });
+    } catch (e) {
+      console.error(`[ai-planner] chunk ${ci} failed for "${city}":`, e);
+      chunkResults.push({ days: [], prompt, rawOutput: raw || String(e) });
+    }
+  }
+
+  let allDays = chunkResults.flatMap((r) => r?.days ?? []);
   const allPrompts = chunkResults.map((r, i) => `--- Chunk ${i + 1} ---\n${r?.prompt ?? ""}`).join("\n\n");
   const allRaw = chunkResults.map((r, i) => `--- Chunk ${i + 1} ---\n${r?.rawOutput ?? ""}`).join("\n\n");
 
-  // Retry individual days with fewer than 3 activities
+  // Retry individual days with fewer than 3 activities (con memoria de usados)
   const finalDays = await Promise.all(
     allDays.map(async (d: any) => {
       if ((d.items?.length ?? 0) >= 3) return d;
       console.warn(`[ai-planner] Retrying sparse day ${d.day} in "${city}" (${d.items?.length ?? 0} items)...`);
-      const retryPrompt = buildCityItineraryPrompt(city, [{ dayNum: d.day, date: d.date }], notes, null);
+      const priorUsed = allDays
+        .filter((x: any) => x.day < d.day)
+        .flatMap((x: any) => (x.items || []).map((it: any) => String(it.title || "")));
+      const retryPrompt = buildCityItineraryPrompt(city, [{ dayNum: d.day, date: d.date }], notes, null, {
+        usedPlaces: priorUsed,
+        dayIndexInBlock: d.day,
+        totalDaysInBlock: nights,
+        nearbyExcursionHints: d.day > 1 ? nearbyHints : undefined,
+        plannerPrefs,
+      });
       try {
         const raw2 = await askGemini(retryPrompt, "planning", { maxOutputTokens: 8192 });
         const p2 = extractJsonObject(raw2) as any;
@@ -336,8 +435,31 @@ async function generateCityItinerary(
   );
 
   if (!finalDays.length) return { days: [], prompt: allPrompts, rawOutput: allRaw };
-  itinCacheSet(city, nights, notes, finalDays);
-  return { days: finalDays, prompt: allPrompts, rawOutput: allRaw };
+
+  let plannerDays: PlannerDay[] = finalDays.map((d: any) => ({
+    day: d.day,
+    date: d.date,
+    base: city,
+    items: d.items || [],
+  }));
+
+  plannerDays = dedupeDaysInCityBlock(plannerDays, { notes });
+  plannerDays = await fillSparseDaysInBlock(plannerDays, city, notes, excursionPool, 3, {
+    allowNearby: allowsNearbyExcursions(plannerPrefs),
+    inCityPool,
+  });
+
+  const outDays = plannerDays.map((d) => ({
+    day: d.day,
+    date: d.date,
+    base: d.base,
+    items: d.items,
+    _raw_item_count: d.items.length,
+    _filtered_count: 0,
+  }));
+
+  if (!forceRegen) itinCacheSet(city, nights, notes, plannerPrefs, outDays);
+  return { days: outDays, prompt: allPrompts, rawOutput: allRaw };
 }
 
 
@@ -533,7 +655,8 @@ export async function POST(req: Request) {
 
     // Merge initial preferences + all chat messages into a single context string
     // This is what feeds Gemini — every chat message the user sends enriches the plan
-    const mergedNotes = mergeNotes(freeText, body?.rules);
+    const plannerPrefs = parsePlannerPreferences(body);
+    const mergedNotes = enrichNotesWithPlannerPrefs(mergeNotes(freeText, body?.rules), plannerPrefs);
 
     const selectedByStop = (body?.selectedPoisByStop && typeof body.selectedPoisByStop === "object") ? body.selectedPoisByStop : null;
     const staysInput = Array.isArray(body?.stays) ? body.stays : null;
@@ -619,7 +742,19 @@ export async function POST(req: Request) {
           const blockDays = Array.from({ length: block.nights }, (_, i) => block.startDayNum + i);
           if (!blockDays.some((d) => targetDayNums.includes(d))) return Promise.resolve(null);
         }
-        return generateCityItinerary(block.city, block.nights, block.startDateIso, mergedNotes, block.prevCity, forceRegen);
+        const excursionPool = poisToNearbyPool(poisByStop[block.city]);
+        const inCityPool = poisToInCityPool(poisByStop[block.city]);
+        return generateCityItinerary(
+          block.city,
+          block.nights,
+          block.startDateIso,
+          mergedNotes,
+          block.prevCity,
+          forceRegen,
+          excursionPool,
+          inCityPool,
+          plannerPrefs
+        );
       })
     );
 
@@ -642,7 +777,17 @@ export async function POST(req: Request) {
         const emptyDays = result.days.filter((d: any) => !d.items || d.items.length === 0);
         if (emptyDays.length === 0) return result.days;
         console.warn(`[ai-planner] Block "${blocks[bi]!.city}" had ${emptyDays.length} empty days, retrying...`);
-        const retry = await generateCityItinerary(blocks[bi]!.city, blocks[bi]!.nights, blocks[bi]!.startDateIso, mergedNotes, blocks[bi]!.prevCity, true);
+        const retry = await generateCityItinerary(
+          blocks[bi]!.city,
+          blocks[bi]!.nights,
+          blocks[bi]!.startDateIso,
+          mergedNotes,
+          blocks[bi]!.prevCity,
+          true,
+          poisToNearbyPool(poisByStop[blocks[bi]!.city]),
+          poisToInCityPool(poisByStop[blocks[bi]!.city]),
+          plannerPrefs
+        );
         return retry?.days ?? result.days;
       })
     );

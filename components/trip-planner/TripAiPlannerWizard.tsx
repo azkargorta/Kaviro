@@ -617,6 +617,9 @@ export default function TripAiPlannerWizard() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [freeText, setFreeText] = useState("");
+  const [tripStyle, setTripStyle] = useState<string | null>(null);
+  const [nearbyExcursions, setNearbyExcursions] = useState<"yes" | "maybe" | "no">("maybe");
+  const [mixStylesWhenTime, setMixStylesWhenTime] = useState(true);
   const [tripName, setTripName] = useState("");
   const [subDestinations, setSubDestinations] = useState<Record<string, string[]>>({});
   const [planProposal, setPlanProposal] = useState<PlanProposal | null>(null);
@@ -667,10 +670,30 @@ export default function TripAiPlannerWizard() {
   function addSubDestination(base: string, city: string) { setSubDestinations((prev) => { const cur = prev[base] || []; if (cur.includes(city)) return prev; return { ...prev, [base]: [...cur, city] }; }); }
   function removeSubDestination(base: string, city: string) { setSubDestinations((prev) => ({ ...prev, [base]: (prev[base] || []).filter((c) => c !== city) })); }
 
+  const plannerPreferences = useMemo(
+    () => ({
+      nearbyExcursions,
+      mixStylesWhenTime,
+      tripStyle: tripStyle || undefined,
+    }),
+    [nearbyExcursions, mixStylesWhenTime, tripStyle]
+  );
+
   async function fetchPlan() {
     setError(null); setStep("planning");
     try {
-      const res = await fetch("/api/trips/ai-planner/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ destinations: effectiveDestinations, start_date: startDate, end_date: endDate, freeText: freeText.trim() || undefined, planOnly: true }) });
+      const res = await fetch("/api/trips/ai-planner/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destinations: effectiveDestinations,
+          start_date: startDate,
+          end_date: endDate,
+          freeText: freeText.trim() || undefined,
+          plannerPreferences,
+          planOnly: true,
+        }),
+      });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || "No se pudo calcular el plan.");
       setPlanProposal(data as PlanProposal); setStep("review");
@@ -682,7 +705,17 @@ export default function TripAiPlannerWizard() {
     try {
       const res = await fetch("/api/trips/ai-planner/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destinations: effectiveDestinations, start_date: startDate, end_date: endDate, stays, freeText: freeText.trim() || undefined, days: draft?.days || undefined, regenerateBadOnly: Boolean(opts?.regenerateBadOnly), rules: activeRules }),
+        body: JSON.stringify({
+          destinations: effectiveDestinations,
+          start_date: startDate,
+          end_date: endDate,
+          stays,
+          freeText: freeText.trim() || undefined,
+          plannerPreferences,
+          days: draft?.days || undefined,
+          regenerateBadOnly: Boolean(opts?.regenerateBadOnly),
+          rules: activeRules,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || "No se pudo generar el itinerario.");
@@ -791,7 +824,7 @@ export default function TripAiPlannerWizard() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => { setFreeText(t.freeText); setStep("form"); }}
+                onClick={() => { setFreeText(t.freeText); setTripStyle(t.id); setStep("form"); }}
                 className="flex flex-col items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-[var(--brand)]/40 hover:bg-[var(--brand-light)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-[#F87171]/30 dark:hover:bg-[#F87171]/5"
               >
                 <span className="text-2xl">{t.emoji}</span>
@@ -801,7 +834,7 @@ export default function TripAiPlannerWizard() {
           </div>
           <button
             type="button"
-            onClick={() => setStep("form")}
+            onClick={() => { setTripStyle(null); setStep("form"); }}
             className="w-full rounded-xl border border-slate-200 dark:border-[#334155] bg-white dark:bg-[#0F1623] px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
           >
             Crear desde cero →
@@ -837,6 +870,52 @@ export default function TripAiPlannerWizard() {
               <div><label className="mb-1 block text-xs font-semibold text-slate-500">Fecha de inicio</label><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-slate-500 bg-white" /></div>
               <div><label className="mb-1 block text-xs font-semibold text-slate-500">Fecha de fin {isoOk(startDate) && isoOk(endDate) && <span className="ml-2 text-violet-600 font-bold">{totalDays} días</span>}</label><input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || undefined} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-slate-500 bg-white" /></div>
             </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="w-4 h-4 text-slate-400" />
+              <span className="text-sm font-bold text-slate-800">¿Excursiones a lugares cercanos?</span>
+            </div>
+            <p className="mb-3 text-xs text-slate-500">
+              Si te quedas varios días en la misma ciudad, la IA puede proponer pueblos o costas cercanas cuando encaje.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {(
+                [
+                  { id: "yes" as const, label: "Sí, me interesan", hint: "Pueblos y rincones a menos de ~2 h" },
+                  { id: "maybe" as const, label: "Si sobra tiempo", hint: "Solo cuando la ciudad base esté cubierta" },
+                  { id: "no" as const, label: "No, solo ciudad base", hint: "Sin desplazamientos a otros municipios" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setNearbyExcursions(opt.id)}
+                  className={`rounded-xl border px-3 py-3 text-left transition ${
+                    nearbyExcursions === opt.id
+                      ? "border-violet-400 bg-violet-50 ring-1 ring-violet-300"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="block text-xs font-bold text-slate-800">{opt.label}</span>
+                  <span className="mt-0.5 block text-[11px] text-slate-500">{opt.hint}</span>
+                </button>
+              ))}
+            </div>
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={mixStylesWhenTime}
+                onChange={(e) => setMixStylesWhenTime(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300"
+              />
+              <span>
+                <span className="block text-sm font-bold text-slate-800">Complementar si sobra tiempo</span>
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  Aunque elijas naturaleza o playa, la IA puede añadir museos, mercados o aventura ligera en días más tranquilos.
+                </span>
+              </span>
+            </label>
           </div>
           <div>
             <div className="flex items-center gap-2 mb-3"><MessageCircle className="w-4 h-4 text-slate-400" /><span className="text-sm font-bold text-slate-800">¿Alguna preferencia? <span className="text-slate-400 font-normal">(opcional)</span></span></div>
