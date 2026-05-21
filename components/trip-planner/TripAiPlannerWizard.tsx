@@ -718,9 +718,26 @@ export default function TripAiPlannerWizard() {
         }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error || "No se pudo generar el itinerario.");
-      setDraft(data as ApiDraft); setConfirmedStays(stays); setExpandedDays(new Set([1])); setStep("preview");
-      if (!chatMessages.length) setChatMessages([{ role: "assistant", text: `He generado un itinerario de ${(data as ApiDraft).totalDays} días con lugares reales. ¿Quieres ajustar algo?` }]);
+      if (!res.ok) {
+        throw new Error(
+          data?.error ||
+            (res.status === 502
+              ? "No se generaron actividades. Comprueba la IA en el servidor o prueba con un destino con más puntos turísticos."
+              : `Error del servidor (${res.status}).`)
+        );
+      }
+      const draftData = data as ApiDraft;
+      const activityCount = (draftData.days || []).reduce(
+        (n, d) => n + (d.items || []).filter((it) => it.activity_kind !== "transport").length,
+        0
+      );
+      if (activityCount === 0) {
+        throw new Error(
+          "El itinerario quedó vacío. Prueba de nuevo o añade una ciudad base más grande cerca (ej. Gijón si vas a Llanes)."
+        );
+      }
+      setDraft(draftData); setConfirmedStays(stays); setExpandedDays(new Set([1])); setStep("preview");
+      if (!chatMessages.length) setChatMessages([{ role: "assistant", text: `He generado un itinerario de ${draftData.totalDays} días con lugares reales. ¿Quieres ajustar algo?` }]);
     } catch (e) { const msg = e instanceof Error ? e.message : "No se pudo generar el itinerario."; setError(msg); setStep(draft ? "preview" : "review"); toast.error("Error al generar", msg); }
   }
 
@@ -940,7 +957,7 @@ export default function TripAiPlannerWizard() {
       {step === "planning" && <GeneratingSkeleton label="Calculando el reparto óptimo de días…" />}
 
       {step === "review" && planProposal && (
-        <PlanReviewStep proposal={planProposal} onConfirm={(stays) => generateDraft(stays)} onBack={() => setStep("form")} loading={false} />
+        <PlanReviewStep proposal={planProposal} onConfirm={(stays) => generateDraft(stays)} onBack={() => setStep("form")} loading={step === "generating"} />
       )}
 
       {step === "generating" && <GeneratingSkeleton label="Generando el itinerario completo con Gemini…" />}

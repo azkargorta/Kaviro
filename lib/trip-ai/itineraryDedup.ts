@@ -1,4 +1,5 @@
 import { askGemini } from "@/lib/trip-ai/providers";
+import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 
 /** Normaliza título/lugar para comparar duplicados entre días. */
@@ -115,7 +116,24 @@ export function dedupeDaysInCityBlock(days: PlannerDay[], opts: DedupeOptions): 
 export type NearbyPoi = { name: string; lat: number; lng: number };
 
 function parseNearbyList(raw: string): NearbyPoi[] {
-  const parsed = extractJsonObject(raw) as { places?: unknown[]; towns?: unknown[] } | unknown[] | null;
+  const t = String(raw || "").trim();
+  let parsed: unknown = null;
+  const arrStart = t.indexOf("[");
+  const arrEnd = t.lastIndexOf("]");
+  if (arrStart >= 0 && arrEnd > arrStart) {
+    try {
+      parsed = JSON.parse(t.slice(arrStart, arrEnd + 1));
+    } catch {
+      parsed = null;
+    }
+  }
+  if (!parsed) {
+    try {
+      parsed = extractJsonObject(t);
+    } catch {
+      return [];
+    }
+  }
   const arr = Array.isArray(parsed)
     ? parsed
     : Array.isArray((parsed as { places?: unknown[] })?.places)
@@ -189,6 +207,61 @@ export function buildExcursionItem(
 }
 
 const DEFAULT_TIMES = ["09:30", "12:00", "16:30", "19:00"];
+
+export function countRealItems(days: PlannerDay[]): number {
+  return days.reduce(
+    (n, d) =>
+      n + (d.items || []).filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length,
+    0
+  );
+}
+
+/** Itinerario mínimo desde POIs del mapa cuando la IA falla o devuelve poco. */
+export function buildFallbackDaysFromPool(
+  city: string,
+  nights: number,
+  startDateIso: string,
+  inCityPool: NearbyPoi[],
+  excursionPool: NearbyPoi[],
+  allowNearby: boolean,
+  itemsPerDay = 4
+): PlannerDay[] {
+  const pool = [...inCityPool, ...(allowNearby ? excursionPool : [])];
+  const used = new Set<string>();
+  const days: PlannerDay[] = [];
+
+  for (let i = 0; i < nights; i++) {
+    const date = addDaysIso(startDateIso, i);
+    const items: PlannerDayItem[] = [];
+    for (const poi of pool) {
+      if (items.length >= itemsPerDay) break;
+      const k = poi.name.toLowerCase();
+      if (used.has(k)) continue;
+      used.add(k);
+      const time = DEFAULT_TIMES[items.length % DEFAULT_TIMES.length]!;
+      const isExcursion = allowNearby && excursionPool.some((e) => e.name.toLowerCase() === k);
+      items.push(
+        isExcursion
+          ? buildExcursionItem(poi, city, date, time)
+          : buildInCityItem(poi, city, date, time)
+      );
+    }
+    days.push({ day: i + 1, date, base: city, items });
+  }
+  return days;
+}
+
+/** Combina días de IA con relleno POI donde falten actividades. */
+export function mergePlannerDaysWithFallback(aiDays: PlannerDay[], fallbackDays: PlannerDay[]): PlannerDay[] {
+  return aiDays.map((day, i) => {
+    const fb = fallbackDays[i];
+    const real = (day.items || []).filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport");
+    if (real.length >= 2 || !fb?.items?.length) return day;
+    const seen = new Set(real.map((it) => it.title.toLowerCase()));
+    const extra = (fb.items || []).filter((it) => !seen.has(String(it.title || "").toLowerCase()));
+    return { ...day, items: [...(day.items || []), ...extra].slice(0, 5) };
+  });
+}
 
 /** Rellena días con pocas actividades usando POIs de excursión o pueblos cercanos. */
 export function buildInCityItem(poi: NearbyPoi, baseCity: string, date: string, time: string, kind = "culture"): PlannerDayItem {

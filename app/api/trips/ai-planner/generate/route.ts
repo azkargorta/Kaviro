@@ -9,8 +9,11 @@ import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
 import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import {
+  buildFallbackDaysFromPool,
+  countRealItems,
   dedupeDaysInCityBlock,
   fillSparseDaysInBlock,
+  mergePlannerDaysWithFallback,
   type NearbyPoi,
   type PlannerDay,
 } from "@/lib/trip-ai/itineraryDedup";
@@ -283,6 +286,20 @@ function poisToNearbyPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi
   return dedupeByName(raw).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
 }
 
+function resolveStopPools(
+  poisByStop: Record<string, Record<Category, Poi[]>>,
+  stopLabel: string
+): Record<Category, Poi[]> | undefined {
+  if (poisByStop[stopLabel]) return poisByStop[stopLabel];
+  const lower = stopLabel.trim().toLowerCase();
+  if (!lower) return undefined;
+  for (const key of Object.keys(poisByStop)) {
+    const k = key.toLowerCase();
+    if (k === lower || k.startsWith(lower) || lower.startsWith(k)) return poisByStop[key];
+  }
+  return undefined;
+}
+
 function poisToInCityPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
   if (!pools) return [];
   const raw = [
@@ -434,20 +451,43 @@ async function generateCityItinerary(
     })
   );
 
-  if (!finalDays.length) return { days: [], prompt: allPrompts, rawOutput: allRaw };
+  const allowNearby = allowsNearbyExcursions(plannerPrefs);
+  const fallbackDays = buildFallbackDaysFromPool(
+    city,
+    nights,
+    startDateIso,
+    inCityPool,
+    excursionPool,
+    allowNearby
+  );
 
-  let plannerDays: PlannerDay[] = finalDays.map((d: any) => ({
-    day: d.day,
-    date: d.date,
-    base: city,
-    items: d.items || [],
-  }));
+  let plannerDays: PlannerDay[] =
+    finalDays.length > 0
+      ? finalDays.map((d: any) => ({
+          day: d.day,
+          date: d.date,
+          base: city,
+          items: d.items || [],
+        }))
+      : fallbackDays;
 
   plannerDays = dedupeDaysInCityBlock(plannerDays, { notes });
-  plannerDays = await fillSparseDaysInBlock(plannerDays, city, notes, excursionPool, 3, {
-    allowNearby: allowsNearbyExcursions(plannerPrefs),
-    inCityPool,
-  });
+
+  try {
+    plannerDays = await fillSparseDaysInBlock(plannerDays, city, notes, excursionPool, 3, {
+      allowNearby,
+      inCityPool,
+    });
+  } catch (e) {
+    console.error(`[ai-planner] fillSparse failed for "${city}":`, e);
+  }
+
+  if (countRealItems(plannerDays) < nights * 2) {
+    plannerDays = mergePlannerDaysWithFallback(plannerDays, fallbackDays);
+  }
+  if (countRealItems(plannerDays) < 1 && countRealItems(fallbackDays) > 0) {
+    plannerDays = fallbackDays;
+  }
 
   const outDays = plannerDays.map((d) => ({
     day: d.day,
@@ -656,7 +696,8 @@ export async function POST(req: Request) {
     // Merge initial preferences + all chat messages into a single context string
     // This is what feeds Gemini — every chat message the user sends enriches the plan
     const plannerPrefs = parsePlannerPreferences(body);
-    const mergedNotes = enrichNotesWithPlannerPrefs(mergeNotes(freeText, body?.rules), plannerPrefs);
+    const userNotes = mergeNotes(freeText, body?.rules);
+    const mergedNotes = enrichNotesWithPlannerPrefs(userNotes, plannerPrefs);
 
     const selectedByStop = (body?.selectedPoisByStop && typeof body.selectedPoisByStop === "object") ? body.selectedPoisByStop : null;
     const staysInput = Array.isArray(body?.stays) ? body.stays : null;
@@ -730,9 +771,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // If chat refinement is happening (mergedNotes has content), always regenerate
-    // so the plan reflects the latest preferences. Otherwise cache is fine.
-    const forceRegen = mergedNotes.trim().length > 0;
+    // Regenerar si el usuario escribió notas o mandó reglas por chat (no solo prefs por defecto del formulario).
+    const forceRegen = Boolean(userNotes.trim());
 
     // Generate all city blocks in parallel
     const blockResults = await Promise.all(
@@ -742,8 +782,9 @@ export async function POST(req: Request) {
           const blockDays = Array.from({ length: block.nights }, (_, i) => block.startDayNum + i);
           if (!blockDays.some((d) => targetDayNums.includes(d))) return Promise.resolve(null);
         }
-        const excursionPool = poisToNearbyPool(poisByStop[block.city]);
-        const inCityPool = poisToInCityPool(poisByStop[block.city]);
+        const stopPools = resolveStopPools(poisByStop, block.city);
+        const excursionPool = poisToNearbyPool(stopPools);
+        const inCityPool = poisToInCityPool(stopPools);
         return generateCityItinerary(
           block.city,
           block.nights,
@@ -784,8 +825,8 @@ export async function POST(req: Request) {
           mergedNotes,
           blocks[bi]!.prevCity,
           true,
-          poisToNearbyPool(poisByStop[blocks[bi]!.city]),
-          poisToInCityPool(poisByStop[blocks[bi]!.city]),
+          poisToNearbyPool(resolveStopPools(poisByStop, blocks[bi]!.city)),
+          poisToInCityPool(resolveStopPools(poisByStop, blocks[bi]!.city)),
           plannerPrefs
         );
         return retry?.days ?? result.days;
@@ -860,6 +901,21 @@ export async function POST(req: Request) {
       ];
     }
 
+    const activityCount = daysOut.reduce(
+      (n, d) =>
+        n + (d.items || []).filter((it: { activity_kind?: string }) => String(it.activity_kind || "").toLowerCase() !== "transport").length,
+      0
+    );
+    if (!planOnly && activityCount === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No se pudieron generar actividades para este destino. Prueba a ampliar el radio (ciudad más grande cercana), revisa GEMINI_API_KEY en el servidor, o inténtalo de nuevo.",
+        },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json({
       ok: true, totalDays, startDate, endDate, destinations,
       stops: stops.map((s) => ({ key: s.label, label: s.resolvedLabel, center: s.center })),
@@ -867,9 +923,12 @@ export async function POST(req: Request) {
       _debug: {
         mergedNotes,
         blocks: _debugBlocks,
+        activityCount,
       },
     });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "No se pudo generar el borrador." }, { status: 500 });
+    const msg = e instanceof Error ? e.message : "No se pudo generar el borrador.";
+    console.error("[ai-planner] POST failed:", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
