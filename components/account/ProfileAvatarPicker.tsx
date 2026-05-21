@@ -5,55 +5,62 @@ import {
   PROFILE_AVATAR_EMOJIS,
   PROFILE_AVATAR_ILLUSTRATIONS,
   DICEBEAR_STYLES,
-  DICEBEAR_PREVIEW_SEEDS,
+  DICEBEAR_SEEDS,
   normalizeProfileAvatar,
   resolveIllustration,
+  parseDicebearValue,
+  serializeDicebear,
   dicebearUrl,
   type ProfileAvatarKind,
   type ProfileIllustrationId,
   type DiceBearStyle,
+  type DiceBearSeed,
 } from "@/lib/profile-avatar";
 import UserAvatar from "@/components/profile/UserAvatar";
 
 type Tab = ProfileAvatarKind;
 
-const CATEGORY_LABELS = { personas: "Personas", emojis: "Emojis", animales: "Animales y robots" };
+const CATEGORY_LABELS = {
+  personas: "Personas",
+  emojis: "Emojis y doodles",
+  animales: "Animales y robots",
+};
 
 export default function ProfileAvatarPicker() {
   const [tab, setTab] = useState<Tab>("dicebear");
+
+  // Emoji state
   const [emoji, setEmoji] = useState<string>(PROFILE_AVATAR_EMOJIS[0]!);
+
+  // Gradient state
   const [illustration, setIllustration] = useState<ProfileIllustrationId>(
     PROFILE_AVATAR_ILLUSTRATIONS[0]!.id
   );
-  const [dicebearStyle, setDicebearStyle] = useState<DiceBearStyle>("fun-emoji");
-  const [status, setStatus] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const [userId, setUserId] = useState<string>("kaviro-preview");
 
-  // Load current avatar + userId on mount
+  // DiceBear state — style + seed chosen independently
+  const [dicebearStyle, setDicebearStyle] = useState<DiceBearStyle>("fun-emoji");
+  const [dicebearSeed, setDicebearSeed]   = useState<string>("fox");
+
+  const [status, setStatus]   = useState<string | null>(null);
+  const [saving, setSaving]   = useState(false);
+  const [loaded, setLoaded]   = useState(false);
+
+  // Load current avatar on mount
   useEffect(() => {
-    Promise.all([
-      fetch("/api/account/profile-avatar", { credentials: "include" }).then((r) =>
-        r.ok ? r.json() : null
-      ),
-      fetch("/api/auth/me", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-    ])
-      .then(([avatarData, meData]) => {
-        if (meData?.id) setUserId(meData.id);
-        if (avatarData?.avatar) {
-          const n = normalizeProfileAvatar(avatarData.avatar);
-          setTab(n.avatar_kind);
-          if (n.avatar_emoji) setEmoji(n.avatar_emoji);
-          if (n.avatar_illustration) {
-            if (n.avatar_kind === "dicebear") {
-              setDicebearStyle((n.avatar_illustration as DiceBearStyle) || "fun-emoji");
-            } else {
-              setIllustration(resolveIllustration(n.avatar_illustration).id);
-            }
-          }
+    fetch("/api/account/profile-avatar", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.avatar) return;
+        const n = normalizeProfileAvatar(d.avatar);
+        setTab(n.avatar_kind);
+        if (n.avatar_kind === "dicebear" && n.avatar_illustration) {
+          const { style, seed } = parseDicebearValue(n.avatar_illustration);
+          setDicebearStyle(style);
+          setDicebearSeed(seed);
+        } else if (n.avatar_kind === "illustration" && n.avatar_illustration) {
+          setIllustration(n.avatar_illustration as ProfileIllustrationId);
+        } else if (n.avatar_kind === "emoji" && n.avatar_emoji) {
+          setEmoji(n.avatar_emoji);
         }
       })
       .catch(() => {})
@@ -66,7 +73,11 @@ export default function ProfileAvatarPicker() {
     try {
       const body =
         tab === "dicebear"
-          ? { avatar_kind: "dicebear", avatar_emoji: null, avatar_illustration: dicebearStyle }
+          ? {
+              avatar_kind: "dicebear",
+              avatar_emoji: null,
+              avatar_illustration: serializeDicebear(dicebearStyle, dicebearSeed),
+            }
           : tab === "illustration"
           ? { avatar_kind: "illustration", avatar_emoji: null, avatar_illustration: illustration }
           : { avatar_kind: "emoji", avatar_emoji: emoji, avatar_illustration: null };
@@ -87,50 +98,53 @@ export default function ProfileAvatarPicker() {
     }
   }
 
-  // Preview props
-  const previewProps =
+  // Preview illustration value
+  const previewIllustration =
     tab === "dicebear"
-      ? { avatarKind: "dicebear" as Tab, avatarIllustration: dicebearStyle, avatarSeed: userId }
-      : tab === "illustration"
-      ? { avatarKind: "illustration" as Tab, avatarIllustration: illustration }
-      : { avatarKind: "emoji" as Tab, avatarEmoji: emoji };
+      ? serializeDicebear(dicebearStyle, dicebearSeed)
+      : illustration;
 
-  // Group dicebear styles by category
-  const dicebearByCategory = DICEBEAR_STYLES.reduce<Record<string, typeof DICEBEAR_STYLES>>((acc, s) => {
-    (acc[s.category] = acc[s.category] || []).push(s);
-    return acc;
-  }, {});
+  // Group styles by category
+  const byCategory = DICEBEAR_STYLES.reduce<Record<string, typeof DICEBEAR_STYLES>>(
+    (acc, s) => { (acc[s.category] ||= []).push(s); return acc; },
+    {}
+  );
 
   return (
     <section className="card-soft space-y-5 p-6">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Personalización</p>
-        <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">Tu avatar de viajero</h2>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+          Personalización
+        </p>
+        <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">
+          Tu avatar de viajero
+        </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Elige entre ilustraciones de personas, animales, emojis o gradientes.
-          Se verá en participantes, invitaciones y tu perfil.
+          Primero elige un estilo, luego el personaje concreto que más te guste.
         </p>
       </div>
 
-      {/* Preview */}
+      {/* ── Preview ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
         <UserAvatar
           displayName="Tú"
-          {...previewProps}
+          avatarKind={tab}
+          avatarEmoji={tab === "emoji" ? emoji : null}
+          avatarIllustration={tab === "emoji" ? null : previewIllustration}
           size="lg"
           ringClassName="ring-2 ring-[#F87171]/30"
         />
         <div>
           <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Vista previa</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {tab === "dicebear" ? "Ilustración única para tu cuenta"
-              : tab === "illustration" ? "Gradiente personalizado"
-              : "Emoji seleccionado"}
-          </p>
+          {tab === "dicebear" && (
+            <p className="text-xs text-slate-400">
+              {DICEBEAR_STYLES.find(s => s.id === dicebearStyle)?.label} · {dicebearSeed}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Tab selector */}
+      {/* ── Tab selector ─────────────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">
         {([
           { id: "dicebear",     label: "✨ Ilustraciones" },
@@ -140,11 +154,11 @@ export default function ProfileAvatarPicker() {
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id as Tab)}
+            onClick={() => setTab(t.id)}
             className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
               tab === t.id
                 ? "bg-[#F87171] text-white"
-                : "border border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
             }`}
           >
             {t.label}
@@ -154,54 +168,82 @@ export default function ProfileAvatarPicker() {
 
       {/* ── DiceBear panel ───────────────────────────────────────────────── */}
       {tab === "dicebear" && (
-        <div className="space-y-5">
-          {(Object.entries(dicebearByCategory) as [string, typeof DICEBEAR_STYLES][]).map(
-            ([cat, styles]) => (
-              <div key={cat}>
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat}
+        <div className="space-y-6">
+
+          {/* Step 1: choose style */}
+          <div>
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">
+              1 · Elige un estilo
+            </p>
+            {(Object.entries(byCategory) as [string, typeof DICEBEAR_STYLES][]).map(([cat, styles]) => (
+              <div key={cat} className="mb-4">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  {CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS]}
                 </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-wrap gap-2">
                   {styles.map((st) => (
                     <button
                       key={st.id}
                       type="button"
                       onClick={() => setDicebearStyle(st.id)}
-                      className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                         dicebearStyle === st.id
-                          ? "border-[#F87171] bg-[#F87171]/5 ring-1 ring-[#F87171]/40"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
+                          ? "border-[#F87171] bg-[#F87171]/10 text-[#F87171]"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                       }`}
                     >
-                      {/* 6 preview seeds */}
-                      <div className="flex shrink-0 gap-0.5">
-                        {DICEBEAR_PREVIEW_SEEDS.slice(0, 4).map((seed) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={seed}
-                            src={dicebearUrl(st.id, seed, 56)}
-                            alt=""
-                            width={28}
-                            height={28}
-                            className="h-7 w-7 rounded-full border border-white/60 object-cover"
-                            loading="lazy"
-                          />
-                        ))}
-                      </div>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-bold text-slate-800 dark:text-slate-100">
-                          {st.label}
-                        </span>
-                        <span className="block text-[10px] text-slate-400">
-                          {st.id}
-                        </span>
-                      </span>
+                      {/* Single preview of this style */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={dicebearUrl(st.id, dicebearSeed, 48)}
+                        alt=""
+                        width={20}
+                        height={20}
+                        className="h-5 w-5 rounded-full"
+                        loading="lazy"
+                      />
+                      {st.label}
                     </button>
                   ))}
                 </div>
               </div>
-            )
-          )}
+            ))}
+          </div>
+
+          {/* Step 2: choose character */}
+          <div>
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">
+              2 · Elige tu personaje
+            </p>
+            <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+              {DICEBEAR_SEEDS.map((seed) => (
+                <button
+                  key={seed}
+                  type="button"
+                  onClick={() => setDicebearSeed(seed)}
+                  title={seed}
+                  className={`flex flex-col items-center gap-1 rounded-xl border p-1.5 transition ${
+                    dicebearSeed === seed
+                      ? "border-[#F87171] bg-[#F87171]/10 ring-2 ring-[#F87171]/40"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={dicebearUrl(dicebearStyle, seed, 80)}
+                    alt={seed}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-full"
+                    loading="lazy"
+                  />
+                  <span className="text-[9px] text-slate-400 truncate w-full text-center">
+                    {seed}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -226,7 +268,7 @@ export default function ProfileAvatarPicker() {
         </div>
       )}
 
-      {/* ── Illustration panel ───────────────────────────────────────────── */}
+      {/* ── Gradient panel ───────────────────────────────────────────────── */}
       {tab === "illustration" && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {PROFILE_AVATAR_ILLUSTRATIONS.map((ill) => (
@@ -245,13 +287,15 @@ export default function ProfileAvatarPicker() {
               >
                 {ill.glyph}
               </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{ill.label}</span>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                {ill.label}
+              </span>
             </button>
           ))}
         </div>
       )}
 
-      {/* Save */}
+      {/* ── Save ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -261,7 +305,9 @@ export default function ProfileAvatarPicker() {
         >
           {saving ? "Guardando…" : "Guardar avatar"}
         </button>
-        {status && <p className="text-sm text-slate-600 dark:text-slate-400">{status}</p>}
+        {status && (
+          <p className="text-sm text-slate-600 dark:text-slate-400">{status}</p>
+        )}
       </div>
     </section>
   );

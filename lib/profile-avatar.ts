@@ -1,15 +1,15 @@
-/** Avatar de perfil: emoji, ilustración (gradiente) o DiceBear (personas/animales). */
+/** Avatar de perfil: emoji, ilustración (gradiente) o DiceBear con seed elegido. */
 
 export type ProfileAvatarKind = "emoji" | "illustration" | "dicebear";
 
-// ── Emojis ─────────────────────────────────────────────────────────────────
+// ── Emojis de viaje ────────────────────────────────────────────────────────
 export const PROFILE_AVATAR_EMOJIS = [
   "😎", "🧳", "✈️", "🌍", "🏔️", "🌴", "🚐", "🎒",
   "🦊", "🐧", "🌊", "☀️", "🌙", "⭐", "🎯", "🔥",
   "🎨", "📸", "🗺️", "⛵", "🚂", "🛳️", "🏕️", "🎪",
 ] as const;
 
-// ── Ilustraciones con gradiente (las existentes) ───────────────────────────
+// ── Ilustraciones con gradiente ────────────────────────────────────────────
 export type ProfileIllustrationId =
   | "explorer" | "sunset" | "mountain" | "wave" | "city" | "camper";
 
@@ -27,50 +27,52 @@ export const PROFILE_AVATAR_ILLUSTRATIONS: Array<{
   { id: "camper",   label: "Ruta",       glyph: "🚐", gradient: "from-emerald-400 to-teal-500" },
 ];
 
-// ── DiceBear ───────────────────────────────────────────────────────────────
-// Estilos disponibles: people, emoji style, animals/fun
+// ── DiceBear ────────────────────────────────────────────────────────────────
 export type DiceBearStyle =
-  | "adventurer"
-  | "fun-emoji"
-  | "notionists"
-  | "lorelei"
-  | "personas"
-  | "open-peeps"
-  | "micah"
-  | "croodles"
-  | "pixel-art"
-  | "bottts";
+  | "adventurer" | "fun-emoji" | "notionists"
+  | "lorelei"    | "personas"  | "open-peeps"
+  | "micah"      | "croodles"  | "pixel-art" | "bottts";
 
+/** Estilos agrupados por categoría, con label descriptivo */
 export const DICEBEAR_STYLES: Array<{
   id: DiceBearStyle;
   label: string;
   category: "personas" | "emojis" | "animales";
 }> = [
-  // Personas
   { id: "adventurer", label: "Aventurero",  category: "personas" },
   { id: "lorelei",    label: "Lorelei",     category: "personas" },
   { id: "personas",   label: "Personas",    category: "personas" },
   { id: "open-peeps", label: "Open Peeps",  category: "personas" },
   { id: "micah",      label: "Micah",       category: "personas" },
-  // Emojis y doodles
-  { id: "fun-emoji",  label: "Fun Emoji",   category: "emojis" },
-  { id: "croodles",   label: "Croodles",    category: "emojis" },
-  // Animales y robots
+  { id: "fun-emoji",  label: "Fun Emoji",   category: "emojis"   },
+  { id: "croodles",   label: "Croodles",    category: "emojis"   },
   { id: "notionists", label: "Notionists",  category: "animales" },
   { id: "pixel-art",  label: "Pixel Art",   category: "animales" },
   { id: "bottts",     label: "Robots",      category: "animales" },
 ];
 
-// Seeds de ejemplo para mostrar en el picker (6 previews por estilo)
-export const DICEBEAR_PREVIEW_SEEDS = [
-  "kaviro1", "kaviro2", "kaviro3", "kaviro4", "kaviro5", "kaviro6",
-];
-
 /**
- * Genera la URL de DiceBear para un avatar.
- * El seed es el user.id o cualquier string único — siempre da el mismo avatar.
+ * 24 seeds con nombres evocadores — cada uno produce un avatar visualmente
+ * distinto en todos los estilos de DiceBear.
+ * Se muestran en la rejilla para que el usuario elija el que más le gusta.
  */
-export function dicebearUrl(style: DiceBearStyle, seed: string, size = 80): string {
+export const DICEBEAR_SEEDS = [
+  "fox",    "bear",   "wolf",   "owl",
+  "tiger",  "panda",  "eagle",  "lion",
+  "cat",    "dog",    "rabbit", "deer",
+  "luna",   "sol",    "nova",   "sky",
+  "ember",  "frost",  "zara",   "miko",
+  "leo",    "aria",   "finn",   "jade",
+] as const;
+
+export type DiceBearSeed = (typeof DICEBEAR_SEEDS)[number];
+
+/** Genera la URL de DiceBear */
+export function dicebearUrl(
+  style: DiceBearStyle,
+  seed: string,
+  size = 80
+): string {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}`;
 }
 
@@ -78,13 +80,27 @@ export function dicebearUrl(style: DiceBearStyle, seed: string, size = 80): stri
 export type ProfileAvatarFields = {
   avatar_kind?: string | null;
   avatar_emoji?: string | null;
+  /** Para illustration: slug del gradiente. Para dicebear: "estilo:seed" (e.g. "fun-emoji:fox") */
   avatar_illustration?: string | null;
 };
 
-/**
- * Normaliza los campos del avatar antes de guardarlos.
- * Para DiceBear: avatar_kind = "dicebear", avatar_illustration = estilo (e.g. "fun-emoji")
- */
+/** Parsea "fun-emoji:fox" → { style, seed } */
+export function parseDicebearValue(value: string | null | undefined): {
+  style: DiceBearStyle;
+  seed: string;
+} {
+  const [stylePart, seedPart] = (value ?? "").split(":");
+  const style =
+    DICEBEAR_STYLES.find((s) => s.id === stylePart)?.id ?? "fun-emoji";
+  const seed = seedPart || "fox";
+  return { style, seed };
+}
+
+/** Serializa estilo + seed para guardar en BD */
+export function serializeDicebear(style: DiceBearStyle, seed: string): string {
+  return `${style}:${seed}`;
+}
+
 export function normalizeProfileAvatar(input: ProfileAvatarFields): {
   avatar_kind: ProfileAvatarKind;
   avatar_emoji: string | null;
@@ -97,24 +113,34 @@ export function normalizeProfileAvatar(input: ProfileAvatarFields): {
     : "emoji";
 
   if (kind === "dicebear") {
-    const style = DICEBEAR_STYLES.find((s) => s.id === input.avatar_illustration)?.id
-      ?? "fun-emoji";
-    return { avatar_kind: "dicebear", avatar_emoji: null, avatar_illustration: style };
+    const { style, seed } = parseDicebearValue(input.avatar_illustration);
+    return {
+      avatar_kind: "dicebear",
+      avatar_emoji: null,
+      avatar_illustration: serializeDicebear(style, seed),
+    };
   }
 
   if (kind === "illustration") {
-    const illRaw = typeof input.avatar_illustration === "string" ? input.avatar_illustration.trim() : "";
+    const illRaw = (input.avatar_illustration ?? "").trim();
     const illustration = PROFILE_AVATAR_ILLUSTRATIONS.some((i) => i.id === illRaw)
-      ? (illRaw as ProfileIllustrationId) : "explorer";
+      ? (illRaw as ProfileIllustrationId)
+      : "explorer";
     return { avatar_kind: "illustration", avatar_emoji: null, avatar_illustration: illustration };
   }
 
-  const emojiRaw = typeof input.avatar_emoji === "string" ? input.avatar_emoji.trim() : "";
-  const emoji = PROFILE_AVATAR_EMOJIS.includes(emojiRaw as (typeof PROFILE_AVATAR_EMOJIS)[number])
-    ? emojiRaw : PROFILE_AVATAR_EMOJIS[0]!;
+  const emojiRaw = (input.avatar_emoji ?? "").trim();
+  const emoji = PROFILE_AVATAR_EMOJIS.includes(
+    emojiRaw as (typeof PROFILE_AVATAR_EMOJIS)[number]
+  )
+    ? emojiRaw
+    : PROFILE_AVATAR_EMOJIS[0]!;
   return { avatar_kind: "emoji", avatar_emoji: emoji, avatar_illustration: null };
 }
 
 export function resolveIllustration(id: string | null | undefined) {
-  return PROFILE_AVATAR_ILLUSTRATIONS.find((i) => i.id === id) ?? PROFILE_AVATAR_ILLUSTRATIONS[0]!;
+  return (
+    PROFILE_AVATAR_ILLUSTRATIONS.find((i) => i.id === id) ??
+    PROFILE_AVATAR_ILLUSTRATIONS[0]!
+  );
 }

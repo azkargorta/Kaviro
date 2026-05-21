@@ -3,27 +3,25 @@
 import {
   resolveIllustration,
   dicebearUrl,
-  DICEBEAR_STYLES,
+  parseDicebearValue,
   type ProfileAvatarKind,
-  type DiceBearStyle,
 } from "@/lib/profile-avatar";
 
 type Props = {
   displayName: string;
   avatarKind?: string | null;
   avatarEmoji?: string | null;
+  /** illustration: slug | dicebear: "style:seed" */
   avatarIllustration?: string | null;
-  /** For DiceBear — the user's unique seed (user.id). Falls back to displayName. */
-  avatarSeed?: string | null;
   size?: "sm" | "md" | "lg";
   className?: string;
   ringClassName?: string;
 };
 
 const sizeMap = {
-  sm: { box: "h-8 w-8 text-sm",   emoji: "text-base", px: 32 },
-  md: { box: "h-10 w-10 text-sm", emoji: "text-lg",   px: 40 },
-  lg: { box: "h-12 w-12 text-base",emoji: "text-xl",  px: 48 },
+  sm: { box: "h-8 w-8",    emoji: "text-base", px: 32 },
+  md: { box: "h-10 w-10",  emoji: "text-lg",   px: 40 },
+  lg: { box: "h-12 w-12",  emoji: "text-xl",   px: 48 },
 };
 
 function initials(name: string) {
@@ -50,7 +48,6 @@ export default function UserAvatar({
   avatarKind,
   avatarEmoji,
   avatarIllustration,
-  avatarSeed,
   size = "md",
   className = "",
   ringClassName = "ring-2 ring-white/60",
@@ -61,12 +58,10 @@ export default function UserAvatar({
     : avatarKind === "dicebear"   ? "dicebear"
     : "emoji";
 
-  // ── DiceBear ──────────────────────────────────────────────────────────────
+  // ── DiceBear: "style:seed" ─────────────────────────────────────────────
   if (kind === "dicebear") {
-    const style = (DICEBEAR_STYLES.find((st) => st.id === avatarIllustration)?.id
-      ?? "fun-emoji") as DiceBearStyle;
-    const seed = avatarSeed || displayName || "kaviro";
-    const url = dicebearUrl(style, seed, s.px * 2); // 2x for retina
+    const { style, seed } = parseDicebearValue(avatarIllustration);
+    const url = dicebearUrl(style, seed, s.px * 2);
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -74,14 +69,14 @@ export default function UserAvatar({
         alt={displayName}
         width={s.px}
         height={s.px}
-        className={`shrink-0 rounded-full object-cover ${ringClassName} ${className}`}
+        className={`shrink-0 rounded-full object-cover ${s.box} ${ringClassName} ${className}`}
         title={displayName}
         loading="lazy"
       />
     );
   }
 
-  // ── Ilustración con gradiente ─────────────────────────────────────────────
+  // ── Gradiente ─────────────────────────────────────────────────────────
   if (kind === "illustration") {
     const ill = resolveIllustration(avatarIllustration);
     return (
@@ -95,7 +90,7 @@ export default function UserAvatar({
     );
   }
 
-  // ── Emoji ─────────────────────────────────────────────────────────────────
+  // ── Emoji ─────────────────────────────────────────────────────────────
   if (avatarEmoji) {
     return (
       <span
@@ -108,7 +103,7 @@ export default function UserAvatar({
     );
   }
 
-  // ── Iniciales (fallback) ──────────────────────────────────────────────────
+  // ── Iniciales (fallback) ──────────────────────────────────────────────
   const c = fallbackColor(displayName);
   return (
     <span
