@@ -1,19 +1,7 @@
-import type { NearbyPoi } from "@/lib/trip-ai/itineraryDedup";
+import type { NearbyPoi, PlannerDayItem } from "@/lib/trip-ai/itineraryDedup";
 import type { RestaurantBudget, PlannerPreferences } from "@/lib/trip-ai/plannerPreferences";
 
-export type DayItemLike = {
-  title: string;
-  description?: string | null;
-  activity_time?: string | null;
-  place_name?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  activity_kind?: string;
-  activity_type?: string;
-  source?: string;
-  activity_date?: string;
-  address?: string;
-};
+export type DayItemLike = PlannerDayItem;
 
 const RESTAURANT_LIKE =
   /\b(restaurante|sidrer[ií]a|taberna|bistr[oó]|brasserie|trattoria|asador|parrilla|mes[oó]n|marisquer[ií]a|steakhouse|pizzer[ií]a|pizzeria|café-restaurante|cafe-restaurante)\b/i;
@@ -59,7 +47,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   );
 }
 
-function anchorBeforeSlot(items: DayItemLike[], slot: MealSlot): { lat: number; lng: number } | null {
+function anchorBeforeSlot(items: PlannerDayItem[], slot: MealSlot): { lat: number; lng: number } | null {
   const lunchEnd = 17 * 60;
   const dinnerStart = 19 * 60;
   const sorted = [...items].sort((a, b) => timeToMinutes(a.activity_time) - timeToMinutes(b.activity_time));
@@ -96,12 +84,12 @@ function scoreRestaurantForBudget(title: string, budget: RestaurantBudget): numb
 }
 
 function pickBestRestaurant(
-  candidates: DayItemLike[],
+  candidates: PlannerDayItem[],
   anchor: { lat: number; lng: number } | null,
   budget: RestaurantBudget
-): DayItemLike | null {
+): PlannerDayItem | null {
   if (!candidates.length) return null;
-  let best: DayItemLike | null = null;
+  let best: PlannerDayItem | null = null;
   let bestScore = -1;
   for (const c of candidates) {
     let score = scoreRestaurantForBudget(c.title, budget);
@@ -146,7 +134,7 @@ function defaultMealTime(slot: MealSlot): string {
   return slot === "lunch" ? "13:30" : "20:30";
 }
 
-function buildRestaurantItem(poi: NearbyPoi, city: string, date: string, time: string): DayItemLike {
+function buildRestaurantItem(poi: NearbyPoi, city: string, date: string, time: string): PlannerDayItem {
   return {
     title: poi.name,
     description: `Restaurante recomendado en ${city}.`,
@@ -166,14 +154,14 @@ function buildRestaurantItem(poi: NearbyPoi, city: string, date: string, time: s
  * Máximo 1 restaurante por comida y 1 por cena; opcionalmente añade uno cerca de la última visita.
  */
 export function consolidateRestaurantsForDay(
-  items: DayItemLike[],
+  items: PlannerDayItem[],
   opts: {
     prefs: PlannerPreferences;
     city: string;
     date: string;
     gastroPool?: NearbyPoi[];
   }
-): DayItemLike[] {
+): PlannerDayItem[] {
   const { prefs, city, date } = opts;
   const gastroPool = opts.gastroPool ?? [];
 
@@ -185,14 +173,14 @@ export function consolidateRestaurantsForDay(
   const nonRest = items.filter((it) => !isNamedRestaurantItem(it));
   const restaurants = items.filter((it) => isNamedRestaurantItem(it));
 
-  const bySlot: Record<MealSlot, DayItemLike[]> = { lunch: [], dinner: [] };
+  const bySlot: Record<MealSlot, PlannerDayItem[]> = { lunch: [], dinner: [] };
   for (const r of restaurants) {
     const slot = mealSlotFromTime(timeToMinutes(r.activity_time));
     if (slot) bySlot[slot].push(r);
   }
 
   const usedNames = new Set<string>();
-  const added: DayItemLike[] = [];
+  const added: PlannerDayItem[] = [];
 
   for (const slot of ["lunch", "dinner"] as MealSlot[]) {
     const anchor = anchorBeforeSlot(items, slot);

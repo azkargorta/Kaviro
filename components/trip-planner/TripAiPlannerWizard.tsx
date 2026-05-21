@@ -634,6 +634,7 @@ export default function TripAiPlannerWizard() {
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set([1]));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
 
   const totalDays = useMemo(() => totalDaysBetween(startDate, endDate), [startDate, endDate]);
   const inferredCurrency = useMemo(() => inferCurrencyFromDestinations(places.map((x) => x.trim()).filter(Boolean)), [places]);
@@ -705,7 +706,9 @@ export default function TripAiPlannerWizard() {
   }
 
   async function generateDraft(stays: StayRow[], opts?: { regenerateBadOnly?: boolean }) {
-    setError(null); setStep("generating");
+    setError(null);
+    setGeneratingDraft(true);
+    setStep("generating");
     try {
       const res = await fetch("/api/trips/ai-planner/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -742,7 +745,14 @@ export default function TripAiPlannerWizard() {
       }
       setDraft(draftData); setConfirmedStays(stays); setExpandedDays(new Set([1])); setStep("preview");
       if (!chatMessages.length) setChatMessages([{ role: "assistant", text: `He generado un itinerario de ${draftData.totalDays} días con lugares reales. ¿Quieres ajustar algo?` }]);
-    } catch (e) { const msg = e instanceof Error ? e.message : "No se pudo generar el itinerario."; setError(msg); setStep(draft ? "preview" : "review"); toast.error("Error al generar", msg); }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "No se pudo generar el itinerario.";
+      setError(msg);
+      setStep(draft ? "preview" : "review");
+      toast.error("Error al generar", msg);
+    } finally {
+      setGeneratingDraft(false);
+    }
   }
 
   async function sendChat(text?: string) {
@@ -1022,7 +1032,7 @@ export default function TripAiPlannerWizard() {
       {step === "planning" && <GeneratingSkeleton label="Calculando el reparto óptimo de días…" />}
 
       {step === "review" && planProposal && (
-        <PlanReviewStep proposal={planProposal} onConfirm={(stays) => generateDraft(stays)} onBack={() => setStep("form")} loading={step === "generating"} />
+        <PlanReviewStep proposal={planProposal} onConfirm={(stays) => generateDraft(stays)} onBack={() => setStep("form")} loading={generatingDraft} />
       )}
 
       {step === "generating" && <GeneratingSkeleton label="Generando el itinerario completo con Gemini…" />}
