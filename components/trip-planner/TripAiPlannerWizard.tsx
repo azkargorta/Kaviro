@@ -118,20 +118,44 @@ function GeneratingSkeleton({ label }: { label: string }) {
 function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDays }: { query: string; selectedPlaces: string[]; onAdd: (p: string) => void; onRemove: (p: string) => void; totalDays: number }) {
   const [suggestions, setSuggestions] = useState<SuggestedPlace[]>([]);
   const [loading, setLoading] = useState(false);
-  const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => { setSuggestions([]); setOffset(0); setHasMore(true); void load(0); }, [query]); // eslint-disable-line
+  useEffect(() => {
+    setSuggestions([]);
+    setHasMore(true);
+    setLoadError(null);
+    void load(false);
+  }, [query]); // eslint-disable-line
 
-  async function load(currentOffset: number) {
+  async function load(append: boolean) {
     setLoading(true);
+    setLoadError(null);
     try {
-      const res = await fetch("/api/geocode/suggest-places", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query, limit: 24, offset: currentOffset }) });
+      const already = append ? suggestions : [];
+      const exclude = [...selectedPlaces, ...already.map((p) => p.name)];
+      const res = await fetch("/api/geocode/suggest-places", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          limit: 14,
+          forAccommodationBases: true,
+          exclude,
+        }),
+      });
       const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "No se pudieron cargar sugerencias.");
       const places: SuggestedPlace[] = Array.isArray(data?.places) ? data.places : [];
-      setSuggestions((prev) => currentOffset === 0 ? places : [...prev, ...places]);
-      setOffset(currentOffset + places.length); setHasMore(places.length >= 12);
-    } finally { setLoading(false); }
+      setSuggestions((prev) => (append ? [...prev, ...places] : places));
+      setHasMore(places.length >= 6);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al consultar la IA.";
+      setLoadError(msg);
+      if (!append) setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const splitHint = useMemo(() => {
@@ -156,13 +180,13 @@ function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDay
         </div>
       </div>
       <div className="flex items-start gap-2 border-t border-amber-200/80 pt-3 dark:border-amber-900/40">
-        <Globe className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
+        <Sparkles className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
         <div>
           <p className="text-sm font-bold text-violet-900 dark:text-violet-100">
-            ¿Qué ciudades o pueblos quieres visitar en {regionLabel}?
+            ¿Dónde te alojarías en {regionLabel}?
           </p>
           <p className="mt-0.5 text-xs font-medium text-violet-600 dark:text-violet-300">
-            Elige uno o varios — la IA repartirá los días según cada lugar.
+            La IA propone ciudades y pueblos turísticos conocidos donde suele haber alojamiento. Elige uno o varios.
           </p>
         </div>
       </div>
@@ -180,21 +204,53 @@ function DestinationSuggester({ query, selectedPlaces, onAdd, onRemove, totalDay
           Selecciona al menos un lugar para continuar.
         </p>
       ) : null}
+      {loadError ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+          {loadError}
+        </p>
+      ) : null}
       {loading && suggestions.length === 0 ? (
         <div className="flex items-center gap-2 text-xs font-semibold text-violet-500">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          Buscando ciudades y pueblos…
+          La IA busca ciudades y pueblos turísticos con alojamiento…
         </div>
-      ) : suggestions.length === 0 ? (
-        <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
-          No encontramos sugerencias automáticas. Escribe el nombre de una ciudad en el campo de destino o recarga la página.
-        </p>
+      ) : suggestions.length === 0 && !loadError ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
+            No hubo sugerencias. Puedes reintentar o escribir directamente una ciudad en el destino del viaje.
+          </p>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void load(false)}
+            className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+          >
+            Reintentar con la IA
+          </button>
+        </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {suggestions.filter((s) => !selectedPlaces.includes(s.name)).map((s) => (
             <button key={s.name} type="button" onClick={() => onAdd(s.name)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-100 transition-colors dark:border-violet-800 dark:bg-[#0F1623] dark:text-violet-100"><Plus className="w-3 h-3" />{s.name}</button>
           ))}
-          {hasMore && <button type="button" disabled={loading} onClick={() => void load(offset)} className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-600 hover:bg-violet-50 disabled:opacity-50 dark:border-violet-800 dark:bg-[#0F1623]">{loading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : "+ Ver más"}</button>}
+          {hasMore ? (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void load(true)}
+              className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-600 hover:bg-violet-50 disabled:opacity-50 dark:border-violet-800 dark:bg-[#0F1623]"
+            >
+              {loading ? <Loader2 className="inline h-3 w-3 animate-spin" /> : "+ Más sugerencias IA"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void load(false)}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-[#0F1623] dark:text-slate-300"
+          >
+            Actualizar sugerencias
+          </button>
         </div>
       )}
       {splitHint ? <p className="text-xs font-semibold text-violet-600 bg-violet-100 rounded-xl px-3 py-2 dark:bg-violet-900/40 dark:text-violet-200">💡 {splitHint}</p> : null}

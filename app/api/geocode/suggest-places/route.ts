@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
+import { isBroadDestination } from "@/lib/destination-region";
+import { suggestAccommodationBasesWithAi } from "@/lib/suggest-accommodation-bases";
 
 export const runtime = "nodejs";
 
@@ -612,7 +614,42 @@ export async function POST(req: Request) {
     const query = String(body?.query || "").trim();
     const limit = Math.min(Number(body?.limit) || 18, 40);
     const offset = Number(body?.offset) || 0;
+    const forAccommodationBases =
+      body?.forAccommodationBases === true || body?.mode === "accommodation_bases";
+    const useAiBases = forAccommodationBases || isBroadDestination(query);
+    const exclude = Array.isArray(body?.exclude)
+      ? body.exclude.map((x: unknown) => String(x || "").trim()).filter(Boolean)
+      : [];
+
     if (!query) return NextResponse.json({ error: "Falta query." }, { status: 400 });
+
+    // Destinos amplios: IA primero (bases de alojamiento turísticas), sin lista cerrada
+    if (useAiBases) {
+      const cacheKey = `ai-bases:${query.toLowerCase()}:${limit}:${exclude.join("|")}`;
+      const cached = cacheGet(cacheKey);
+      if (cached) {
+        return NextResponse.json({ ok: true, places: cached, source: "cache" });
+      }
+      try {
+        const places = await suggestAccommodationBasesWithAi(query, limit, exclude);
+        if (places.length > 0) cacheSet(cacheKey, places);
+        return NextResponse.json({
+          ok: true,
+          places,
+          source: "gemini_accommodation_bases",
+        });
+      } catch (e) {
+        return NextResponse.json(
+          {
+            error:
+              e instanceof Error
+                ? e.message
+                : "No se pudieron obtener sugerencias de la IA. Comprueba Premium/IA o inténtalo de nuevo.",
+          },
+          { status: 502 }
+        );
+      }
+    }
 
     const cacheKey = `${query.toLowerCase()}:${limit}:${offset}`;
     const cached = cacheGet(cacheKey);
