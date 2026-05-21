@@ -395,7 +395,7 @@ const MODE_OPTIONS: ModeOption[] = [
   {
     id: "search",
     label: "Buscar",
-    useFor: "Buscar hoteles, vuelos, trenes, ferries o autobuses con datos del viaje pre-rellenados.",
+    useFor: "Buscar hoteles, vuelos, trenes, ferries, autobuses o coche de alquiler con datos del viaje pre-rellenados.",
   },
   {
     id: "travel_docs",
