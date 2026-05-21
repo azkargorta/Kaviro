@@ -20,11 +20,13 @@ import {
 import {
   allowsNearbyExcursions,
   buildNearbyExcursionPromptLine,
+  buildRestaurantPromptLine,
   buildStyleMixPromptLine,
   enrichNotesWithPlannerPrefs,
   parsePlannerPreferences,
   type PlannerPreferences,
 } from "@/lib/trip-ai/plannerPreferences";
+import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -72,7 +74,7 @@ function cacheSet(c: LatLng, r: number, pools: Record<Category, Poi[]>) {
 const ITIN_CACHE = new Map<string, { days: any[]; expiresAt: number }>();
 
 function itinKey(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
-  return `v3:${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 60)}:${prefs.nearbyExcursions}:${prefs.mixStylesWhenTime}:${prefs.tripStyle || "-"}`;
+  return `v4:${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 50)}:${prefs.nearbyExcursions}:${prefs.suggestRestaurants}:${prefs.restaurantBudget}`;
 }
 function itinCacheGet(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
   const key = itinKey(city, nights, notes, prefs);
@@ -252,6 +254,7 @@ function buildCityItineraryPrompt(
           ? `\nSi agotaste ${city}, propón excursión de 1 día a pueblo, costa o lugar cercano verificable (k=excursion).`
           : "";
   const styleMixBlock = prefs ? buildStyleMixPromptLine(prefs) : "";
+  const restaurantBlock = prefs ? buildRestaurantPromptLine(prefs) : "";
 
   const iconicRule =
     dayIdx === 1
@@ -263,7 +266,7 @@ function buildCityItineraryPrompt(
 
   return `Guía local experto de ${city}. Plan para: ${dateList}.
 ${profile}
-${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}
+${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}${restaurantBlock}
 
 JSON COMPACTO — SOLO esto, sin markdown ni texto extra:
 {"days":[{"day":1,"date":"${firstDate}","items":[{"t":"Nombre real","d":"Tip en max 8 palabras","h":"09:30","k":"culture","lt":-34.0000,"lg":-58.0000}]}]}
@@ -300,6 +303,11 @@ function resolveStopPools(
   return undefined;
 }
 
+function poisToGastroPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
+  if (!pools) return [];
+  return dedupeByName(pools.gastro_experience || []).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
+}
+
 function poisToInCityPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
   if (!pools) return [];
   const raw = [
@@ -322,6 +330,7 @@ async function generateCityItinerary(
   forceRegen = false,
   excursionPool: NearbyPoi[] = [],
   inCityPool: NearbyPoi[] = [],
+  gastroPool: NearbyPoi[] = [],
   plannerPrefs: PlannerPreferences = parsePlannerPreferences(null)
 ): Promise<{ days: any[]; prompt: string; rawOutput: string } | null> {
   if (!forceRegen) {
@@ -488,6 +497,16 @@ async function generateCityItinerary(
   if (countRealItems(plannerDays) < 1 && countRealItems(fallbackDays) > 0) {
     plannerDays = fallbackDays;
   }
+
+  plannerDays = plannerDays.map((d) => ({
+    ...d,
+    items: consolidateRestaurantsForDay(d.items || [], {
+      prefs: plannerPrefs,
+      city,
+      date: d.date,
+      gastroPool,
+    }),
+  }));
 
   const outDays = plannerDays.map((d) => ({
     day: d.day,
@@ -785,6 +804,7 @@ export async function POST(req: Request) {
         const stopPools = resolveStopPools(poisByStop, block.city);
         const excursionPool = poisToNearbyPool(stopPools);
         const inCityPool = poisToInCityPool(stopPools);
+        const gastroPool = poisToGastroPool(stopPools);
         return generateCityItinerary(
           block.city,
           block.nights,
@@ -794,6 +814,7 @@ export async function POST(req: Request) {
           forceRegen,
           excursionPool,
           inCityPool,
+          gastroPool,
           plannerPrefs
         );
       })
@@ -827,6 +848,7 @@ export async function POST(req: Request) {
           true,
           poisToNearbyPool(resolveStopPools(poisByStop, blocks[bi]!.city)),
           poisToInCityPool(resolveStopPools(poisByStop, blocks[bi]!.city)),
+          poisToGastroPool(resolveStopPools(poisByStop, blocks[bi]!.city)),
           plannerPrefs
         );
         return retry?.days ?? result.days;
@@ -870,6 +892,13 @@ export async function POST(req: Request) {
             // Sort all items by geographic proximity (nearest-neighbor greedy)
             items = sortItemsByProximity(items);
           }
+          const stopPools = resolveStopPools(poisByStop, block.city);
+          items = consolidateRestaurantsForDay(items, {
+            prefs: plannerPrefs,
+            city: block.city,
+            date: dayDate,
+            gastroPool: poisToGastroPool(stopPools),
+          });
           daysOut.push({ day: globalDayNum, date: dayDate, base: block.city, items });
         } else if (existingDaysMap.has(globalDayNum)) {
           daysOut.push({ ...existingDaysMap.get(globalDayNum), day: globalDayNum, date: dayDate });

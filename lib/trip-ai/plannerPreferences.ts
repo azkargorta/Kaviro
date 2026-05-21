@@ -11,16 +11,22 @@ export type TripStyleId =
   | "family"
   | "custom";
 
+export type RestaurantBudget = "low" | "medium" | "high";
+
 export type PlannerPreferences = {
   nearbyExcursions: NearbyExcursionsPref;
   mixStylesWhenTime: boolean;
   tripStyle: TripStyleId | null;
+  suggestRestaurants: boolean;
+  restaurantBudget: RestaurantBudget;
 };
 
 const DEFAULT_PREFS: PlannerPreferences = {
   nearbyExcursions: "maybe",
   mixStylesWhenTime: true,
   tripStyle: null,
+  suggestRestaurants: false,
+  restaurantBudget: "medium",
 };
 
 const VALID_STYLES = new Set<TripStyleId>([
@@ -56,7 +62,14 @@ export function parsePlannerPreferences(body: unknown): PlannerPreferences {
     ? (styleRaw as TripStyleId)
     : null;
 
-  return { nearbyExcursions, mixStylesWhenTime, tripStyle };
+  const restRaw = o.suggestRestaurants ?? o.suggest_restaurants;
+  const suggestRestaurants = restRaw === true || restRaw === "true";
+
+  const budgetRaw = String(o.restaurantBudget ?? o.restaurant_budget ?? "medium").toLowerCase();
+  const restaurantBudget: RestaurantBudget =
+    budgetRaw === "low" || budgetRaw === "high" ? budgetRaw : "medium";
+
+  return { nearbyExcursions, mixStylesWhenTime, tripStyle, suggestRestaurants, restaurantBudget };
 }
 
 export function allowsNearbyExcursions(prefs: PlannerPreferences): boolean {
@@ -110,6 +123,21 @@ export function enrichNotesWithPlannerPrefs(notes: string, prefs: PlannerPrefere
       "Mantén el plan centrado en el estilo elegido; no añadas categorías muy distintas salvo que el viajero lo pida en texto libre."
     );
   }
+  if (prefs.suggestRestaurants) {
+    const budgetLabel =
+      prefs.restaurantBudget === "low"
+        ? "económico / menú del día / taberna"
+        : prefs.restaurantBudget === "high"
+          ? "alto / cocina elaborada"
+          : "medio";
+    parts.push(
+      `Restaurantes: SÍ — como mucho 1 para COMIDA (~13:30) y 1 para CENA (~20:30) por día, presupuesto ${budgetLabel}, cerca de la última actividad visitada antes de esa hora. Nunca dos restaurantes en la misma comida o cena.`
+    );
+  } else {
+    parts.push(
+      "Restaurantes: NO — no incluyas restaurantes, sidrerías ni tabernas (k=gastro_experience de restaurante). Mercados o bodegas con nombre propio solo si encajan."
+    );
+  }
   return parts.filter(Boolean).join(" | ");
 }
 
@@ -139,4 +167,17 @@ export function buildStyleMixPromptLine(prefs: PlannerPreferences): string {
   const hint = prefs.tripStyle ? STYLE_MIX_HINTS[prefs.tripStyle] : null;
   if (hint) return `\n${hint}`;
   return "\nSi un día tiene margen tras lo principal, puedes añadir 1–2 actividades de otro estilo que encajen con las preferencias del viajero.";
+}
+
+const BUDGET_LABEL: Record<RestaurantBudget, string> = {
+  low: "económico (taberna, menú del día, raciones)",
+  medium: "medio (restaurante local recomendado)",
+  high: "alto (cocina elaborada o especial)",
+};
+
+export function buildRestaurantPromptLine(prefs: PlannerPreferences): string {
+  if (!prefs.suggestRestaurants) {
+    return "\nNO incluyas restaurantes, sidrerías ni tabernas. Máximo 0 planes k=gastro_experience tipo restaurante.";
+  }
+  return `\nRestaurantes: máximo 1 COMIDA (h ~13:00–14:30) y 1 CENA (h ~20:00–21:30) por día, presupuesto ${BUDGET_LABEL[prefs.restaurantBudget]}, nombre propio real, cerca de donde el viajero acaba de visitar. PROHIBIDO poner 2 restaurantes para la misma comida o cena.`;
 }

@@ -620,6 +620,8 @@ export default function TripAiPlannerWizard() {
   const [tripStyle, setTripStyle] = useState<string | null>(null);
   const [nearbyExcursions, setNearbyExcursions] = useState<"yes" | "maybe" | "no">("maybe");
   const [mixStylesWhenTime, setMixStylesWhenTime] = useState(true);
+  const [suggestRestaurants, setSuggestRestaurants] = useState(false);
+  const [restaurantBudget, setRestaurantBudget] = useState<"low" | "medium" | "high">("medium");
   const [tripName, setTripName] = useState("");
   const [subDestinations, setSubDestinations] = useState<Record<string, string[]>>({});
   const [planProposal, setPlanProposal] = useState<PlanProposal | null>(null);
@@ -675,8 +677,10 @@ export default function TripAiPlannerWizard() {
       nearbyExcursions,
       mixStylesWhenTime,
       tripStyle: tripStyle || undefined,
+      suggestRestaurants,
+      restaurantBudget,
     }),
-    [nearbyExcursions, mixStylesWhenTime, tripStyle]
+    [nearbyExcursions, mixStylesWhenTime, tripStyle, suggestRestaurants, restaurantBudget]
   );
 
   async function fetchPlan() {
@@ -933,6 +937,67 @@ export default function TripAiPlannerWizard() {
                 </span>
               </span>
             </label>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-base" aria-hidden>🍽️</span>
+              <span className="text-sm font-bold text-slate-800">¿Sugerencias de restaurantes?</span>
+            </div>
+            <p className="mb-3 text-xs text-slate-500">
+              Como mucho un sitio para comer y otro para cenar cada día, cerca de lo que acabas de visitar.
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:max-w-md">
+              <button
+                type="button"
+                onClick={() => setSuggestRestaurants(false)}
+                className={`rounded-xl border px-3 py-3 text-left text-xs font-bold transition ${
+                  !suggestRestaurants
+                    ? "border-violet-400 bg-violet-50 ring-1 ring-violet-300 text-slate-800"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                No, yo elijo dónde comer
+              </button>
+              <button
+                type="button"
+                onClick={() => setSuggestRestaurants(true)}
+                className={`rounded-xl border px-3 py-3 text-left text-xs font-bold transition ${
+                  suggestRestaurants
+                    ? "border-violet-400 bg-violet-50 ring-1 ring-violet-300 text-slate-800"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                Sí, proponme sitios
+              </button>
+            </div>
+            {suggestRestaurants && (
+              <div className="mt-3">
+                <p className="mb-2 text-xs font-semibold text-slate-600">Presupuesto por comida / cena</p>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      { id: "low" as const, label: "Bajo", hint: "Taberna, menú del día" },
+                      { id: "medium" as const, label: "Medio", hint: "Restaurante local" },
+                      { id: "high" as const, label: "Alto", hint: "Cocina elaborada" },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setRestaurantBudget(opt.id)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        restaurantBudget === opt.id
+                          ? "border-pink-400 bg-pink-50 text-pink-800"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {opt.label}
+                      <span className="ml-1 font-normal text-slate-500">· {opt.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2 mb-3"><MessageCircle className="w-4 h-4 text-slate-400" /><span className="text-sm font-bold text-slate-800">¿Alguna preferencia? <span className="text-slate-400 font-normal">(opcional)</span></span></div>
