@@ -459,7 +459,7 @@ export default function RecapPage(props: RecapData) {
   return (
     <div className="min-h-screen bg-slate-50 pb-16 dark:bg-[#080c14]">
       {/* ── Header ── */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-sm dark:border-slate-800 dark:bg-[#0f1623]/90">
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-safe-inline py-3 pt-safe-min backdrop-blur-sm dark:border-slate-800 dark:bg-[#0f1623]/90">
         <Link
           href={`/trip/${tripId}/summary`}
           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"

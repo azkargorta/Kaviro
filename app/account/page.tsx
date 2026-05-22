@@ -75,7 +75,7 @@ export default async function AccountPage() {
   }
 
   return (
-    <main className="page-shell space-y-8">
+    <main className="page-shell page-shell--safe-top space-y-8">
       <div className="mb-4"><BackButton /></div>
       <TripBoardPremiumHero
         eyebrow="Cuenta"

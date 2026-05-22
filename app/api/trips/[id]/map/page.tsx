@@ -76,7 +76,7 @@ export default async function TripMapPage({ params }: Props) {
   ]);
 
   return (
-    <main className="page-shell space-y-6">
+    <main className="page-shell page-shell--safe-top space-y-6">
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">

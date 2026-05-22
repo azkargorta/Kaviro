@@ -17,7 +17,7 @@ export default function AuthShell({
 }: AuthShellProps) {
   return (
     <main className="min-h-dvh min-w-0 bg-[var(--surface-page)]">
-      <div className="mx-auto flex min-h-dvh max-w-7xl items-start justify-center py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:py-8 sm:pl-6 sm:pr-6 md:py-10">
+      <div className="mx-auto flex min-h-dvh max-w-7xl items-start justify-center px-safe-inline pb-6 pt-[max(1.5rem,var(--safe-area-top))] sm:pb-8 sm:pt-[max(2rem,var(--safe-area-top))] md:pb-10 md:pt-[max(2.5rem,var(--safe-area-top))] sm:pl-6 sm:pr-6">
         <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-[var(--shadow-raised)] sm:rounded-[28px] md:grid-cols-[1.05fr_0.95fr] md:rounded-[32px]">
 
           {/* Panel izquierdo — gradiente coral como TripHeroCard */}

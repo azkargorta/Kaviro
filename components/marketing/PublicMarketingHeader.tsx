@@ -10,8 +10,8 @@ export default function PublicMarketingHeader() {
   const onPricing = pathname === "/pricing";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-[#1E293B] dark:bg-[#080C14]/95">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-50 sticky-safe-top border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-[#1E293B] dark:bg-[#080C14]/95">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-safe-inline py-3 sm:px-6">
         <div className="block dark:hidden">
           <KaviroLogo href="/" variant="dark" size="lg" withWordmark imageClassName="h-9 max-h-9" />
         </div>

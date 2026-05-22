@@ -31,7 +31,7 @@ export default function TripHeroActions({ tripId }: { tripId: string }) {
   }, [menuOpen]);
 
   return (
-    <div className="flex items-center justify-between px-4 pt-3 pb-1">
+    <div className="flex items-center justify-between px-4 pt-safe-min pb-1 max-md:pl-[max(1rem,var(--safe-area-left))] max-md:pr-[max(1rem,var(--safe-area-right))]">
       {/* ← Volver al dashboard */}
       <Link
         href="/dashboard"

@@ -26,6 +26,12 @@
 
   --shadow-card:     0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.04);
   --shadow-raised:   0 4px 16px rgba(15,23,42,0.08), 0 1px 4px rgba(15,23,42,0.04);
+
+  /* iOS notch / PWA standalone (viewport-fit=cover) */
+  --safe-area-top:    env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left:   env(safe-area-inset-left, 0px);
+  --safe-area-right:  env(safe-area-inset-right, 0px);
 }
 
 /* ─── Design tokens — DARK (Coral #F87171 + negro) ─────────────────────── */
@@ -196,10 +202,38 @@ textarea.input { resize: vertical; min-height: 120px; }
   max-width: 1200px;
   margin: 0 auto;
   min-width: 0;
-  padding: 1.25rem max(0.875rem, env(safe-area-inset-left)) 1.5rem max(0.875rem, env(safe-area-inset-right));
+  padding: 1.25rem max(0.875rem, var(--safe-area-left)) 1.5rem max(0.875rem, var(--safe-area-right));
+}
+/* Páginas sin barra superior fija (cuenta, changelog, etc.) */
+.page-shell--safe-top {
+  padding-top: max(1.25rem, var(--safe-area-top));
 }
 @media (min-width: 768px) {
-  .page-shell { padding: 1.25rem 1.5rem 3rem; }
+  .page-shell {
+    padding-top: 1.25rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-bottom: 3rem;
+  }
+  .page-shell--safe-top {
+    padding-top: max(1.25rem, var(--safe-area-top));
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: var(--safe-area-top);
+  }
+  .pt-safe-min {
+    padding-top: max(0.75rem, var(--safe-area-top));
+  }
+  .px-safe-inline {
+    padding-left: max(0.875rem, var(--safe-area-left));
+    padding-right: max(0.875rem, var(--safe-area-right));
+  }
+  .sticky-safe-top {
+    padding-top: var(--safe-area-top);
+  }
 }
 
 .app-mobile-frame {

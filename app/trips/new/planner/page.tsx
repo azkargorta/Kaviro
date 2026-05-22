@@ -24,7 +24,7 @@ export default async function NewTripPlannerPage() {
   const isAdmin = await isPlatformAdmin(user.id, user.email ?? "");
 
   return (
-    <main className="page-shell pb-10">
+    <main className="page-shell page-shell--safe-top pb-10">
       <TripAiPlannerWizard isAdmin={isAdmin} />
     </main>
   );

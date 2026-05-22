@@ -52,7 +52,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
     <TripBoardHeaderProvider>
       <TripDemoProvider isDemo={isDemo}>
         <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
-          <div className="page-shell !pt-4 !pb-6 md:!pt-5 md:!pb-10">
+          <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
             {/* Hero card — visible en todas las pestañas */}
             <div className="mb-4 md:mb-5">
               <TripHeroCard

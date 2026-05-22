@@ -102,7 +102,7 @@ const TAG_LABELS: Record<string, string> = {
 
 export default function ChangelogPage() {
   return (
-    <main className="page-shell pb-16 space-y-6">
+    <main className="page-shell page-shell--safe-top pb-16 space-y-6">
 
       {/* Header */}
       <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 px-6 py-10 md:px-10">
