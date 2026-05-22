@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
 import type { Metadata } from "next";
 import { Check, Zap, Map, Users, CreditCard, FileText, Star, ArrowRight, Lock, X } from "lucide-react";
 import PublicMarketingHeader from "@/components/marketing/PublicMarketingHeader";
@@ -38,6 +39,7 @@ export default function PricingPage() {
       <PublicMarketingHeader />
 
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
+      <div className="mb-4"><BackButton /></div>
         {/* Hero */}
         <div className="rounded-3xl bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-6 py-12 text-center md:px-12 md:py-16">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">Precios</p>

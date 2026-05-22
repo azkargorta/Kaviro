@@ -104,7 +104,7 @@ export default function RegisterForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
-            placeholder="gori_123"
+            placeholder="nombre de usuario"
             autoComplete="username"
           />
         </div>

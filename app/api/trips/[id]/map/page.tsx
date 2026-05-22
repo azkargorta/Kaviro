@@ -105,7 +105,7 @@ export default async function TripMapPage({ params }: Props) {
             href="/dashboard"
             className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
           >
-            Dashboard
+            Mis viajes
           </Link>
         </div>
       </section>

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import BackButton from "@/components/ui/BackButton";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import TripBoardPremiumHero from "@/components/layout/TripBoardPremiumHero";
@@ -75,6 +76,7 @@ export default async function AccountPage() {
 
   return (
     <main className="page-shell space-y-8">
+      <div className="mb-4"><BackButton /></div>
       <TripBoardPremiumHero
         eyebrow="Cuenta"
         title="Tu cuenta"
