@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import TripPlanView from "@/components/trip/plan/TripPlanView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripPremium } from "@/lib/entitlements";
 import { canEditTripNotesFromAccess } from "@/lib/trip-module-access";
 
 export default async function TripPlanPage({
@@ -13,9 +13,9 @@ export default async function TripPlanPage({
   params: { id: string };
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  const access = await requireTripAccess(params.id);
+  const access = await getCachedTripAccess(params.id);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId: params.id });
+  const isPremium = await getCachedTripPremium(params.id, access.userId);
   const rawExplore = searchParams?.explore;
   const explore = typeof rawExplore === "string" ? rawExplore : Array.isArray(rawExplore) ? String(rawExplore[0] || "") : "";
   const initialExploreOpen = explore.trim() === "1" || explore.trim().toLowerCase() === "true";

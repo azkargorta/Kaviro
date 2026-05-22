@@ -1,18 +1,26 @@
 import type { ReactNode } from "react";
-import { requireTripAccess } from "@/lib/trip-access";
+import dynamic from "next/dynamic";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import { createClient } from "@/lib/supabase/server";
 import { TripBoardHeaderProvider } from "@/components/layout/TripBoardHeaderContext";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripPremium } from "@/lib/entitlements";
 import DesktopTripSidebar from "@/components/layout/DesktopTripSidebar";
-import TripPageAssistantDock from "@/components/trip/ai/TripPageAssistantDock";
-import CommandPalette from "@/components/layout/CommandPalette";
 import { TripDemoProvider } from "@/components/trip/TripDemoContext";
 import DemoTripBanner from "@/components/trip/DemoTripBanner";
 import TripHeroCard from "@/components/trip/common/TripHeroCard";
 import TripOnboardingChecklist from "@/components/trip/onboarding/TripOnboardingChecklist";
 import { fetchTripOnboardingCounts } from "@/lib/trip-onboarding";
 import TripOfflineSync from "@/components/pwa/TripOfflineSync";
+
+const TripPageAssistantDock = dynamic(
+  () => import("@/components/trip/ai/TripPageAssistantDock"),
+  { ssr: false }
+);
+
+const CommandPalette = dynamic(() => import("@/components/layout/CommandPalette"), {
+  ssr: false,
+});
 
 type TripLayoutProps = {
   children: ReactNode;
@@ -22,19 +30,23 @@ type TripLayoutProps = {
 };
 
 export default async function TripLayout({ children, params }: TripLayoutProps) {
-  const access = await requireTripAccess(params.id);
+  const access = await getCachedTripAccess(params.id);
 
   const supabase = await createClient();
-  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }] = await Promise.all([
-    supabase.from("trips").select("name, start_date, end_date, is_demo, destination").eq("id", params.id).maybeSingle(),
-    supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
-    supabase
-      .from("trip_participants")
-      .select("profiles(display_name)")
-      .eq("trip_id", params.id)
-      .neq("status", "removed")
-      .limit(6),
-  ]);
+  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }, isPremium, onboardingCountsRaw] =
+    await Promise.all([
+      supabase.from("trips").select("name, start_date, end_date, is_demo, destination").eq("id", params.id).maybeSingle(),
+      supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
+      supabase
+        .from("trip_participants")
+        .select("profiles(display_name)")
+        .eq("trip_id", params.id)
+        .neq("status", "removed")
+        .limit(6),
+      getCachedTripPremium(params.id, access.userId),
+      fetchTripOnboardingCounts(supabase, params.id),
+    ]);
+
   const isDemo =
     Boolean((tripMeta as { is_demo?: boolean } | null)?.is_demo) ||
     String((profileRow as { demo_trip_id?: string } | null)?.demo_trip_id || "") === params.id;
@@ -46,8 +58,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
       return p?.display_name?.trim() || null;
     })
     .filter((n): n is string => Boolean(n));
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId: params.id });
-  const onboardingCounts = isDemo ? null : await fetchTripOnboardingCounts(supabase, params.id);
+  const onboardingCounts = isDemo ? null : onboardingCountsRaw;
 
   return (
     <TripBoardHeaderProvider>
@@ -55,7 +66,6 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
         <TripOfflineSync tripId={params.id} />
         <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
-            {/* Hero card — visible en todas las pestañas */}
             <div className="mb-4 md:mb-5">
               <TripHeroCard
                 tripId={params.id}

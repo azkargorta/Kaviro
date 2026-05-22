@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripAccess } from "@/lib/trip-access";
+import { getCachedTripPremium } from "@/lib/entitlements";
 import TripMapView from "@/components/trip/map/TripMapView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
@@ -62,7 +62,7 @@ export default async function TripMapPage({ params, searchParams }: Props) {
     redirect(`/trip/${encodeURIComponent(tripId)}/plan?explore=1`);
   }
 
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
   const {
     data: { user },
@@ -87,7 +87,7 @@ export default async function TripMapPage({ params, searchParams }: Props) {
     safeSelect(supabase, "routes", tripId, "route_date"),
   ]);
 
-  const isPremium = user?.id ? await isPremiumEnabledForTrip({ supabase, userId: user.id, tripId }) : false;
+  const isPremium = user?.id ? await getCachedTripPremium(tripId, user.id) : false;
 
   return (
     <main className="space-y-6">

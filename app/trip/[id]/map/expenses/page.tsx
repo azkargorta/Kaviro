@@ -1,9 +1,9 @@
 import TripExpensesView from "@/components/trip/expenses/TripExpensesView";
 import TripTabActions from "@/components/trip/common/TripTabActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import { createClient } from "@/lib/supabase/server";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripPremium } from "@/lib/entitlements";
 
 export default async function TripExpensesPage({
   params,
@@ -22,9 +22,9 @@ export default async function TripExpensesPage({
     );
   }
 
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
+  const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   return (
     <main className="space-y-6">

@@ -1,5 +1,4 @@
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import AuthListener from "@/components/auth/AuthListener";

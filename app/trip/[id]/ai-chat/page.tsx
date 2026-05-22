@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripAccess } from "@/lib/trip-access";
+import { getCachedTripPremium } from "@/lib/entitlements";
 import TripAiPostCreateHint from "@/components/trip/ai/TripAiPostCreateHint";
 import TripAiChatPageClient from "@/components/trip/ai/TripAiChatPageClient";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
@@ -51,9 +51,9 @@ export default async function Page({
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const tripId = params.id;
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
+  const isPremium = await getCachedTripPremium(tripId, access.userId);
   const recien = parseRecien(searchParams);
   const launchIntent = parseLaunchIntent(searchParams);
   const assistantModo = parseAssistantModo(searchParams);

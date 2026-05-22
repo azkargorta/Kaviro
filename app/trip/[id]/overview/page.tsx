@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripAccess } from "@/lib/trip-access";
+import { getCachedTripPremium } from "@/lib/entitlements";
 import { getTripWeatherByDestination } from "@/lib/trip-weather";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
@@ -28,9 +28,9 @@ function todayYMD() {
 
 export default async function TripOverviewPage({ params }: Props) {
   const tripId = params.id;
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
+  const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   // ── Fetch all data in parallel ─────────────────────────────────────────────
   const [

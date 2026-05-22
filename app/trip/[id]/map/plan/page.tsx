@@ -1,18 +1,18 @@
 import TripPlanView from "@/components/trip/plan/TripPlanView";
 import TripTabActions from "@/components/trip/common/TripTabActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import { createClient } from "@/lib/supabase/server";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripPremium } from "@/lib/entitlements";
 
 export default async function TripPlanPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const access = await requireTripAccess(params.id);
+  const access = await getCachedTripAccess(params.id);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId: params.id });
+  const isPremium = await getCachedTripPremium(params.id, access.userId);
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("display_name")

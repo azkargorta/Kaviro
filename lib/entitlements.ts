@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type Entitlements = {
@@ -58,6 +59,12 @@ export async function isPremiumEnabledForTrip(params: {
 
   return Array.isArray(anyPremium) && anyPremium.length > 0;
 }
+
+/** Una sola consulta premium por viaje y petición (layout + página comparten resultado). */
+export const getCachedTripPremium = cache(async (tripId: string, userId: string) => {
+  const supabase = await createClient();
+  return isPremiumEnabledForTrip({ supabase, userId, tripId });
+});
 
 export async function getMyEntitlements(): Promise<Entitlements> {
   const supabase = await createClient();

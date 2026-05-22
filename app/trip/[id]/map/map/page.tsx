@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import TripMapView from "@/components/trip/map/TripMapView";
 import TripTabActions from "@/components/trip/common/TripTabActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
@@ -29,7 +29,7 @@ function buildTripDates(startDate?: string | null, endDate?: string | null) {
 export default async function TripMapPage({ params }: Props) {
   const tripId = params.id;
 
-  await requireTripAccess(tripId);
+  await getCachedTripAccess(tripId);
   const supabase = await createClient();
 
   const [{ data: trip }, { data: activities }, { data: routes }] = await Promise.all([

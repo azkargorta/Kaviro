@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 
 type TripPageProps = {
   params: {
@@ -9,7 +9,7 @@ type TripPageProps = {
 
 export default async function TripPage({ params }: TripPageProps) {
   const tripId = params.id;
-  await requireTripAccess(tripId);
+  await getCachedTripAccess(tripId);
   redirect(`/trip/${encodeURIComponent(tripId)}/summary`);
 }
 

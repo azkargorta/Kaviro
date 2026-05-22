@@ -27,11 +27,19 @@ export default function TripOfflineSync({ tripId }: { tripId: string }) {
       }
     };
 
-    run();
+    const schedule = () => {
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(run, { timeout: 8000 });
+      } else {
+        window.setTimeout(run, 2500);
+      }
+    };
+
+    schedule();
 
     const onOnline = () => {
       syncedRef.current = null;
-      run();
+      schedule();
     };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);

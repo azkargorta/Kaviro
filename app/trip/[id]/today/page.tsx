@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import TripTodayClient from "@/components/trip/today/TripTodayClient";
 
 type Props = { params: { id: string } };
@@ -11,7 +11,7 @@ function todayYMD() {
 
 export default async function TripTodayPage({ params }: Props) {
   const tripId = params.id;
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
   const today = todayYMD();
 

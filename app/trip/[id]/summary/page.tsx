@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripSummaryOverview, {
   type TripSummaryActivityPreview,
   type TripSummaryTabDef,
 } from "@/components/trip/summary/TripSummaryOverview";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripPremium } from "@/lib/entitlements";
 import { getTripWeatherByDestination } from "@/lib/trip-weather";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
 
@@ -132,9 +132,9 @@ export async function generateMetadata({ params }: TripPageProps) {
 
 export default async function TripSummaryPage({ params }: TripPageProps) {
   const tripId = params.id;
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
+  const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   const [
     { data: trip, error: tripError },

@@ -1,9 +1,9 @@
 import TripResourcesView from "@/components/trip/resources/TripResourcesView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
-import { requireTripAccess } from "@/lib/trip-access";
+import { getCachedTripAccess } from "@/lib/trip-access";
 import { createClient } from "@/lib/supabase/server";
-import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { getCachedTripPremium } from "@/lib/entitlements";
 
 export default async function TripResourcesPage({
   params,
@@ -14,9 +14,9 @@ export default async function TripResourcesPage({
 
   // Nota: esta página NO está gated por premium, pero usamos el flag para habilitar el asistente personal si el viaje lo permite.
   // (Si no, el endpoint del asistente también lo rechazará.)
-  const access = await requireTripAccess(tripId);
+  const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await isPremiumEnabledForTrip({ supabase, userId: access.userId, tripId });
+  const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   return (
     <main className="space-y-6">

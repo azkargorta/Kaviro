@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -79,6 +80,9 @@ export async function requireTripAccess(
     ...perms,
   };
 }
+
+/** Una sola comprobación de acceso por petición (layout + página comparten resultado). */
+export const getCachedTripAccess = cache((tripId: string) => requireTripAccess(tripId));
 
 export type GetTripAccessApiResult =
   | { ok: true; access: TripAccessResult }
