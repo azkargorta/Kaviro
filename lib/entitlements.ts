@@ -5,6 +5,49 @@ export type Entitlements = {
   isPremium: boolean;
 };
 
+export type BillingSubscriptionSnapshot = {
+  status?: string | null;
+  current_period_end?: string | null;
+  cancel_at_period_end?: boolean | null;
+} | null;
+
+export type ProfilePremiumSnapshot = {
+  is_premium?: boolean | null;
+  premium_until?: string | null;
+} | null;
+
+/** Premium temporal (referidos, promos) mientras `premium_until` no haya caducado. */
+export function isPremiumUntilActive(premiumUntil: string | null | undefined): boolean {
+  if (!premiumUntil) return false;
+  const t = Date.parse(premiumUntil);
+  return Number.isFinite(t) && t > Date.now();
+}
+
+/** Suscripción Stripe aún vigente (active / trialing / past_due). */
+export function isActiveBillingSubscription(sub: BillingSubscriptionSnapshot): boolean {
+  if (!sub?.status) return false;
+  const status = String(sub.status).toLowerCase();
+  if (!["active", "trialing", "past_due"].includes(status)) return false;
+  if (sub.current_period_end) {
+    const end = Date.parse(sub.current_period_end);
+    if (Number.isFinite(end) && end <= Date.now()) return false;
+  }
+  return true;
+}
+
+/**
+ * Premium de cuenta para pantallas de perfil / facturación:
+ * flag en profiles, premium_until o suscripción activa en billing_subscriptions.
+ */
+export function resolveAccountPremium(
+  profile: ProfilePremiumSnapshot,
+  subscription: BillingSubscriptionSnapshot
+): boolean {
+  if (Boolean(profile?.is_premium)) return true;
+  if (isPremiumUntilActive(profile?.premium_until ?? null)) return true;
+  return isActiveBillingSubscription(subscription);
+}
+
 async function getUserPremiumFlag(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string
