@@ -1,16 +1,38 @@
-// Kaviro Service Worker — v3
-// Cache-first para assets, network-first para páginas, offline cache para plan activo
+// Kaviro Service Worker — v5
+// Nivel 1 offline: lectura completa del último viaje visitado sin conexión
 
-const CACHE_NAME = "kaviro-v4";
-const DATA_CACHE  = "kaviro-data-v1";
+const CACHE_NAME  = "kaviro-v5";
+const DATA_CACHE  = "kaviro-data-v2";
 const OFFLINE_URL = "/offline.html";
 
+// ── Assets precacheados al instalar ───────────────────────────────────────────
 const PRECACHE_ASSETS = [
   "/",
   "/offline.html",
   "/manifest.webmanifest",
   "/brand/icon.png",
 ];
+
+// ── Rutas de datos que se cachean (network-first, fallback a caché) ────────────
+// Se guardan automáticamente la última vez que se visitó con conexión.
+const DATA_ROUTES = [
+  "/api/trip-activities",
+  "/api/trip-routes",
+  "/api/trip-expenses",
+  "/api/trip-participants",
+  "/api/trip-participants/profiles",
+  "/api/trip-payment-pair-rules",
+  "/api/trip-payment-preferences",
+  "/api/trip-resources",
+  "/api/trip-reservations",
+  "/api/trip-lists",
+  "/api/trip-activity-kinds",
+  "/api/weather",
+];
+
+function isDataRoute(pathname) {
+  return DATA_ROUTES.some((r) => pathname.startsWith(r));
+}
 
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
@@ -20,7 +42,7 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// ── Activate ──────────────────────────────────────────────────────────────────
+// ── Activate — limpia cachés antiguas ─────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -39,15 +61,11 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only intercept same-origin
+  // Solo interceptar same-origin
   if (url.origin !== self.location.origin) return;
 
-  // Trip activities & routes — solo GET (lectura offline). POST/PUT/PATCH nunca por SW.
-  if (
-    request.method === "GET" &&
-    (url.pathname.startsWith("/api/trip-activities") ||
-      url.pathname.startsWith("/api/trip-routes"))
-  ) {
+  // ── 1. Datos del viaje: network-first, fallback a caché ───────────────────
+  if (request.method === "GET" && isDataRoute(url.pathname)) {
     event.respondWith(
       caches.open(DATA_CACHE).then(async (cache) => {
         try {
@@ -56,10 +74,19 @@ self.addEventListener("fetch", (event) => {
           return response;
         } catch {
           const cached = await cache.match(request);
-          if (cached) return cached;
-          return new Response(JSON.stringify({ error: "Sin conexión" }), {
+          if (cached) {
+            // Añadir header para que la UI sepa que viene de caché
+            const headers = new Headers(cached.headers);
+            headers.set("x-kaviro-offline", "1");
+            return new Response(cached.body, {
+              status: cached.status,
+              statusText: cached.statusText,
+              headers,
+            });
+          }
+          return new Response(JSON.stringify({ error: "Sin conexión", offline: true }), {
             status: 503,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-kaviro-offline": "1" },
           });
         }
       })
@@ -67,10 +94,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Other API calls — network only
+  // ── 2. Resto de APIs: network-only (escrituras, IA, auth…) ────────────────
   if (url.pathname.startsWith("/api/")) return;
 
-  // Static assets — cache-first
+  // ── 3. Assets estáticos: cache-first ─────────────────────────────────────
   if (
     request.destination === "image" ||
     url.pathname.startsWith("/_next/static/") ||
@@ -91,7 +118,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // HTML pages — network-first, fallback offline
+  // ── 4. Páginas HTML: network-first, fallback a offline.html ─────────────
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() =>
