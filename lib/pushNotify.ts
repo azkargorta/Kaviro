@@ -2,17 +2,13 @@
  * Client-side helper to trigger a push notification to trip participants.
  * Call this after a successful mutation (add activity, add expense, etc.)
  */
-export type NotifyEvent =
-  | "activity_added"
-  | "activity_edited"
-  | "expense_added"
-  | "participant_joined"
-  | "trip_starts_tomorrow"
-  | "trip_invite";
+import type { PushNotifyEvent } from "@/lib/push-notification-preferences";
+
+export type { PushNotifyEvent as NotifyEvent } from "@/lib/push-notification-preferences";
 
 export async function notifyTripParticipants(opts: {
   tripId: string;
-  event: NotifyEvent;
+  event: PushNotifyEvent;
   actorName: string;
   detail?: string;
   url?: string;

@@ -59,3 +59,27 @@ export async function requestPushPermissionAndSubscribe(): Promise<
   const sync = await syncPushSubscription();
   return sync === "ok" ? "ok" : sync;
 }
+
+/** Cancela la suscripción push en el navegador y la elimina del servidor. */
+export async function unsubscribePushSubscription(): Promise<"ok" | "unsupported" | "error"> {
+  if (typeof window === "undefined") return "unsupported";
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const sub = await registration.pushManager.getSubscription();
+    if (!sub) return "ok";
+
+    const endpoint = sub.endpoint;
+    await sub.unsubscribe();
+    await fetch("/api/push/subscribe", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ endpoint }),
+    });
+    return "ok";
+  } catch {
+    return "error";
+  }
+}

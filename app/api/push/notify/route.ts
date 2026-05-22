@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendPushToUserIds } from "@/lib/server/web-push";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import {
+  filterUserIdsByPushPreferences,
+  type PushNotifyEvent,
+} from "@/lib/push-notification-preferences";
 
-export type NotifyEvent =
-  | "activity_added"
-  | "activity_edited"
-  | "expense_added"
-  | "participant_joined"
-  | "trip_starts_tomorrow";
+export type NotifyEvent = PushNotifyEvent;
 
 const EVENT_COPY: Record<NotifyEvent, (actor: string, detail?: string) => { title: string; body: string }> = {
   activity_added: (actor, detail) => ({
@@ -25,6 +25,10 @@ const EVENT_COPY: Record<NotifyEvent, (actor: string, detail?: string) => { titl
   participant_joined: (actor) => ({
     title: "Alguien se unió",
     body: `${actor} se ha unido al viaje`,
+  }),
+  trip_invite: (actor, detail) => ({
+    title: "Invitación al viaje",
+    body: `${actor} te invita a «${detail || "un viaje"}»`,
   }),
   trip_starts_tomorrow: (_, detail) => ({
     title: "¡Mañana empieza el viaje!",
@@ -69,10 +73,28 @@ export async function POST(request: Request) {
 
     if (!userIds.length) return NextResponse.json({ sent: 0, reason: "no other participants" });
 
+    const admin = createSupabaseAdmin();
+    const { data: prefRows } = await admin
+      .from("push_notification_preferences")
+      .select(
+        "user_id, enabled, activity_added, activity_edited, expense_added, participant_joined, trip_starts_tomorrow, trip_invite"
+      )
+      .in("user_id", userIds);
+
+    const eligibleUserIds = filterUserIdsByPushPreferences(
+      userIds,
+      (prefRows ?? []) as Array<{ user_id: string } & Record<string, boolean>>,
+      event
+    );
+
+    if (!eligibleUserIds.length) {
+      return NextResponse.json({ sent: 0, reason: "filtered_by_preferences" });
+    }
+
     const copy = EVENT_COPY[event]?.(actorName, detail);
     if (!copy) return NextResponse.json({ error: "Unknown event" }, { status: 400 });
 
-    const result = await sendPushToUserIds(userIds, {
+    const result = await sendPushToUserIds(eligibleUserIds, {
       ...copy,
       url: url || `/trip/${tripId}/summary`,
     });
