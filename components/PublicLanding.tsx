@@ -346,7 +346,51 @@ export default function PublicLanding() {
         </div>
       </section>
 
-      {/* ── CTA final ── */}
+
+      {/* ── Social proof ─────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+        <p className="mb-10 text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+          Lo que dicen los viajeros
+        </p>
+        <div className="grid gap-5 md:grid-cols-3">
+          {[
+            {
+              quote: "Por fin una app que entiende que viajar en grupo es caos. Los balances automáticos nos salvaron la vida en el viaje a Japón.",
+              name: "Marta G.",
+              role: "Viaje a Japón · 6 personas",
+              emoji: "🗾",
+            },
+            {
+              quote: "El asistente IA nos montó el itinerario completo de 10 días por Italia en 3 minutos. Lo que habríamos tardado horas.",
+              name: "Carlos R.",
+              role: "Ruta por Italia · 4 personas",
+              emoji: "🇮🇹",
+            },
+            {
+              quote: "Llevamos 3 viajes usando Kaviro. Nunca más discusiones de 'yo ya pagué eso' porque todo queda registrado.",
+              name: "Ana y Pablo",
+              role: "Viajes en pareja y grupo",
+              emoji: "✈️",
+            },
+          ].map(({ quote, name, role, emoji }) => (
+            <div
+              key={name}
+              className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-[#1E293B] dark:bg-[#0F1623]"
+            >
+              <p className="text-2xl mb-3">{emoji}</p>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                &ldquo;{quote}&rdquo;
+              </p>
+              <div className="mt-4 border-t border-slate-100 dark:border-[#1E293B] pt-4">
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{name}</p>
+                <p className="text-xs text-slate-400">{role}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA final ── */
       <section className="relative overflow-hidden bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] py-20 px-4">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />

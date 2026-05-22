@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isPlatformAdmin } from "@/lib/platform-admin";
 import TripAiPlannerWizard from "@/components/trip-planner/TripAiPlannerWizard";
 
 export const runtime = "nodejs";
@@ -12,14 +13,19 @@ export default async function NewTripPlannerPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: profileRow } = await supabase.from("profiles").select("is_premium").eq("id", user.id).maybeSingle();
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("is_premium")
+    .eq("id", user.id)
+    .maybeSingle();
   const isPremium = Boolean((profileRow as { is_premium?: boolean } | null)?.is_premium);
   if (!isPremium) redirect("/dashboard");
 
+  const isAdmin = await isPlatformAdmin(user.id, user.email ?? "");
+
   return (
     <main className="page-shell pb-10">
-      <TripAiPlannerWizard />
+      <TripAiPlannerWizard isAdmin={isAdmin} />
     </main>
   );
 }
-

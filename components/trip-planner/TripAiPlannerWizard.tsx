@@ -607,7 +607,7 @@ const TRIP_TEMPLATES = [
 ] as const;
 
 
-export default function TripAiPlannerWizard() {
+export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -1135,8 +1135,8 @@ export default function TripAiPlannerWizard() {
             <button type="button" disabled={saving} onClick={createTripFromDraft} className="btn-primary flex items-center gap-2 py-3 px-6 disabled:opacity-50">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}Crear viaje</button>
           </div>
 
-          {/* ── DEBUG PANEL ───────────────────────────────────────────────── */}
-          <DebugPanel draft={draft} />
+          {/* ── DEBUG PANEL — solo visible para admins ─────────────────────── */}
+          {isAdmin && <DebugPanel draft={draft} />}
         </div>
       )}
     </div>
