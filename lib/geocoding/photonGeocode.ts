@@ -101,10 +101,18 @@ async function photonFetch(q: string, opts: { limit: number; bias?: { lat: numbe
     url.searchParams.set("lat", String(opts.bias.lat));
     url.searchParams.set("lon", String(opts.bias.lng));
   }
-  const resp = await fetch(url.toString(), { method: "GET", cache: "no-store" });
-  const payload: any = await resp.json().catch(() => null);
-  if (!resp.ok) return [];
-  return Array.isArray(payload?.features) ? payload.features : [];
+  try {
+    const resp = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+      signal: AbortSignal.timeout(12_000),
+    });
+    const payload: any = await resp.json().catch(() => null);
+    if (!resp.ok) return [];
+    return Array.isArray(payload?.features) ? payload.features : [];
+  } catch {
+    return [];
+  }
 }
 
 function featurePlaceName(feature: any): string {

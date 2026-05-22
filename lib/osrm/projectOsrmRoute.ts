@@ -35,7 +35,16 @@ export async function fetchProjectOsrmRoute(params: {
   url.searchParams.set("steps", "false");
   url.searchParams.set("alternatives", "false");
 
-  const resp = await fetch(url.toString(), { method: "GET", cache: "no-store" });
+  let resp: Response;
+  try {
+    resp = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    return { points: [], distanceMeters: null, durationSeconds: null };
+  }
   const payload: any = await resp.json().catch(() => null);
   if (!resp.ok) {
     return { points: [], distanceMeters: null, durationSeconds: null };

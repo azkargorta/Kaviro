@@ -457,26 +457,28 @@ export async function executePlanOnTrip(params: {
 
     const profile = itineraryProfile(itinerary);
     const baseMode = dbTravelMode(profile);
-    let routeCalls = 0;
     const ROUTE_CALL_LIMIT = 80;
     let lastRouteInsertError: string | null = null;
 
+    const routePairs: Array<{ a: SlotMeta; b: SlotMeta }> = [];
     for (let i = 0; i < slotMeta.length - 1; i++) {
-      const a = slotMeta[i];
-      const b = slotMeta[i + 1];
+      const a = slotMeta[i]!;
+      const b = slotMeta[i + 1]!;
       if (a.route_day !== b.route_day) continue;
       if (a.latitude == null || a.longitude == null || b.latitude == null || b.longitude == null) continue;
-      if (routeCalls >= ROUTE_CALL_LIMIT) break;
+      routePairs.push({ a, b });
+      if (routePairs.length >= ROUTE_CALL_LIMIT) break;
+    }
 
+    const routeInsertResults = await runWithConcurrency(routePairs, 4, async ({ a, b }) => {
       const route = await fetchProjectOsrmRoute({
-        origin: { lat: a.latitude, lng: a.longitude },
-        destination: { lat: b.latitude, lng: b.longitude },
+        origin: { lat: a.latitude!, lng: a.longitude! },
+        destination: { lat: b.latitude!, lng: b.longitude! },
         profile,
       });
-      routeCalls += 1;
 
-      const originPt = { lat: a.latitude, lng: a.longitude };
-      const destPt = { lat: b.latitude, lng: b.longitude };
+      const originPt = { lat: a.latitude!, lng: a.longitude! };
+      const destPt = { lat: b.latitude!, lng: b.longitude! };
       const rawPts = Array.isArray(route.points) ? route.points : [];
       const points = rawPts.length >= 2 ? rawPts : straightLineFallback(originPt, destPt);
 
@@ -534,11 +536,16 @@ export async function executePlanOnTrip(params: {
 
       const ins = await insertTripRouteRow(supabase, payload);
       if (!ins.ok) {
-        lastRouteInsertError = ins.error || "Error desconocido al guardar ruta.";
-        console.error("[executePlanOnTrip] trip_routes insert:", lastRouteInsertError);
-        continue;
+        const err = ins.error || "Error desconocido al guardar ruta.";
+        console.error("[executePlanOnTrip] trip_routes insert:", err);
+        return { ok: false as const, error: err };
       }
-      routesCreated += 1;
+      return { ok: true as const };
+    });
+
+    for (const r of routeInsertResults) {
+      if (r.ok) routesCreated += 1;
+      else if (r.error) lastRouteInsertError = r.error;
     }
 
     const routesNote =
@@ -553,6 +560,14 @@ export async function executePlanOnTrip(params: {
 
     return { ok: true, created, routesCreated, ...(routesNote ? { routesNote } : {}) };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "No se pudo ejecutar el plan." };
+    const raw = e instanceof Error ? e.message : "No se pudo ejecutar el plan.";
+    const isNetwork =
+      /fetch failed|failed to fetch|networkerror|aborted|timeout|etimedout|econnreset/i.test(raw);
+    return {
+      ok: false,
+      error: isNetwork
+        ? "Fallo de red o tiempo de espera al geocodificar o calcular rutas. Las actividades pueden haberse guardado parcialmente; recarga Plan y vuelve a intentar «Ejecutar plan» si falta algo."
+        : raw,
+    };
   }
 }

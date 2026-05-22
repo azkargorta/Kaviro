@@ -5,7 +5,7 @@ import { executePlanOnTrip } from "@/lib/trip-ai/executePlanOnTrip";
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {

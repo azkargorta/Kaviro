@@ -5,7 +5,16 @@ import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight, FileText, MessageCircle, Route, Search } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  MessageCircle,
+  Route,
+  Search,
+} from "lucide-react";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
 import { useTripData } from "@/hooks/useTripData";
 import { useTripActivities } from "@/hooks/useTripActivities";
@@ -532,6 +541,8 @@ export default function TripAiChatView({
   const [modeSource, setModeSource] = useState<"auto" | "manual">(() =>
     ctxPreset?.modeSource ?? (defaultAssistantMode ? "manual" : "auto")
   );
+  /** En panel por pestaña (`drawer`), el selector de modo va recogido por defecto. */
+  const [modePickerOpen, setModePickerOpen] = useState(layout !== "drawer");
   const [planActivityCount, setPlanActivityCount] = useState<number | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -623,7 +634,14 @@ export default function TripAiChatView({
         void reloadTrip();
         void reloadTripPlanActivities();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "No se pudo ejecutar el plan.");
+        const raw = e instanceof Error ? e.message : "No se pudo ejecutar el plan.";
+        if (/fetch failed|failed to fetch|networkerror|aborted|timeout/i.test(raw)) {
+          setError(
+            "No se pudo completar la ejecución (red o tiempo de espera). Si el plan es largo, espera un momento, recarga y revisa Plan por si las actividades ya se guardaron; luego vuelve a pulsar «Ejecutar plan» solo si falta algo."
+          );
+        } else {
+          setError(raw);
+        }
       } finally {
         setExecutingPlan(false);
       }
@@ -959,6 +977,15 @@ export default function TripAiChatView({
   const placeholder = useMemo(() => PLACEHOLDERS[mode], [mode]);
 
   const activeMode = useMemo(() => MODE_OPTIONS.find((m) => m.id === mode), [mode]);
+  const focusModeSummary = useMemo(() => {
+    if (modeSource === "auto") return "Automático";
+    const preset = ASSISTANT_FOCUS_PRESETS.find((p) => p.id === mode);
+    return preset?.label ?? MODE_LABELS[mode] ?? mode;
+  }, [mode, modeSource]);
+
+  function collapseModePickerIfDrawer() {
+    if (layout === "drawer") setModePickerOpen(false);
+  }
 
   useEffect(() => {
     try {
@@ -2062,9 +2089,11 @@ export default function TripAiChatView({
         >
           <div
             className={`border-b border-slate-200 dark:border-[#1E293B] px-4 py-3 sm:px-5 sm:py-4 ${
-              layout === "drawer"
+              layout === "drawer" && modePickerOpen
                 ? "max-h-[min(34dvh,300px)] shrink-0 overflow-y-auto overscroll-y-contain"
-                : ""
+                : layout === "drawer"
+                  ? "shrink-0"
+                  : ""
             }`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -2090,88 +2119,124 @@ export default function TripAiChatView({
               </div>
             </div>
 
-            <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">Elige el foco</p>
-            <div
-              data-tour="ai-suggestions"
-              className={
-                layout === "drawer"
-                  ? "mt-2 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-3"
-                  : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-              }
-            >
-              {ASSISTANT_FOCUS_PRESETS.map((preset) => {
-                const selected = modeSource === "manual" && mode === preset.id;
-                const Icon = preset.Icon;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    lang="es"
-                    disabled={loading || aiBudgetExceeded}
-                    onClick={() => beginNewChatForMode(preset.id, { onlyIfChanged: true })}
-                    className={`flex min-w-0 w-full flex-col items-start gap-1 overflow-hidden rounded-2xl border px-2.5 py-2 text-left transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2.5 ${
-                      layout === "drawer" ? "min-h-[64px]" : "min-h-[88px]"
-                    } ${
-                      selected
-                        ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)] shadow-sm ring-1 ring-[var(--brand-border)]"
-                        : "border-slate-200 bg-slate-50/80 text-slate-800 hover:border-slate-300 hover:bg-white"
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 shrink-0 ${selected ? "text-[var(--brand)]" : "text-slate-500"}`} aria-hidden />
-                    <span className="w-full min-w-0 hyphens-auto break-words text-[11px] font-bold leading-snug sm:text-xs">
-                      {preset.label}
-                    </span>
-                    <span className="w-full min-w-0 break-words text-[10px] font-medium leading-snug text-slate-600">
-                      {preset.description}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {layout === "drawer" ? (
+              <button
+                type="button"
+                onClick={() => setModePickerOpen((open) => !open)}
+                className="mt-3 flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/90 px-3 py-2.5 text-left transition hover:border-slate-300 hover:bg-white"
+                aria-expanded={modePickerOpen}
+                aria-controls="trip-ai-mode-picker"
+              >
+                <span className="min-w-0">
+                  <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+                    Elige el foco
+                  </span>
+                  <span className="mt-0.5 block truncate text-sm font-semibold text-slate-800">{focusModeSummary}</span>
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${modePickerOpen ? "rotate-180" : ""}`}
+                  aria-hidden
+                />
+              </button>
+            ) : (
+              <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">Elige el foco</p>
+            )}
 
-            <button
-              type="button"
-              disabled={loading || aiBudgetExceeded}
-              onClick={() => beginNewChatForMode("auto", { onlyIfChanged: true })}
-              className={`mt-2 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${
-                modeSource === "auto"
-                  ? "border-cyan-400 bg-cyan-50 text-cyan-950 ring-1 ring-cyan-200"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              Automático (detectar intención del mensaje)
-            </button>
-
-            <details className="mt-3 rounded-xl border border-slate-100 bg-slate-50/90 px-3 py-2">
-              <summary className="cursor-pointer text-xs font-semibold text-slate-700">
-                Lista completa de modos (incl. gastos, optimizador, acciones)
-              </summary>
-              <label className="mt-2 flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
-                Selector avanzado
-                <select
-                  value={modeSource === "manual" ? mode : "auto"}
-                  onChange={(e) => {
-                    const v = e.target.value as "auto" | TripAiMode;
-                    if (v === "auto") {
-                      beginNewChatForMode("auto", { onlyIfChanged: true });
-                      return;
-                    }
-                    beginNewChatForMode(v, { onlyIfChanged: true });
-                  }}
-                  disabled={loading || aiBudgetExceeded}
-                  className="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm"
+            {(layout !== "drawer" || modePickerOpen) && (
+              <div id="trip-ai-mode-picker" className={layout === "drawer" ? "mt-2" : undefined}>
+                <div
+                  data-tour="ai-suggestions"
+                  className={
+                    layout === "drawer"
+                      ? "grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-3"
+                      : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                  }
                 >
-                  <option value="auto">Automático</option>
-                  <option value="general">General</option>
-                  <option value="planning">Planificación (planificador)</option>
-                  <option value="day_planner">Organizar día (desplazamientos)</option>
-                  <option value="travel_docs">Documentos del viaje</option>
-                  <option value="expenses">Gastos</option>
-                  <option value="optimizer">Optimizador</option>
-                  <option value="actions">Acciones</option>
-                </select>
-              </label>
-            </details>
+                  {ASSISTANT_FOCUS_PRESETS.map((preset) => {
+                    const selected = modeSource === "manual" && mode === preset.id;
+                    const Icon = preset.Icon;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        lang="es"
+                        disabled={loading || aiBudgetExceeded}
+                        onClick={() => {
+                          beginNewChatForMode(preset.id, { onlyIfChanged: true });
+                          collapseModePickerIfDrawer();
+                        }}
+                        className={`flex min-w-0 w-full flex-col items-start gap-1 overflow-hidden rounded-2xl border px-2.5 py-2 text-left transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2.5 ${
+                          layout === "drawer" ? "min-h-[64px]" : "min-h-[88px]"
+                        } ${
+                          selected
+                            ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)] shadow-sm ring-1 ring-[var(--brand-border)]"
+                            : "border-slate-200 bg-slate-50/80 text-slate-800 hover:border-slate-300 hover:bg-white"
+                        }`}
+                      >
+                        <Icon
+                          className={`h-4 w-4 shrink-0 ${selected ? "text-[var(--brand)]" : "text-slate-500"}`}
+                          aria-hidden
+                        />
+                        <span className="w-full min-w-0 hyphens-auto break-words text-[11px] font-bold leading-snug sm:text-xs">
+                          {preset.label}
+                        </span>
+                        <span className="w-full min-w-0 break-words text-[10px] font-medium leading-snug text-slate-600">
+                          {preset.description}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={loading || aiBudgetExceeded}
+                  onClick={() => {
+                    beginNewChatForMode("auto", { onlyIfChanged: true });
+                    collapseModePickerIfDrawer();
+                  }}
+                  className={`mt-2 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${
+                    modeSource === "auto"
+                      ? "border-cyan-400 bg-cyan-50 text-cyan-950 ring-1 ring-cyan-200"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  Automático (detectar intención del mensaje)
+                </button>
+
+                <details className="mt-3 rounded-xl border border-slate-100 bg-slate-50/90 px-3 py-2">
+                  <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+                    Lista completa de modos (incl. gastos, optimizador, acciones)
+                  </summary>
+                  <label className="mt-2 flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
+                    Selector avanzado
+                    <select
+                      value={modeSource === "manual" ? mode : "auto"}
+                      onChange={(e) => {
+                        const v = e.target.value as "auto" | TripAiMode;
+                        if (v === "auto") {
+                          beginNewChatForMode("auto", { onlyIfChanged: true });
+                        } else {
+                          beginNewChatForMode(v, { onlyIfChanged: true });
+                        }
+                        collapseModePickerIfDrawer();
+                      }}
+                      disabled={loading || aiBudgetExceeded}
+                      className="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm"
+                    >
+                      <option value="auto">Automático</option>
+                      <option value="general">General</option>
+                      <option value="planning">Planificación (planificador)</option>
+                      <option value="day_planner">Organizar día (desplazamientos)</option>
+                      <option value="travel_docs">Documentos del viaje</option>
+                      <option value="expenses">Gastos</option>
+                      <option value="optimizer">Optimizador</option>
+                      <option value="actions">Acciones</option>
+                    </select>
+                  </label>
+                </details>
+              </div>
+            )}
           </div>
 
           {error ? (
