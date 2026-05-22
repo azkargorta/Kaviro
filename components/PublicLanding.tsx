@@ -379,7 +379,7 @@ export default function PublicLanding() {
             >
               <p className="text-2xl mb-3">{emoji}</p>
               <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                &ldquo;{quote}&rdquo;
+                “{quote}”
               </p>
               <div className="mt-4 border-t border-slate-100 dark:border-[#1E293B] pt-4">
                 <p className="text-sm font-bold text-slate-900 dark:text-white">{name}</p>
