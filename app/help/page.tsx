@@ -17,7 +17,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuántas personas pueden estar en un viaje?",
-    a: "En el plan gratuito hasta 10 participantes. En Premium no hay límite. Cada persona puede tener un rol distinto: Organizador, Editor, Colaborador o Visor.",
+    a: "En el plan gratuito hasta 5 participantes. En Premium no hay límite. Cada persona puede tener un rol distinto: Organizador, Editor, Colaborador o Visor.",
   },
   {
     q: "¿Cómo invito a alguien a mi viaje?",
@@ -37,7 +37,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "¿Funciona sin conexión?",
-    a: "Kaviro es una PWA (Progressive Web App) que puedes instalar en el móvil. Algunas funcionalidades básicas están disponibles sin conexión, pero para sincronizar datos con el grupo necesitas conexión a internet.",
+    a: "Kaviro es una PWA (Progressive Web App) que puedes instalar en el móvil desde el navegador. La app requiere conexión a internet para funcionar — sincronización, IA y datos del grupo necesitan red. Algunas imágenes y assets se cachean para carga más rápida.",
   },
   {
     q: "¿Cómo cancelo el plan Premium?",
@@ -53,7 +53,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "¿Cómo contacto con soporte?",
-    a: "Dentro de la app, en cualquier viaje, el asistente IA puede atender dudas básicas. Para soporte humano, escríbenos a hola@kaviro.app con el asunto «Soporte» y respondemos en menos de 24 horas.",
+    a: "Dentro de la app, en cualquier viaje, el asistente IA puede atender dudas básicas. Para soporte humano, escríbenos a hola@kaviro.app con el asunto «Soporte» y respondemos lo antes posible.",
   },
 ];
 
@@ -113,7 +113,7 @@ export default function HelpPage() {
           <a href="mailto:hola@kaviro.app" className="font-semibold text-[#F87171] hover:underline">
             hola@kaviro.app
           </a>{" "}
-          y respondemos en menos de 24 horas.
+          y respondemos lo antes posible.
         </p>
       </div>
     </main>
