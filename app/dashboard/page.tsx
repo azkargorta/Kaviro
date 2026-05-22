@@ -22,7 +22,6 @@ import {
   ensureDemoTripForUser,
   isFirstDemoOnboardingVisit,
   readDemoOnboardingProfile,
-  shouldRedirectToDemoTour,
 } from "@/lib/onboarding/createDemoTrip";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
@@ -120,18 +119,11 @@ export default async function DashboardPage() {
   if (existingDemoProfile?.demo_trip_id) {
     demoTripId = existingDemoProfile.demo_trip_id;
     isFirstOnboardingVisit = isFirstDemoOnboardingVisit(existingDemoProfile);
-    if (shouldRedirectToDemoTour(existingDemoProfile)) {
-      redirect(`/trip/${encodeURIComponent(existingDemoProfile.demo_trip_id)}/summary?tutorial=demo`);
-    }
   } else {
     try {
       const ensured = await ensureDemoTripForUser(user);
       demoTripId = ensured.tripId;
-      const onboardingProfile = ensured.profile;
-      isFirstOnboardingVisit = isFirstDemoOnboardingVisit(onboardingProfile);
-      if (shouldRedirectToDemoTour(onboardingProfile)) {
-        redirect(`/trip/${encodeURIComponent(ensured.tripId)}/summary?tutorial=demo`);
-      }
+      isFirstOnboardingVisit = isFirstDemoOnboardingVisit(ensured.profile);
     } catch (demoErr) {
       console.error("No se pudo preparar el viaje demo:", demoErr);
     }
