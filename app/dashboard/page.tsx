@@ -114,16 +114,25 @@ export default async function DashboardPage() {
 
   let demoTripId: string | null = null;
   let isFirstOnboardingVisit = true;
-  try {
-    const ensured = await ensureDemoTripForUser(user);
-    demoTripId = ensured.tripId;
-    const onboardingProfile = (await readDemoOnboardingProfile(user.id)) ?? ensured.profile;
-    isFirstOnboardingVisit = isFirstDemoOnboardingVisit(onboardingProfile);
-    if (shouldRedirectToDemoTour(onboardingProfile)) {
-      redirect(`/trip/${encodeURIComponent(ensured.tripId)}/summary?tutorial=demo`);
+  const existingDemoProfile = await readDemoOnboardingProfile(user.id);
+  if (existingDemoProfile?.demo_trip_id) {
+    demoTripId = existingDemoProfile.demo_trip_id;
+    isFirstOnboardingVisit = isFirstDemoOnboardingVisit(existingDemoProfile);
+    if (shouldRedirectToDemoTour(existingDemoProfile)) {
+      redirect(`/trip/${encodeURIComponent(existingDemoProfile.demo_trip_id)}/summary?tutorial=demo`);
     }
-  } catch (demoErr) {
-    console.error("No se pudo preparar el viaje demo:", demoErr);
+  } else {
+    try {
+      const ensured = await ensureDemoTripForUser(user);
+      demoTripId = ensured.tripId;
+      const onboardingProfile = ensured.profile;
+      isFirstOnboardingVisit = isFirstDemoOnboardingVisit(onboardingProfile);
+      if (shouldRedirectToDemoTour(onboardingProfile)) {
+        redirect(`/trip/${encodeURIComponent(ensured.tripId)}/summary?tutorial=demo`);
+      }
+    } catch (demoErr) {
+      console.error("No se pudo preparar el viaje demo:", demoErr);
+    }
   }
 
   const { data: profileRow } = await supabase

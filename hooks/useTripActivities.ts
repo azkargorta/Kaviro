@@ -45,12 +45,17 @@ export type SaveActivityInput = {
   activityKind?: string;
 };
 
-export function useTripActivities(tripId: string) {
-  const [trip, setTrip] = useState<TripPlanSummary | null>(null);
+export type TripActivitiesInitial = {
+  trip: TripPlanSummary | null;
+  activities: TripActivity[];
+};
+
+export function useTripActivities(tripId: string, initial?: TripActivitiesInitial) {
+  const [trip, setTrip] = useState<TripPlanSummary | null>(initial?.trip ?? null);
   const [unseenCount, setUnseenCount] = useState(0);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
-  const [activities, setActivities] = useState<TripActivity[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState<TripActivity[]>(initial?.activities ?? []);
+  const [loading, setLoading] = useState(!initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,9 +99,11 @@ export function useTripActivities(tripId: string) {
     return payload as T;
   }
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!options?.silent) {
+        setLoading(true);
+      }
       setError(null);
 
       if (isOffline()) {
@@ -142,8 +149,20 @@ export function useTripActivities(tripId: string) {
   }, [tripId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (initial) {
+      setTrip(initial.trip ?? null);
+      setActivities(initial.activities ?? []);
+      setLoading(false);
+      const revalidate = () => void load({ silent: true });
+      if (typeof window.requestIdleCallback === "function") {
+        const id = window.requestIdleCallback(revalidate, { timeout: 8000 });
+        return () => window.cancelIdleCallback(id);
+      }
+      const t = window.setTimeout(revalidate, 3000);
+      return () => window.clearTimeout(t);
+    }
+    void load();
+  }, [initial, load, tripId]);
 
   // ── Realtime: notify when another user changes activities ──────────────────
   useEffect(() => {

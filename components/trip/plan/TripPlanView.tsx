@@ -41,6 +41,7 @@ import {
   chipItemInactive,
 } from "@/components/ui/brandStyles";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
+import type { TripActivitiesInitial } from "@/hooks/useTripActivities";
 
 const COMMON_KIND_ICONS: Array<{ emoji: string; label: string }> = [
   { emoji: "📍", label: "Visita" },
@@ -222,6 +223,7 @@ export default function TripPlanView({
   canManagePlan = true,
   initialWorkspaceTab = "itinerary",
   initialSelectedDate = null,
+  initialActivities,
 }: {
   tripId: string;
   premiumEnabled: boolean;
@@ -233,9 +235,10 @@ export default function TripPlanView({
   canManagePlan?: boolean;
   initialWorkspaceTab?: "itinerary" | "notes";
   initialSelectedDate?: string | null;
+  initialActivities?: TripActivitiesInitial;
 }) {
   const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
-    useTripActivities(tripId);
+    useTripActivities(tripId, initialActivities);
   const {
     kinds: customKinds,
     loading: customKindsLoading,

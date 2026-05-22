@@ -9,8 +9,7 @@ import DesktopTripSidebar from "@/components/layout/DesktopTripSidebar";
 import { TripDemoProvider } from "@/components/trip/TripDemoContext";
 import DemoTripBanner from "@/components/trip/DemoTripBanner";
 import TripHeroCard from "@/components/trip/common/TripHeroCard";
-import TripOnboardingChecklist from "@/components/trip/onboarding/TripOnboardingChecklist";
-import { fetchTripOnboardingCounts } from "@/lib/trip-onboarding";
+import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
 import TripOfflineSync from "@/components/pwa/TripOfflineSync";
 
 const TripPageAssistantDock = dynamic(
@@ -33,7 +32,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
   const access = await getCachedTripAccess(params.id);
 
   const supabase = await createClient();
-  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }, isPremium, onboardingCountsRaw] =
+  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }, isPremium] =
     await Promise.all([
       supabase.from("trips").select("name, start_date, end_date, is_demo, destination").eq("id", params.id).maybeSingle(),
       supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
@@ -44,7 +43,6 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
         .neq("status", "removed")
         .limit(6),
       getCachedTripPremium(params.id, access.userId),
-      fetchTripOnboardingCounts(supabase, params.id),
     ]);
 
   const isDemo =
@@ -58,8 +56,6 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
       return p?.display_name?.trim() || null;
     })
     .filter((n): n is string => Boolean(n));
-  const onboardingCounts = isDemo ? null : onboardingCountsRaw;
-
   return (
     <TripBoardHeaderProvider>
       <TripDemoProvider isDemo={isDemo}>
@@ -84,12 +80,11 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
               />
               <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:space-y-10">
                 {isDemo ? <DemoTripBanner /> : null}
-                {!isDemo && onboardingCounts ? (
-                  <TripOnboardingChecklist
+                {!isDemo ? (
+                  <TripOnboardingChecklistGate
                     tripId={params.id}
                     tripName={tripName}
                     isPremium={isPremium}
-                    counts={onboardingCounts}
                   />
                 ) : null}
                 {children}
