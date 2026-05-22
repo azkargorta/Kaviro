@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, X, Star } from "lucide-react";
+import Link from "next/link";
+import { Search, X, Star, MapPin, Users, Sparkles, ArrowRight } from "lucide-react";
 import DashboardTripSection from "@/components/dashboard/DashboardTripSection";
 import DashboardFavoritesSection from "@/components/dashboard/DashboardFavoritesSection";
 import TripCardItem from "@/components/dashboard/TripCardItem";
@@ -34,6 +35,72 @@ const ACCENT_CURRENT   = "from-emerald-100 to-teal-50 border-emerald-200";
 const ACCENT_FUTURE    = "from-[var(--brand-light)] to-slate-50 border-[var(--brand-border)]";
 const ACCENT_PAST      = "from-slate-100 to-slate-50 border-slate-200";
 const ACCENT_UNSCHED   = "from-amber-100 to-orange-50 border-amber-200";
+
+
+// ── Empty state (zero real trips) ─────────────────────────────────────────────
+
+function DashboardEmptyState() {
+  return (
+    <div className="mx-auto max-w-xl py-10 text-center">
+      {/* Illustration */}
+      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-slate-100 text-4xl shadow-sm dark:from-[#1E1040] dark:to-[#0F1623]">
+        ✈️
+      </div>
+
+      <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        Tu primer viaje te está esperando
+      </h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        Crea un viaje, invita a tu grupo y deja que Kaviro gestione el plan, los gastos y las rutas por vosotros.
+      </p>
+
+      {/* CTAs */}
+      <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+        <Link
+          href="/trips/new"
+          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[var(--brand)] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--brand-hover)]"
+        >
+          <MapPin className="h-4 w-4" aria-hidden />
+          Crear mi primer viaje
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+        <Link
+          href="/trips/new/planner"
+          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+        >
+          <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />
+          Generar con IA
+        </Link>
+      </div>
+
+      {/* Feature pills */}
+      <div className="mt-8 flex flex-wrap justify-center gap-2">
+        {[
+          { icon: "📅", label: "Plan día a día" },
+          { icon: "💶", label: "Gastos compartidos" },
+          { icon: "🗺️", label: "Mapa de rutas" },
+          { icon: "👥", label: "Hasta 5 personas gratis" },
+          { icon: "✨", label: "IA en Premium" },
+        ].map(({ icon, label }) => (
+          <span
+            key={label}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-300"
+          >
+            {icon} {label}
+          </span>
+        ))}
+      </div>
+
+      {/* Demo suggestion */}
+      <p className="mt-6 text-xs text-slate-400 dark:text-slate-500">
+        ¿Quieres ver cómo funciona antes de crear el tuyo?{" "}
+        <Link href="/dashboard" className="font-semibold text-[var(--brand)] hover:underline">
+          Explora el viaje demo de Londres
+        </Link>
+      </p>
+    </div>
+  );
+}
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
@@ -212,6 +279,8 @@ export default function DashboardTripsClient({
             </div>
           )}
         </div>
+      ) : totalTrips === 0 ? (
+        <DashboardEmptyState />
       ) : (
         /* ── Normal sections view ── */
         <>
