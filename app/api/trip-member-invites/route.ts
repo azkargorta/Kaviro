@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { forbidUnlessCanManageParticipants, requireTripAccessApi } from "@/lib/trip-access-api";
 import { memberInvitePermissions } from "@/lib/travel-mates";
 import type { TripRole } from "@/lib/participants";
+import { sendPushToUserIds } from "@/lib/server/web-push";
 
 export const runtime = "nodejs";
 
@@ -180,6 +181,28 @@ export async function POST(request: Request) {
       }
       throw new Error(error.message);
     }
+
+    const [{ data: tripRow }, { data: inviterProfile }] = await Promise.all([
+      admin.from("trips").select("name").eq("id", tripId).maybeSingle(),
+      admin
+        .from("profiles")
+        .select("display_name, full_name, username")
+        .eq("id", gate.access.userId)
+        .maybeSingle(),
+    ]);
+    const tripName = (tripRow as { name?: string } | null)?.name?.trim() || "un viaje";
+    const inviter =
+      (inviterProfile as { display_name?: string; full_name?: string; username?: string } | null)
+        ?.display_name?.trim() ||
+      (inviterProfile as { full_name?: string } | null)?.full_name?.trim() ||
+      (inviterProfile as { username?: string } | null)?.username?.trim() ||
+      "Alguien";
+
+    void sendPushToUserIds([inviteeUserId], {
+      title: "Invitación al viaje",
+      body: `${inviter} te invitó a «${tripName}»`,
+      url: "/dashboard",
+    });
 
     return NextResponse.json({ invite: data }, { status: 201 });
   } catch (error) {

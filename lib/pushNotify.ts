@@ -7,7 +7,8 @@ export type NotifyEvent =
   | "activity_edited"
   | "expense_added"
   | "participant_joined"
-  | "trip_starts_tomorrow";
+  | "trip_starts_tomorrow"
+  | "trip_invite";
 
 export async function notifyTripParticipants(opts: {
   tripId: string;

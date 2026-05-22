@@ -17,11 +17,14 @@ export default function TripShareButton({
   tripId,
   showLabels = false,
   menuRow = false,
+  hero = false,
 }: {
   tripId: string;
   showLabels?: boolean;
   /** Fila ancha tipo menú móvil (viaje). */
   menuRow?: boolean;
+  /** CTA destacado en el hero del viaje. */
+  hero?: boolean;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -162,6 +165,9 @@ export default function TripShareButton({
       </div>
     ) : null;
 
+  const heroBtn =
+    "inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/40 bg-white/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/30 disabled:opacity-60";
+
   const compactBtn =
     "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
 
@@ -171,15 +177,17 @@ export default function TripShareButton({
 
   return (
     <>
-      <div className={menuRow ? "w-full" : "flex flex-wrap gap-2"}>
+      <div className={menuRow || hero ? "w-full" : "flex flex-wrap gap-2"}>
         <button
           type="button"
           onClick={() => void createAndCopy()}
           disabled={busy}
-          className={menuRow ? menuBtn : compactBtn}
-          title="Crear enlace público (solo lectura) y copiarlo al portapapeles"
+          className={hero ? heroBtn : menuRow ? menuBtn : compactBtn}
+          title="Crear enlace público (solo lectura) y compartirlo"
         >
-          {menuRow ? (
+          {hero ? (
+            <Link2 className="h-4 w-4 shrink-0" aria-hidden />
+          ) : menuRow ? (
             <span className={mobileMenuRowIconWrap}>
               <Link2 className="text-[var(--brand)]" aria-hidden />
             </span>
@@ -188,7 +196,9 @@ export default function TripShareButton({
               <Link2 className="h-5 w-5 text-slate-900 dark:text-[#F87171]" aria-hidden />
             </span>
           )}
-          <span className={menuRow || showLabels ? "inline" : "inline max-w-[9rem] truncate sm:max-w-none"}>Copiar enlace</span>
+          <span className={hero ? "inline" : menuRow || showLabels ? "inline" : "inline max-w-[9rem] truncate sm:max-w-none"}>
+            {hero ? (busy ? "Creando enlace…" : "Enviar plan a familia (sin cuenta)") : busy ? "Creando…" : "Copiar enlace"}
+          </span>
         </button>
       </div>
 

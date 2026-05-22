@@ -59,6 +59,7 @@ export default async function TripPlanPage({
   const initialActivities: TripActivitiesInitial = {
     trip: (tripRow as TripActivitiesInitial["trip"]) || null,
     activities: (activityRows ?? []) as TripActivitiesInitial["activities"],
+    actorName: currentDisplayName,
   };
 
   return (

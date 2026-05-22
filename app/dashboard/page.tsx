@@ -12,7 +12,9 @@ import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardHero from "@/components/dashboard/DashboardHero";
+import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
+import PushNotificationPrompt from "@/components/pwa/PushNotificationPrompt";
 import DashboardOfflineRegistry, {
   DashboardOfflinePanel,
 } from "@/components/dashboard/DashboardOfflineRegistry";
@@ -242,6 +244,16 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardTripInvitesInbox />
+
+      {realTrips.length > 0 ? (
+        <div className="mx-auto max-w-2xl px-4">
+          <DashboardContinueTrip trips={allRealTrips} />
+        </div>
+      ) : null}
+
+      <div className="mx-auto max-w-2xl px-4">
+        <PushNotificationPrompt />
+      </div>
 
       {isFirstOnboardingVisit ? (
         <>

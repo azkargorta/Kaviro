@@ -48,9 +48,12 @@ export type SaveActivityInput = {
 export type TripActivitiesInitial = {
   trip: TripPlanSummary | null;
   activities: TripActivity[];
+  /** Nombre mostrado del usuario actual (push y UI). */
+  actorName?: string;
 };
 
 export function useTripActivities(tripId: string, initial?: TripActivitiesInitial) {
+  const actorName = initial?.actorName?.trim() || "Un participante";
   const [trip, setTrip] = useState<TripPlanSummary | null>(initial?.trip ?? null);
   const [unseenCount, setUnseenCount] = useState(0);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
@@ -234,7 +237,7 @@ export function useTripActivities(tripId: string, initial?: TripActivitiesInitia
           void notifyTripParticipants({
             tripId,
             event: "activity_added",
-            actorName: "Un participante",
+            actorName,
             detail: input.title?.trim() || "nueva actividad",
             url: `/trip/${tripId}/plan`,
           });
@@ -246,7 +249,7 @@ export function useTripActivities(tripId: string, initial?: TripActivitiesInitia
         setSaving(false);
       }
     },
-    [load, tripId]
+    [actorName, load, tripId]
   );
 
   const updateActivity = useCallback(

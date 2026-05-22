@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendPushToUserIds } from "@/lib/server/web-push";
 
 export type NotifyEvent =
   | "activity_added"
@@ -9,11 +10,26 @@ export type NotifyEvent =
   | "trip_starts_tomorrow";
 
 const EVENT_COPY: Record<NotifyEvent, (actor: string, detail?: string) => { title: string; body: string }> = {
-  activity_added:     (actor, detail) => ({ title: "Nueva actividad 📅", body: `${actor} añadió "${detail}" al plan` }),
-  activity_edited:    (actor, detail) => ({ title: "Plan actualizado ✏️", body: `${actor} editó "${detail}"` }),
-  expense_added:      (actor, detail) => ({ title: "Nuevo gasto 💶", body: `${actor} registró ${detail}` }),
-  participant_joined: (actor)         => ({ title: "Alguien se unió 👋", body: `${actor} se ha unido al viaje` }),
-  trip_starts_tomorrow: (_, detail)  => ({ title: "¡Mañana empieza el viaje! ✈️", body: `Tu viaje a ${detail} empieza mañana` }),
+  activity_added: (actor, detail) => ({
+    title: "Nueva actividad",
+    body: `${actor} añadió «${detail || "una actividad"}» al plan`,
+  }),
+  activity_edited: (actor, detail) => ({
+    title: "Plan actualizado",
+    body: `${actor} editó «${detail || "una actividad"}»`,
+  }),
+  expense_added: (actor, detail) => ({
+    title: "Nuevo gasto",
+    body: `${actor} registró ${detail || "un gasto"}`,
+  }),
+  participant_joined: (actor) => ({
+    title: "Alguien se unió",
+    body: `${actor} se ha unido al viaje`,
+  }),
+  trip_starts_tomorrow: (_, detail) => ({
+    title: "¡Mañana empieza el viaje!",
+    body: `Tu viaje a ${detail || "tu destino"} empieza mañana`,
+  }),
 };
 
 /**
@@ -39,12 +55,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing tripId or event" }, { status: 400 });
     }
 
-    // Get all active participants except the actor
     const { data: participants } = await supabase
       .from("trip_participants")
       .select("user_id")
       .eq("trip_id", tripId)
-      .eq("status", "active")
+      .neq("status", "removed")
       .neq("user_id", user.id)
       .not("user_id", "is", null);
 
@@ -57,17 +72,10 @@ export async function POST(request: Request) {
     const copy = EVENT_COPY[event]?.(actorName, detail);
     if (!copy) return NextResponse.json({ error: "Unknown event" }, { status: 400 });
 
-    // Delegate to the send route
-    const sendRes = await fetch(new URL("/api/push/send", request.url).toString(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", cookie: request.headers.get("cookie") || "" },
-      body: JSON.stringify({
-        userIds,
-        payload: { ...copy, url: url || `/trip/${tripId}/summary` },
-      }),
+    const result = await sendPushToUserIds(userIds, {
+      ...copy,
+      url: url || `/trip/${tripId}/summary`,
     });
-
-    const result = await sendRes.json();
     return NextResponse.json(result);
   } catch (err) {
     console.error("Push notify error:", err);

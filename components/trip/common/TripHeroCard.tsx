@@ -1,4 +1,5 @@
 import TripHeroActions from "@/components/trip/common/TripHeroActions";
+import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
 
 // ---------------------------------------------------------------------------
 // Helpers de avatar (misma lógica que TripParticipantsView)
@@ -121,6 +122,8 @@ export default function TripHeroCard({ tripId, tripName, destination, participan
           </div>
         )}
       </div>
+
+      <TripHeroShareBar tripId={tripId} tripName={tripName} destination={destination} />
     </div>
   );
 }

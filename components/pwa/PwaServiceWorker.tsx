@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { syncPushSubscription } from "@/lib/push-subscribe-client";
 
 export default function PwaServiceWorker() {
   useEffect(() => {
@@ -16,51 +17,15 @@ export default function PwaServiceWorker() {
 
     navigator.serviceWorker
       .register("/sw.js")
-      .then(async (registration) => {
-        // Request push notification permission after SW registers
-        if ("PushManager" in window && "Notification" in window) {
-          const permission = await Notification.requestPermission();
-          if (permission !== "granted") return;
-
-          try {
-            // Check for existing subscription
-            const existing = await registration.pushManager.getSubscription();
-            if (existing) return; // Already subscribed
-
-            // Subscribe to push
-            const sub = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              // Replace with your VAPID public key for real push
-              applicationServerKey: urlBase64ToUint8Array(
-                process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ""
-              ),
-            });
-
-            // Send subscription to API
-            await fetch("/api/push/subscribe", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(sub),
-            });
-          } catch {
-            // Push subscription failed — non-blocking
-          }
+      .then(() => {
+        if ("Notification" in window && Notification.permission === "granted") {
+          void syncPushSubscription();
         }
       })
       .catch(() => {
-        // SW registration failed — non-blocking
+        /* non-blocking */
       });
   }, []);
 
   return null;
-}
-
-function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
-  if (!base64String) return new ArrayBuffer(0);
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const arr = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
-  return arr.buffer;
 }

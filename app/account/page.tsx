@@ -7,6 +7,7 @@ import AccountSettingsForm from "@/components/account/AccountSettingsForm";
 import ProfileAvatarPicker from "@/components/account/ProfileAvatarPicker";
 import AccountReferralsSection from "@/components/account/AccountReferralsSection";
 import AccountDeleteSection from "@/components/account/AccountDeleteSection";
+import PushNotificationsSection from "@/components/account/PushNotificationsSection";
 import Link from "next/link";
 import { getMonthlyAiBudgetEur, monthKeyUtc } from "@/lib/ai-usage";
 
@@ -148,6 +149,15 @@ export default async function AccountPage() {
       <ProfileAvatarPicker />
 
       <AccountSettingsForm initial={{ username, email, isPremium }} />
+
+      <section className="card-soft p-6">
+        <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-400">
+          Notificaciones
+        </h2>
+        <div className="mt-4">
+          <PushNotificationsSection />
+        </div>
+      </section>
 
       <AccountReferralsSection />
 
