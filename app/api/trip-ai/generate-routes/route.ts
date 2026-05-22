@@ -28,6 +28,7 @@ type RouteDraftPayload = {
     distance_text: string | null;
     duration_text: string | null;
     notes: string | null;
+    color: string | null;
   }>;
 };
 
