@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { insertTripRouteRow } from "@/lib/server/trip-routes-insert";
 import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 
@@ -212,9 +213,9 @@ export async function POST(req: Request) {
             arrival_time: asStringOrNull(fieldsIn.arrival_time),
             created_by_user_id: access.userId,
           };
-          const { data, error } = await supabase.from("trip_routes").insert(payload).select("id").single();
-          if (error) throw new Error(error.message);
-          results.push({ ok: true, op, id: String(data?.id || "") });
+          const ins = await insertTripRouteRow(supabase, payload);
+          if (!ins.ok) throw new Error(ins.error);
+          results.push({ ok: true, op, id: ins.id });
           continue;
         }
 

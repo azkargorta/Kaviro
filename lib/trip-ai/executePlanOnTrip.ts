@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
+import { insertTripRouteRow } from "@/lib/server/trip-routes-insert";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 import { fetchProjectOsrmRoute } from "@/lib/osrm/projectOsrmRoute";
 import {
@@ -191,29 +192,6 @@ function chooseRouteModeFromDurationSeconds(durationSeconds: number | null | und
     mode: "driving" as const,
     notesHint: "Recomendación: transporte público (trayecto largo a pie).",
   };
-}
-
-async function insertTripRouteRow(supabase: SupabaseClient, payload: Record<string, unknown>) {
-  let response = await supabase.from("trip_routes").insert(payload).select("id").single();
-  if (!response.error) return { ok: true as const, error: null as string | null };
-
-  const message = response.error.message.toLowerCase();
-  if (message.includes("color") && message.includes("schema cache")) {
-    const { color: _c, ...fallbackPayload } = payload as Record<string, unknown> & { color?: unknown };
-    response = await supabase.from("trip_routes").insert(fallbackPayload).select("id").single();
-    if (!response.error) return { ok: true as const, error: null };
-  }
-  if (message.includes("notes") && message.includes("schema cache")) {
-    const { notes: _n, ...fallbackPayload } = payload as Record<string, unknown> & { notes?: unknown };
-    response = await supabase.from("trip_routes").insert(fallbackPayload).select("id").single();
-    if (!response.error) return { ok: true as const, error: null };
-  }
-  if (message.includes("route_order")) {
-    const { route_order: _ro, ...fallbackPayload } = payload as Record<string, unknown> & { route_order?: unknown };
-    response = await supabase.from("trip_routes").insert(fallbackPayload).select("id").single();
-    if (!response.error) return { ok: true as const, error: null };
-  }
-  return { ok: false as const, error: response.error.message };
 }
 
 function straightLineFallback(
