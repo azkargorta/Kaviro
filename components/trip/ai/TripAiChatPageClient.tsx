@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
 
 const TripAiChatView = dynamic(() => import("@/components/trip/ai/TripAiChatView"), {
+  ssr: false,
   loading: () => (
     <main className="page-shell py-20 text-center text-slate-500">
       <p className="text-sm font-medium">Cargando asistente personal…</p>

@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { tripAssistantSurfaceFromPathname, tripAssistantSurfaceLabel } from "@/lib/trip-assistant-context";
 import { iconSlotFab56, iconSlotFill40 } from "@/components/ui/iconTokens";
+import TripAiAssistantErrorBoundary from "@/components/trip/ai/TripAiAssistantErrorBoundary";
 
 const TripAiChatView = dynamic(() => import("@/components/trip/ai/TripAiChatView"), {
   ssr: false,
@@ -26,6 +27,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
   const surface = useMemo(() => tripAssistantSurfaceFromPathname(pathname), [pathname]);
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [chatMountKey, setChatMountKey] = useState(0);
   const [assistantLogoOk, setAssistantLogoOk] = useState(true);
 
   useEffect(() => setMounted(true), []);
@@ -110,13 +112,15 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
             </div>
 
             <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-hidden p-3 sm:p-4">
-              <TripAiChatView
-                key={surface}
-                tripId={tripId}
-                isPremium={isPremium}
-                layout="drawer"
-                assistantContext={surface}
-              />
+              <TripAiAssistantErrorBoundary onReset={() => setChatMountKey((k) => k + 1)}>
+                <TripAiChatView
+                  key={`${surface}-${chatMountKey}`}
+                  tripId={tripId}
+                  isPremium={isPremium}
+                  layout="drawer"
+                  assistantContext={surface}
+                />
+              </TripAiAssistantErrorBoundary>
             </div>
           </div>
         </div>

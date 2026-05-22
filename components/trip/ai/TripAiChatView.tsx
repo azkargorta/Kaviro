@@ -23,6 +23,7 @@ import {
 import TravelSearchOffersCard from "@/components/trip/ai/TravelSearchOffersCard";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
+import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
 
 type TripAiChatLayout = "page" | "drawer";
 
@@ -324,7 +325,15 @@ function extractItinerary(answer: string): ItineraryPayload | null {
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.days)) return null;
-    return parsed as ItineraryPayload;
+    const days = parsed.days.map((day: unknown, index: number) => {
+      const row = day && typeof day === "object" ? (day as Record<string, unknown>) : {};
+      return {
+        day: typeof row.day === "number" ? row.day : index + 1,
+        date: typeof row.date === "string" ? row.date : null,
+        items: Array.isArray(row.items) ? row.items : [],
+      };
+    });
+    return { ...(parsed as ItineraryPayload), days };
   } catch {
     return null;
   }
@@ -347,7 +356,7 @@ function extractDiff(answer: string): DiffPayload | null {
 }
 
 /** Oculta bloques JSON internos en la burbuja; el texto completo sigue en estado para extraer itinerario/diff. */
-function stripTripboardJsonBlocksForDisplay(content: string): string {
+function stripTripboardJsonBlocksForDisplay(content: string | null | undefined): string {
   const blocks = [
     {
       start: "TRIPBOARD_ITINERARY_JSON_START",
@@ -370,7 +379,7 @@ function stripTripboardJsonBlocksForDisplay(content: string): string {
       label: "Opciones de búsqueda (tarjeta debajo del mensaje)",
     },
   ];
-  let out = content;
+  let out = typeof content === "string" ? content : content == null ? "" : String(content);
   for (const { start, end, label } of blocks) {
     for (;;) {
       const a = out.indexOf(start);
@@ -719,7 +728,7 @@ export default function TripAiChatView({
           setMode(ctxPreset.mode);
           setMessages([
             {
-              id: crypto.randomUUID(),
+              id: newChatMessageId(),
               role: "assistant",
               content: ctxPreset.welcome,
             },
@@ -729,7 +738,7 @@ export default function TripAiChatView({
           setMode("general");
           setMessages([
             {
-              id: crypto.randomUUID(),
+              id: newChatMessageId(),
               role: "assistant",
               content: DEFAULT_PAGE_WELCOME,
             },
@@ -744,7 +753,7 @@ export default function TripAiChatView({
       setMode(next);
       setMessages([
         {
-          id: crypto.randomUUID(),
+          id: newChatMessageId(),
           role: "assistant",
           content: getManualModeWelcome(next),
         },
@@ -999,7 +1008,21 @@ export default function TripAiChatView({
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || "No se pudo abrir la conversación.");
       setConversationId(id);
-      setMessages(data?.messages?.length ? data.messages : []);
+      const rows = Array.isArray(data?.messages) ? data.messages : [];
+      const normalized: Message[] = [];
+      for (const row of rows) {
+        const m = normalizeChatMessage(row);
+        if (m) normalized.push(m);
+      }
+      setMessages(
+        normalized.length
+          ? normalized
+          : buildInitialWelcomeMessages({
+              layout,
+              ctxPreset,
+              defaultAssistantMode: ctxPreset ? null : defaultAssistantMode ?? null,
+            })
+      );
       if (data?.conversation?.mode) setMode(coerceTripAiMode(data.conversation.mode));
       setInfo(null);
     } catch (err) {
@@ -1016,7 +1039,7 @@ export default function TripAiChatView({
       setMode(ctxPreset.mode);
       setMessages([
         {
-          id: crypto.randomUUID(),
+          id: newChatMessageId(),
           role: "assistant",
           content: ctxPreset.welcome,
         },
@@ -1027,7 +1050,7 @@ export default function TripAiChatView({
       setMode(def ?? "general");
       setMessages([
         {
-          id: crypto.randomUUID(),
+          id: newChatMessageId(),
           role: "assistant",
           content: buildInitialWelcomeMessages({ layout, ctxPreset: null, defaultAssistantMode: def })[0]?.content ?? DEFAULT_PAGE_WELCOME,
         },
@@ -1064,7 +1087,7 @@ export default function TripAiChatView({
         .join("\n")
         .slice(0, 900) || "";
 
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", content: clean }]);
+    setMessages((current) => [...current, { id: newChatMessageId(), role: "user", content: clean }]);
     setQuestion("");
     setLoading(true);
     setError(null);
@@ -1134,7 +1157,7 @@ export default function TripAiChatView({
       setMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: newChatMessageId(),
           role: "assistant",
           content: typeof data.answer === "string" ? data.answer : "No se pudo generar respuesta",
         },
@@ -1187,7 +1210,7 @@ export default function TripAiChatView({
       setMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: newChatMessageId(),
           role: "assistant",
           content:
             "No pude completar la respuesta del servidor.\n\n" +
@@ -1427,6 +1450,13 @@ export default function TripAiChatView({
       : "w-full min-w-0 max-w-full space-y-6 overflow-x-hidden";
 
   if (!isPremium) {
+    if (layout === "drawer") {
+      return (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
+          El asistente personal requiere Premium en este viaje.
+        </div>
+      );
+    }
     return (
       <main className="space-y-6">
         <TripBoardPageHeader
@@ -1651,7 +1681,7 @@ export default function TripAiChatView({
                       }`}
                     >
                       <div className="font-extrabold text-slate-900">Día {d.day}{d.date ? ` · ${d.date}` : ""}</div>
-                      <div className="mt-0.5 text-slate-600">{d.items.length} paradas</div>
+                      <div className="mt-0.5 text-slate-600">{(d.items ?? []).length} paradas</div>
                     </button>
                   ))}
                 </div>
@@ -2269,10 +2299,11 @@ export default function TripAiChatView({
             ) : null}
 
             {messages.map((message) => {
+              const text = typeof message.content === "string" ? message.content : "";
               const travelDocs =
-                message.role === "assistant" ? parseTravelDocsChecklistFromAnswer(message.content) : null;
+                message.role === "assistant" ? parseTravelDocsChecklistFromAnswer(text) : null;
               const searchRaw =
-                message.role === "assistant" ? parseTravelSearchOffersFromAnswer(message.content) : null;
+                message.role === "assistant" ? parseTravelSearchOffersFromAnswer(text) : null;
               const searchOffers = searchRaw ? enrichTravelSearchOffers(searchRaw, searchTripDefaults) : null;
               return (
                 <div
@@ -2285,13 +2316,13 @@ export default function TripAiChatView({
                       <div className="flex items-start gap-2.5 max-w-[88%]">
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm mt-0.5" aria-hidden>✦</div>
                         <div className="min-w-0 break-words whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-violet-200/60 bg-violet-50/70 px-4 py-3 text-sm leading-7 text-slate-800 dark:border-[#1E293B] dark:bg-[#1E293B] dark:text-slate-200">
-                          {stripTripboardJsonBlocksForDisplay(message.content)}
+                          {stripTripboardJsonBlocksForDisplay(text)}
                         </div>
                       </div>
                     )}
                     {message.role === "user" && (
                       <div className="min-w-0 max-w-[88%] break-words whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-slate-950 dark:bg-[#F87171] px-4 py-3 text-sm leading-7 text-white">
-                        {message.content}
+                        {text}
                       </div>
                     )}
                     {travelDocs ? <TravelDocsChecklistCard tripId={tripId} payload={travelDocs} /> : null}
