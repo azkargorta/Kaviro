@@ -49,12 +49,12 @@ export default function TripOfflineWarmup({ tripId }: { tripId: string }) {
       }
     };
 
-    if ("requestIdleCallback" in window) {
+    if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(run, { timeout: 4000 });
       return () => window.cancelIdleCallback(id);
     }
-    const t = window.setTimeout(run, 800);
-    return () => window.clearTimeout(t);
+    const t = setTimeout(run, 800);
+    return () => clearTimeout(t);
   }, [tripId, router]);
 
   return null;
