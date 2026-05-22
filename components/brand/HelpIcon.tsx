@@ -13,8 +13,8 @@ export function HelpIconQuestion(props: SVGProps<SVGSVGElement>) {
     >
       <defs>
         <linearGradient id="kaviroHelpGrad" x1="5" y1="5" x2="19" y2="19" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0ea5e9" />
-          <stop offset="1" stopColor="#2563eb" />
+          <stop stopColor="#F87171" />
+          <stop offset="1" stopColor="#EF4444" />
         </linearGradient>
       </defs>
       <circle cx="12" cy="12" r="9.25" fill="url(#kaviroHelpGrad)" />

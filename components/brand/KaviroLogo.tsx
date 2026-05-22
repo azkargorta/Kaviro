@@ -81,7 +81,13 @@ export default function KaviroLogo({
           width={px}
           height={px}
           alt=""
-          className={`h-full w-full object-contain ${imageClassName}`.trim()}
+          className={[
+            "h-full w-full object-contain",
+            !isLight ? kaviroCoralImageFilter : "",
+            imageClassName,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           priority
         />
       </span>

@@ -8,6 +8,7 @@ import RootTopBar from "@/components/layout/RootTopBar";
 import PwaServiceWorker from "@/components/pwa/PwaServiceWorker";
 import OfflineBanner from "@/components/pwa/OfflineBanner";
 import CookieConsentBanner from "@/components/legal/CookieConsentBanner";
+import GlobalRouteLoading from "@/components/layout/GlobalRouteLoading";
 import { APP_DESCRIPTION_SHORT, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -55,9 +56,10 @@ export default function RootLayout({
           <AuthListener />
           <AnalyticsRoot />
           <RootTopBar />
+          <GlobalRouteLoading />
           <PwaServiceWorker />
         <OfflineBanner />
-          <div className="min-h-0 min-w-0">{children}</div>
+          <div className="min-h-[100dvh] min-w-0 bg-[var(--surface-page)]">{children}</div>
           <CookieConsentBanner />
         </ToastProvider>
       </body>
