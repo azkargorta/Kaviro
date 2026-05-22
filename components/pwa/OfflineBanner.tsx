@@ -54,7 +54,7 @@ export default function OfflineBanner() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Sin conexión</p>
           <p className="text-xs text-amber-700 dark:text-amber-400">
-            Mostrando datos de tu última visita. Los cambios no se guardarán.
+            Solo lectura: datos de la última vez que abriste el viaje con conexión. Los cambios no se guardan.
           </p>
         </div>
       </div>

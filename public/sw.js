@@ -1,11 +1,11 @@
-// Kaviro Service Worker — v5
-// Nivel 1 offline: lectura completa del último viaje visitado sin conexión
+// Kaviro Service Worker — v6
+// Lectura offline del viaje: APIs + páginas/RSC de pestañas visitadas o precargadas
 
-const CACHE_NAME  = "kaviro-v5";
-const DATA_CACHE  = "kaviro-data-v2";
+const CACHE_NAME = "kaviro-v6";
+const DATA_CACHE = "kaviro-data-v3";
+const PAGE_CACHE = "kaviro-pages-v1";
 const OFFLINE_URL = "/offline.html";
 
-// ── Assets precacheados al instalar ───────────────────────────────────────────
 const PRECACHE_ASSETS = [
   "/",
   "/offline.html",
@@ -13,8 +13,6 @@ const PRECACHE_ASSETS = [
   "/brand/icon.png",
 ];
 
-// ── Rutas de datos que se cachean (network-first, fallback a caché) ────────────
-// Se guardan automáticamente la última vez que se visitó con conexión.
 const DATA_ROUTES = [
   "/api/trip-activities",
   "/api/trip-routes",
@@ -27,28 +25,97 @@ const DATA_ROUTES = [
   "/api/trip-reservations",
   "/api/trip-lists",
   "/api/trip-activity-kinds",
+  "/api/trip-access",
   "/api/weather",
 ];
+
+const TRIP_TAB_SEGMENTS =
+  "summary|plan|expenses|map|participants|resources|settings|ai-chat";
 
 function isDataRoute(pathname) {
   return DATA_ROUTES.some((r) => pathname.startsWith(r));
 }
 
-// ── Install ───────────────────────────────────────────────────────────────────
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
+/** Rutas de pestañas del viaje (navegación Next / RSC). */
+function isTripAppRoute(pathname) {
+  return new RegExp(`^/trip/[^/]+/(?:${TRIP_TAB_SEGMENTS})/?$`).test(pathname);
+}
+
+function pageCacheKey(url) {
+  return url.origin + url.pathname;
+}
+
+function isNextDataRequest(request) {
+  return (
+    request.headers.get("RSC") === "1" ||
+    request.headers.get("Next-Router-Prefetch") === "1" ||
+    request.headers.get("Next-Url") != null
   );
+}
+
+async function putPage(cache, request, response) {
+  if (!response.ok) return;
+  const key = pageCacheKey(new URL(request.url));
+  await cache.put(key, response.clone());
+}
+
+async function matchPage(cache, request) {
+  const key = pageCacheKey(new URL(request.url));
+  return cache.match(key);
+}
+
+async function networkFirstPage(request) {
+  const cache = await caches.open(PAGE_CACHE);
+  try {
+    const response = await fetch(request);
+    await putPage(cache, request, response);
+    return response;
+  } catch {
+    const cached = await matchPage(cache, request);
+    if (cached) return cached;
+    if (request.mode === "navigate") {
+      const offline = await caches.match(OFFLINE_URL);
+      if (offline) return offline;
+    }
+    return new Response("Sin conexión", { status: 503, statusText: "Offline" });
+  }
+}
+
+async function networkFirstData(request) {
+  const cache = await caches.open(DATA_CACHE);
+  try {
+    const response = await fetch(request.clone());
+    if (response.ok) await cache.put(request, response.clone());
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) {
+      const headers = new Headers(cached.headers);
+      headers.set("x-kaviro-offline", "1");
+      return new Response(cached.body, {
+        status: cached.status,
+        statusText: cached.statusText,
+        headers,
+      });
+    }
+    return new Response(JSON.stringify({ error: "Sin conexión", offline: true }), {
+      status: 503,
+      headers: { "Content-Type": "application/json", "x-kaviro-offline": "1" },
+    });
+  }
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS)));
   self.skipWaiting();
 });
 
-// ── Activate — limpia cachés antiguas ─────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k !== CACHE_NAME && k !== DATA_CACHE)
+          .filter((k) => k !== CACHE_NAME && k !== DATA_CACHE && k !== PAGE_CACHE)
           .map((k) => caches.delete(k))
       )
     )
@@ -56,48 +123,19 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Solo interceptar same-origin
   if (url.origin !== self.location.origin) return;
 
-  // ── 1. Datos del viaje: network-first, fallback a caché ───────────────────
   if (request.method === "GET" && isDataRoute(url.pathname)) {
-    event.respondWith(
-      caches.open(DATA_CACHE).then(async (cache) => {
-        try {
-          const response = await fetch(request.clone());
-          if (response.ok) await cache.put(request, response.clone());
-          return response;
-        } catch {
-          const cached = await cache.match(request);
-          if (cached) {
-            // Añadir header para que la UI sepa que viene de caché
-            const headers = new Headers(cached.headers);
-            headers.set("x-kaviro-offline", "1");
-            return new Response(cached.body, {
-              status: cached.status,
-              statusText: cached.statusText,
-              headers,
-            });
-          }
-          return new Response(JSON.stringify({ error: "Sin conexión", offline: true }), {
-            status: 503,
-            headers: { "Content-Type": "application/json", "x-kaviro-offline": "1" },
-          });
-        }
-      })
-    );
+    event.respondWith(networkFirstData(request));
     return;
   }
 
-  // ── 2. Resto de APIs: network-only (escrituras, IA, auth…) ────────────────
   if (url.pathname.startsWith("/api/")) return;
 
-  // ── 3. Assets estáticos: cache-first ─────────────────────────────────────
   if (
     request.destination === "image" ||
     url.pathname.startsWith("/_next/static/") ||
@@ -118,22 +156,42 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // ── 4. Páginas HTML: network-first, fallback a offline.html ─────────────
+  // Páginas del viaje: HTML, RSC y prefetch de Next.js
+  if (
+    request.method === "GET" &&
+    (request.mode === "navigate" || isNextDataRequest(request) || isTripAppRoute(url.pathname))
+  ) {
+    if (isTripAppRoute(url.pathname) || (request.mode === "navigate" && url.pathname.startsWith("/trip/"))) {
+      event.respondWith(networkFirstPage(request));
+      return;
+    }
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL))
-      )
+      fetch(request)
+        .then(async (response) => {
+          if (response.ok) {
+            const cache = await caches.open(PAGE_CACHE);
+            await putPage(cache, request, response);
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cache = await caches.open(PAGE_CACHE);
+          const cached = await matchPage(cache, request);
+          return cached || (await caches.match(OFFLINE_URL));
+        })
     );
-    return;
   }
 });
 
-// ── Push notifications ────────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let data = { title: "Kaviro", body: "Tienes cambios en tu viaje", icon: "/icons/icon-192.png" };
-  try { data = { ...data, ...event.data.json() }; } catch {}
+  try {
+    data = { ...data, ...event.data.json() };
+  } catch {}
 
   event.waitUntil(
     self.registration.showNotification(data.title, {
@@ -146,7 +204,6 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// ── Notification click ────────────────────────────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/";

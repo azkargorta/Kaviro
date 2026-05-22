@@ -12,6 +12,7 @@ import DemoTripBanner from "@/components/trip/DemoTripBanner";
 import TripHeroCard from "@/components/trip/common/TripHeroCard";
 import TripOnboardingChecklist from "@/components/trip/onboarding/TripOnboardingChecklist";
 import { fetchTripOnboardingCounts } from "@/lib/trip-onboarding";
+import TripOfflineWarmup from "@/components/pwa/TripOfflineWarmup";
 
 type TripLayoutProps = {
   children: ReactNode;
@@ -51,6 +52,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
   return (
     <TripBoardHeaderProvider>
       <TripDemoProvider isDemo={isDemo}>
+        <TripOfflineWarmup tripId={params.id} />
         <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
             {/* Hero card — visible en todas las pestañas */}
