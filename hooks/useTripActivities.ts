@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { notifyTripParticipants } from "@/lib/pushNotify";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
+import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
 export type TripActivity = {
   id: string;
   trip_id?: string;
@@ -98,6 +99,16 @@ export function useTripActivities(tripId: string) {
       setLoading(true);
       setError(null);
 
+      if (isOffline()) {
+        const local = await getLocalTripBundle(tripId);
+        if (local) {
+          setTrip((local.trip || null) as TripPlanSummary | null);
+          setActivities(local.activities);
+          setLoading(false);
+          return;
+        }
+      }
+
       // Trip + actividades via API server-side (evita locks/hangs del navegador)
       const payload = await apiRequest<{ trip: TripPlanSummary | null; activities: TripActivity[] }>(
         `/api/trip-activities?tripId=${encodeURIComponent(tripId)}`,
@@ -107,6 +118,14 @@ export function useTripActivities(tripId: string) {
       setTrip((payload.trip || null) as TripPlanSummary | null);
       setActivities(Array.isArray(payload.activities) ? payload.activities : []);
     } catch (err) {
+      const local = await getLocalTripBundle(tripId);
+      if (local) {
+        setTrip((local.trip || null) as TripPlanSummary | null);
+        setActivities(local.activities);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       console.error(err);
       const msg =
         isLockAbortError(err)

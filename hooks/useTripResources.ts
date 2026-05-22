@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { analyzeTravelDocument, type DetectedDocumentData } from "@/lib/document-analyzer";
+import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
 
 export type TripResource = {
   id: string;
@@ -101,6 +102,16 @@ export function useTripResources(tripId: string) {
       setLoading(true);
       setError(null);
 
+      if (isOffline()) {
+        const local = await getLocalTripBundle(tripId);
+        if (local) {
+          setResources(local.resources);
+          setReservations(local.reservations);
+          setLoading(false);
+          return;
+        }
+      }
+
       const payload = await apiRequest<{ resources: TripResource[]; reservations: TripReservation[] }>(
         `/api/trip-resources?tripId=${encodeURIComponent(tripId)}`,
         { method: "GET" },
@@ -109,6 +120,14 @@ export function useTripResources(tripId: string) {
       setResources(Array.isArray(payload.resources) ? payload.resources : []);
       setReservations(Array.isArray(payload.reservations) ? payload.reservations : []);
     } catch (err) {
+      const local = await getLocalTripBundle(tripId);
+      if (local) {
+        setResources(local.resources);
+        setReservations(local.reservations);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       console.error("Error cargando recursos/reservas:", err);
       setResources([]);
       setReservations([]);

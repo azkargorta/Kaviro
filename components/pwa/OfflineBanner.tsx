@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { WifiOff, RefreshCw } from "lucide-react";
 
 /**
@@ -56,6 +57,12 @@ export default function OfflineBanner() {
           <p className="text-xs text-amber-700 dark:text-amber-400">
             Solo lectura: datos de la última vez que abriste el viaje con conexión. Los cambios no se guardan.
           </p>
+          <Link
+            href="/offline-viaje"
+            className="mt-2 inline-block text-xs font-bold text-amber-800 underline dark:text-amber-300"
+          >
+            Ver viajes guardados (plan, listas, reservas)
+          </Link>
         </div>
       </div>
     );

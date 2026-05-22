@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
 
 export type TripList = {
   id: string;
@@ -58,10 +59,28 @@ export function useTripLists(tripId: string) {
     return payload as T;
   }, []);
 
+  const applyLocalLists = useCallback((local: Awaited<ReturnType<typeof getLocalTripBundle>>) => {
+    if (!local) return false;
+    setLists(local.lists);
+    setCountsByList(local.countsByList);
+    setAccess(null);
+    setError(null);
+    return true;
+  }, []);
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+
+      if (isOffline()) {
+        const local = await getLocalTripBundle(tripId);
+        if (applyLocalLists(local)) {
+          setLoading(false);
+          return;
+        }
+      }
+
       const payload = await apiRequest<ListsPayload>(
         `/api/trip-lists?tripId=${encodeURIComponent(tripId)}`,
         { method: "GET" },
@@ -71,6 +90,11 @@ export function useTripLists(tripId: string) {
       setCountsByList(payload.countsByList || {});
       setAccess(payload.access || null);
     } catch (err) {
+      const local = await getLocalTripBundle(tripId);
+      if (applyLocalLists(local)) {
+        setLoading(false);
+        return;
+      }
       setLists([]);
       setCountsByList({});
       setAccess(null);
@@ -78,7 +102,7 @@ export function useTripLists(tripId: string) {
     } finally {
       setLoading(false);
     }
-  }, [apiRequest, tripId]);
+  }, [apiRequest, applyLocalLists, tripId]);
 
   useEffect(() => {
     load();
@@ -185,6 +209,18 @@ export function useTripListItems(tripId: string, listId: string | null) {
     try {
       setLoading(true);
       setError(null);
+
+      if (isOffline()) {
+        const local = await getLocalTripBundle(tripId);
+        const items = local?.listItemsByListId[listId];
+        if (items) {
+          setItems(items);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+      }
+
       const payload = await apiRequest<{ items: TripListItem[] }>(
         `/api/trip-lists/${encodeURIComponent(listId)}/items?tripId=${encodeURIComponent(tripId)}`,
         { method: "GET" },
@@ -192,6 +228,14 @@ export function useTripListItems(tripId: string, listId: string | null) {
       );
       setItems(Array.isArray(payload.items) ? payload.items : []);
     } catch (err) {
+      const local = await getLocalTripBundle(tripId);
+      const items = local?.listItemsByListId[listId];
+      if (items) {
+        setItems(items);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       setItems([]);
       setError(err instanceof Error ? err.message : "No se pudieron cargar los items");
     } finally {

@@ -13,6 +13,9 @@ import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSe
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
+import DashboardOfflineRegistry, {
+  DashboardOfflinePanel,
+} from "@/components/dashboard/DashboardOfflineRegistry";
 import {
   ensureDemoTripForUser,
   isFirstDemoOnboardingVisit,
@@ -208,8 +211,20 @@ export default async function DashboardPage() {
     hasExpenses = (expCount ?? 0) > 0;
   }
 
+  const allRealTrips = [...current, ...future, ...past, ...unscheduled];
+
   return (
     <main className="page-shell space-y-4 pb-8 md:space-y-5 md:pb-10">
+      <DashboardOfflineRegistry
+        trips={allRealTrips.map((t) => ({
+          id: t.id,
+          name: t.name,
+          destination: t.destination,
+          start_date: t.start_date,
+          end_date: t.end_date,
+        }))}
+      />
+      <DashboardOfflinePanel />
       <div className="relative">
         <DashboardHero tripCount={realTrips.length} isPremium={isPremium} />
         <div className="absolute right-0 top-3 z-10 sm:top-4">
