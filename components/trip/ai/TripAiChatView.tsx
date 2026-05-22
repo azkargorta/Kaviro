@@ -567,7 +567,7 @@ export default function TripAiChatView({
     return { destination: dest || "Destino del viaje", startDate: start, endDate: end, adults };
   }, [trip?.destination, trip?.start_date, trip?.end_date, participants?.length]);
   const { activities: tripPlanActivities, reload: reloadTripPlanActivities, loading: tripPlanActivitiesLoading } =
-    useTripActivities(tripId);
+    useTripActivities(tripId, undefined, { subscribeRealtime: false });
 
   const hasAnyPlans = useMemo(() => (tripPlanActivities?.length || 0) > 0, [tripPlanActivities]);
   const hasAnyLodging = useMemo(() => {

@@ -52,7 +52,20 @@ export type TripActivitiesInitial = {
   actorName?: string;
 };
 
-export function useTripActivities(tripId: string, initial?: TripActivitiesInitial) {
+export type UseTripActivitiesOptions = {
+  /**
+   * Suscripción Realtime a `trip_activities`. Desactivar si otro hook en la misma
+   * pantalla ya escucha el viaje (p. ej. asistente IA en Plan).
+   */
+  subscribeRealtime?: boolean;
+};
+
+export function useTripActivities(
+  tripId: string,
+  initial?: TripActivitiesInitial,
+  options?: UseTripActivitiesOptions
+) {
+  const subscribeRealtime = options?.subscribeRealtime !== false;
   const actorName = initial?.actorName?.trim() || "Un participante";
   const [trip, setTrip] = useState<TripPlanSummary | null>(initial?.trip ?? null);
   const [unseenCount, setUnseenCount] = useState(0);
@@ -169,32 +182,39 @@ export function useTripActivities(tripId: string, initial?: TripActivitiesInitia
 
   // ── Realtime: notify when another user changes activities ──────────────────
   useEffect(() => {
-    if (!tripId) return;
+    if (!tripId || !subscribeRealtime) return;
     const supabase = createClient();
-    const channel = supabase
-      .channel(`trip-activities-${tripId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "trip_activities",
-          filter: `trip_id=eq.${tripId}`,
-        },
-        (payload) => {
-          // Reload activities and increment unseen counter
-          void load();
-          if (payload.eventType !== "DELETE") {
-            setUnseenCount((n) => n + 1);
-          }
+
+    if (channelRef.current) {
+      void supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channelName = `trip-activities-${tripId}-${realtimeChannelSuffixRef.current}`;
+    const channel = supabase.channel(channelName);
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "trip_activities",
+        filter: `trip_id=eq.${tripId}`,
+      },
+      (payload) => {
+        void load();
+        if (payload.eventType !== "DELETE") {
+          setUnseenCount((n) => n + 1);
         }
-      )
-      .subscribe();
+      }
+    );
+    channel.subscribe();
     channelRef.current = channel;
+
     return () => {
       void supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [tripId, load]);
+  }, [tripId, load, subscribeRealtime]);
 
   function clearUnseen() {
     setUnseenCount(0);
