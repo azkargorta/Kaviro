@@ -70,6 +70,9 @@ export function useTripActivities(
   const [trip, setTrip] = useState<TripPlanSummary | null>(initial?.trip ?? null);
   const [unseenCount, setUnseenCount] = useState(0);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const realtimeChannelSuffixRef = useRef(
+    `rt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
+  );
   const [activities, setActivities] = useState<TripActivity[]>(initial?.activities ?? []);
   const [loading, setLoading] = useState(!initial);
   const [saving, setSaving] = useState(false);
