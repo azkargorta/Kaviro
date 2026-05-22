@@ -2096,7 +2096,7 @@ export default function TripAiChatView({
               className={
                 layout === "drawer"
                   ? "mt-2 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-3"
-                  : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+                  : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
               }
             >
               {ASSISTANT_FOCUS_PRESETS.map((preset) => {
@@ -2106,9 +2106,10 @@ export default function TripAiChatView({
                   <button
                     key={preset.id}
                     type="button"
+                    lang="es"
                     disabled={loading || aiBudgetExceeded}
                     onClick={() => beginNewChatForMode(preset.id, { onlyIfChanged: true })}
-                    className={`flex flex-col items-start gap-1 rounded-2xl border px-2.5 py-2 text-left transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2.5 ${
+                    className={`flex min-w-0 w-full flex-col items-start gap-1 overflow-hidden rounded-2xl border px-2.5 py-2 text-left transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2.5 ${
                       layout === "drawer" ? "min-h-[64px]" : "min-h-[88px]"
                     } ${
                       selected
@@ -2117,8 +2118,12 @@ export default function TripAiChatView({
                     }`}
                   >
                     <Icon className={`h-4 w-4 shrink-0 ${selected ? "text-[var(--brand)]" : "text-slate-500"}`} aria-hidden />
-                    <span className="text-xs font-bold leading-tight">{preset.label}</span>
-                    <span className="text-[10px] font-medium leading-snug text-slate-600">{preset.description}</span>
+                    <span className="w-full min-w-0 hyphens-auto break-words text-[11px] font-bold leading-snug sm:text-xs">
+                      {preset.label}
+                    </span>
+                    <span className="w-full min-w-0 break-words text-[10px] font-medium leading-snug text-slate-600">
+                      {preset.description}
+                    </span>
                   </button>
                 );
               })}
