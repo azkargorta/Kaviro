@@ -16,6 +16,7 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type D
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ROUTE_COLOR_PALETTE, pickNextRouteColor, pickRouteColorByIndex } from "@/lib/route-colors";
 
 type UnknownRow = Record<string, unknown>;
 type RouteMode = "DRIVING";
@@ -80,6 +81,7 @@ type RoutesDraftPayload = {
     distance_text: string | null;
     duration_text: string | null;
     notes: string | null;
+    color?: string | null;
   }>;
 };
 
@@ -150,8 +152,6 @@ type Props = {
 };
 
 const DEFAULT_CENTER: [number, number] = [40.4168, -3.7038];
-const ROUTE_COLOR_PALETTE = ["#6366f1", "#8b5cf6", "#ec4899", "#ef4444", "#f97316", "#eab308", "#10b981", "#14b8a6", "#06b6d4", "#3b82f6"];
-
 function emojiIcon(emoji: string, bg: string) {
   return L.divIcon({
     className: "",
@@ -621,6 +621,8 @@ export default function TripMapView({
   }, [allRoutes, tripDates]);
 
   const [selectedDate, setSelectedDate] = useState<string>("all");
+  /** Filtro solo para la lista «Rutas guardadas» (independiente del día del mapa). */
+  const [routesListDate, setRoutesListDate] = useState<string>("all");
   const [focusedRouteKey, setFocusedRouteKey] = useState<string | null>(null);
   const [showPlanMarkers, setShowPlanMarkers] = useState(true);
   const [showCityRoute, setShowCityRoute] = useState(true);
@@ -751,6 +753,10 @@ export default function TripMapView({
       setRoutesDraft(draft);
       setRoutesDraftIndex(0);
       setShowRoutesList(true);
+      if (date) {
+        setRoutesListDate(date);
+        setSelectedDate(date);
+      }
       try {
         const key = `tripboard_routes_draft:${tripId}`;
         window.sessionStorage.setItem(key, JSON.stringify(draft));
@@ -787,7 +793,7 @@ export default function TripMapView({
         .map((r) => String(r.color || "").trim().toLowerCase())
         .filter(Boolean)
     );
-    return ROUTE_COLOR_PALETTE.find((color) => !used.has(color.toLowerCase())) || ROUTE_COLOR_PALETTE[0];
+    return pickNextRouteColor(used, routesState.length);
   }, [form.autoColor, form.color, form.editingRouteId, routesState]);
 
   const reloadRoutes = useCallback(async () => {
@@ -1279,12 +1285,24 @@ export default function TripMapView({
     setError(null);
     let savedCount = 0;
     try {
-      for (const r of routesDraft.routes) {
+      const usedColors = new Set(
+        routesState
+          .map((x) => String(x.color || "").trim().toLowerCase())
+          .filter(Boolean)
+      );
+      for (let i = 0; i < routesDraft.routes.length; i++) {
+        const r = routesDraft.routes[i]!;
+        const color =
+          typeof r.color === "string" && r.color.trim()
+            ? r.color.trim()
+            : pickNextRouteColor(usedColors, i);
+        usedColors.add(color.toLowerCase());
         const input: SaveRouteInput = {
           routeDate: r.route_day,
           routeName: r.title,
           departureTime: r.departure_time || "",
           mode: r.travel_mode,
+          color,
           originName: r.origin_name,
           originAddress: r.origin_address || "",
           originLatitude: r.origin_latitude,
@@ -1337,7 +1355,8 @@ export default function TripMapView({
       routeName: r.title || "Ruta",
       departureTime: r.departure_time || "",
       stopEnabled: false,
-      autoColor: true,
+      color: typeof r.color === "string" && r.color.trim() ? r.color.trim() : pickRouteColorByIndex(idx),
+      autoColor: !(typeof r.color === "string" && r.color.trim()),
       noteText: r.notes || "",
       checklist: [],
     }));
@@ -1420,20 +1439,23 @@ export default function TripMapView({
   }
 
   const routesForList = useMemo(() => {
-    const base = selectedDate === "all" ? routesState : routesState.filter((r) => (r.route_day || r.route_date) === selectedDate);
+    const base =
+      routesListDate === "all"
+        ? routesState
+        : routesState.filter((r) => (r.route_day || r.route_date) === routesListDate);
     return base.slice().sort((a, b) => {
       const oa = a.route_order ?? Number.POSITIVE_INFINITY;
       const ob = b.route_order ?? Number.POSITIVE_INFINITY;
       if (oa !== ob) return oa - ob;
       return String(a.departure_time || "").localeCompare(String(b.departure_time || ""));
     });
-  }, [routesState, selectedDate]);
+  }, [routesState, routesListDate]);
 
   const filteredRouteKeys = useMemo(() => routesForList.map((r) => tripMapRouteKey(r)), [routesForList]);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
-      if (selectedDate === "all") return;
+      if (routesListDate === "all") return;
       const { active, over } = event;
       if (!over) return;
       if (active.id === over.id) return;
@@ -1475,7 +1497,7 @@ export default function TripMapView({
         )
       );
     },
-    [filteredRouteKeys, selectedDate]
+    [filteredRouteKeys, routesListDate]
   );
 
   function SortableRouteRow({ route }: { route: TripMapRoute }) {
@@ -2196,12 +2218,9 @@ export default function TripMapView({
                 <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
                   <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗺️</div>
                   <p className="text-sm font-bold text-slate-800">Sin rutas todavía</p>
-                  <p className="mt-1 text-xs text-slate-500">Crea una ruta manualmente o genera el recorrido completo con IA.</p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <span data-tour="map-ai-btn" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-bold text-white cursor-pointer hover:bg-[var(--brand-hover)] transition" onClick={() => document.querySelector<HTMLButtonElement>("[data-action=new-route]")?.click()}>
-                      ✦ Generar con IA
-                    </span>
-                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Crea una ruta manualmente con «Nueva ruta» o usa el bloque superior «Crear rutas automáticamente».
+                  </p>
                 </div>
               )}
             </div>
@@ -2298,6 +2317,24 @@ export default function TripMapView({
 
           <div className="grid gap-2 px-4 py-4">
             <label className="text-xs font-semibold text-slate-700">
+              Día
+              <select
+                value={routesListDate}
+                onChange={(e) => {
+                  setRoutesListDate(e.target.value);
+                  setShowRoutesList(true);
+                  setFocusedRouteKey(null);
+                }}
+                className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
+              >
+                {dateOptions.map((d) => (
+                  <option key={`routes-list-${d}`} value={d}>
+                    {d === "all" ? "Todos los días" : d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-slate-700">
               Buscar ruta
               <input
                 value={routeQuery}
@@ -2306,8 +2343,12 @@ export default function TripMapView({
                 placeholder="Filtrar por nombre…"
               />
             </label>
-            {selectedDate !== "all" && !routesBulkMode ? (
-              <div className="text-[11px] text-slate-500">Puedes reordenar rutas de este día arrastrando.</div>
+            {routesListDate !== "all" && routesForList.length > 0 ? (
+              <div className="text-[11px] text-slate-500">
+                {routesForList.length} ruta{routesForList.length === 1 ? "" : "s"} el {routesListDate}. Puedes reordenarlas arrastrando.
+              </div>
+            ) : routesListDate !== "all" && !routesForList.length ? (
+              <div className="text-[11px] text-slate-500">No hay rutas guardadas para este día.</div>
             ) : routesBulkMode ? (
               <div className="text-[11px] text-slate-500">Toca el círculo o la fila para marcar rutas; luego pulsa Eliminar.</div>
             ) : null}
@@ -2315,7 +2356,7 @@ export default function TripMapView({
 
           {showRoutesList ? (
           <div data-tour="map-routes-list-panel" className="space-y-3 px-4 pb-4">
-            {selectedDate !== "all" && !routesBulkMode ? (
+            {routesListDate !== "all" && !routesBulkMode ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filteredRouteKeys} strategy={verticalListSortingStrategy}>
                   <div className="space-y-2">
@@ -2408,6 +2449,10 @@ export default function TripMapView({
                             title="Enfocar/mostrar en el mapa"
                           >
                             <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className="inline-block h-3 w-3 shrink-0 rounded-full border border-white shadow-sm"
+                                style={{ backgroundColor: r.color || "#6366f1" }}
+                              />
                               <div className="text-sm font-semibold text-slate-950 line-clamp-1">{title}</div>
                               {r.source === "legacy_routes" ? (
                                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-amber-800">

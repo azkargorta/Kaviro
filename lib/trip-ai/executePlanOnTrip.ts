@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
 import { insertTripRouteRow } from "@/lib/server/trip-routes-insert";
+import { pickRouteColorByIndex } from "@/lib/route-colors";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 import { fetchProjectOsrmRoute } from "@/lib/osrm/projectOsrmRoute";
 import {
@@ -448,7 +449,8 @@ export async function executePlanOnTrip(params: {
       if (routePairs.length >= ROUTE_CALL_LIMIT) break;
     }
 
-    const routeInsertResults = await runWithConcurrency(routePairs, 4, async ({ a, b }) => {
+    const routeJobs = routePairs.map((pair, idx) => ({ ...pair, color: pickRouteColorByIndex(idx) }));
+    const routeInsertResults = await runWithConcurrency(routeJobs, 4, async ({ a, b, color }) => {
       const route = await fetchProjectOsrmRoute({
         origin: { lat: a.latitude!, lng: a.longitude! },
         destination: { lat: b.latitude!, lng: b.longitude! },
@@ -488,7 +490,7 @@ export async function executePlanOnTrip(params: {
           .filter(Boolean)
           .join(" ")
           .trim() || null,
-        color: null,
+        color,
         origin_name: a.title,
         origin_address: a.addressLabel,
         origin_latitude: a.latitude,

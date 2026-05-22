@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { forbidUnlessCanManageMap, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { fetchProjectOsrmRoute, type OsrmProfile } from "@/lib/osrm/projectOsrmRoute";
+import { pickRouteColorByIndex } from "@/lib/route-colors";
 
 type DraftTravelMode = "DRIVING" | "WALKING" | "BICYCLING";
 
@@ -200,6 +201,7 @@ export async function POST(request: Request) {
           distance_text,
           duration_text,
           notes: null,
+          color: pickRouteColorByIndex(draftRoutes.length),
         });
       }
     }
