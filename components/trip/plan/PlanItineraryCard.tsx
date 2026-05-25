@@ -33,35 +33,36 @@ export default function PlanItineraryCard({
   const overflow = participants.length - shown.length;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-      <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            {destLabel ? (
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70">{destLabel}</p>
-            ) : null}
-            <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
-          </div>
-          {shown.length ? (
-            <div className="flex shrink-0 -space-x-1.5">
-              {shown.map((name) => (
-                <div
-                  key={name}
-                  title={name}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white"
-                >
-                  {planParticipantInitials(name)}
-                </div>
-              ))}
-              {overflow > 0 ? (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white">
-                  +{overflow}
-                </div>
+    <div className="relative">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              {destLabel ? (
+                <p className="text-xs font-bold uppercase tracking-widest text-white/70">{destLabel}</p>
               ) : null}
+              <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
             </div>
-          ) : null}
+            {shown.length ? (
+              <div className="flex shrink-0 -space-x-1.5">
+                {shown.map((name) => (
+                  <div
+                    key={name}
+                    title={name}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white"
+                  >
+                    {planParticipantInitials(name)}
+                  </div>
+                ))}
+                {overflow > 0 ? (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white">
+                    +{overflow}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
 
       {days.length > 0 ? (
         <div
@@ -105,9 +106,10 @@ export default function PlanItineraryCard({
           </Link>
         </div>
       )}
+      </div>
 
       {aiSuggest ? (
-        <div className="pointer-events-none absolute bottom-14 right-3 z-10 max-w-[calc(100%-1.5rem)] sm:bottom-[4.25rem] sm:right-4">
+        <div className="pointer-events-none absolute bottom-14 right-3 z-20 max-w-[calc(100%-1.5rem)] sm:bottom-[4.25rem] sm:right-4">
           <div className="pointer-events-auto flex justify-end">{aiSuggest}</div>
         </div>
       ) : null}

@@ -48,6 +48,9 @@ function writeCache(key: string, data: SuggestCache) {
   }
 }
 
+const badgeShellClass =
+  "w-[min(17rem,calc(100vw-2.5rem))] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]";
+
 export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDate, onOpenAssistant }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [noMore, setNoMore] = useState(false);
@@ -172,13 +175,13 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
         <button
           type="button"
           onClick={() => setShowUpsell(true)}
-          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-xl transition hover:border-[#F87171]/40 dark:border-[#1E293B] dark:bg-[#0F1623]"
+          className={`${badgeShellClass} transition hover:border-[#F87171]/40`}
         >
           <p className="flex items-center gap-1 text-xs font-bold text-slate-900 dark:text-white">
             <Sparkles className="h-3.5 w-3.5 text-[#F87171]" aria-hidden />
             IA sugiere
           </p>
-          <p className="mt-0.5 max-w-[11rem] text-[10px] text-slate-500 dark:text-slate-400">Desbloquea sugerencias inteligentes con Premium</p>
+          <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Desbloquea sugerencias inteligentes con Premium</p>
         </button>
         {showUpsell ? (
           <div className="absolute bottom-full right-0 z-20 mb-2 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
@@ -211,13 +214,13 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
         type="button"
         onClick={() => void handleReveal()}
         disabled={loading}
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-xl transition hover:border-[#F87171]/40 disabled:opacity-70 dark:border-[#1E293B] dark:bg-[#0F1623]"
+        className={`${badgeShellClass} transition hover:border-[#F87171]/40 disabled:opacity-70`}
       >
         <p className="flex items-center gap-1 text-xs font-bold text-slate-900 dark:text-white">
           <Sparkles className="h-3.5 w-3.5 text-[#F87171]" aria-hidden />
           IA sugiere
         </p>
-        <p className="mt-0.5 max-w-[11rem] text-[10px] text-slate-500 dark:text-slate-400">
+        <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
           {loading ? "Analizando tu plan…" : "Pulsa para ver una sugerencia"}
         </p>
       </button>
@@ -226,7 +229,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
 
   if (loading && !currentSuggestion) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div className={badgeShellClass}>
         <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
         <p className="mt-0.5 text-[10px] text-slate-400">Analizando tu plan…</p>
       </div>
@@ -238,18 +241,23 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
   const nextDisabled = loadingNext || noMore || nextRemaining <= 0;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className={badgeShellClass}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-          <p className="mt-0.5 max-w-[12rem] text-[10px] leading-snug text-slate-500 dark:text-slate-400">{currentSuggestion}</p>
+          <p
+            className="mt-0.5 break-words text-[11px] leading-snug text-slate-600 dark:text-slate-300"
+            title={currentSuggestion}
+          >
+            {currentSuggestion}
+          </p>
           {noMore ? (
-            <p className="mt-1.5 max-w-[12rem] text-[10px] font-semibold leading-snug text-amber-600 dark:text-amber-400">
+            <p className="mt-1.5 break-words text-[10px] font-semibold leading-snug text-amber-600 dark:text-amber-400">
               No se encuentran nuevas propuestas.
             </p>
           ) : null}
           {rateLimitMessage ? (
-            <p className="mt-1.5 max-w-[12rem] text-[10px] font-semibold leading-snug text-amber-600 dark:text-amber-400">
+            <p className="mt-1.5 break-words text-[10px] font-semibold leading-snug text-amber-600 dark:text-amber-400">
               {rateLimitMessage}
             </p>
           ) : null}

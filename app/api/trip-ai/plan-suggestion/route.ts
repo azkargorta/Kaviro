@@ -26,7 +26,8 @@ function cleanSuggestion(raw: string): string | null {
     .trim();
   if (!text || text.length < 8) return null;
   if (/^(null|ninguna|nada|ok|está bien)/i.test(text)) return null;
-  return text.length > 120 ? `${text.slice(0, 117)}…` : text;
+  if (/^considera\s+(añadir|agregar|reservar|programar|planificar)\s*$/i.test(text)) return null;
+  return text.length > 140 ? `${text.slice(0, 137)}…` : text;
 }
 
 export async function POST(req: Request) {
@@ -114,8 +115,8 @@ export async function POST(req: Request) {
 
 ${dayHint}
 ${excludeHint}
-Responde con UNA sola frase corta y accionable en español (máximo 15 palabras), como sugerencia para mejorar el itinerario.
-Ejemplos: "Añadir traslado al aeropuerto", "Reservar comida entre museo y parque".
+Responde con UNA sola frase corta y accionable en español (máximo 15 palabras), en modo imperativo y completa (p. ej. «Añadir comida entre museo y parque», «Reservar traslado al aeropuerto»).
+No uses fórmulas incompletas como «Considera añadir» sin concretar qué.
 Si no hay ninguna mejora razonable${exclude.length > 0 ? " distinta de las ya listadas" : ""}, responde exactamente: null`;
 
     const { text, usage } = await askTripAIWithUsage(prompt, "general", {
