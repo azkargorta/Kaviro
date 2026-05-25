@@ -107,7 +107,7 @@ export async function POST(req: Request) {
 
     const optimizerHint =
       effectiveMode === "optimizer"
-        ? "\nDebes proponer mejoras concretas del viaje, huecos, conflictos, y una mini hoja de ruta priorizada."
+        ? "\nDebes proponer mejoras concretas del viaje (uno o varios días): huecos, comidas, traslados, conflictos y un diff único aplicable."
         : "";
 
     const travelDocsHint =

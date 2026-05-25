@@ -40,11 +40,14 @@ export default function PlanItineraryCard({
     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {destLabel ? (
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70">{destLabel}</p>
-            ) : null}
-            <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <div className="min-w-0 flex-1">
+              {destLabel ? (
+                <p className="text-xs font-bold uppercase tracking-widest text-white/70">{destLabel}</p>
+              ) : null}
+              <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
+            </div>
+            {aiSuggest ? <div className="flex shrink-0 items-center self-center">{aiSuggest}</div> : null}
           </div>
           {shown.length ? (
             <div className="flex shrink-0 -space-x-1.5">
@@ -65,7 +68,6 @@ export default function PlanItineraryCard({
             </div>
           ) : null}
         </div>
-        {aiSuggest ? <div className="mt-3 flex justify-end">{aiSuggest}</div> : null}
       </div>
 
       {days.length > 0 ? (

@@ -11,7 +11,6 @@ import PlanExpenseFooter from "@/components/trip/plan/PlanExpenseFooter";
 import PlanActivityDetailSheet from "@/components/trip/plan/PlanActivityDetailSheet";
 import PlanAiSuggestBadge from "@/components/trip/plan/PlanAiSuggestBadge";
 import { isLodgingPlanActivity } from "@/lib/plan-activity-meta";
-import { buildPlanSuggestionChatPrompt, dispatchTripAssistantOpen } from "@/lib/trip-assistant-events";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";;
@@ -1298,14 +1297,8 @@ export default function TripPlanView({
             <PlanAiSuggestBadge
               tripId={tripId}
               premiumEnabled={premiumEnabled}
+              tripName={trip?.name}
               selectedDate={selectedDate}
-              onOpenAssistant={(suggestionText) => {
-                dispatchTripAssistantOpen({
-                  tripId,
-                  initialMessage: buildPlanSuggestionChatPrompt(suggestionText, selectedDate),
-                  mode: "optimizer",
-                });
-              }}
             />
           }
         >

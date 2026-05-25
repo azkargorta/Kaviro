@@ -134,9 +134,11 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         "- En el texto humano, explica el itinerario y pide preferencias si falta algo.",
       ].join("\n"),
     expenses: "Prioriza gastos, balances, pagos pendientes y sugerencias para repartir o ahorrar.",
-    optimizer: ["Actúa como optimizador del viaje: huecos, conflictos, traslados y mejoras prácticas.", TRIPBOARD_DIFF_BLOCK].join(
-      "\n"
-    ),
+    optimizer: [
+      "Actúa como optimizador del viaje: huecos, conflictos, traslados entre ciudades, comidas faltantes y mejoras prácticas en uno o varios días.",
+      "Si revisas más de un día, agrupa el análisis por fecha y devuelve un único TRIPBOARD_DIFF con todas las operaciones propuestas.",
+      TRIPBOARD_DIFF_BLOCK,
+    ].join("\n"),
     actions: [
       "Modo acciones: cambios puntuales al plan (añadir, modificar o quitar actividades/rutas).",
       "Explica con claridad qué harás y qué verá el usuario en el plan.",

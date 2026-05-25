@@ -11,6 +11,8 @@ import {
   buildPlanSuggestionRetryPrompt,
   cleanPlanSuggestion,
   fallbackPlanSuggestionFromGaps,
+  isDuplicatePlanSuggestion,
+  loadAdjacentPlanDayActivities,
   loadPlanDayActivities,
 } from "@/lib/plan-suggestion-context";
 import {
@@ -67,11 +69,11 @@ async function generateSuggestion(params: {
 }): Promise<{ suggestion: string | null; usage: TripAiUsage }> {
   const [tripSummary, dayContext] = await Promise.all([
     buildTripSummaryForAi(params.tripId),
-    buildPlanDayContextForSuggestion(params.tripId, params.focusDate),
+    buildPlanDayContextForSuggestion(params.tripId, params.focusDate, params.exclude),
   ]);
 
   const prompt = params.retry
-    ? buildPlanSuggestionRetryPrompt({ tripSummary, dayContext })
+    ? buildPlanSuggestionRetryPrompt({ tripSummary, dayContext, exclude: params.exclude })
     : buildPlanSuggestionPrompt({ tripSummary, dayContext, exclude: params.exclude });
 
   const { text, usage } = await askTripAIWithUsage(prompt, "general", {
@@ -174,16 +176,30 @@ export async function POST(req: Request) {
     suggestion = first.suggestion;
     usageTotal = first.usage;
 
-    if (!suggestion && exclude.length === 0) {
+    if (suggestion && isDuplicatePlanSuggestion(suggestion, exclude)) {
+      suggestion = null;
+    }
+
+    if (!suggestion) {
       const second = await generateSuggestion({ tripId, focusDate, exclude, retry: true });
       suggestion = second.suggestion;
-      usageTotal = mergeUsage(first.usage, second.usage);
+      usageTotal = usageTotal ? mergeUsage(usageTotal, second.usage) : second.usage;
+      if (suggestion && isDuplicatePlanSuggestion(suggestion, exclude)) {
+        suggestion = null;
+      }
     }
 
     let reason: "found" | "none" | "heuristic" = suggestion ? "found" : "none";
-    if (!suggestion && exclude.length === 0) {
-      const acts = await loadPlanDayActivities(tripId, focusDate);
-      const fallback = fallbackPlanSuggestionFromGaps(acts);
+    if (!suggestion) {
+      const [acts, adjacent] = await Promise.all([
+        loadPlanDayActivities(tripId, focusDate),
+        loadAdjacentPlanDayActivities(tripId, focusDate),
+      ]);
+      const fallback = fallbackPlanSuggestionFromGaps(acts, exclude, {
+        date: focusDate,
+        prevDayActivities: adjacent.prev,
+        nextDayActivities: adjacent.next,
+      });
       if (fallback) {
         suggestion = fallback;
         reason = "heuristic";
