@@ -23,16 +23,23 @@ function isInternalNavLink(a: HTMLAnchorElement) {
   }
 }
 
+/** Solo mostrar overlay si la navegación tarda más de este umbral (evita flash en cambios rápidos). */
+const SHOW_DELAY_MS = 160;
+/** Tiempo mínimo visible una vez mostrado (evita parpadeo). */
+const MIN_VISIBLE_MS = 140;
+
 /**
- * Mantiene la pantalla de carga un instante más tras la navegación para evitar el flash en blanco
- * entre el fallback de Next (`app/loading.tsx`) y el paint de la página destino.
+ * Overlay de carga solo en navegaciones lentas.
+ * Las rutas con loading.tsx propio muestran skeleton sin bloquear toda la pantalla.
  */
 export default function GlobalRouteLoading() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shownAtRef = useRef(0);
   const pathnameRef = useRef(pathname);
+  const visibleRef = useRef(false);
 
   function clearHideTimer() {
     if (hideTimerRef.current) {
@@ -41,23 +48,37 @@ export default function GlobalRouteLoading() {
     }
   }
 
-  function show() {
-    clearHideTimer();
-    shownAtRef.current = Date.now();
-    setVisible(true);
+  function clearShowTimer() {
+    if (showTimerRef.current) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
+  }
+
+  function setVisibleState(next: boolean) {
+    visibleRef.current = next;
+    setVisible(next);
+  }
+
+  function scheduleShow() {
+    clearShowTimer();
+    showTimerRef.current = setTimeout(() => {
+      shownAtRef.current = Date.now();
+      setVisibleState(true);
+    }, SHOW_DELAY_MS);
   }
 
   function scheduleHide() {
+    clearShowTimer();
+    if (!visibleRef.current) return;
+
     clearHideTimer();
     const elapsed = Date.now() - shownAtRef.current;
-    const minVisible = 280;
-    const wait = Math.max(0, minVisible - elapsed);
+    const wait = Math.max(0, MIN_VISIBLE_MS - elapsed);
 
     hideTimerRef.current = setTimeout(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setVisible(false);
-        });
+        setVisibleState(false);
       });
     }, wait);
   }
@@ -67,7 +88,7 @@ export default function GlobalRouteLoading() {
       if (isModifiedClick(e)) return;
       const a = (e.target as HTMLElement | null)?.closest("a");
       if (!a || !isInternalNavLink(a)) return;
-      show();
+      scheduleShow();
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
@@ -76,13 +97,17 @@ export default function GlobalRouteLoading() {
   useEffect(() => {
     if (pathnameRef.current === pathname) return;
     pathnameRef.current = pathname;
-    if (!visible) show();
     scheduleHide();
     return clearHideTimer;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- visible solo para no re-disparar al montar
   }, [pathname]);
 
-  useEffect(() => () => clearHideTimer(), []);
+  useEffect(
+    () => () => {
+      clearHideTimer();
+      clearShowTimer();
+    },
+    []
+  );
 
   if (!visible) return null;
 

@@ -11,6 +11,7 @@ import DemoTripBanner from "@/components/trip/DemoTripBanner";
 import TripHeroCard from "@/components/trip/common/TripHeroCard";
 import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
 import TripOfflineSync from "@/components/pwa/TripOfflineSync";
+import LoggedInRoutePrefetch from "@/components/layout/LoggedInRoutePrefetch";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -59,6 +60,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
   return (
     <TripBoardHeaderProvider>
       <TripDemoProvider isDemo={isDemo}>
+        <LoggedInRoutePrefetch />
         <TripOfflineSync tripId={params.id} />
         <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">

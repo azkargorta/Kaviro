@@ -7,6 +7,7 @@ import KaviroLogo from "@/components/brand/KaviroLogo";
 import { PremiumBadge } from "@/components/layout/PremiumBadge";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import LoggedInHeaderActions from "@/components/layout/LoggedInHeaderActions";
+import LoggedInRoutePrefetch from "@/components/layout/LoggedInRoutePrefetch";
 
 const LOGGED_IN_SHELL_PREFIXES = [
   "/dashboard",
@@ -59,7 +60,12 @@ export default function RootTopBar() {
           <div className="flex items-center gap-2">
             <PremiumBadge />
             <DarkModeToggle heroMode />
-            {session === "user" ? <LoggedInHeaderActions heroMode /> : null}
+            {session === "user" ? (
+              <>
+                <LoggedInRoutePrefetch />
+                <LoggedInHeaderActions heroMode />
+              </>
+            ) : null}
           </div>
         </div>
       </div>

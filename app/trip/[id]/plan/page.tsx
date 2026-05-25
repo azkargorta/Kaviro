@@ -35,21 +35,19 @@ export default async function TripPlanPage({
         : "";
   const initialSelectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
 
-  const [{ data: tripNoteRow }, { data: profileRow }, { data: tripRow }, { data: activityRows }] =
-    await Promise.all([
-      supabase.from("trips").select("description").eq("id", params.id).maybeSingle(),
-      supabase.from("profiles").select("display_name").eq("id", access.userId).maybeSingle(),
-      supabase.from("trips").select("id, name, destination").eq("id", params.id).maybeSingle(),
-      supabase
-        .from("trip_activities")
-        .select("*")
-        .eq("trip_id", params.id)
-        .order("activity_date", { ascending: true })
-        .order("activity_time", { ascending: true })
-        .order("created_at", { ascending: true }),
-    ]);
+  const [{ data: tripRow }, { data: profileRow }, { data: activityRows }] = await Promise.all([
+    supabase.from("trips").select("id, name, destination, description").eq("id", params.id).maybeSingle(),
+    supabase.from("profiles").select("display_name").eq("id", access.userId).maybeSingle(),
+    supabase
+      .from("trip_activities")
+      .select("*")
+      .eq("trip_id", params.id)
+      .order("activity_date", { ascending: true })
+      .order("activity_time", { ascending: true })
+      .order("created_at", { ascending: true }),
+  ]);
 
-  const rawDesc = (tripNoteRow as { description?: string | null } | null)?.description;
+  const rawDesc = (tripRow as { description?: string | null } | null)?.description;
   const tripDescription = typeof rawDesc === "string" ? rawDesc : null;
   const currentDisplayName =
     (profileRow as { display_name?: string | null } | null)?.display_name?.trim() || "Yo";

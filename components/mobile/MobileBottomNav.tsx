@@ -102,6 +102,7 @@ export default function MobileBottomNav({
                 <Link
                   key={item.key}
                   href={href}
+                  prefetch
                   onClick={() => setSheetOpen(false)}
                   className={`flex items-center gap-3 rounded-2xl border p-4 transition ${
                     active
@@ -148,6 +149,7 @@ export default function MobileBottomNav({
                 <Link
                   key={item.key}
                   href={href}
+                  prefetch
                   className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] transition-all duration-150 ${
                     active ? "text-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-500"
                   }`}

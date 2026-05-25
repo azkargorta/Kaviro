@@ -19,7 +19,6 @@ import DashboardOfflineRegistry, {
 import {
   ensureDemoTripForUser,
   isFirstDemoOnboardingVisit,
-  readDemoOnboardingProfile,
 } from "@/lib/onboarding/createDemoTrip";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
@@ -109,9 +108,27 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
+  const [{ data: profileRow }, { data: participantRows, error: participantsError }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_premium, demo_trip_id, demo_onboarding_completed_at, demo_onboarding_skipped_at")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase.from("trip_participants").select("trip_id, is_favorite").eq("user_id", user.id),
+  ]);
+
+  const existingDemoProfile = profileRow
+    ? {
+        demo_trip_id: (profileRow as { demo_trip_id?: string | null }).demo_trip_id ?? null,
+        demo_onboarding_completed_at:
+          (profileRow as { demo_onboarding_completed_at?: string | null }).demo_onboarding_completed_at ?? null,
+        demo_onboarding_skipped_at:
+          (profileRow as { demo_onboarding_skipped_at?: string | null }).demo_onboarding_skipped_at ?? null,
+      }
+    : null;
+
   let demoTripId: string | null = null;
   let isFirstOnboardingVisit = true;
-  const existingDemoProfile = await readDemoOnboardingProfile(user.id);
   if (existingDemoProfile?.demo_trip_id) {
     demoTripId = existingDemoProfile.demo_trip_id;
     isFirstOnboardingVisit = isFirstDemoOnboardingVisit(existingDemoProfile);
@@ -125,17 +142,7 @@ export default async function DashboardPage() {
     }
   }
 
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("is_premium")
-    .eq("id", user.id)
-    .maybeSingle();
   const isPremium = Boolean((profileRow as { is_premium?: boolean } | null)?.is_premium);
-
-  const { data: participantRows, error: participantsError } = await supabase
-    .from("trip_participants")
-    .select("trip_id, is_favorite")
-    .eq("user_id", user.id);
 
   if (participantsError) {
     console.error("Error cargando participaciones del usuario:", participantsError);
