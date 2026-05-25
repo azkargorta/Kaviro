@@ -19,7 +19,8 @@ export function buildPlanSuggestionChatPrompt(suggestion: string, selectedDate?:
   const dayPart = selectedDate ? ` para el día ${selectedDate}` : "";
   return (
     `He recibido esta sugerencia sobre el plan${dayPart}: «${suggestion}»\n\n` +
-    `Ayúdame a llevarla a cabo: proponme los cambios concretos en el plan (añadir, modificar o eliminar actividades) ` +
-    `y devuélvelos en formato aplicable para usar «Aplicar cambios» cuando proceda.`
+    `Ayúdame a llevarla a cabo: proponme los cambios concretos en el plan (añadir, modificar o eliminar actividades).\n` +
+    `Si es comida o cafetería, incluye un local concreto (nombre + zona + ciudad) cerca de las actividades de ese día, no solo «Desayuno» genérico.\n` +
+    `Explícamelo en texto claro y prepara los cambios para el botón «Aplicar cambios».`
   );
 }

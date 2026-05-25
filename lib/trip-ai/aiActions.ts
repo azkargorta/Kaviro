@@ -147,7 +147,7 @@ export function tripAiModeForAction(aiAction: AIActionId): TripAiMode {
     case "optimize_route":
       return "optimizer";
     case "add_activity":
-      return "actions";
+      return "optimizer";
     case "adjust_budget":
       return "expenses";
     case "parse_booking":

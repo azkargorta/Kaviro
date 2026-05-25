@@ -1303,7 +1303,7 @@ export default function TripPlanView({
                 dispatchTripAssistantOpen({
                   tripId,
                   initialMessage: buildPlanSuggestionChatPrompt(suggestionText, selectedDate),
-                  mode: "actions",
+                  mode: "optimizer",
                 });
               }}
             />

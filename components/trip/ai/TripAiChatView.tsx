@@ -139,7 +139,7 @@ function getManualModeWelcome(next: TripAiMode): string {
     case "optimizer":
       return "Modo **optimizador**. Pide huecos en el plan, orden geográfico del día o ideas para aprovechar mejor el tiempo y las rutas.";
     case "actions":
-      return "Modo **acciones**. Pide cambios concretos en actividades o rutas; si el asistente devuelve el bloque adecuado, podrás usar **«Aplicar cambios»**.";
+      return "Modo **acciones** para cambios puntuales en el plan. Te explico qué propongo en lenguaje claro; si hay cambios aplicables, usa **«Aplicar cambios»** (sin JSON visible en el chat).";
     case "search":
       return SEARCH_FOCUS_WELCOME;
     default:
@@ -398,6 +398,7 @@ function stripTripboardJsonBlocksForDisplay(content: string | null | undefined):
       out = out.slice(0, a) + replacement + out.slice(b + end.length);
     }
   }
+  out = out.replace(/```(?:json)?\s*[\s\S]*?```/gi, "\n\n— Detalle técnico (revisa el panel de acción arriba) —\n\n");
   return out.replace(/\n{3,}/g, "\n\n").trim();
 }
 

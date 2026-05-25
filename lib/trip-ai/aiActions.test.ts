@@ -76,4 +76,8 @@ describe("resolveEffectiveTripAiMode", () => {
   it("tripAiModeForAction enlaza generate_trip → planning", () => {
     expect(tripAiModeForAction("generate_trip")).toBe("planning");
   });
+
+  it("tripAiModeForAction enlaza add_activity → optimizer (diff aplicable)", () => {
+    expect(tripAiModeForAction("add_activity")).toBe("optimizer");
+  });
 });
