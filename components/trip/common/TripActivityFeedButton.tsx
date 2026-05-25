@@ -134,6 +134,19 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
     }
   }, []);
 
+  const loadActivityLogs = useCallback(async () => {
+    try {
+      const resp = await fetch(`/api/trip-audit?tripId=${encodeURIComponent(tripId)}&limit=40`, {
+        cache: "no-store",
+      });
+      const payload = await resp.json().catch(() => null);
+      if (!resp.ok) return;
+      setLogs(Array.isArray(payload?.logs) ? (payload.logs as AuditLog[]) : []);
+    } catch {
+      /* badge en silencio si falla */
+    }
+  }, [tripId]);
+
   const unseenActivityCount = useMemo(() => {
     if (!logs.length) return 0;
     if (!lastSeenAt) return logs.length;
@@ -180,8 +193,17 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
   }, [mounted, tripId]);
 
   useEffect(() => {
+    if (!mounted) return;
     void loadNotifications();
-    const intervalId = window.setInterval(() => void loadNotifications(), 30_000);
+    void loadActivityLogs();
+    const intervalId = window.setInterval(() => {
+      void loadNotifications();
+      void loadActivityLogs();
+    }, 30_000);
+    const onFocus = () => {
+      void loadNotifications();
+      void loadActivityLogs();
+    };
     const onChanged = (event: Event) => {
       const detail = (event as CustomEvent<{ unreadCount?: number; notificationId?: string }>).detail;
       if (typeof detail?.unreadCount === "number") {
@@ -203,12 +225,14 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
         void loadNotifications();
       }
     };
+    window.addEventListener("focus", onFocus);
     window.addEventListener(USER_NOTIFICATIONS_CHANGED_EVENT, onChanged as EventListener);
     return () => {
       window.clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
       window.removeEventListener(USER_NOTIFICATIONS_CHANGED_EVENT, onChanged as EventListener);
     };
-  }, [loadNotifications]);
+  }, [mounted, loadNotifications, loadActivityLogs]);
 
   useEffect(() => {
     if (!open) return;
@@ -217,14 +241,8 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
       setLoading(true);
       setError(null);
       try {
-        const [auditRes] = await Promise.all([
-          fetch(`/api/trip-audit?tripId=${encodeURIComponent(tripId)}&limit=40`, { cache: "no-store" }),
-          loadNotifications(),
-        ]);
-        const payload = await auditRes.json().catch(() => null);
-        if (!auditRes.ok) throw new Error(payload?.error || "No se pudo cargar novedades.");
-        const next = Array.isArray(payload?.logs) ? (payload.logs as AuditLog[]) : [];
-        if (!cancelled) setLogs(next);
+        await Promise.all([loadActivityLogs(), loadNotifications()]);
+        if (cancelled) return;
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "No se pudo cargar novedades.");
       } finally {
@@ -235,7 +253,7 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
     return () => {
       cancelled = true;
     };
-  }, [open, tripId, loadNotifications]);
+  }, [open, loadActivityLogs, loadNotifications]);
 
   function markActivitySeen(log: AuditLog) {
     const seenAt = log.created_at;
@@ -330,12 +348,22 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
   }
 
   const buttonClass = heroMode
-    ? "relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white transition hover:bg-white/30"
-    : "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm transition hover:bg-[var(--surface-page)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
+    ? "relative overflow-visible inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white transition hover:bg-white/30"
+    : "relative overflow-visible inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm transition hover:bg-[var(--surface-page)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]";
 
   const iconTile = heroMode
     ? `relative inline-flex h-5 w-5 items-center justify-center text-white ${iconSlotFill40}`
     : `relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700/60 dark:bg-slate-950/40 dark:text-slate-50 ${iconSlotFill40}`;
+
+  const badge =
+    pendingCount > 0 ? (
+      <span
+        className="pointer-events-none absolute -right-1 -top-1 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold leading-none text-[#EF4444] shadow-md ring-2 ring-[#EF4444]/25 dark:bg-[#EF4444] dark:text-white dark:ring-white/40"
+        aria-hidden
+      >
+        {pendingCount > 9 ? "9+" : pendingCount}
+      </span>
+    ) : null;
 
   const pendingLabel =
     pendingCount === 0
@@ -531,16 +559,9 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
       >
         <span className={iconTile} aria-hidden>
           <Megaphone className={`h-5 w-5 ${heroMode ? "text-white" : "text-[var(--brand)]"}`} aria-hidden />
-          {pendingCount > 0 ? (
-            <span
-              className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#EF4444] ring-2 ring-[#EF4444]/30 dark:bg-[#EF4444] dark:text-white dark:ring-white/30"
-              aria-hidden
-            >
-              {pendingCount > 9 ? "9+" : pendingCount}
-            </span>
-          ) : null}
         </span>
         {!heroMode && <span>Novedades</span>}
+        {badge}
       </button>
       {modal ? createPortal(modal, document.body) : null}
     </>
