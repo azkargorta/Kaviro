@@ -547,7 +547,7 @@ export default function TripPlanView({
   const isEmpty = activities.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -1285,7 +1285,7 @@ export default function TripPlanView({
         </div>
       ) : null}
 
-      <div className="relative pb-6" data-tour="plan-day-sections">
+      <div className="max-w-full overflow-x-hidden" data-tour="plan-day-sections">
         <PlanItineraryCard
           destination={trip?.destination}
           tripName={trip?.name || "Viaje"}
@@ -1295,6 +1295,14 @@ export default function TripPlanView({
           onSelectDate={setSelectedDate}
           tripId={tripId}
           expenseFooter={<PlanExpenseFooter tripId={tripId} />}
+          aiSuggest={
+            <PlanAiSuggestBadge
+              tripId={tripId}
+              premiumEnabled={premiumEnabled}
+              selectedDate={selectedDate}
+              onOpenAssistant={() => router.push(`/trip/${encodeURIComponent(tripId)}/ai-chat`)}
+            />
+          }
         >
           {cardGrouped.length === 0 ? (
             selectedDate ? (
@@ -1392,20 +1400,13 @@ export default function TripPlanView({
               return (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                   <SortableContext items={ordered.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2 pl-1">{rows}</div>
+                    <div className="space-y-2 overflow-x-hidden pl-7 pr-0.5">{rows}</div>
                   </SortableContext>
                 </DndContext>
               );
             })()
           )}
         </PlanItineraryCard>
-
-        <PlanAiSuggestBadge
-          tripId={tripId}
-          premiumEnabled={premiumEnabled}
-          selectedDate={selectedDate}
-          onOpenAssistant={() => router.push(`/trip/${encodeURIComponent(tripId)}/ai-chat`)}
-        />
       </div>
 
       <PlanActivityDetailSheet

@@ -13,6 +13,7 @@ type Props = {
   tripId: string;
   children: React.ReactNode;
   expenseFooter?: React.ReactNode;
+  aiSuggest?: React.ReactNode;
 };
 
 export default function PlanItineraryCard({
@@ -25,13 +26,14 @@ export default function PlanItineraryCard({
   tripId,
   children,
   expenseFooter,
+  aiSuggest,
 }: Props) {
   const destLabel = formatPlanDestinationLabel(destination);
   const shown = participants.slice(0, 5);
   const overflow = participants.length - shown.length;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -103,6 +105,12 @@ export default function PlanItineraryCard({
           </Link>
         </div>
       )}
+
+      {aiSuggest ? (
+        <div className="pointer-events-none absolute bottom-14 right-3 z-10 max-w-[calc(100%-1.5rem)] sm:bottom-[4.25rem] sm:right-4">
+          <div className="pointer-events-auto flex justify-end">{aiSuggest}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

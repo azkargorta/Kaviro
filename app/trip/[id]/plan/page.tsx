@@ -74,7 +74,7 @@ export default async function TripPlanPage({
   };
 
   return (
-    <main className="space-y-8">
+    <main className="overflow-x-hidden space-y-8">
       <TripBoardPageHeader
         section="Plan del viaje"
         title="Plan"

@@ -169,7 +169,7 @@ export default function PublicLanding() {
             </div>
 
             {/* Right — UI preview */}
-            <div className="relative shadow-2xl">
+            <div className="relative overflow-hidden shadow-2xl">
               <PlanItineraryCard
                 destination="París, Francia"
                 tripName="Viaje a París 2026"
@@ -201,10 +201,11 @@ export default function PublicLanding() {
                 </div>
               </PlanItineraryCard>
 
-              {/* Floating badge */}
-              <div className="absolute -bottom-4 -right-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
-                <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-                <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Añadir traslado al aeropuerto</p>
+              <div className="absolute bottom-14 right-3 z-10 sm:bottom-16 sm:right-4">
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
+                  <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Añadir traslado al aeropuerto</p>
+                </div>
               </div>
             </div>
           </div>
