@@ -94,17 +94,21 @@ export async function askGemini(
     mode === "optimizer" ? 0.3 : mode === "travel_docs" ? 0.35 : mode === "planning" ? 0.35 : 0.5;
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const planningMax =
+  const explicitMax =
     typeof opts?.maxOutputTokens === "number" && Number.isFinite(opts.maxOutputTokens)
-      ? Math.max(256, Math.min(8192, Math.round(opts.maxOutputTokens)))
-      : 6144;
+      ? Math.max(16, Math.min(8192, Math.round(opts.maxOutputTokens)))
+      : null;
+  const planningMax = explicitMax ?? 6144;
 
   const model = genAI.getGenerativeModel({
     model: modelName,
     generationConfig: {
       temperature,
-      ...(mode === "planning"
-        ? { maxOutputTokens: planningMax, ...(opts?.responseMimeType ? { responseMimeType: opts.responseMimeType } : {}) }
+      ...(mode === "planning" || explicitMax != null
+        ? {
+            maxOutputTokens: explicitMax ?? planningMax,
+            ...(opts?.responseMimeType ? { responseMimeType: opts.responseMimeType } : {}),
+          }
         : {}),
     },
   });
@@ -139,17 +143,21 @@ export async function askGeminiWithUsage(
     const temperature =
       mode === "optimizer" ? 0.3 : mode === "travel_docs" ? 0.35 : mode === "planning" ? 0.35 : 0.5;
     const genAI = new GoogleGenerativeAI(apiKey);
-    const planningMax =
+    const explicitMax =
       typeof opts?.maxOutputTokens === "number" && Number.isFinite(opts.maxOutputTokens)
-        ? Math.max(256, Math.min(8192, Math.round(opts.maxOutputTokens)))
-        : 6144;
+        ? Math.max(16, Math.min(8192, Math.round(opts.maxOutputTokens)))
+        : null;
+    const planningMax = explicitMax ?? 6144;
 
     const model = genAI.getGenerativeModel({
       model: modelName,
       generationConfig: {
         temperature,
-        ...(mode === "planning"
-          ? { maxOutputTokens: planningMax, ...(opts?.responseMimeType ? { responseMimeType: opts.responseMimeType } : {}) }
+        ...(mode === "planning" || explicitMax != null
+          ? {
+              maxOutputTokens: explicitMax ?? planningMax,
+              ...(opts?.responseMimeType ? { responseMimeType: opts.responseMimeType } : {}),
+            }
           : {}),
       },
     });

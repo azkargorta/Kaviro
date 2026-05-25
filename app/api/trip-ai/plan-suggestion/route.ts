@@ -4,6 +4,14 @@ import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import {
+  consumePlanSuggestionNextSlot,
+  getCachedPlanSuggestion,
+  peekPlanSuggestionNextRemaining,
+  planSuggestionCacheKey,
+  setCachedPlanSuggestion,
+} from "@/lib/plan-suggestion-guard";
+import { PLAN_SUGGESTION_MAX_OUTPUT_TOKENS, PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR } from "@/lib/plan-suggestion-constants";
 import { requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
@@ -33,6 +41,7 @@ export async function POST(req: Request) {
           .filter(Boolean)
           .slice(0, 24)
       : [];
+    const isNextRequest = exclude.length > 0;
 
     if (!tripId) {
       return NextResponse.json({ error: "Falta el ID del viaje." }, { status: 400 });
@@ -63,6 +72,34 @@ export async function POST(req: Request) {
       );
     }
 
+    const cacheKey = planSuggestionCacheKey(tripId, date, exclude);
+    const cached = getCachedPlanSuggestion(cacheKey);
+    if (cached !== undefined) {
+      return NextResponse.json({
+        suggestion: cached,
+        date: date || null,
+        cached: true,
+        nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
+        nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
+      });
+    }
+
+    if (isNextRequest) {
+      const rate = consumePlanSuggestionNextSlot(userId, tripId);
+      if (!rate.allowed) {
+        return NextResponse.json(
+          {
+            error: `Has alcanzado el límite de sugerencias alternativas (${PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR} por hora en este viaje).`,
+            code: "PLAN_SUGGESTION_RATE_LIMIT",
+            nextRemaining: 0,
+            nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
+            retryAfterMs: rate.retryAfterMs,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const tripSummary = await buildTripSummaryForAi(tripId);
     const dayHint = date
       ? `Enfócate solo en el día ${date}: huecos horarios, traslados, comidas o mejoras concretas.`
@@ -81,7 +118,9 @@ Responde con UNA sola frase corta y accionable en español (máximo 15 palabras)
 Ejemplos: "Añadir traslado al aeropuerto", "Reservar comida entre museo y parque".
 Si no hay ninguna mejora razonable${exclude.length > 0 ? " distinta de las ya listadas" : ""}, responde exactamente: null`;
 
-    const { text, usage } = await askTripAIWithUsage(prompt, "general", {});
+    const { text, usage } = await askTripAIWithUsage(prompt, "general", {
+      maxOutputTokens: PLAN_SUGGESTION_MAX_OUTPUT_TOKENS,
+    });
     await trackAiUsage({
       supabase: gate.supabase,
       userId,
@@ -91,7 +130,15 @@ Si no hay ninguna mejora razonable${exclude.length > 0 ? " distinta de las ya li
     });
 
     const suggestion = cleanSuggestion(text || "");
-    return NextResponse.json({ suggestion, date: date || null });
+    setCachedPlanSuggestion(cacheKey, suggestion);
+
+    return NextResponse.json({
+      suggestion,
+      date: date || null,
+      cached: false,
+      nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
+      nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "No se pudo generar la sugerencia." },

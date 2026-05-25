@@ -16,11 +16,11 @@ describe("getMonthlyAiBudgetEur", () => {
     vi.stubEnv("AI_USER_MONTHLY_BUDGET_EUR", "12.5");
     expect(getMonthlyAiBudgetEur()).toBe(12.5);
   });
-  it("usa 9 por defecto si falta o es inválido", () => {
+  it("usa 2 por defecto si falta o es inválido", () => {
     vi.stubEnv("AI_USER_MONTHLY_BUDGET_EUR", "");
-    expect(getMonthlyAiBudgetEur()).toBe(9);
+    expect(getMonthlyAiBudgetEur()).toBe(2);
     vi.stubEnv("AI_USER_MONTHLY_BUDGET_EUR", "-1");
-    expect(getMonthlyAiBudgetEur()).toBe(9);
+    expect(getMonthlyAiBudgetEur()).toBe(2);
   });
 });
 
