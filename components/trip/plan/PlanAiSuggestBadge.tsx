@@ -59,6 +59,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
   const [loadingNext, setLoadingNext] = useState(false);
   const [nextRemaining, setNextRemaining] = useState(PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR);
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
 
@@ -70,6 +71,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
       const setBusy = mode === "initial" ? setLoading : setLoadingNext;
       setBusy(true);
       setRateLimitMessage(null);
+      if (mode === "initial") setFetchError(null);
       try {
         const res = await fetch("/api/trip-ai/plan-suggestion", {
           method: "POST",
@@ -95,7 +97,9 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
             );
             return false;
           }
-          throw new Error(payload?.error || "No disponible");
+          const message = payload?.error || "No se pudo obtener la sugerencia.";
+          if (mode === "initial") setFetchError(message);
+          throw new Error(message);
         }
 
         const text = typeof payload?.suggestion === "string" ? payload.suggestion.trim() : "";
@@ -111,6 +115,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
             return next;
           });
           setNoMore(false);
+          setFetchError(null);
           return true;
         }
 
@@ -121,12 +126,16 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
             noMore: true,
             nextRemaining: typeof payload?.nextRemaining === "number" ? payload.nextRemaining : nextRemaining,
           });
+        } else if (mode === "initial") {
+          setNoMore(true);
         }
 
         return false;
-      } catch {
+      } catch (err) {
         if (mode === "next") {
           setNoMore(true);
+        } else {
+          setFetchError(err instanceof Error ? err.message : "No se pudo obtener la sugerencia.");
         }
         return false;
       } finally {
@@ -143,6 +152,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
     setNoMore(false);
     setRevealed(false);
     setRateLimitMessage(null);
+    setFetchError(null);
     setNextRemaining(PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR);
 
     const cached = readCache(storageKey);
@@ -155,15 +165,25 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
   }, [tripId, premiumEnabled, selectedDate, dismissed, storageKey]);
 
   async function handleReveal() {
-    if (loading || revealed) return;
+    if (loading) return;
     setRevealed(true);
     if (suggestions.length > 0) return;
     await fetchSuggestion([], "initial");
   }
 
+  async function handleRetry() {
+    if (loading) return;
+    await fetchSuggestion([], "initial");
+  }
+
   async function handleNext() {
-    if (loadingNext || noMore || suggestions.length === 0 || nextRemaining <= 0) return;
-    const found = await fetchSuggestion(suggestions, "next");
+    if (loadingNext || noMore || nextRemaining <= 0) return;
+    const exclude = suggestions.length > 0 ? suggestions : currentSuggestion ? [currentSuggestion] : [];
+    if (exclude.length === 0) {
+      await handleRetry();
+      return;
+    }
+    const found = await fetchSuggestion(exclude, "next");
     if (!found && !rateLimitMessage) setNoMore(true);
   }
 
@@ -227,31 +247,32 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
     );
   }
 
-  if (loading && !currentSuggestion) {
-    return (
-      <div className={badgeShellClass}>
-        <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-        <p className="mt-0.5 text-[10px] text-slate-400">Analizando tu plan…</p>
-      </div>
-    );
-  }
-
-  if (!currentSuggestion) return null;
-
-  const nextDisabled = loadingNext || noMore || nextRemaining <= 0;
+  const nextDisabled = loadingNext || (Boolean(currentSuggestion) && (noMore || nextRemaining <= 0));
 
   return (
     <div className={badgeShellClass}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-          <p
-            className="mt-0.5 break-words text-[11px] leading-snug text-slate-600 dark:text-slate-300"
-            title={currentSuggestion}
-          >
-            {currentSuggestion}
-          </p>
-          {noMore ? (
+
+          {loading && !currentSuggestion ? (
+            <p className="mt-0.5 text-[10px] text-slate-400">Analizando tu plan…</p>
+          ) : currentSuggestion ? (
+            <p
+              className="mt-0.5 break-words text-[11px] leading-snug text-slate-600 dark:text-slate-300"
+              title={currentSuggestion}
+            >
+              {currentSuggestion}
+            </p>
+          ) : fetchError ? (
+            <p className="mt-0.5 break-words text-[10px] leading-snug text-rose-600 dark:text-rose-400">{fetchError}</p>
+          ) : (
+            <p className="mt-0.5 break-words text-[10px] leading-snug text-slate-500 dark:text-slate-400">
+              No se encontró ninguna sugerencia para este día. El plan puede estar bien equilibrado.
+            </p>
+          )}
+
+          {noMore && currentSuggestion ? (
             <p className="mt-1.5 break-words text-[10px] font-semibold leading-snug text-amber-600 dark:text-amber-400">
               No se encuentran nuevas propuestas.
             </p>
@@ -261,8 +282,9 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
               {rateLimitMessage}
             </p>
           ) : null}
+
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-            {onOpenAssistant ? (
+            {currentSuggestion && onOpenAssistant ? (
               <button
                 type="button"
                 onClick={() => onOpenAssistant(currentSuggestion)}
@@ -271,14 +293,25 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
                 Abrir asistente →
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => void handleNext()}
-              disabled={nextDisabled}
-              className="text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline dark:text-slate-400 dark:hover:text-slate-200"
-            >
-              {loadingNext ? "Buscando…" : "Siguiente →"}
-            </button>
+            {!loading && !currentSuggestion && !loadingNext ? (
+              <button
+                type="button"
+                onClick={() => void handleRetry()}
+                className="text-[10px] font-bold text-[#F87171] hover:underline"
+              >
+                Reintentar
+              </button>
+            ) : null}
+            {!loading || currentSuggestion ? (
+              <button
+                type="button"
+                onClick={() => void handleNext()}
+                disabled={nextDisabled || loadingNext}
+                className="text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                {loadingNext ? "Buscando…" : "Siguiente →"}
+              </button>
+            ) : null}
           </div>
           {nextRemaining < PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR && nextRemaining > 0 ? (
             <p className="mt-1 text-[9px] text-slate-400">{nextRemaining} alternativas restantes esta hora</p>
@@ -287,7 +320,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+          className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1E293B]"
           aria-label="Cerrar sugerencia"
         >
           <X className="h-3.5 w-3.5" />
