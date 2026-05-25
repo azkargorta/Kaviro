@@ -307,18 +307,25 @@ export default function AccountSettingsForm({ initial }: Props) {
           </p>
         </div>
 
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#334155] dark:bg-[#0F1623]">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Username actual</p>
+          <p className="mt-1 text-lg font-bold text-slate-950 dark:text-white">
+            {initial.username ? `@${initial.username}` : "Sin username"}
+          </p>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Email</span>
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Email</span>
             <input
               value={initial.email}
               disabled
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300"
             />
           </label>
 
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Username</span>
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Nuevo username</span>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}

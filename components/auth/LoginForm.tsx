@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signInWithEmail } from "@/lib/auth";
+import KaviroLoadingScreen from "@/components/brand/KaviroLoadingScreen";
+
+function welcomeLabel(username: string | null, email: string) {
+  if (username) return `@${username}`;
+  const local = email.split("@")[0]?.trim();
+  return local || "viajero";
+}
 
 export default function LoginForm() {
   const router = useRouter();
@@ -15,6 +22,7 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [welcomeName, setWelcomeName] = useState<string | null>(null);
 
   useEffect(() => {
     // PKCE: Supabase suele redirigir con ?code= y a menudo sin type= en la query.
@@ -49,13 +57,33 @@ export default function LoginForm() {
     try {
       setLoading(true);
       await signInWithEmail({ email, password });
+
+      const meRes = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
+      const me = (await meRes.json().catch(() => null)) as {
+        username?: string | null;
+        email?: string | null;
+      } | null;
+      const label = welcomeLabel(me?.username ?? null, me?.email || email);
+      setWelcomeName(label);
+
       const dest = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
-      window.location.assign(dest);
+      window.setTimeout(() => {
+        window.location.assign(dest);
+      }, 1800);
     } catch (err) {
+      setWelcomeName(null);
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
-    } finally {
       setLoading(false);
     }
+  }
+
+  if (welcomeName) {
+    return (
+      <KaviroLoadingScreen
+        fixed
+        subtitle={`¡Vamos a viajar, ${welcomeName}!`}
+      />
+    );
   }
 
   return (

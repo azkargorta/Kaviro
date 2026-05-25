@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
 import TravelMatesInvitePanel from "./TravelMatesInvitePanel";
+import UsernameInvitePanel from "./UsernameInvitePanel";
 import UserAvatar from "@/components/profile/UserAvatar";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripTabActions from "@/components/trip/common/TripTabActions";
@@ -775,6 +776,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               </p>
 
               <div className="mt-4">
+                <UsernameInvitePanel tripId={tripId} />
                 <TravelMatesInvitePanel tripId={tripId} />
               </div>
             </div>

@@ -5,6 +5,7 @@ import { forbidUnlessCanManageParticipants, requireTripAccessApi } from "@/lib/t
 import { memberInvitePermissions } from "@/lib/travel-mates";
 import type { TripRole } from "@/lib/participants";
 import { sendPushToUserIds } from "@/lib/server/web-push";
+import { isValidUsername, normalizeUsername } from "@/lib/validators/auth";
 
 export const runtime = "nodejs";
 
@@ -105,9 +106,30 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
     const tripId = typeof body?.tripId === "string" ? body.tripId : "";
-    const inviteeUserId = typeof body?.inviteeUserId === "string" ? body.inviteeUserId : "";
+    let inviteeUserId = typeof body?.inviteeUserId === "string" ? body.inviteeUserId : "";
+
+    if (!inviteeUserId && typeof body?.inviteeUsername === "string") {
+      const username = normalizeUsername(body.inviteeUsername.replace(/^@+/, ""));
+      if (!isValidUsername(username)) {
+        return NextResponse.json({ error: "Username inválido." }, { status: 400 });
+      }
+      const adminLookup = createSupabaseAdmin();
+      const { data: profileByUsername } = await adminLookup
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+      if (!profileByUsername?.id) {
+        return NextResponse.json(
+          { error: `No encontramos ningún usuario con @${username}.` },
+          { status: 404 }
+        );
+      }
+      inviteeUserId = String(profileByUsername.id);
+    }
+
     if (!tripId || !inviteeUserId) {
-      return NextResponse.json({ error: "Faltan tripId o inviteeUserId" }, { status: 400 });
+      return NextResponse.json({ error: "Faltan tripId o usuario a invitar." }, { status: 400 });
     }
 
     const gate = await requireTripAccessApi(tripId);

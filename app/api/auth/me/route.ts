@@ -35,10 +35,24 @@ export async function GET() {
       error,
     } = await supabase.auth.getUser();
 
+    let username: string | null = null;
+    if (user?.id) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .maybeSingle();
+      username =
+        typeof (profileRow as { username?: string } | null)?.username === "string"
+          ? String((profileRow as { username: string }).username)
+          : null;
+    }
+
     const res = NextResponse.json({
       ok: !error && !!user,
       userId: user?.id ?? null,
       email: user?.email ?? null,
+      username,
       error: error?.message ?? null,
     });
 
@@ -48,6 +62,6 @@ export async function GET() {
 
     return res;
   } catch {
-    return NextResponse.json({ ok: false, userId: null, email: null, error: "unknown" });
+    return NextResponse.json({ ok: false, userId: null, email: null, username: null, error: "unknown" });
   }
 }

@@ -5,12 +5,14 @@ import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
 type Props = {
   /** Pantalla completa fija (navegación) o bloque dentro del layout de Next. */
   fixed?: boolean;
+  /** Texto bajo el logo (p. ej. bienvenida tras login). */
+  subtitle?: string;
 };
 
 /**
  * Pantalla de carga de marca — fondo alineado con `--surface-page` para evitar flash blanco al cambiar de ruta.
  */
-export default function KaviroLoadingScreen({ fixed = false }: Props) {
+export default function KaviroLoadingScreen({ fixed = false, subtitle }: Props) {
   const shell = fixed
     ? "fixed inset-0 z-[1200] flex flex-col items-center justify-center px-6 bg-[var(--surface-page)]"
     : "flex min-h-[100svh] flex-col items-center justify-center px-6 bg-[var(--surface-page)] text-[var(--text-primary)]";
@@ -39,8 +41,8 @@ export default function KaviroLoadingScreen({ fixed = false }: Props) {
         >
           {APP_NAME}
         </h1>
-        <p className="mt-2 max-w-xs text-center text-sm text-[var(--text-secondary)]">
-          Preparando tu viaje, rutas, gastos y documentos…
+        <p className="mt-2 max-w-sm text-center text-sm font-semibold text-[var(--text-secondary)]">
+          {subtitle ?? "Preparando tu viaje, rutas, gastos y documentos…"}
         </p>
         <div className="mt-8 h-2 w-48 overflow-hidden rounded-full bg-[var(--border-subtle)]">
           <div className="h-full w-1/2 animate-pulse rounded-full bg-[var(--brand)]" />
