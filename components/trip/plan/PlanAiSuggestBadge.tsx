@@ -49,7 +49,7 @@ function writeCache(key: string, data: SuggestCache) {
 }
 
 const badgeShellClass =
-  "w-full max-w-[min(17rem,calc(100vw-2.5rem))] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]";
+  "w-full min-w-0 max-w-md rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]";
 
 export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDate, onOpenAssistant }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -248,14 +248,14 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
   return (
     <div className={badgeShellClass}>
       <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-visible">
           <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
 
           {loading && !currentSuggestion ? (
             <p className="mt-0.5 text-[10px] text-slate-400">Analizando tu plan…</p>
           ) : currentSuggestion ? (
             <p
-              className="mt-0.5 break-words text-[11px] leading-snug text-slate-600 dark:text-slate-300"
+              className="mt-0.5 whitespace-normal break-words text-[11px] leading-relaxed text-slate-600 dark:text-slate-300"
               title={currentSuggestion}
             >
               {currentSuggestion}

@@ -183,7 +183,7 @@ export default function PublicLanding() {
                 }}
                 tripId="preview"
                 aiSuggest={
-                  <div className="w-full max-w-[17rem] rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+                  <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
                     <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
                     <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Añadir traslado al aeropuerto</p>
                   </div>

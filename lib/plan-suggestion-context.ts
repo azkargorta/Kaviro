@@ -57,9 +57,9 @@ export function cleanPlanSuggestion(raw: string): string | null {
 
   if (!text || text.length < 10) return null;
   if (/^(null|ninguna|nada|ok|está bien|no hay)/i.test(text)) return null;
-  if (/^considera\s+(añadir|agregar|reservar|programar|planificar)\s*$/i.test(text)) return null;
+  if (/^considera\s/i.test(text)) return null;
 
-  return text.length > 140 ? `${text.slice(0, 137)}…` : text;
+  return text.length > 180 ? `${text.slice(0, 177)}…` : text;
 }
 
 export function buildPlanSuggestionPrompt(params: {
@@ -78,8 +78,8 @@ ${params.dayContext}
 ${excludeHint}
 Eres un revisor de itinerarios. Propón UNA mejora concreta y accionable para ese día.
 Prioriza: huecos sin actividad, comidas faltantes, traslados, solapes, reservas, margen de descanso o primera actividad si el día está vacío.
-Formato: una sola frase en español, modo imperativo, máximo 15 palabras (ej.: «Añadir comida entre museo y parque», «Reservar taxi al aeropuerto a las 8:00»).
-Evita frases incompletas. Responde SOLO con esa frase, sin explicación.
+Formato: una sola frase en español, modo imperativo (empieza por verbo: Añadir, Reservar, Mover…), máximo 15 palabras.
+PROHIBIDO empezar por «Considera», «Podrías» o «Te sugiero».
 Responde null únicamente si el día no pertenece al viaje o es imposible inferir el contexto.`;
 }
 
