@@ -11,7 +11,7 @@ import PlanExpenseFooter from "@/components/trip/plan/PlanExpenseFooter";
 import PlanActivityDetailSheet from "@/components/trip/plan/PlanActivityDetailSheet";
 import PlanAiSuggestBadge from "@/components/trip/plan/PlanAiSuggestBadge";
 import { isLodgingPlanActivity } from "@/lib/plan-activity-meta";
-import { useRouter } from "next/navigation";
+import { buildPlanSuggestionChatPrompt, dispatchTripAssistantOpen } from "@/lib/trip-assistant-events";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";;
@@ -244,7 +244,6 @@ export default function TripPlanView({
   initialActivities?: TripActivitiesInitial;
   participants?: string[];
 }) {
-  const router = useRouter();
   const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId, initialActivities);
   const {
@@ -1300,7 +1299,13 @@ export default function TripPlanView({
               tripId={tripId}
               premiumEnabled={premiumEnabled}
               selectedDate={selectedDate}
-              onOpenAssistant={() => router.push(`/trip/${encodeURIComponent(tripId)}/ai-chat`)}
+              onOpenAssistant={(suggestionText) => {
+                dispatchTripAssistantOpen({
+                  tripId,
+                  initialMessage: buildPlanSuggestionChatPrompt(suggestionText, selectedDate),
+                  mode: "actions",
+                });
+              }}
             />
           }
         >

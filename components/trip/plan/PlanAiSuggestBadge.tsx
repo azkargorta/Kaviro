@@ -9,7 +9,7 @@ type Props = {
   tripId: string;
   premiumEnabled: boolean;
   selectedDate?: string | null;
-  onOpenAssistant?: () => void;
+  onOpenAssistant?: (suggestion: string) => void;
 };
 
 export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDate, onOpenAssistant }: Props) {
@@ -128,7 +128,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
           {onOpenAssistant ? (
             <button
               type="button"
-              onClick={onOpenAssistant}
+              onClick={() => onOpenAssistant(suggestion)}
               className="mt-2 text-[10px] font-bold text-[#F87171] hover:underline"
             >
               Abrir asistente →

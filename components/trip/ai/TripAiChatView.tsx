@@ -484,6 +484,8 @@ export default function TripAiChatView({
   autoBootstrapItinerary = false,
   launchIntent = null,
   defaultAssistantMode = null,
+  initialPrompt = null,
+  initialPromptMode = null,
 }: {
   tripId: string;
   isPremium?: boolean;
@@ -500,6 +502,10 @@ export default function TripAiChatView({
   launchIntent?: "optimize" | "auto_plans" | null;
   /** Desde `?modo=…` en la URL (p. ej. planificador al crear viaje). Ignorado si hay `assistantContext` en drawer. */
   defaultAssistantMode?: TripAiMode | null;
+  /** Mensaje de usuario enviado automáticamente al montar (p. ej. sugerencia «IA sugiere» en Plan). */
+  initialPrompt?: string | null;
+  /** Modo forzado al enviar `initialPrompt` (p. ej. `actions` para parches del plan). */
+  initialPromptMode?: TripAiMode | null;
 }) {
   const ctxPreset = assistantContext ? assistantContextPreset(assistantContext) : null;
   const router = useRouter();
@@ -1091,7 +1097,8 @@ export default function TripAiChatView({
   async function sendMessage(
     customQuestion?: string,
     forcedAiAction?: AIActionId | null,
-    hooks?: { onSuccess?: () => void; onError?: () => void }
+    hooks?: { onSuccess?: () => void; onError?: () => void },
+    sendOptions?: { mode?: TripAiMode; modeSource?: "auto" | "manual" }
   ) {
     if (!isPremium) return;
     if (aiBudgetExceeded) {
@@ -1101,6 +1108,14 @@ export default function TripAiChatView({
     }
     const clean = (customQuestion ?? question).trim();
     if (!clean || loading) return;
+
+    const effectiveMode = sendOptions?.mode ?? mode;
+    const effectiveModeSource = sendOptions?.modeSource ?? modeSource;
+    if (sendOptions?.mode) {
+      setMode(sendOptions.mode);
+      setModeSource(sendOptions.modeSource ?? "manual");
+      setModePickerOpen(false);
+    }
 
     const priorForHint = messages
       .filter((m) => m.role === "user" || m.role === "assistant")
@@ -1121,12 +1136,12 @@ export default function TripAiChatView({
     setInfo(null);
 
     try {
-      const endpoint = mode === "day_planner" ? "/api/trip-ai/organize-day" : "/api/trip-ai/chat";
+      const endpoint = effectiveMode === "day_planner" ? "/api/trip-ai/organize-day" : "/api/trip-ai/chat";
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          mode === "day_planner"
+          effectiveMode === "day_planner"
             ? {
                 tripId,
                 question: clean,
@@ -1142,8 +1157,8 @@ export default function TripAiChatView({
             : {
                 tripId,
                 question: clean,
-                mode: modeSource === "manual" ? mode : "general",
-                modeSource,
+                mode: effectiveModeSource === "manual" ? effectiveMode : "general",
+                modeSource: effectiveModeSource,
                 conversationId,
                 provider: provider === "auto" ? null : provider,
                 dialogHint,
@@ -1174,7 +1189,7 @@ export default function TripAiChatView({
         throw new Error("Respuesta vacía del servidor.");
       }
 
-      if (mode !== "day_planner") {
+      if (effectiveMode !== "day_planner") {
         const nextConv =
           typeof data.conversationId === "string" && data.conversationId
             ? data.conversationId
@@ -1192,7 +1207,7 @@ export default function TripAiChatView({
       setAiBudgetExceeded(false);
 
       const hasDayPlannerDiff =
-        mode === "day_planner" &&
+        effectiveMode === "day_planner" &&
         data?.diff &&
         (data.diff as { version?: number }).version === 1 &&
         Array.isArray((data.diff as { operations?: unknown }).operations);
@@ -1219,7 +1234,7 @@ export default function TripAiChatView({
         setInfo(String(data.actionResult));
       }
 
-      if (mode === "day_planner" && typeof data?.dayPlannerHint === "string" && data.dayPlannerHint) {
+      if (effectiveMode === "day_planner" && typeof data?.dayPlannerHint === "string" && data.dayPlannerHint) {
         setInfo(String(data.dayPlannerHint));
       }
 
@@ -1386,8 +1401,6 @@ export default function TripAiChatView({
     const run = () => {
       if (cancelled) return;
       if (launchIntent === "optimize") {
-        setMode("optimizer");
-        setModeSource("manual");
         void sendMessage("Optimiza el viaje: detecta huecos, solapes y mejoras prácticas.", "optimize_route", {
           onSuccess: () => {
             try {
@@ -1404,10 +1417,8 @@ export default function TripAiChatView({
               /* ignore */
             }
           },
-        });
+        }, { mode: "optimizer", modeSource: "manual" });
       } else {
-        setMode("planning");
-        setModeSource("manual");
         void sendMessage(
           "Completa el itinerario con propuestas concretas (visitas, comidas, desplazamientos) alineadas con destino, fechas y lo ya planificado. Si hay días vacíos o poco cubiertos, rellénalos; si casi no hay planes, propon un calendario por días ejecutable cuando aplique.",
           null,
@@ -1427,7 +1438,8 @@ export default function TripAiChatView({
                 /* ignore */
               }
             },
-          }
+          },
+          { mode: "planning", modeSource: "manual" }
         );
       }
     };
@@ -1457,6 +1469,51 @@ export default function TripAiChatView({
     tripId,
     pathname,
     router,
+    skipOnboarding,
+  ]);
+
+  const initialPromptSentRef = useRef<string | null>(null);
+  useEffect(() => {
+    const clean = initialPrompt?.trim();
+    if (!clean || !isPremium) return;
+    if (!trip || tripDataLoading) return;
+    if (loading || onboardingBusy) return;
+    if (initialPromptSentRef.current === clean) return;
+    initialPromptSentRef.current = clean;
+
+    skipOnboarding();
+
+    const promptMode = initialPromptMode ?? null;
+    let timeoutId = 0;
+    let cancelled = false;
+
+    timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      void sendMessage(
+        clean,
+        null,
+        {
+          onError: () => {
+            initialPromptSentRef.current = null;
+          },
+        },
+        promptMode ? { mode: promptMode, modeSource: "manual" } : undefined
+      );
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- disparo único por initialPrompt al montar
+  }, [
+    initialPrompt,
+    initialPromptMode,
+    isPremium,
+    trip,
+    tripDataLoading,
+    loading,
+    onboardingBusy,
     skipOnboarding,
   ]);
 

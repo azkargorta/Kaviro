@@ -7,6 +7,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { tripAssistantSurfaceFromPathname, tripAssistantSurfaceLabel } from "@/lib/trip-assistant-context";
+import {
+  TRIP_ASSISTANT_OPEN_EVENT,
+  type TripAssistantOpenDetail,
+} from "@/lib/trip-assistant-events";
+import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
 import { iconSlotFab56, iconSlotFill40 } from "@/components/ui/iconTokens";
 import TripAiAssistantErrorBoundary from "@/components/trip/ai/TripAiAssistantErrorBoundary";
 
@@ -29,8 +34,34 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
   const [open, setOpen] = useState(false);
   const [chatMountKey, setChatMountKey] = useState(0);
   const [assistantLogoOk, setAssistantLogoOk] = useState(true);
+  const [launchPayload, setLaunchPayload] = useState<{
+    initialMessage: string;
+    mode?: TripAiMode;
+  } | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    function onAssistantOpen(event: Event) {
+      const detail = (event as CustomEvent<TripAssistantOpenDetail>).detail;
+      if (!detail || detail.tripId !== tripId) return;
+      if (!detail.initialMessage?.trim()) return;
+      setLaunchPayload({
+        initialMessage: detail.initialMessage.trim(),
+        mode: detail.mode,
+      });
+      setChatMountKey((k) => k + 1);
+      setOpen(true);
+    }
+
+    window.addEventListener(TRIP_ASSISTANT_OPEN_EVENT, onAssistantOpen);
+    return () => window.removeEventListener(TRIP_ASSISTANT_OPEN_EVENT, onAssistantOpen);
+  }, [tripId]);
+
+  function closeDock() {
+    setOpen(false);
+    setLaunchPayload(null);
+  }
 
   const fullscreenHref = useMemo(() => {
     const base = `/trip/${encodeURIComponent(tripId)}/ai-chat`;
@@ -75,7 +106,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
             type="button"
             className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
             aria-label="Cerrar asistente personal"
-            onClick={() => setOpen(false)}
+            onClick={closeDock}
           />
           <div
             className="relative flex max-h-[min(92dvh,880px)] w-full min-w-0 max-w-full flex-col overflow-x-hidden overflow-y-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-[560px] md:max-h-[min(88dvh,820px)] md:rounded-3xl dark:border-[#1E293B] dark:bg-[#0F1623]"
@@ -96,13 +127,13 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
                 <Link
                   href={fullscreenHref}
                   className="inline-flex min-h-10 min-w-0 flex-1 items-center justify-center whitespace-normal rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold leading-snug text-slate-800 shadow-sm transition hover:bg-slate-50 sm:flex-none sm:min-w-[9.5rem] dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155]"
-                  onClick={() => setOpen(false)}
+                  onClick={closeDock}
                 >
                   Pantalla completa
                 </Link>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closeDock}
                   className={`inline-flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155] ${iconSlotFill40}`}
                   aria-label="Cerrar"
                 >
@@ -119,6 +150,8 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
                   isPremium={isPremium}
                   layout="drawer"
                   assistantContext={surface}
+                  initialPrompt={launchPayload?.initialMessage ?? null}
+                  initialPromptMode={launchPayload?.mode ?? null}
                 />
               </TripAiAssistantErrorBoundary>
             </div>
