@@ -27,7 +27,7 @@ export default function TripHeroActions({ tripId }: { tripId: string }) {
         <span data-tour="topbar-darkmode">
           <DarkModeToggle heroMode />
         </span>
-        <LoggedInHeaderActions heroMode />
+        <LoggedInHeaderActions heroMode showNotifications={false} />
       </div>
     </div>
   );
