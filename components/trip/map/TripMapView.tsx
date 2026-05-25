@@ -413,6 +413,38 @@ function todayISO() {
   return `${y}-${m}-${day}`;
 }
 
+function normalizeFilterDate(v: string): string {
+  const t = v.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : "";
+}
+
+function dateInFilterRange(dateStr: string | null | undefined, from: string, to: string): boolean {
+  const d = (dateStr || "").trim();
+  if (!from && !to) return true;
+  if (!d) return false;
+  if (from && d < from) return false;
+  if (to && d > to) return false;
+  return true;
+}
+
+function filterRoutesByDateRange(routes: TripMapRoute[], from: string, to: string): TripMapRoute[] {
+  if (!from && !to) return routes;
+  return routes.filter((r) => dateInFilterRange(r.route_day || r.route_date, from, to));
+}
+
+function describeDateFilter(from: string, to: string): string {
+  if (!from && !to) return "Todos los días";
+  if (from && to && from === to) return from;
+  if (from && to) return `${from} — ${to}`;
+  if (from) return `Desde ${from}`;
+  return `Hasta ${to}`;
+}
+
+function isSingleDayFilter(from: string, to: string): string | null {
+  if (from && to && from === to) return from;
+  return null;
+}
+
 function randomId() {
   try {
     return crypto.randomUUID();
@@ -610,19 +642,8 @@ export default function TripMapView({
     return Array.from(byKey.values());
   }, [routeSources, routes]);
 
-  const dateOptions = useMemo(() => {
-    const base = (Array.isArray(tripDates) && tripDates.length ? tripDates : []).slice();
-    const extra = new Set<string>();
-    for (const r of allRoutes) {
-      const d = (r.route_day || r.route_date || "").trim();
-      if (d) extra.add(d);
-    }
-    return Array.from(new Set(["all", ...base, ...Array.from(extra)])).filter(Boolean);
-  }, [allRoutes, tripDates]);
-
-  const [selectedDate, setSelectedDate] = useState<string>("all");
-  /** Filtro solo para la lista «Rutas guardadas» (independiente del día del mapa). */
-  const [routesListDate, setRoutesListDate] = useState<string>("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const [focusedRouteKey, setFocusedRouteKey] = useState<string | null>(null);
   const [showPlanMarkers, setShowPlanMarkers] = useState(true);
   const [showCityRoute, setShowCityRoute] = useState(true);
@@ -714,13 +735,14 @@ export default function TripMapView({
     setInfo(null);
     setError(null);
 
-    const date = selectedDate !== "all" ? selectedDate : null;
+    const singleDay = isSingleDayFilter(filterDateFrom, filterDateTo);
+    const date = singleDay;
     const dates = Array.isArray(tripDates) ? tripDates.filter((d) => typeof d === "string" && d) : [];
-    const startDate = !date && dates.length ? dates[0] : null;
-    const endDate = !date && dates.length ? dates[dates.length - 1] : null;
+    const startDate = !date && filterDateFrom ? filterDateFrom : !date && dates.length ? dates[0] : null;
+    const endDate = !date && filterDateTo ? filterDateTo : !date && dates.length ? dates[dates.length - 1] : null;
 
-    if (!date && (!startDate || !endDate)) {
-      setRoutesAutoError("No encuentro el calendario del viaje. Selecciona un día o define fechas del viaje.");
+    if (!date && !filterDateFrom && !filterDateTo && (!startDate || !endDate)) {
+      setRoutesAutoError("No encuentro el calendario del viaje. Indica un rango de fechas o define fechas del viaje.");
       return;
     }
 
@@ -754,8 +776,10 @@ export default function TripMapView({
       setRoutesDraftIndex(0);
       setShowRoutesList(true);
       if (date) {
-        setRoutesListDate(date);
-        setSelectedDate(date);
+        setFilterDateFrom(date);
+        setFilterDateTo(date);
+      } else if (filterDateFrom || filterDateTo) {
+        /* mantiene el rango activo */
       }
       try {
         const key = `tripboard_routes_draft:${tripId}`;
@@ -896,15 +920,21 @@ export default function TripMapView({
     };
   }, [historyOpen, tripId]);
 
+  const dateFilteredRoutes = useMemo(
+    () => filterRoutesByDateRange(routesState, filterDateFrom, filterDateTo),
+    [routesState, filterDateFrom, filterDateTo]
+  );
+
   const visibleRoutes = useMemo(() => {
-    const base = selectedDate === "all" ? routesState : routesState.filter((r) => (r.route_day || r.route_date) === selectedDate);
     const q = routeQuery.trim().toLowerCase();
-    const filtered = q
-      ? base.filter((r) => String(r.title || r.route_name || "").toLowerCase().includes(q))
-      : base;
-    if (!focusedRouteKey) return filtered;
-    return filtered.filter((r) => `${r.source || "trip_routes"}:${r.id}` === focusedRouteKey);
-  }, [focusedRouteKey, routeQuery, routesState, selectedDate]);
+    const base = q
+      ? dateFilteredRoutes.filter((r) => String(r.title || r.route_name || "").toLowerCase().includes(q))
+      : dateFilteredRoutes;
+    if (!focusedRouteKey) return base;
+    return base.filter((r) => `${r.source || "trip_routes"}:${r.id}` === focusedRouteKey);
+  }, [focusedRouteKey, routeQuery, dateFilteredRoutes]);
+
+  const reorderDay = isSingleDayFilter(filterDateFrom, filterDateTo);
 
   const mapEntities = useMemo(() => {
     const markers: Array<{ key: string; lat: number; lng: number; title: string; icon: L.Icon | L.DivIcon; subtitle?: string }> =
@@ -914,7 +944,7 @@ export default function TripMapView({
     // Cuando una ruta está enfocada o estamos previsualizando una nueva, ocultamos el resto del mapa para destacar solo esa ruta.
     if (showPlanMarkers && !focusedRouteKey && !hasPreview) {
       for (const p of allPlanPlaces) {
-        if (selectedDate !== "all" && (p.activityDate || "") !== selectedDate) continue;
+        if (!dateInFilterRange(p.activityDate, filterDateFrom, filterDateTo)) continue;
         const k = normalizeKind(p.kind) || "visit";
         if (planKindFilter.size && !planKindFilter.has(k)) continue;
         markers.push({
@@ -934,7 +964,7 @@ export default function TripMapView({
     // When "all dates" is selected and showCityRoute is on, draw a dashed line
     // connecting the centroid of each day's activities in chronological order.
     // This gives a birds-eye view of the full trip route across cities.
-    if (showCityRoute && selectedDate === "all" && !hasPreview && !focusedRouteKey) {
+    if (showCityRoute && !filterDateFrom && !filterDateTo && !hasPreview && !focusedRouteKey) {
       // Group activities by date, compute centroid per date
       const byDate = new Map<string, { lats: number[]; lngs: number[] }>();
       for (const p of allPlanPlaces) {
@@ -1051,7 +1081,8 @@ export default function TripMapView({
     isRouteFormOpen,
     planKindFilter,
     routePreview,
-    selectedDate,
+    filterDateFrom,
+    filterDateTo,
     showPlanMarkers,
     showCityRoute,
     visibleRoutes,
@@ -1072,12 +1103,12 @@ export default function TripMapView({
 
   const boundsKey = useMemo(() => {
     return [
-      `d:${selectedDate}`,
+      `d:${filterDateFrom}|${filterDateTo}`,
       `m:${showPlanMarkers ? 1 : 0}`,
       `r:${visibleRoutes.map((r) => `${r.source || "trip_routes"}:${r.id}`).join(",")}`,
       `p:${routePreview?.key || ""}`,
     ].join("|");
-  }, [routePreview?.key, selectedDate, showPlanMarkers, visibleRoutes]);
+  }, [routePreview?.key, filterDateFrom, filterDateTo, showPlanMarkers, visibleRoutes]);
 
   // Asegura centrado/zoom cuando cambia el día o se carga una ruta (draft/preview).
   useEffect(() => {
@@ -1346,7 +1377,9 @@ export default function TripMapView({
     setSelectedRouteKeys(new Set());
 
     setIsRouteFormOpen(true);
-    setSelectedDate(r.route_day || draft.date || todayISO());
+    const day = r.route_day || draft.date || todayISO();
+    setFilterDateFrom(day);
+    setFilterDateTo(day);
 
     setForm((prev) => ({
       ...prev,
@@ -1439,23 +1472,24 @@ export default function TripMapView({
   }
 
   const routesForList = useMemo(() => {
-    const base =
-      routesListDate === "all"
-        ? routesState
-        : routesState.filter((r) => (r.route_day || r.route_date) === routesListDate);
+    const q = routeQuery.trim().toLowerCase();
+    let base = dateFilteredRoutes;
+    if (q) {
+      base = base.filter((r) => String(r.title || r.route_name || "").toLowerCase().includes(q));
+    }
     return base.slice().sort((a, b) => {
       const oa = a.route_order ?? Number.POSITIVE_INFINITY;
       const ob = b.route_order ?? Number.POSITIVE_INFINITY;
       if (oa !== ob) return oa - ob;
       return String(a.departure_time || "").localeCompare(String(b.departure_time || ""));
     });
-  }, [routesState, routesListDate]);
+  }, [dateFilteredRoutes, routeQuery]);
 
   const filteredRouteKeys = useMemo(() => routesForList.map((r) => tripMapRouteKey(r)), [routesForList]);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
-      if (routesListDate === "all") return;
+      if (!reorderDay) return;
       const { active, over } = event;
       if (!over) return;
       if (active.id === over.id) return;
@@ -1497,7 +1531,7 @@ export default function TripMapView({
         )
       );
     },
-    [filteredRouteKeys, routesListDate]
+    [filteredRouteKeys, reorderDay]
   );
 
   function SortableRouteRow({ route }: { route: TripMapRoute }) {
@@ -1754,67 +1788,134 @@ export default function TripMapView({
         ) : null}
 
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-          <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="text-sm font-extrabold text-slate-950">Filtros y contexto</div>
-              <div className="mt-1 text-xs text-slate-600">Controla lo que ves en el mapa y cambia entre vista general y rutas concretas.</div>
-            </div>
-            <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-              <button
-                type="button"
-                onClick={() => setIsMapVisible((v) => !v)}
-                className={`inline-flex min-h-[36px] whitespace-normal break-words text-center items-center justify-center rounded-xl border px-3 text-xs font-semibold transition ${
-                  isMapVisible
-                    ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    : "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
-                }`}
-                title={isMapVisible ? "Ocultar mapa" : "Mostrar mapa"}
-              >
-                {isMapVisible ? "Ocultar mapa" : "Mostrar mapa"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowPlanMarkers((v) => !v)}
-                className={`inline-flex min-h-[36px] items-center justify-center gap-2 whitespace-normal rounded-xl border px-3 text-xs font-semibold transition ${
-                  showPlanMarkers
-                    ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    : "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
-                }`}
-                title="Mostrar/ocultar marcadores del plan"
-              >
-                <MapPin className="h-4 w-4" aria-hidden />
-                {showPlanMarkers ? "Marcadores: ON" : "Marcadores: OFF"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCityRoute((v) => !v)}
-                className={`inline-flex min-h-[36px] items-center justify-center gap-2 whitespace-normal rounded-xl border px-3 text-xs font-semibold transition ${
-                  showCityRoute
-                    ? "border-violet-200 bg-violet-50 text-violet-800"
-                    : "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
-                }`}
-                title="Mostrar/ocultar ruta entre ciudades del viaje"
-              >
-                🗺️ {showCityRoute ? "Ruta viaje: ON" : "Ruta viaje: OFF"}
-              </button>
+          <div className="border-b border-slate-100 px-4 py-4">
+            <div className="text-sm font-extrabold text-slate-950">Filtros y contexto</div>
+            <div className="mt-1 text-xs text-slate-600">
+              Fechas, capas del mapa, tipos del plan y búsqueda en un solo lugar.
             </div>
           </div>
 
-          <div className="grid gap-3 px-4 py-4">
-            <label className="text-xs font-semibold text-slate-700">
-              Día
-              <select
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="mt-2 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-              >
-                {dateOptions.map((d) => (
-                  <option key={d} value={d}>
-                    {d === "all" ? "Todos" : d}
-                  </option>
+          <div className="space-y-4 px-4 py-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+              <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">
+                <CalendarDays className="h-4 w-4" aria-hidden />
+                Rango de fechas
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="text-xs font-semibold text-slate-700">
+                  Desde
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => {
+                      const v = normalizeFilterDate(e.target.value);
+                      setFilterDateFrom(v);
+                      if (filterDateTo && v && v > filterDateTo) setFilterDateTo(v);
+                      setFocusedRouteKey(null);
+                    }}
+                    className="mt-1.5 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-slate-700">
+                  Hasta
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    min={filterDateFrom || undefined}
+                    onChange={(e) => {
+                      setFilterDateTo(normalizeFilterDate(e.target.value));
+                      setFocusedRouteKey(null);
+                    }}
+                    className="mt-1.5 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
+                  />
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterDateFrom("");
+                    setFilterDateTo("");
+                    setFocusedRouteKey(null);
+                  }}
+                  className={`inline-flex min-h-[34px] items-center rounded-full border px-3 text-xs font-extrabold transition ${
+                    !filterDateFrom && !filterDateTo
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  Todos los días
+                </button>
+                {(Array.isArray(tripDates) ? tripDates : []).slice(0, 8).map((d) => (
+                  <button
+                    key={`quick-${d}`}
+                    type="button"
+                    onClick={() => {
+                      setFilterDateFrom(d);
+                      setFilterDateTo(d);
+                      setFocusedRouteKey(null);
+                    }}
+                    className={`inline-flex min-h-[34px] items-center rounded-full border px-3 text-xs font-semibold transition ${
+                      filterDateFrom === d && filterDateTo === d
+                        ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {d}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Mostrando: <span className="font-semibold text-slate-700">{describeDateFilter(filterDateFrom, filterDateTo)}</span>
+                {reorderDay ? " · Puedes reordenar rutas de este día arrastrando." : null}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">Vista del mapa</div>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => setIsMapVisible((v) => !v)}
+                  className={`inline-flex min-h-[40px] items-center justify-center rounded-xl border px-3 text-xs font-semibold transition ${
+                    isMapVisible
+                      ? "border-slate-200 bg-slate-50 text-slate-800"
+                      : "border-slate-900 bg-slate-900 text-white"
+                  }`}
+                >
+                  {isMapVisible ? "Mapa visible" : "Mapa oculto"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPlanMarkers((v) => !v)}
+                  className={`inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
+                    showPlanMarkers
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                      : "border-slate-200 bg-white text-slate-600"
+                  }`}
+                >
+                  <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                  Marcadores {showPlanMarkers ? "ON" : "OFF"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCityRoute((v) => !v)}
+                  disabled={Boolean(filterDateFrom || filterDateTo)}
+                  className={`inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                    showCityRoute
+                      ? "border-violet-200 bg-violet-50 text-violet-900"
+                      : "border-slate-200 bg-white text-slate-600"
+                  }`}
+                  title={
+                    filterDateFrom || filterDateTo
+                      ? "Disponible solo con «Todos los días»"
+                      : "Ruta general del viaje entre ciudades"
+                  }
+                >
+                  🗺️ Ruta viaje {showCityRoute ? "ON" : "OFF"}
+                </button>
+              </div>
+            </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-3">
               <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">Tipos de plan</div>
@@ -1830,7 +1931,6 @@ export default function TripMapView({
                       ? "border-slate-900 bg-slate-900 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   }`}
-                  title="Mostrar todos los tipos"
                 >
                   Todos
                 </button>
@@ -1854,20 +1954,29 @@ export default function TripMapView({
                           ? "border-violet-300 bg-violet-50 text-violet-900"
                           : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                       }`}
-                      title={`Mostrar/ocultar: ${kindLabel(k)}`}
                     >
                       {label}
                     </button>
                   );
                 })}
               </div>
-              <div className="mt-2 text-[11px] text-slate-500">
-                Consejo: si no seleccionas ninguno, se muestran todos.
-              </div>
             </div>
 
-            {canManageMap ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <label className="block text-xs font-semibold text-slate-700">
+              Buscar ruta
+              <input
+                value={routeQuery}
+                onChange={(e) => setRouteQuery(e.target.value)}
+                className="mt-1.5 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
+                placeholder="Filtrar por nombre…"
+              />
+            </label>
+          </div>
+        </section>
+
+        {canManageMap ? (
+        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-2xl border-0 bg-slate-50 p-3 m-3 mt-0 sm:m-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">{form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}</div>
                 <div className="flex items-center gap-2">
@@ -1894,7 +2003,7 @@ export default function TripMapView({
                       type="button"
                       onClick={() => {
                         setIsRouteFormOpen(true);
-                        setForm(defaultRouteForm(selectedDate !== "all" ? selectedDate : todayISO()));
+                        setForm(defaultRouteForm(reorderDay || filterDateFrom || todayISO()));
                         setRoutePreview(null);
                         setOrigin({ address: "", latitude: null, longitude: null });
                         setStop({ address: "", latitude: null, longitude: null });
@@ -2214,7 +2323,7 @@ export default function TripMapView({
                   </div>
                 </div>
               </div>
-              ) : (
+              ) : routesState.length === 0 ? (
                 <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
                   <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗺️</div>
                   <p className="text-sm font-bold text-slate-800">Sin rutas todavía</p>
@@ -2222,17 +2331,25 @@ export default function TripMapView({
                     Crea una ruta manualmente con «Nueva ruta» o usa el bloque superior «Crear rutas automáticamente».
                   </p>
                 </div>
+              ) : (
+                <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-5 text-center">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {routesState.length} ruta{routesState.length === 1 ? "" : "s"} guardada{routesState.length === 1 ? "" : "s"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Pulsa «Nueva ruta» para añadir otra, o revisa las existentes en «Rutas guardadas» más abajo.
+                  </p>
+                </div>
               )}
             </div>
-            ) : null}
-          </div>
         </section>
+        ) : null}
 
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="text-sm font-extrabold text-slate-950">Rutas guardadas</div>
-              <div className="mt-1 text-xs text-slate-600">Consulta, filtra y ordena tus recorridos del viaje.</div>
+              <div className="mt-1 text-xs text-slate-600">Consulta y ordena tus recorridos. Filtra por fechas o nombre arriba.</div>
             </div>
             <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
               {routesBulkMode ? (
@@ -2315,40 +2432,15 @@ export default function TripMapView({
             </div>
           </div>
 
-          <div className="grid gap-2 px-4 py-4">
-            <label className="text-xs font-semibold text-slate-700">
-              Día
-              <select
-                value={routesListDate}
-                onChange={(e) => {
-                  setRoutesListDate(e.target.value);
-                  setShowRoutesList(true);
-                  setFocusedRouteKey(null);
-                }}
-                className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-              >
-                {dateOptions.map((d) => (
-                  <option key={`routes-list-${d}`} value={d}>
-                    {d === "all" ? "Todos los días" : d}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-xs font-semibold text-slate-700">
-              Buscar ruta
-              <input
-                value={routeQuery}
-                onChange={(e) => setRouteQuery(e.target.value)}
-                className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-                placeholder="Filtrar por nombre…"
-              />
-            </label>
-            {routesListDate !== "all" && routesForList.length > 0 ? (
+          <div className="px-4 py-3">
+            {reorderDay && routesForList.length > 0 ? (
               <div className="text-[11px] text-slate-500">
-                {routesForList.length} ruta{routesForList.length === 1 ? "" : "s"} el {routesListDate}. Puedes reordenarlas arrastrando.
+                {routesForList.length} ruta{routesForList.length === 1 ? "" : "s"} el {reorderDay}. Puedes reordenarlas arrastrando.
               </div>
-            ) : routesListDate !== "all" && !routesForList.length ? (
-              <div className="text-[11px] text-slate-500">No hay rutas guardadas para este día.</div>
+            ) : (filterDateFrom || filterDateTo) && !routesForList.length ? (
+              <div className="text-[11px] text-slate-500">
+                No hay rutas guardadas para {describeDateFilter(filterDateFrom, filterDateTo).toLowerCase()}.
+              </div>
             ) : routesBulkMode ? (
               <div className="text-[11px] text-slate-500">Toca el círculo o la fila para marcar rutas; luego pulsa Eliminar.</div>
             ) : null}
@@ -2356,7 +2448,7 @@ export default function TripMapView({
 
           {showRoutesList ? (
           <div data-tour="map-routes-list-panel" className="space-y-3 px-4 pb-4">
-            {routesListDate !== "all" && !routesBulkMode ? (
+            {reorderDay && !routesBulkMode ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filteredRouteKeys} strategy={verticalListSortingStrategy}>
                   <div className="space-y-2">
@@ -2526,7 +2618,7 @@ export default function TripMapView({
         route={duplicateRoute}
         tripId={tripId}
         tripDates={Array.isArray(tripDates) ? tripDates : []}
-        defaultDate={selectedDate !== "all" ? selectedDate : undefined}
+        defaultDate={reorderDay || filterDateFrom || undefined}
         onClose={() => setDuplicateOpen(false)}
         onDuplicated={() => void reloadRoutes()}
       />
