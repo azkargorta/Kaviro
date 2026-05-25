@@ -5,8 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import PlanActivityCard from "@/components/trip/plan/PlanActivityCard";
-import PlanLodgingCard from "@/components/trip/plan/PlanLodgingCard";
+import PlanActivityRow from "@/components/trip/plan/PlanActivityRow";
+import PlanItineraryCard from "@/components/trip/plan/PlanItineraryCard";
+import PlanExpenseFooter from "@/components/trip/plan/PlanExpenseFooter";
+import PlanActivityDetailSheet from "@/components/trip/plan/PlanActivityDetailSheet";
+import PlanAiSuggestBadge from "@/components/trip/plan/PlanAiSuggestBadge";
+import { isLodgingPlanActivity } from "@/lib/plan-activity-meta";
+import { useRouter } from "next/navigation";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";;
@@ -224,6 +229,7 @@ export default function TripPlanView({
   initialWorkspaceTab = "itinerary",
   initialSelectedDate = null,
   initialActivities,
+  participants = [],
 }: {
   tripId: string;
   premiumEnabled: boolean;
@@ -236,7 +242,9 @@ export default function TripPlanView({
   initialWorkspaceTab?: "itinerary" | "notes";
   initialSelectedDate?: string | null;
   initialActivities?: TripActivitiesInitial;
+  participants?: string[];
 }) {
+  const router = useRouter();
   const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId, initialActivities);
   const {
@@ -278,6 +286,7 @@ export default function TripPlanView({
   const isDemoTrip = useIsDemoTrip();
   const [expandedDayKeys, setExpandedDayKeys] = useState<Set<string>>(() => new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [detailActivity, setDetailActivity] = useState<TripActivity | null>(null);
   const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -380,6 +389,11 @@ export default function TripPlanView({
 
   const grouped = useMemo(() => groupByDate(filteredWithCalendarDate), [filteredWithCalendarDate]);
 
+  const cardGrouped = useMemo(() => {
+    if (selectedDate) return grouped.filter(([date]) => date === selectedDate);
+    return grouped.length <= 1 ? grouped : grouped.slice(0, 1);
+  }, [grouped, selectedDate]);
+
   const singleDayList = grouped.length === 1;
 
   /** Días únicos con actividad (post-filtro de tipo/búsqueda, pre-filtro de fecha).
@@ -403,6 +417,13 @@ export default function TripPlanView({
     () => activities.filter((a) => !isLodgingActivity(a) && activityLikelyNeedsTicket(a)).length,
     [activities]
   );
+
+  useEffect(() => {
+    if (viewMode !== "list" && viewMode !== "calendar") return;
+    if (allDaysWithActivity.length === 0) return;
+    if (selectedDate && allDaysWithActivity.includes(selectedDate)) return;
+    if (!selectedDate) setSelectedDate(allDaysWithActivity[0]!);
+  }, [viewMode, allDaysWithActivity, selectedDate]);
 
   const isEditing = Boolean(editingActivity?.id);
   const showForm = isFormOpen || isEditing;
@@ -1264,193 +1285,146 @@ export default function TripPlanView({
         </div>
       ) : null}
 
-      {/* Day tabs — visible solo en vista lista cuando hay más de 1 día */}
-      {viewMode === "list" && allDaysWithActivity.length > 1 && (
-        <div
-          className="relative flex gap-0 overflow-x-auto no-scrollbar rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] shadow-sm"
-          role="tablist"
-          aria-label="Días del itinerario"
+      <div className="relative pb-6" data-tour="plan-day-sections">
+        <PlanItineraryCard
+          destination={trip?.destination}
+          tripName={trip?.name || "Viaje"}
+          participants={participants}
+          days={allDaysWithActivity}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          tripId={tripId}
+          expenseFooter={<PlanExpenseFooter tripId={tripId} />}
         >
-          {allDaysWithActivity.map((date, i) => {
-            const isActive = selectedDate === date;
-            const isToday = date === todayYMD();
-            return (
-              <button
-                key={date}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                title={formatPlanDayHeading(date).full}
-                onClick={() => setSelectedDate(isActive ? null : date)}
-                className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition whitespace-nowrap focus:outline-none ${
-                  isActive
-                    ? "text-[#EF4444] dark:text-[#F87171]"
-                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  Día {i + 1}
-                  {isToday && (
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-label="Hoy" />
-                  )}
-                </span>
-                {isActive && (
-                  <span
-                    aria-hidden
-                    className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-[#F87171]"
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {grouped.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] shadow-sm">
-          {selectedDate ? (
-            // Filtered day — no results
-            <div className="px-6 py-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">📭</div>
-              <p className="text-base font-extrabold text-slate-900">Sin actividades este día</p>
-              <p className="mt-1 text-sm text-slate-500">Prueba otra fecha o quita los filtros activos.</p>
-            </div>
-          ) : isEmpty ? (
-            // P7 — Empty state rediseñado
-            <div className="px-6 py-10 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#FEF2F2] to-[#F87171]/20 text-3xl shadow-sm">
-                🗺️
+          {cardGrouped.length === 0 ? (
+            selectedDate ? (
+              <div className="py-6 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">📭</div>
+                <p className="text-base font-extrabold text-slate-900 dark:text-white">Sin actividades este día</p>
+                <p className="mt-1 text-sm text-slate-500">Prueba otra fecha o quita los filtros activos.</p>
               </div>
-              <p className="text-lg font-extrabold text-slate-900">Empieza a planificar</p>
-              <p className="mx-auto mt-1.5 max-w-xs text-sm text-slate-500 leading-relaxed">
-                Añade actividades manualmente, explora lugares en el mapa, o genera el plan completo con la IA.
-              </p>
-              <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-                <button
-                  type="button"
-                  onClick={handleStartCreate}
-                  className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Añadir actividad
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setExploreOpen(true)}
-                  className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-5 py-2.5 text-sm font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
-                >
-                  <Compass className="h-4 w-4" />
-                  Explorar lugares
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="px-6 py-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">🔍</div>
-              <p className="text-base font-extrabold text-slate-900">Sin resultados</p>
-              <p className="mt-1 text-sm text-slate-500">Prueba a quitar filtros o cambiar la búsqueda.</p>
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      <div data-tour="plan-day-sections" className="space-y-3">
-        {grouped.map(([date, items]) => {
-          const expanded = singleDayList || expandedDayKeys.has(date);
-          const heading = formatPlanDayHeading(date);
-          const today = todayYMD();
-          return (
-            <section data-tour="plan-activity-card" key={date} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-              {/* P1 — Cabecera de día rediseñada */}
-              <button
-                type="button"
-                disabled={singleDayList}
-                onClick={() => {
-                  if (singleDayList) return;
-                  setExpandedDayKeys((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(date)) next.delete(date);
-                    else next.add(date);
-                    return next;
-                  });
-                }}
-                className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition ${
-                  singleDayList ? "cursor-default" : "cursor-pointer hover:bg-slate-50/80 active:bg-slate-100/60"
-                }`}
-                aria-expanded={expanded}
-              >
-                {/* Date badge — day number + weekday */}
-                <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">
-                    {heading.weekday}
-                  </span>
-                  <span className="text-lg font-extrabold leading-tight text-slate-900 tabular-nums">
-                    {heading.dayNum}
-                  </span>
+            ) : isEmpty ? (
+              <div className="py-8 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#FEF2F2] to-[#F87171]/20 text-3xl shadow-sm">
+                  🗺️
                 </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-extrabold text-slate-950 leading-snug capitalize">{heading.month}</div>
-                  <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                      {activityCountLabel(items.length)}
-                    </span>
-                    {date === today && (
-                      <span className="inline-flex items-center rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--brand-text)]">
-                        Hoy
-                      </span>
-                    )}
+                <p className="text-lg font-extrabold text-slate-900 dark:text-white">Empieza a planificar</p>
+                <p className="mx-auto mt-1.5 max-w-xs text-sm text-slate-500 leading-relaxed">
+                  Añade actividades manualmente, explora lugares en el mapa, o genera el plan completo con la IA.
+                </p>
+                {canManagePlan ? (
+                  <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+                    <button
+                      type="button"
+                      onClick={handleStartCreate}
+                      className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Añadir actividad
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExploreOpen(true)}
+                      className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-5 py-2.5 text-sm font-semibold text-[var(--brand-text)]"
+                    >
+                      <Compass className="h-4 w-4" />
+                      Explorar lugares
+                    </button>
                   </div>
-                </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="py-6 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">🔍</div>
+                <p className="text-base font-extrabold text-slate-900 dark:text-white">Sin resultados</p>
+                <p className="mt-1 text-sm text-slate-500">Prueba a quitar filtros o cambiar la búsqueda.</p>
+              </div>
+            )
+          ) : (
+            (() => {
+              const [date, items] = cardGrouped[0] || ["", [] as TripActivity[]];
+              const ordered = date ? getOrderedItems(date, items) : [];
+              const enableDrag = canManagePlan && !bulkDeleteMode && ordered.length > 1;
 
-                {singleDayList ? (
-                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />
-                ) : expanded ? (
-                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                ) : (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                )}
-              </button>
+              const rows = ordered.map((activity) => {
+                const isLodging = isLodgingPlanActivity(activity);
+                const bulkSelectable = canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity);
+                const bulkSelected = selectedActivityIds.has(activity.id);
 
-              {expanded ? (
-                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 pb-4 pt-3">
-                  {/* P2 — Timeline vertical continua */}
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                    <SortableContext items={getOrderedItems(date, items).map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-2">
-                        {getOrderedItems(date, items).map((activity) => {
-                          const isLodging = isLodgingActivity(activity);
-                          const meta = kindMeta(isLodging ? "lodging" : activity.activity_kind, customByKey);
-                          return (
-                            <SortableRow key={activity.id} id={activity.id} color={meta.color}>
-                              {isLodging ? (
-                                <PlanLodgingCard activity={activity} onEdit={canManagePlan ? handleStartEdit : undefined} onDelete={canManagePlan ? (item) => deleteActivity(item.id) : undefined} selectable={canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity)} selected={selectedActivityIds.has(activity.id)} onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })} />
-                              ) : (
-                                <PlanActivityCard
-                                  activity={activity}
-                                  onEdit={canManagePlan ? handleStartEdit : undefined}
-                                  onDelete={canManagePlan ? (item) => deleteActivity(item.id) : undefined}
-                                  selectable={canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity)}
-                                  selected={selectedActivityIds.has(activity.id)}
-                                  onToggleSelect={() => setSelectedActivityIds((prev) => { const n = new Set(prev); if (n.has(activity.id)) n.delete(activity.id); else n.add(activity.id); return n; })}
-                                  premiumEnabled={premiumEnabled}
-                                  tripId={tripId}
-                                  currentUserId={currentUserId}
-                                  displayName={currentDisplayName}
-                                />
-                              )}
-                            </SortableRow>
-                          );
-                        })}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                </div>
-              ) : null}
-            </section>
-          );
-        })}
+                const row = (
+                  <PlanActivityRow
+                    key={activity.id}
+                    title={activity.title || activity.place_name || "Actividad"}
+                    place={activity.place_name || activity.address}
+                    time={activity.activity_time}
+                    activityKind={isLodging ? "lodging" : activity.activity_kind}
+                    isLodging={isLodging}
+                    customByKey={customByKey}
+                    selectable={bulkSelectable}
+                    selected={bulkSelected}
+                    onClick={
+                      bulkSelectable
+                        ? () =>
+                            setSelectedActivityIds((prev) => {
+                              const n = new Set(prev);
+                              if (n.has(activity.id)) n.delete(activity.id);
+                              else n.add(activity.id);
+                              return n;
+                            })
+                        : () => setDetailActivity(activity)
+                    }
+                  />
+                );
+
+                if (enableDrag) {
+                  const meta = kindMeta(isLodging ? "lodging" : activity.activity_kind, customByKey);
+                  return (
+                    <SortableRow key={activity.id} id={activity.id} color={meta.color}>
+                      {row}
+                    </SortableRow>
+                  );
+                }
+                return row;
+              });
+
+              if (!date) return null;
+
+              return (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                  <SortableContext items={ordered.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2 pl-1">{rows}</div>
+                  </SortableContext>
+                </DndContext>
+              );
+            })()
+          )}
+        </PlanItineraryCard>
+
+        <PlanAiSuggestBadge
+          tripId={tripId}
+          premiumEnabled={premiumEnabled}
+          selectedDate={selectedDate}
+          onOpenAssistant={() => router.push(`/trip/${encodeURIComponent(tripId)}/ai-chat`)}
+        />
       </div>
+
+      <PlanActivityDetailSheet
+        activity={detailActivity}
+        onClose={() => setDetailActivity(null)}
+        premiumEnabled={premiumEnabled}
+        tripId={tripId}
+        currentUserId={currentUserId}
+        currentDisplayName={currentDisplayName}
+        canManagePlan={canManagePlan}
+        onEdit={(activity) => {
+          setDetailActivity(null);
+          handleStartEdit(activity);
+        }}
+        onDelete={(activity) => {
+          setDetailActivity(null);
+          void deleteActivity(activity.id);
+        }}
+      />
         </>
       ) : null}
     </div>

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import PublicMarketingHeader from "@/components/marketing/PublicMarketingHeader";
 import PublicMarketingFooter from "@/components/marketing/PublicMarketingFooter";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
+import PlanActivityRow from "@/components/trip/plan/PlanActivityRow";
+import PlanItineraryCard from "@/components/trip/plan/PlanItineraryCard";
 import {
   ArrowRight, CalendarDays, MapPinned, Wallet, Sparkles,
   Users, Share2, CheckCircle2, Star,
@@ -47,20 +49,6 @@ function Stat({ value, label }: { value: string; label: string }) {
     <div className="text-center">
       <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{value}</div>
       <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</div>
-    </div>
-  );
-}
-
-// ── Fake activity card (UI preview) ──────────────────────────────────────────
-function ActivityRow({ time, title, place, icon }: { time: string; title: string; place: string; icon: string }) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-3 dark:border-[#1E293B] dark:bg-[#080C14]">
-      <span className="mt-0.5 text-xl">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{title}</p>
-        <p className="text-[10px] text-slate-400 truncate">{place}</p>
-      </div>
-      <span className="shrink-0 rounded-md bg-[#F87171] px-1.5 py-0.5 text-[10px] font-bold text-white">{time}</span>
     </div>
   );
 }
@@ -181,64 +169,42 @@ export default function PublicLanding() {
             </div>
 
             {/* Right — UI preview */}
-            <div className="relative">
-              <div className="rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden dark:border-[#1E293B] dark:bg-[#0F1623]">
-                {/* Mock trip header */}
-                <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-widest">París · Francia</p>
-                      <p className="text-lg font-extrabold text-white mt-0.5">Viaje a París 2026</p>
-                    </div>
-                    <div className="flex gap-1">
-                      {["UA", "MG", "JL"].map((i) => (
-                        <div key={i} className="h-8 w-8 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-[10px] font-bold text-white">{i}</div>
-                      ))}
+            <div className="relative shadow-2xl">
+              <PlanItineraryCard
+                destination="París, Francia"
+                tripName="Viaje a París 2026"
+                participants={["Unai", "María", "Jorge"]}
+                days={["2026-05-28", "2026-05-29", "2026-05-30"]}
+                selectedDate={activePlan === "día1" ? "2026-05-28" : activePlan === "día2" ? "2026-05-29" : "2026-05-30"}
+                onSelectDate={(d) => {
+                  if (d === "2026-05-28") setActivePlan("día1");
+                  else if (d === "2026-05-29") setActivePlan("día2");
+                  else setActivePlan("día3");
+                }}
+                tripId="preview"
+                expenseFooter={
+                  <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gastos del grupo</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+                        <div className="h-full w-3/5 rounded-full bg-[#F87171]" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">€342</span>
                     </div>
                   </div>
-                </div>
-
-                {/* Day tabs */}
-                <div className="flex border-b border-slate-100 dark:border-[#1E293B] bg-slate-50 dark:bg-[#080C14]">
-                  {(["día1", "día2", "día3"] as const).map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setActivePlan(d)}
-                      className={`flex-1 py-2.5 text-xs font-bold transition ${
-                        activePlan === d
-                          ? "border-b-2 border-[#F87171] text-[#F87171]"
-                          : "text-slate-400 hover:text-slate-600"
-                      }`}
-                    >
-                      {d.replace("día", "Día ")}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Activities */}
-                <div className="p-4 space-y-2">
+                }
+              >
+                <div className="space-y-2">
                   {PREVIEW[activePlan].map((a) => (
-                    <ActivityRow key={a.title} {...a} />
+                    <PlanActivityRow key={a.title} title={a.title} place={a.place} time={a.time} icon={a.icon} />
                   ))}
                 </div>
-
-                {/* Mock expense bar */}
-                <div className="border-t border-slate-100 dark:border-[#1E293B] px-4 py-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gastos del grupo</span>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-24 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
-                      <div className="h-full w-3/5 rounded-full bg-[#F87171]" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">€342 / €580</span>
-                  </div>
-                </div>
-              </div>
+              </PlanItineraryCard>
 
               {/* Floating badge */}
               <div className="absolute -bottom-4 -right-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
                 <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Añadir traslado al aeropuerto</p>
+                <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Añadir traslado al aeropuerto</p>
               </div>
             </div>
           </div>

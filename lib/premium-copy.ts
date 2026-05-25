@@ -39,7 +39,8 @@ export type PremiumFeatureKey =
   | "documentAnalyzer"
   | "expenseOcr"
   | "autoRoutes"
-  | "aiInsights";
+  | "aiInsights"
+  | "planSuggestions";
 
 export const PREMIUM_FEATURE_COPY: Record<
   PremiumFeatureKey,
@@ -72,6 +73,10 @@ export const PREMIUM_FEATURE_COPY: Record<
   aiInsights: {
     title: "Brief y maleta con IA",
     description: "Brief del destino y lista de equipaje generados según tu viaje y actividades.",
+  },
+  planSuggestions: {
+    title: "Sugerencias IA del plan",
+    description: "La IA detecta huecos, traslados y mejoras concretas para tu itinerario día a día.",
   },
 };
 

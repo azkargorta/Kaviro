@@ -35,7 +35,7 @@ export default async function TripPlanPage({
         : "";
   const initialSelectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
 
-  const [{ data: tripRow }, { data: profileRow }, { data: activityRows }] = await Promise.all([
+  const [{ data: tripRow }, { data: profileRow }, { data: activityRows }, { data: participantRows }] = await Promise.all([
     supabase.from("trips").select("id, name, destination, description").eq("id", params.id).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("id", access.userId).maybeSingle(),
     supabase
@@ -45,6 +45,12 @@ export default async function TripPlanPage({
       .order("activity_date", { ascending: true })
       .order("activity_time", { ascending: true })
       .order("created_at", { ascending: true }),
+    supabase
+      .from("trip_participants")
+      .select("profiles(display_name)")
+      .eq("trip_id", params.id)
+      .neq("status", "removed")
+      .limit(8),
   ]);
 
   const rawDesc = (tripRow as { description?: string | null } | null)?.description;
@@ -53,6 +59,13 @@ export default async function TripPlanPage({
     (profileRow as { display_name?: string | null } | null)?.display_name?.trim() || "Yo";
 
   const canEditTripNotes = canEditTripNotesFromAccess(access);
+
+  const participantNames = (participantRows ?? [])
+    .map((r) => {
+      const p = (r as { profiles?: { display_name?: string } | null }).profiles;
+      return p?.display_name?.trim() || null;
+    })
+    .filter((n): n is string => Boolean(n));
 
   const initialActivities: TripActivitiesInitial = {
     trip: (tripRow as TripActivitiesInitial["trip"]) || null,
@@ -83,6 +96,7 @@ export default async function TripPlanPage({
         initialWorkspaceTab={initialWorkspaceTab}
         initialSelectedDate={initialSelectedDate}
         initialActivities={initialActivities}
+        participants={participantNames}
       />
     </main>
   );
