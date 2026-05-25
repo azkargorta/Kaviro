@@ -35,10 +35,6 @@ type FeedItem =
   | { kind: "activity"; log: AuditLog }
   | { kind: "notification"; notification: NotificationRow };
 
-function storageKey(tripId: string) {
-  return `tripboard:activity:last_seen_at:${tripId}`;
-}
-
 function formatWhen(iso: string) {
   try {
     return new Intl.DateTimeFormat("es-ES", {
@@ -114,8 +110,23 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
-  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
+  const [readLogIds, setReadLogIds] = useState<Set<string>>(() => new Set());
   const [filter, setFilter] = useState<FeedFilter>("all");
+
+  const loadReadLogIds = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trip-feed-reads?tripId=${encodeURIComponent(tripId)}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      const ids = Array.isArray(data.readLogIds) ? data.readLogIds.map(String) : [];
+      setReadLogIds(new Set(ids));
+    } catch {
+      /* silencioso */
+    }
+  }, [tripId]);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -149,11 +160,8 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
 
   const unseenActivityCount = useMemo(() => {
     if (!logs.length) return 0;
-    if (!lastSeenAt) return logs.length;
-    const last = new Date(lastSeenAt).getTime();
-    if (!Number.isFinite(last)) return logs.length;
-    return logs.filter((l) => new Date(l.created_at).getTime() > last).length;
-  }, [logs, lastSeenAt]);
+    return logs.filter((l) => !readLogIds.has(l.id)).length;
+  }, [logs, readLogIds]);
 
   const pendingCount = unseenActivityCount + unreadNotificationCount;
 
@@ -185,22 +193,16 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
 
   useEffect(() => {
     if (!mounted) return;
-    try {
-      setLastSeenAt(localStorage.getItem(storageKey(tripId)));
-    } catch {
-      setLastSeenAt(null);
-    }
-  }, [mounted, tripId]);
-
-  useEffect(() => {
-    if (!mounted) return;
+    void loadReadLogIds();
     void loadNotifications();
     void loadActivityLogs();
     const intervalId = window.setInterval(() => {
+      void loadReadLogIds();
       void loadNotifications();
       void loadActivityLogs();
     }, 30_000);
     const onFocus = () => {
+      void loadReadLogIds();
       void loadNotifications();
       void loadActivityLogs();
     };
@@ -232,7 +234,7 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
       window.removeEventListener("focus", onFocus);
       window.removeEventListener(USER_NOTIFICATIONS_CHANGED_EVENT, onChanged as EventListener);
     };
-  }, [mounted, loadNotifications, loadActivityLogs]);
+  }, [mounted, loadReadLogIds, loadNotifications, loadActivityLogs]);
 
   useEffect(() => {
     if (!open) return;
@@ -241,7 +243,7 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
       setLoading(true);
       setError(null);
       try {
-        await Promise.all([loadActivityLogs(), loadNotifications()]);
+        await Promise.all([loadActivityLogs(), loadNotifications(), loadReadLogIds()]);
         if (cancelled) return;
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "No se pudo cargar novedades.");
@@ -253,30 +255,46 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
     return () => {
       cancelled = true;
     };
-  }, [open, loadActivityLogs, loadNotifications]);
+  }, [open, loadActivityLogs, loadNotifications, loadReadLogIds]);
 
-  function markActivitySeen(log: AuditLog) {
-    const seenAt = log.created_at;
+  async function markActivitySeen(log: AuditLog) {
+    setReadLogIds((prev) => {
+      const next = new Set(prev);
+      next.add(log.id);
+      return next;
+    });
+
     try {
-      const current = localStorage.getItem(storageKey(tripId));
-      if (!current || new Date(seenAt).getTime() > new Date(current).getTime()) {
-        localStorage.setItem(storageKey(tripId), seenAt);
-        setLastSeenAt(seenAt);
-      }
+      const res = await fetch("/api/trip-feed-reads", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "validate_one", tripId, auditLogId: log.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "No se pudo validar la novedad.");
     } catch {
-      setLastSeenAt(seenAt);
+      void loadReadLogIds();
     }
   }
 
-  function markAllActivitiesSeen() {
+  async function markAllActivitiesSeen() {
     if (!logs.length) return;
-    const seenAt = logs[0]!.created_at;
+    const ids = logs.map((l) => l.id);
+    setReadLogIds(new Set(ids));
+
     try {
-      localStorage.setItem(storageKey(tripId), seenAt);
+      const res = await fetch("/api/trip-feed-reads", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "validate_all", tripId, auditLogIds: ids }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "No se pudieron validar las novedades.");
     } catch {
-      /* */
+      void loadReadLogIds();
     }
-    setLastSeenAt(seenAt);
   }
 
   async function validateNotification(id: string) {
@@ -319,12 +337,10 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.error || "No se pudieron validar las notificaciones.");
-        const now = new Date().toISOString();
-        setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? now })));
-        setUnreadNotificationCount(0);
-        dispatchNotificationsChanged(0);
       }
-      markAllActivitiesSeen();
+      await loadNotifications();
+      dispatchNotificationsChanged(0);
+      await markAllActivitiesSeen();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al validar.");
     } finally {
@@ -333,18 +349,19 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
   }
 
   function handleActivityClick(log: AuditLog) {
-    markActivitySeen(log);
+    void markActivitySeen(log);
     setOpen(false);
   }
 
-  function handleNotificationClick(notification: NotificationRow) {
-    if (!notification.read_at) void validateNotification(notification.id);
+  async function handleNotificationClick(notification: NotificationRow) {
+    if (!notification.read_at) {
+      await validateNotification(notification.id);
+    }
     setOpen(false);
   }
 
   function isActivityPending(log: AuditLog) {
-    if (!lastSeenAt) return true;
-    return new Date(log.created_at).getTime() > new Date(lastSeenAt).getTime();
+    return !readLogIds.has(log.id);
   }
 
   const buttonClass = heroMode
@@ -467,11 +484,11 @@ export default function TripActivityFeedButton({ tripId, heroMode = false }: { t
                     return (
                       <div key={`n-${n.id}`}>
                         {n.url ? (
-                          <Link href={n.url} onClick={() => handleNotificationClick(n)} className={className}>
+                          <Link href={n.url} onClick={() => void handleNotificationClick(n)} className={className}>
                             {inner}
                           </Link>
                         ) : (
-                          <button type="button" onClick={() => handleNotificationClick(n)} className={`${className} w-full text-left`}>
+                          <button type="button" onClick={() => void handleNotificationClick(n)} className={`${className} w-full text-left`}>
                             {inner}
                           </button>
                         )}

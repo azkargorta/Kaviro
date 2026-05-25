@@ -152,8 +152,8 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "No se pudo validar la notificación.");
+      await load();
       const nextCount = typeof data.unreadCount === "number" ? data.unreadCount : optimisticCount;
-      setUnreadCount(nextCount);
       dispatchNotificationsChanged(nextCount, id);
     } catch {
       void load();
@@ -177,9 +177,7 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "No se pudieron validar las notificaciones.");
-      const now = new Date().toISOString();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? now })));
-      setUnreadCount(0);
+      await load();
       dispatchNotificationsChanged(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al validar.");

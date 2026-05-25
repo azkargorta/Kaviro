@@ -23,4 +23,6 @@ create policy "user_notifications_select_own"
 
 drop policy if exists "user_notifications_update_own" on public.user_notifications;
 create policy "user_notifications_update_own"
-  on public.user_notifications for update using (auth.uid() = user_id);
+  on public.user_notifications for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
