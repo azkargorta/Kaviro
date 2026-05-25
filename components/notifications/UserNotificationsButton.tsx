@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Bell, CheckCheck, X } from "lucide-react";
 
+export const USER_NOTIFICATIONS_CHANGED_EVENT = "kaviro:user-notifications-changed";
+
 type NotificationRow = {
   id: string;
   type: string;
@@ -28,6 +30,14 @@ function formatWhen(iso: string) {
   }
 }
 
+function dispatchNotificationsChanged(unreadCount: number, notificationId?: string) {
+  window.dispatchEvent(
+    new CustomEvent(USER_NOTIFICATIONS_CHANGED_EVENT, {
+      detail: { unreadCount, notificationId },
+    })
+  );
+}
+
 type Props = {
   /** Estilo sobre hero coral del dashboard */
   heroMode?: boolean;
@@ -37,10 +47,15 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [marking, setMarking] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const applyPayload = useCallback((data: { notifications?: NotificationRow[]; unreadCount?: number }) => {
+    setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+    setUnreadCount(typeof data.unreadCount === "number" ? data.unreadCount : 0);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -51,20 +66,48 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
         setUnreadCount(0);
         return;
       }
-      setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
-      setUnreadCount(typeof data.unreadCount === "number" ? data.unreadCount : 0);
+      applyPayload(data);
     } catch {
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, []);
+  }, [applyPayload]);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     void load();
-    const id = window.setInterval(() => void load(), 45_000);
-    return () => window.clearInterval(id);
+    const intervalId = window.setInterval(() => void load(), 30_000);
+    const onFocus = () => void load();
+    const onChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ unreadCount?: number; notificationId?: string }>).detail;
+      if (typeof detail?.unreadCount === "number") {
+        setUnreadCount(detail.unreadCount);
+        if (detail.notificationId) {
+          setNotifications((prev) =>
+            prev.map((n) =>
+              n.id === detail.notificationId
+                ? { ...n, read_at: n.read_at ?? new Date().toISOString() }
+                : n
+            )
+          );
+        } else if (detail.unreadCount === 0) {
+          setNotifications((prev) =>
+            prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() }))
+          );
+        }
+      } else {
+        void load();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener(USER_NOTIFICATIONS_CHANGED_EVENT, onChanged as EventListener);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener(USER_NOTIFICATIONS_CHANGED_EVENT, onChanged as EventListener);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -77,10 +120,7 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
         const res = await fetch("/api/notifications", { credentials: "include", cache: "no-store" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.error || "No se pudieron cargar las notificaciones.");
-        if (!cancelled) {
-          setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
-          setUnreadCount(typeof data.unreadCount === "number" ? data.unreadCount : 0);
-        }
+        if (!cancelled) applyPayload(data);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Error al cargar.");
       } finally {
@@ -91,26 +131,60 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, applyPayload]);
 
-  async function markAllRead() {
-    setMarking(true);
+  async function validateOne(id: string) {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || target.read_at) return;
+
+    const now = new Date().toISOString();
+    const optimisticCount = Math.max(0, unreadCount - 1);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read_at: now } : n)));
+    setUnreadCount(optimisticCount);
+    dispatchNotificationsChanged(optimisticCount, id);
+
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "validate_one", id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "No se pudo validar la notificación.");
+      const nextCount = typeof data.unreadCount === "number" ? data.unreadCount : optimisticCount;
+      setUnreadCount(nextCount);
+      dispatchNotificationsChanged(nextCount, id);
+    } catch {
+      void load();
+    }
+  }
+
+  function handleNotificationClick(id: string, pending: boolean) {
+    if (pending) void validateOne(id);
+    setOpen(false);
+  }
+
+  async function validateAll() {
+    setValidating(true);
     setError(null);
     try {
       const res = await fetch("/api/notifications", {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "mark_all_read" }),
+        body: JSON.stringify({ action: "validate_all" }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || "No se pudieron marcar.");
-      setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
+      if (!res.ok) throw new Error(data?.error || "No se pudieron validar las notificaciones.");
+      const now = new Date().toISOString();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? now })));
       setUnreadCount(0);
+      dispatchNotificationsChanged(0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al marcar.");
+      setError(e instanceof Error ? e.message : "Error al validar.");
     } finally {
-      setMarking(false);
+      setValidating(false);
     }
   }
 
@@ -121,12 +195,19 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
   const badge =
     unreadCount > 0 ? (
       <span
-        className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#EF4444] ring-2 ring-[#EF4444]/30"
+        className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#EF4444] ring-2 ring-[#EF4444]/30 dark:bg-[#EF4444] dark:text-white dark:ring-white/30"
         aria-hidden
       >
         {unreadCount > 9 ? "9+" : unreadCount}
       </span>
     ) : null;
+
+  const pendingLabel =
+    unreadCount === 0
+      ? "No tienes notificaciones pendientes."
+      : unreadCount === 1
+        ? "1 notificación pendiente de validar."
+        : `${unreadCount} notificaciones pendientes de validar.`;
 
   const modal =
     mounted && open ? (
@@ -148,9 +229,7 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
               <h2 id="user-notifications-title" className="text-lg font-bold text-slate-950 dark:text-slate-50">
                 Notificaciones
               </h2>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Invitaciones, participantes y avisos de tus viajes.
-              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{pendingLabel}</p>
             </div>
             <button
               type="button"
@@ -166,7 +245,9 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
             {loading ? (
               <p className="text-sm text-slate-500">Cargando…</p>
             ) : error ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                {error}
+              </div>
             ) : notifications.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-300">
                 No tienes notificaciones todavía.
@@ -174,14 +255,16 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
             ) : (
               <ul className="space-y-3">
                 {notifications.map((n) => {
-                  const unread = !n.read_at;
+                  const pending = !n.read_at;
                   const inner = (
                     <>
                       <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm font-bold ${unread ? "text-slate-950 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
+                        <p
+                          className={`text-sm font-bold ${pending ? "text-slate-950 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}
+                        >
                           {n.title}
                         </p>
-                        {unread ? (
+                        {pending ? (
                           <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--brand)]" aria-hidden />
                         ) : null}
                       </div>
@@ -191,7 +274,7 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
                   );
 
                   const className = `block rounded-2xl border px-4 py-3 transition ${
-                    unread
+                    pending
                       ? "border-[var(--brand-border)] bg-[var(--brand-light)]/40 dark:border-[#F87171]/30 dark:bg-[#F87171]/5"
                       : "border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]"
                   } ${n.url ? "hover:bg-slate-50 dark:hover:bg-[#1E293B]" : ""}`;
@@ -199,11 +282,21 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
                   return (
                     <li key={n.id}>
                       {n.url ? (
-                        <Link href={n.url} onClick={() => setOpen(false)} className={className}>
+                        <Link
+                          href={n.url}
+                          onClick={() => handleNotificationClick(n.id, pending)}
+                          className={className}
+                        >
                           {inner}
                         </Link>
                       ) : (
-                        <div className={className}>{inner}</div>
+                        <button
+                          type="button"
+                          onClick={() => handleNotificationClick(n.id, pending)}
+                          className={`${className} w-full text-left`}
+                        >
+                          {inner}
+                        </button>
                       )}
                     </li>
                   );
@@ -215,17 +308,17 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
           <div className="shrink-0 space-y-2 border-t border-slate-100 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:pb-4 dark:border-slate-700/60">
             <button
               type="button"
-              disabled={marking || unreadCount === 0}
-              onClick={() => void markAllRead()}
-              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-100"
+              disabled={validating || unreadCount === 0}
+              onClick={() => void validateAll()}
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[var(--brand)] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             >
               <CheckCheck className="h-4 w-4" aria-hidden />
-              {marking ? "Marcando…" : "Marcar todas como leídas"}
+              {validating ? "Validando…" : "Validar todas"}
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[var(--brand)] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[var(--brand-hover)]"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-100"
             >
               Cerrar
             </button>
@@ -240,10 +333,14 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         className={buttonClass}
-        aria-label={unreadCount > 0 ? `Notificaciones, ${unreadCount} sin leer` : "Notificaciones"}
-        title="Notificaciones"
+        aria-label={
+          unreadCount > 0
+            ? `Notificaciones, ${unreadCount} pendiente${unreadCount === 1 ? "" : "s"} de validar`
+            : "Notificaciones"
+        }
+        title={unreadCount > 0 ? `${unreadCount} pendientes` : "Notificaciones"}
       >
-        <Bell className="h-5 w-5" aria-hidden />
+        <Bell className={`h-5 w-5 ${heroMode ? "text-white" : "text-[var(--brand)]"}`} aria-hidden />
         {badge}
       </button>
       {modal ? createPortal(modal, document.body) : null}
