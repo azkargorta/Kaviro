@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import KaviroLogo from "@/components/brand/KaviroLogo";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import LoggedInHeaderActions from "@/components/layout/LoggedInHeaderActions";
 
 export default function PublicMarketingHeader() {
   const pathname = usePathname();
@@ -78,6 +79,7 @@ export default function PublicMarketingHeader() {
               </Link>
             </>
           ) : null}
+          {session === "user" ? <LoggedInHeaderActions /> : null}
           <DarkModeToggle />
         </nav>
       </div>

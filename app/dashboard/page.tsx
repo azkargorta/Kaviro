@@ -2,11 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CreateTripSection from "@/components/dashboard/CreateTripSection";
-import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import OnboardingNudge from "@/components/dashboard/OnboardingNudge";
 import DashboardAiShortcuts from "@/components/dashboard/DashboardAiShortcuts";
 import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFlowStepper";
-import { isPlatformAdmin } from "@/lib/platform-admin";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
@@ -110,8 +108,6 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/auth/login");
   }
-
-  const isAdmin = await isPlatformAdmin(user.id, user.email);
 
   let demoTripId: string | null = null;
   let isFirstOnboardingVisit = true;
@@ -230,9 +226,6 @@ export default async function DashboardPage() {
       <DashboardOfflinePanel />
       <div className="relative">
         <DashboardHero tripCount={realTrips.length} isPremium={isPremium} />
-        <div className="absolute right-0 top-3 z-10 sm:top-4">
-          <DashboardPageHeader isAdmin={isAdmin} />
-        </div>
       </div>
 
       <DashboardTripInvitesInbox />

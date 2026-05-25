@@ -5,6 +5,7 @@ import { upsertTravelMatePair } from "@/lib/travel-mates";
 import { ensureDemoTripForUser } from "@/lib/onboarding/createDemoTrip";
 import { sendPushToUserIds } from "@/lib/server/web-push";
 import { filterUserIdsByPushPreferences } from "@/lib/push-notification-preferences";
+import { createUserNotification } from "@/lib/server/user-notifications";
 
 export const runtime = "nodejs";
 
@@ -145,6 +146,14 @@ export async function POST(
       (prefRows ?? []) as Array<{ user_id: string } & Record<string, boolean>>,
       "participant_joined"
     );
+
+    await createUserNotification(admin, {
+      userId: row.inviter_user_id,
+      type: "invite_accepted",
+      title: "Invitación aceptada",
+      body: `${inviteeLabel} se ha unido a «${tripName}»`,
+      url: `/trip/${row.trip_id}/participants`,
+    });
 
     if (notifyIds.length) {
       void sendPushToUserIds(notifyIds, {

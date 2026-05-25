@@ -5,6 +5,7 @@ import { forbidUnlessCanManageParticipants, requireTripAccessApi } from "@/lib/t
 import { memberInvitePermissions } from "@/lib/travel-mates";
 import type { TripRole } from "@/lib/participants";
 import { sendPushToUserIds } from "@/lib/server/web-push";
+import { createUserNotification } from "@/lib/server/user-notifications";
 import { isValidUsername, normalizeUsername } from "@/lib/validators/auth";
 
 export const runtime = "nodejs";
@@ -219,6 +220,14 @@ export async function POST(request: Request) {
       (inviterProfile as { full_name?: string } | null)?.full_name?.trim() ||
       (inviterProfile as { username?: string } | null)?.username?.trim() ||
       "Alguien";
+
+    await createUserNotification(admin, {
+      userId: inviteeUserId,
+      type: "trip_invite",
+      title: "Invitación al viaje",
+      body: `${inviter} te invitó a «${tripName}»`,
+      url: "/dashboard",
+    });
 
     void sendPushToUserIds([inviteeUserId], {
       title: "Invitación al viaje",

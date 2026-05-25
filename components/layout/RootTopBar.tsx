@@ -1,16 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import KaviroLogo from "@/components/brand/KaviroLogo";
 import { PremiumBadge } from "@/components/layout/PremiumBadge";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import LoggedInHeaderActions from "@/components/layout/LoggedInHeaderActions";
+
+const LOGGED_IN_SHELL_PREFIXES = [
+  "/dashboard",
+  "/trips/new",
+  "/account",
+  "/offline-viaje",
+];
 
 export default function RootTopBar() {
   const pathname = usePathname();
+  const [session, setSession] = useState<"loading" | "guest" | "user">("loading");
 
-  // Mostrar en dashboard y en el wizard de nuevo viaje.
-  const showOnPath = pathname?.startsWith("/dashboard") || pathname?.startsWith("/trips/new");
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me", { credentials: "include", cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: { ok?: boolean }) => {
+        if (!cancelled) setSession(data.ok ? "user" : "guest");
+      })
+      .catch(() => {
+        if (!cancelled) setSession("guest");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const showOnPath =
+    LOGGED_IN_SHELL_PREFIXES.some((prefix) => pathname?.startsWith(prefix)) &&
+    !pathname?.startsWith("/trip/");
+
   if (!showOnPath) return null;
 
   return (
@@ -31,7 +58,8 @@ export default function RootTopBar() {
           </Link>
           <div className="flex items-center gap-2">
             <PremiumBadge />
-            <DarkModeToggle />
+            <DarkModeToggle heroMode />
+            {session === "user" ? <LoggedInHeaderActions heroMode /> : null}
           </div>
         </div>
       </div>
