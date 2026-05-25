@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { buildTripSummaryForAi } from "@/lib/trip-ai/buildTripSummary";
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
+import type { TripAiUsage } from "@/lib/trip-ai/providers";
 import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import {
+  buildPlanDayContextForSuggestion,
+  buildPlanSuggestionPrompt,
+  buildPlanSuggestionRetryPrompt,
+  cleanPlanSuggestion,
+} from "@/lib/plan-suggestion-context";
 import {
   consumePlanSuggestionNextSlot,
   getCachedPlanSuggestion,
@@ -13,21 +20,63 @@ import {
 } from "@/lib/plan-suggestion-guard";
 import { PLAN_SUGGESTION_MAX_OUTPUT_TOKENS, PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR } from "@/lib/plan-suggestion-constants";
 import { requireTripAccessApi } from "@/lib/trip-access-api";
+import { createServerSupabase } from "@/lib/trip-ai/serverSupabase";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function cleanSuggestion(raw: string): string | null {
-  const text = raw
-    .trim()
-    .replace(/^["']|["']$/g, "")
-    .replace(/^IA sugiere:?\s*/i, "")
-    .replace(/^Sugerencia:?\s*/i, "")
-    .trim();
-  if (!text || text.length < 8) return null;
-  if (/^(null|ninguna|nada|ok|está bien)/i.test(text)) return null;
-  if (/^considera\s+(añadir|agregar|reservar|programar|planificar)\s*$/i.test(text)) return null;
-  return text.length > 140 ? `${text.slice(0, 137)}…` : text;
+function mergeUsage(a: TripAiUsage, b: TripAiUsage): TripAiUsage {
+  const inputTokens =
+    typeof a.inputTokens === "number" || typeof b.inputTokens === "number"
+      ? (a.inputTokens || 0) + (b.inputTokens || 0)
+      : null;
+  const outputTokens =
+    typeof a.outputTokens === "number" || typeof b.outputTokens === "number"
+      ? (a.outputTokens || 0) + (b.outputTokens || 0)
+      : null;
+  return { provider: a.provider, model: a.model, inputTokens, outputTokens };
+}
+
+async function resolveFocusDate(tripId: string, date: string): Promise<string> {
+  if (date) return date;
+
+  const supabase = createServerSupabase();
+  const { data: trip } = await supabase.from("trips").select("start_date").eq("id", tripId).maybeSingle();
+  const start = typeof trip?.start_date === "string" ? trip.start_date : "";
+  if (start && /^\d{4}-\d{2}-\d{2}$/.test(start)) return start;
+
+  const { data: act } = await supabase
+    .from("trip_activities")
+    .select("activity_date")
+    .eq("trip_id", tripId)
+    .order("activity_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const first = typeof act?.activity_date === "string" ? act.activity_date : "";
+  return first && /^\d{4}-\d{2}-\d{2}$/.test(first) ? first : "";
+}
+
+async function generateSuggestion(params: {
+  tripId: string;
+  focusDate: string;
+  exclude: string[];
+  retry: boolean;
+}): Promise<{ suggestion: string | null; usage: TripAiUsage }> {
+  const [tripSummary, dayContext] = await Promise.all([
+    buildTripSummaryForAi(params.tripId),
+    buildPlanDayContextForSuggestion(params.tripId, params.focusDate),
+  ]);
+
+  const prompt = params.retry
+    ? buildPlanSuggestionRetryPrompt({ tripSummary, dayContext })
+    : buildPlanSuggestionPrompt({ tripSummary, dayContext, exclude: params.exclude });
+
+  const { text, usage } = await askTripAIWithUsage(prompt, "general", {
+    maxOutputTokens: PLAN_SUGGESTION_MAX_OUTPUT_TOKENS,
+  });
+
+  return { suggestion: cleanPlanSuggestion(text || ""), usage };
 }
 
 export async function POST(req: Request) {
@@ -35,6 +84,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const tripId = typeof body?.tripId === "string" ? body.tripId.trim() : "";
     const date = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date.trim()) ? body.date.trim() : "";
+    const forceRefresh = body?.forceRefresh === true;
     const exclude = Array.isArray(body?.exclude)
       ? body.exclude
           .filter((item: unknown): item is string => typeof item === "string")
@@ -73,16 +123,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const cacheKey = planSuggestionCacheKey(tripId, date, exclude);
-    const cached = getCachedPlanSuggestion(cacheKey);
-    if (cached !== undefined) {
-      return NextResponse.json({
-        suggestion: cached,
-        date: date || null,
-        cached: true,
-        nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
-        nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
-      });
+    const focusDate = await resolveFocusDate(tripId, date);
+    const cacheKey = planSuggestionCacheKey(tripId, focusDate || date, exclude);
+
+    if (!forceRefresh) {
+      const cached = getCachedPlanSuggestion(cacheKey);
+      if (cached != null && cached !== "") {
+        return NextResponse.json({
+          suggestion: cached,
+          date: focusDate || date || null,
+          cached: true,
+          nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
+          nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
+        });
+      }
     }
 
     if (isNextRequest) {
@@ -101,41 +155,47 @@ export async function POST(req: Request) {
       }
     }
 
-    const tripSummary = await buildTripSummaryForAi(tripId);
-    const dayHint = date
-      ? `Enfócate solo en el día ${date}: huecos horarios, traslados, comidas o mejoras concretas.`
-      : "Enfócate en el día más próximo o con más huecos del plan.";
+    if (!focusDate) {
+      return NextResponse.json({
+        suggestion: null,
+        date: null,
+        reason: "no_date",
+        nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
+        nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
+      });
+    }
 
-    const excludeHint =
-      exclude.length > 0
-        ? `\nNO repitas ni parafrasees estas sugerencias ya mostradas al usuario:\n${exclude.map((item: string) => `- ${item}`).join("\n")}\nPropón algo distinto y complementario.\n`
-        : "";
+    let usageTotal: TripAiUsage | null = null;
+    let suggestion: string | null = null;
 
-    const prompt = `${tripSummary}
+    const first = await generateSuggestion({ tripId, focusDate, exclude, retry: false });
+    suggestion = first.suggestion;
+    usageTotal = first.usage;
 
-${dayHint}
-${excludeHint}
-Responde con UNA sola frase corta y accionable en español (máximo 15 palabras), en modo imperativo y completa (p. ej. «Añadir comida entre museo y parque», «Reservar traslado al aeropuerto»).
-No uses fórmulas incompletas como «Considera añadir» sin concretar qué.
-Si no hay ninguna mejora razonable${exclude.length > 0 ? " distinta de las ya listadas" : ""}, responde exactamente: null`;
+    if (!suggestion && exclude.length === 0) {
+      const second = await generateSuggestion({ tripId, focusDate, exclude, retry: true });
+      suggestion = second.suggestion;
+      usageTotal = mergeUsage(first.usage, second.usage);
+    }
 
-    const { text, usage } = await askTripAIWithUsage(prompt, "general", {
-      maxOutputTokens: PLAN_SUGGESTION_MAX_OUTPUT_TOKENS,
-    });
-    await trackAiUsage({
-      supabase: gate.supabase,
-      userId,
-      provider: (process.env.AI_PROVIDER || "gemini").toLowerCase(),
-      monthKey,
-      usage,
-    });
+    if (usageTotal) {
+      await trackAiUsage({
+        supabase: gate.supabase,
+        userId,
+        provider: (process.env.AI_PROVIDER || "gemini").toLowerCase(),
+        monthKey,
+        usage: usageTotal,
+      });
+    }
 
-    const suggestion = cleanSuggestion(text || "");
-    setCachedPlanSuggestion(cacheKey, suggestion);
+    if (suggestion) {
+      setCachedPlanSuggestion(cacheKey, suggestion);
+    }
 
     return NextResponse.json({
       suggestion,
-      date: date || null,
+      date: focusDate,
+      reason: suggestion ? "found" : "none",
       cached: false,
       nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
       nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,

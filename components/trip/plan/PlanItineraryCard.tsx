@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { formatPlanDestinationLabel, planParticipantInitials } from "@/lib/plan-activity-meta";
+import {
+  formatPlanDayTabLabel,
+  formatPlanDestinationLabel,
+  planParticipantInitials,
+} from "@/lib/plan-activity-meta";
 
 type Props = {
   destination?: string | null;
@@ -33,36 +37,41 @@ export default function PlanItineraryCard({
   const overflow = participants.length - shown.length;
 
   return (
-    <div className="relative">
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-        <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              {destLabel ? (
-                <p className="text-xs font-bold uppercase tracking-widest text-white/70">{destLabel}</p>
-              ) : null}
-              <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
-            </div>
-            {shown.length ? (
-              <div className="flex shrink-0 -space-x-1.5">
-                {shown.map((name) => (
-                  <div
-                    key={name}
-                    title={name}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white"
-                  >
-                    {planParticipantInitials(name)}
-                  </div>
-                ))}
-                {overflow > 0 ? (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white">
-                    +{overflow}
-                  </div>
-                ) : null}
-              </div>
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {destLabel ? (
+              <p className="text-xs font-bold uppercase tracking-widest text-white/70">{destLabel}</p>
             ) : null}
+            <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
           </div>
+          {shown.length ? (
+            <div className="flex shrink-0 -space-x-1.5">
+              {shown.map((name) => (
+                <div
+                  key={name}
+                  title={name}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white"
+                >
+                  {planParticipantInitials(name)}
+                </div>
+              ))}
+              {overflow > 0 ? (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white">
+                  +{overflow}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
+      </div>
+
+      {aiSuggest ? (
+        <div className="flex justify-end border-b border-slate-100 bg-white px-3 py-2 dark:border-[#1E293B] dark:bg-[#0F1623]">
+          {aiSuggest}
+        </div>
+      ) : null}
 
       {days.length > 0 ? (
         <div
@@ -72,18 +81,30 @@ export default function PlanItineraryCard({
         >
           {days.map((date, i) => {
             const isActive = selectedDate === date;
+            const tab = formatPlanDayTabLabel(date, i + 1);
             return (
               <button
                 key={date}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
+                aria-label={tab.date ? `${tab.day}, ${tab.date}` : tab.day}
+                title={tab.date ? `${tab.day} · ${tab.date}` : tab.day}
                 onClick={() => onSelectDate(date)}
-                className={`relative min-w-[5.5rem] flex-1 py-2.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`relative flex min-w-[4.75rem] flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2.5 transition ${
                   isActive ? "text-[#F87171]" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 }`}
               >
-                Día {i + 1}
+                <span className="text-xs font-bold leading-none">{tab.day}</span>
+                {tab.date ? (
+                  <span
+                    className={`text-[10px] font-semibold leading-none ${
+                      isActive ? "text-[#F87171]/80" : "text-slate-400 dark:text-slate-500"
+                    }`}
+                  >
+                    {tab.date}
+                  </span>
+                ) : null}
                 {isActive ? (
                   <span aria-hidden className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-[#F87171]" />
                 ) : null}
@@ -106,13 +127,6 @@ export default function PlanItineraryCard({
           </Link>
         </div>
       )}
-      </div>
-
-      {aiSuggest ? (
-        <div className="pointer-events-none absolute bottom-14 right-3 z-20 max-w-[calc(100%-1.5rem)] sm:bottom-[4.25rem] sm:right-4">
-          <div className="pointer-events-auto flex justify-end">{aiSuggest}</div>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -182,6 +182,12 @@ export default function PublicLanding() {
                   else setActivePlan("día3");
                 }}
                 tripId="preview"
+                aiSuggest={
+                  <div className="w-full max-w-[17rem] rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
+                    <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Añadir traslado al aeropuerto</p>
+                  </div>
+                }
                 expenseFooter={
                   <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gastos del grupo</span>
@@ -200,13 +206,6 @@ export default function PublicLanding() {
                   ))}
                 </div>
               </PlanItineraryCard>
-
-              <div className="absolute bottom-14 right-3 z-10 sm:bottom-16 sm:right-4">
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-                  <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">Añadir traslado al aeropuerto</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

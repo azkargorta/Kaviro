@@ -49,7 +49,7 @@ function writeCache(key: string, data: SuggestCache) {
 }
 
 const badgeShellClass =
-  "w-[min(17rem,calc(100vw-2.5rem))] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]";
+  "w-full max-w-[min(17rem,calc(100vw-2.5rem))] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]";
 
 export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDate, onOpenAssistant }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -67,7 +67,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
   const storageKey = cacheKey(tripId, selectedDate);
 
   const fetchSuggestion = useCallback(
-    async (exclude: string[], mode: "initial" | "next") => {
+    async (exclude: string[], mode: "initial" | "next", forceRefresh = false) => {
       const setBusy = mode === "initial" ? setLoading : setLoadingNext;
       setBusy(true);
       setRateLimitMessage(null);
@@ -80,6 +80,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
             tripId,
             date: selectedDate || undefined,
             exclude,
+            forceRefresh,
           }),
         });
         const payload = await res.json().catch(() => null);
@@ -126,8 +127,6 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
             noMore: true,
             nextRemaining: typeof payload?.nextRemaining === "number" ? payload.nextRemaining : nextRemaining,
           });
-        } else if (mode === "initial") {
-          setNoMore(true);
         }
 
         return false;
@@ -173,18 +172,15 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
 
   async function handleRetry() {
     if (loading) return;
-    await fetchSuggestion([], "initial");
+    await fetchSuggestion(suggestions, "initial", true);
   }
 
   async function handleNext() {
-    if (loadingNext || noMore || nextRemaining <= 0) return;
-    const exclude = suggestions.length > 0 ? suggestions : currentSuggestion ? [currentSuggestion] : [];
-    if (exclude.length === 0) {
-      await handleRetry();
-      return;
-    }
-    const found = await fetchSuggestion(exclude, "next");
-    if (!found && !rateLimitMessage) setNoMore(true);
+    if (loadingNext || nextRemaining <= 0) return;
+    if (noMore && suggestions.length > 0) return;
+    const exclude = suggestions.length > 0 ? suggestions : [];
+    const found = await fetchSuggestion(exclude, exclude.length > 0 ? "next" : "initial", exclude.length === 0);
+    if (!found && exclude.length > 0 && !rateLimitMessage) setNoMore(true);
   }
 
   if (dismissed) return null;
@@ -247,7 +243,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
     );
   }
 
-  const nextDisabled = loadingNext || (Boolean(currentSuggestion) && (noMore || nextRemaining <= 0));
+  const nextDisabled = loadingNext || (suggestions.length > 0 && (noMore || nextRemaining <= 0));
 
   return (
     <div className={badgeShellClass}>
@@ -268,7 +264,8 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
             <p className="mt-0.5 break-words text-[10px] leading-snug text-rose-600 dark:text-rose-400">{fetchError}</p>
           ) : (
             <p className="mt-0.5 break-words text-[10px] leading-snug text-slate-500 dark:text-slate-400">
-              No se encontró ninguna sugerencia para este día. El plan puede estar bien equilibrado.
+              La IA no propuso cambios en este intento. Pulsa <span className="font-semibold">Reintentar</span> para
+              buscar otra vez con más detalle del día{selectedDate ? ` (${selectedDate})` : ""}.
             </p>
           )}
 

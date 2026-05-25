@@ -72,3 +72,20 @@ export function planParticipantInitials(name: string) {
   if (parts.length === 1 && parts[0]!.length >= 2) return parts[0]!.slice(0, 2).toUpperCase();
   return (parts[0]?.[0] || "?").toUpperCase();
 }
+
+/** Etiqueta corta de fecha para pestañas del plan (p. ej. «15 jun»). */
+export function formatPlanDayTabDate(isoDate: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const [y, m, d] = isoDate.split("-").map((part) => Number(part));
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d);
+  if (Number.isNaN(dt.getTime())) return null;
+  return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(dt).replace(/\.$/, "");
+}
+
+export function formatPlanDayTabLabel(isoDate: string, dayIndex: number): { day: string; date: string | null } {
+  return {
+    day: `Día ${dayIndex}`,
+    date: formatPlanDayTabDate(isoDate),
+  };
+}

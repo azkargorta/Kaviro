@@ -24,6 +24,7 @@ export function getCachedPlanSuggestion(key: string): string | null | undefined 
     responseCache.delete(key);
     return undefined;
   }
+  if (entry.suggestion == null || entry.suggestion === "") return undefined;
   return entry.suggestion;
 }
 
