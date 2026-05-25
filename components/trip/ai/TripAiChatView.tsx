@@ -852,6 +852,11 @@ export default function TripAiChatView({
       const key = opKey(op, idx);
       const rawOp = typeof op?.op === "string" ? op.op.toLowerCase() : "";
       if (rawOp.startsWith("delete_")) return;
+      if (
+        !["update_activity", "create_activity", "delete_activity", "update_route", "create_route"].includes(rawOp)
+      ) {
+        return;
+      }
       next.add(key);
     });
     setDiffSelected(next);
@@ -967,6 +972,27 @@ export default function TripAiChatView({
         subtitle: changes.length ? changes.join(" · ") : null,
         date: afterDay || beforeDay,
         tone: "neutral",
+        details: null,
+        raw: op,
+      };
+    }
+
+    if (normalized === "create_route") {
+      const f = op?.fields || {};
+      const title = String(f?.title || "").trim() || "Nueva ruta";
+      const date = typeof f?.route_day === "string" ? f.route_day : null;
+      const time = typeof f?.departure_time === "string" ? f.departure_time : null;
+      const travelMode = typeof f?.travel_mode === "string" ? f.travel_mode : null;
+      const origin = String(f?.origin_name || f?.origin_address || "").trim();
+      const destination = String(f?.destination_name || f?.destination_address || "").trim();
+      const path = [origin, destination].filter(Boolean).join(" → ");
+      const duration = typeof f?.duration_text === "string" ? f.duration_text.trim() : "";
+      return {
+        kind: "route",
+        title: `Añadir ruta: ${title}`,
+        subtitle: [date, time, travelMode, path, duration].filter(Boolean).join(" · ") || null,
+        date,
+        tone: "good",
         details: null,
         raw: op,
       };
@@ -2030,7 +2056,14 @@ export default function TripAiChatView({
                                 : it.tone === "warn"
                                   ? "bg-rose-50 text-rose-800 border-rose-200"
                                   : "bg-slate-50 text-slate-700 border-slate-200";
-                            const badgeText = it.tone === "good" ? "Añade" : it.tone === "warn" ? "Borra" : "Cambia";
+                            const badgeText =
+                              it.kind === "unknown"
+                                ? "Revisar"
+                                : it.tone === "good"
+                                  ? "Añade"
+                                  : it.tone === "warn"
+                                    ? "Borra"
+                                    : "Cambia";
                             const rawOp = (it as any).__rawOp;
                             const rawOpName = typeof rawOp?.op === "string" ? rawOp.op.toLowerCase() : "";
                             const isDelete = rawOpName.startsWith("delete_");
