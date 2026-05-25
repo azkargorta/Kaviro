@@ -1847,7 +1847,14 @@ export default function TripAiChatView({
       ) : null}
 
       {diffDraft ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section
+          className={`rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${
+            layout === "drawer"
+              ? "flex min-h-0 max-h-[min(58dvh,560px)] shrink-0 flex-col overflow-hidden p-3 sm:p-4"
+              : "max-h-[min(75vh,720px)] overflow-hidden p-5"
+          }`}
+        >
+          <div className="shrink-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-slate-950">Cambios propuestos por el asistente personal</div>
@@ -1890,8 +1897,29 @@ export default function TripAiChatView({
                     if (payload?.results?.some?.((r: any) => !r.ok)) {
                       throw new Error("Se aplicaron algunos cambios, pero otros fallaron. Revisa el historial o vuelve a intentar.");
                     }
-                    setInfo("Cambios aplicados.");
+
+                    const appliedCount = filtered.length;
+                    await reloadTripPlanActivities();
                     setDiffDraft(null);
+                    setDiffContext(null);
+                    setDiffSelected(new Set());
+                    setDiffAllowDeletes(false);
+                    setConversationId(null);
+                    setQuestion("");
+                    setInfo(null);
+                    setMessages([
+                      {
+                        id: newChatMessageId(),
+                        role: "assistant",
+                        content:
+                          appliedCount === 1
+                            ? "Listo: he aplicado 1 cambio al plan. Puedes verlo en la pestaña Plan.\n\n¿Quieres que siga revisando el viaje?"
+                            : `Listo: he aplicado ${appliedCount} cambios al plan. Puedes verlos en la pestaña Plan.\n\n¿Quieres que siga revisando el viaje?`,
+                      },
+                    ]);
+                    window.requestAnimationFrame(() => {
+                      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                    });
                   } catch (e) {
                     setError(e instanceof Error ? e.message : "No se pudo aplicar el diff.");
                   } finally {
@@ -1955,11 +1983,17 @@ export default function TripAiChatView({
               </button>
             </div>
           </div>
+          </div>
 
+          <div
+            className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-color:rgba(148,163,184,0.55)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/80 ${
+              layout === "drawer" ? "mt-2 pr-1" : "mt-4"
+            }`}
+          >
           {diffContextLoading ? (
-            <div className="mt-4 text-sm text-slate-600">Preparando preview…</div>
+            <div className="text-sm text-slate-600">Preparando preview…</div>
           ) : (
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               {(() => {
                 const ops = (diffDraft.operations || [])
                   .slice(0, 80)
@@ -2068,6 +2102,7 @@ export default function TripAiChatView({
               })()}
             </div>
           )}
+          </div>
         </section>
       ) : null}
 

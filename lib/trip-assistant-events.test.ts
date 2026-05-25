@@ -8,7 +8,8 @@ describe("buildPlanFullTripAnalysisChatPrompt", () => {
       focusDate: "2026-05-26",
     });
     expect(prompt).toMatch(/todos/i);
-    expect(prompt).toMatch(/TRIPBOARD_DIFF/i);
+    expect(prompt).toMatch(/Aplicar cambios/i);
+    expect(prompt).not.toMatch(/TRIPBOARD_DIFF/i);
     expect(prompt).toMatch(/2026-05-26/);
     expect(prompt).toMatch(/Tokio 2026/);
   });

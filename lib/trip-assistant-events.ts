@@ -22,14 +22,14 @@ export function buildPlanFullTripAnalysisChatPrompt(options?: {
   const namePart =
     options?.tripName && options.tripName.trim() ? ` («${options.tripName.trim()}»)` : "";
   const focusPart = options?.focusDate
-    ? `\nPrioriza lo que veas en el día ${options.focusDate}, pero revisa **todos** los días del calendario del viaje en la misma pasada.`
-    : "\nRevisa **todos** los días del calendario del viaje en una sola pasada.";
+    ? `\nPrioriza lo que veas en el día ${options.focusDate}, pero revisa todos los días del calendario del viaje en la misma pasada.`
+    : "\nRevisa todos los días del calendario del viaje en una sola pasada.";
 
   return (
     `Analiza el plan completo de este viaje${namePart}.${focusPart}\n\n` +
     `Para cada día detecta problemas y mejoras: huecos largos sin actividades, comidas faltantes (desayuno, comida/almuerzo, cena), traslados si cambia de ciudad, días muy ligeros, solapes de horario y falta de margen.\n\n` +
     `Primero explícame en texto claro, agrupado por día, qué falta o conviene mejorar.\n` +
-    `Después prepara **un solo** bloque TRIPBOARD_DIFF con todas las operaciones propuestas (create_activity, update_activity, etc.) para que yo elija cuáles aplicar.\n` +
+    `Después prepara todos los cambios concretos del plan (añadir, modificar o quitar actividades) en una sola propuesta para que yo elija cuáles aplicar con «Aplicar cambios».\n` +
     `En comidas incluye local concreto (nombre + zona + ciudad). En traslados sé explícito (tren, metro, ferry, etc.).`
   );
 }
