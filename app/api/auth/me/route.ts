@@ -1,6 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { resolveProfileUsername, syncProfileUsernameIfMissing } from "@/lib/profile-username";
 
 export const runtime = "nodejs";
 
@@ -37,15 +39,14 @@ export async function GET() {
 
     let username: string | null = null;
     if (user?.id) {
-      const { data: profileRow } = await supabase
+      const admin = createSupabaseAdmin();
+      const { data: profileRow } = await admin
         .from("profiles")
-        .select("username")
+        .select("username, email")
         .eq("id", user.id)
         .maybeSingle();
-      username =
-        typeof (profileRow as { username?: string } | null)?.username === "string"
-          ? String((profileRow as { username: string }).username)
-          : null;
+      const synced = await syncProfileUsernameIfMissing(admin, user.id, profileRow, user);
+      username = synced || resolveProfileUsername(profileRow, user) || null;
     }
 
     const res = NextResponse.json({

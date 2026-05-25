@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { upsertTravelMatePair } from "@/lib/travel-mates";
 import { ensureDemoTripForUser } from "@/lib/onboarding/createDemoTrip";
+import { sendPushToUserIds } from "@/lib/server/web-push";
+import { filterUserIdsByPushPreferences } from "@/lib/push-notification-preferences";
 
 export const runtime = "nodejs";
 
@@ -118,6 +120,38 @@ export async function POST(
       await ensureDemoTripForUser(user);
     } catch {
       /* opcional */
+    }
+
+    const [{ data: tripRow }, { data: inviteeProfile }] = await Promise.all([
+      admin.from("trips").select("name").eq("id", row.trip_id).maybeSingle(),
+      admin.from("profiles").select("username, full_name").eq("id", user.id).maybeSingle(),
+    ]);
+    const tripName = (tripRow as { name?: string } | null)?.name?.trim() || "tu viaje";
+    const inviteeLabel =
+      (inviteeProfile as { full_name?: string | null; username?: string | null } | null)?.full_name?.trim() ||
+      ((inviteeProfile as { username?: string | null } | null)?.username
+        ? `@${(inviteeProfile as { username: string }).username}`
+        : row.display_name || "Alguien");
+
+    const { data: prefRows } = await admin
+      .from("push_notification_preferences")
+      .select(
+        "user_id, enabled, activity_added, activity_edited, expense_added, participant_joined, trip_starts_tomorrow, trip_invite"
+      )
+      .eq("user_id", row.inviter_user_id);
+
+    const notifyIds = filterUserIdsByPushPreferences(
+      [row.inviter_user_id],
+      (prefRows ?? []) as Array<{ user_id: string } & Record<string, boolean>>,
+      "participant_joined"
+    );
+
+    if (notifyIds.length) {
+      void sendPushToUserIds(notifyIds, {
+        title: "Invitación aceptada",
+        body: `${inviteeLabel} se ha unido a «${tripName}»`,
+        url: `/trip/${row.trip_id}/participants`,
+      });
     }
 
     return NextResponse.json({

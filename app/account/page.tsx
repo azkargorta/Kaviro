@@ -15,6 +15,7 @@ import {
   type BillingSubscriptionSnapshot,
   type ProfilePremiumSnapshot,
 } from "@/lib/entitlements";
+import { syncProfileUsernameIfMissing } from "@/lib/profile-username";
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -42,7 +43,7 @@ export default async function AccountPage() {
     email?: string | null;
   } | null;
 
-  const username = typeof profile?.username === "string" ? profile.username : "";
+  const username = await syncProfileUsernameIfMissing(admin, user.id, profile, user);
   const email = user.email || (typeof profile?.email === "string" ? profile.email : "");
   const sub = subRow as BillingSubscriptionSnapshot & {
     status?: string;
