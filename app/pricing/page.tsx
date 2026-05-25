@@ -12,6 +12,8 @@ import {
   PRICING_PRICES,
 } from "@/lib/pricing-public";
 import { FREE_TRIP_LIMIT } from "@/lib/premium-copy";
+import { createClient } from "@/lib/supabase/server";
+import { PREMIUM_UPGRADE_HREF, PREMIUM_UPGRADE_LOGIN_HREF } from "@/lib/auth-routes";
 
 export const metadata: Metadata = {
   title: "Precios · Kaviro",
@@ -33,7 +35,13 @@ const FREE_ICONS: Record<string, typeof Map> = {
   trips: Check,
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const premiumHref = user ? PREMIUM_UPGRADE_HREF : PREMIUM_UPGRADE_LOGIN_HREF;
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#080C14]">
       <PublicMarketingHeader />
@@ -58,7 +66,7 @@ export default function PricingPage() {
               Empezar gratis
             </Link>
             <Link
-              href="/auth/login?next=/account?upgrade=premium#premium-plans"
+              href={premiumHref}
               className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/15"
             >
               <Zap className="h-4 w-4" />
@@ -128,7 +136,7 @@ export default function PricingPage() {
             </ul>
             <div className="mt-8 flex flex-col gap-2.5">
               <Link
-                href="/auth/login?next=/account?upgrade=premium#premium-plans"
+                href={premiumHref}
                 className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[var(--brand)] text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
               >
                 <Zap className="h-4 w-4" />
@@ -194,7 +202,7 @@ export default function PricingPage() {
               Empezar gratis
             </Link>
             <Link
-              href="/auth/login?next=/account?upgrade=premium#premium-plans"
+              href={premiumHref}
               className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl bg-[var(--brand)] px-6 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
             >
               <Star className="h-4 w-4" />

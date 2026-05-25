@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isValidPassword, isValidUsername, normalizeUsername } from "@/lib/validators/auth";
 import { withTimeout } from "@/lib/with-timeout";
 import { PRICING_PRICE_LABELS, PRICING_PRICES } from "@/lib/pricing-public";
+import { buildBillingCheckoutHref } from "@/lib/auth-routes";
 
 type Props = {
   initial: {
@@ -33,6 +34,7 @@ export default function AccountSettingsForm({ initial }: Props) {
   const monthlyPriceLabel = PRICING_PRICE_LABELS.monthly;
   const yearlyPriceLabel = PRICING_PRICE_LABELS.yearly;
   const [highlightPlans, setHighlightPlans] = useState(false);
+  const checkoutResumeRef = useRef(false);
 
   const normalized = useMemo(() => normalizeUsername(username), [username]);
   const usernameValid = isValidUsername(normalized);
@@ -130,30 +132,10 @@ export default function AccountSettingsForm({ initial }: Props) {
     }
   }
 
-  async function startCheckout(plan: "monthly" | "yearly") {
+  function startCheckout(plan: "monthly" | "yearly") {
     setBillingStatus(null);
     setBillingLoading(true);
-    try {
-      const resp = await withTimeout(
-        fetch("/api/billing/checkout", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan }),
-        }),
-        20_000,
-        "Timeout iniciando el pago."
-      );
-      const payload = await resp.json().catch(() => null);
-      if (!resp.ok) throw new Error(payload?.error || `Error ${resp.status}`);
-      const url = String(payload?.url || "");
-      if (!url) throw new Error("Stripe no devolvió URL de checkout.");
-      window.location.assign(url);
-    } catch (e) {
-      setBillingStatus(e instanceof Error ? e.message : "No se pudo iniciar el pago.");
-    } finally {
-      setBillingLoading(false);
-    }
+    window.location.assign(buildBillingCheckoutHref(plan));
   }
 
   async function openPortal() {
@@ -184,16 +166,38 @@ export default function AccountSettingsForm({ initial }: Props) {
   useEffect(() => {
     const upgrade = searchParams?.get("upgrade");
     const focus = searchParams?.get("focus");
-    const shouldFocus = upgrade === "premium" || focus === "premium";
-    if (!shouldFocus) return;
+    const billing = searchParams?.get("billing");
+    const plan = searchParams?.get("plan");
+    const message = searchParams?.get("message");
 
-    const el = document.getElementById("premium-plans");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setHighlightPlans(true);
-      window.setTimeout(() => setHighlightPlans(false), 1800);
+    if (billing === "error" && message) {
+      setBillingStatus(decodeURIComponent(message));
+    } else if (billing === "cancel") {
+      setBillingStatus("Pago cancelado. Puedes volver a intentarlo cuando quieras.");
+    } else if (billing === "success") {
+      setBillingStatus("Pago completado. Tu plan Premium se activará en unos segundos.");
     }
-  }, [searchParams]);
+
+    const shouldFocus = upgrade === "premium" || focus === "premium";
+    if (shouldFocus) {
+      const el = document.getElementById("premium-plans");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        setHighlightPlans(true);
+        window.setTimeout(() => setHighlightPlans(false), 1800);
+      }
+    }
+
+    if (
+      !checkoutResumeRef.current &&
+      billing === "checkout" &&
+      (plan === "monthly" || plan === "yearly") &&
+      !initial.isPremium
+    ) {
+      checkoutResumeRef.current = true;
+      window.location.assign(buildBillingCheckoutHref(plan));
+    }
+  }, [searchParams, initial.isPremium]);
 
   return (
     <div className="space-y-8">

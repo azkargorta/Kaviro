@@ -24,8 +24,14 @@ export function freePlanBadge() {
   return `Plan gratuito · hasta ${FREE_TRIP_LIMIT} viajes`;
 }
 
-/** Enlace canónico al flujo de upgrade (cuenta). */
-export const PREMIUM_UPGRADE_HREF = "/account?upgrade=premium&focus=premium#premium-plans";
+export {
+  PREMIUM_ACCOUNT_QUERY,
+  PREMIUM_UPGRADE_HREF,
+  PREMIUM_UPGRADE_LOGIN_HREF,
+  buildBillingCheckoutHref,
+  buildLoginHref,
+  buildPremiumCheckoutLoginHref,
+} from "@/lib/auth-routes";
 
 export type PremiumFeatureKey =
   | "generic"
