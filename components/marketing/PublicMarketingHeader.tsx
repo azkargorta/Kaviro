@@ -67,13 +67,13 @@ export default function PublicMarketingHeader() {
             <>
               <Link
                 href="/auth/login"
-                className="px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 sm:px-4 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-100 dark:hover:bg-[#1E293B]"
               >
                 Entrar
               </Link>
               <Link
                 href="/auth/register"
-                className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
+                className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] sm:px-4"
               >
                 Empezar gratis
               </Link>

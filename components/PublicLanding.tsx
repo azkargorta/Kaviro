@@ -144,7 +144,7 @@ export default function PublicLanding() {
                 Plan día a día, rutas en el mapa y gastos del grupo en un solo lugar. Con Premium, añade asistente IA y análisis de documentos.
               </p>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   href="/auth/register"
                   className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#F87171] px-8 text-base font-bold text-white shadow-lg shadow-[#F87171]/25 transition hover:bg-[#EF4444] hover:shadow-[#F87171]/40"
@@ -153,12 +153,25 @@ export default function PublicLanding() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
                 <Link
+                  href="/auth/login"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border-2 border-[#F87171]/40 bg-white px-8 text-base font-bold text-[#F87171] transition hover:border-[#F87171] hover:bg-[#F87171]/5 dark:border-[#F87171]/50 dark:bg-[#0F1623] dark:text-[#F87171] dark:hover:bg-[#F87171]/10"
+                >
+                  Entrar
+                </Link>
+                <Link
                   href="/pricing"
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B] sm:w-auto w-full"
                 >
                   Ver planes
                 </Link>
               </div>
+
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                ¿Ya tienes cuenta?{" "}
+                <Link href="/auth/login" className="font-bold text-[#F87171] underline-offset-2 hover:underline">
+                  Entra aquí
+                </Link>
+              </p>
 
               <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Gratis para siempre</span>
@@ -392,12 +405,24 @@ export default function PublicLanding() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
             <Link
+              href="/auth/login"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border-2 border-white/70 bg-white/10 px-8 text-base font-bold text-white transition hover:bg-white/20"
+            >
+              Entrar
+            </Link>
+            <Link
               href="/pricing"
               className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/30 px-8 text-base font-semibold text-white transition hover:bg-white/10"
             >
               Ver planes Premium
             </Link>
           </div>
+          <p className="mt-4 text-sm text-white/80">
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/auth/login" className="font-bold text-white underline-offset-2 hover:underline">
+              Inicia sesión
+            </Link>
+          </p>
         </div>
       </section>
 
