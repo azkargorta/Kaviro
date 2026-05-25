@@ -23,6 +23,24 @@ export async function POST(request: Request) {
       { onConflict: "endpoint" }
     );
 
+    // Mantener preferencias alineadas cuando el dispositivo se re-registra tras un deploy.
+    const { data: existingPrefs } = await supabase
+      .from("push_notification_preferences")
+      .select("enabled")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!existingPrefs || existingPrefs.enabled !== false) {
+      await supabase.from("push_notification_preferences").upsert(
+        {
+          user_id: user.id,
+          enabled: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Push subscribe error:", err);

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import {
   requestPushPermissionAndSubscribe,
-  syncPushSubscription,
+  resyncPushIfPreferencesEnabled,
   unsubscribePushSubscription,
   vapidPublicKey,
 } from "@/lib/push-subscribe-client";
@@ -88,7 +88,7 @@ export default function PushNotificationsSection() {
     setPermission(Notification.permission);
     void loadPreferences();
     void refreshDeviceSubscription();
-    if (Notification.permission === "granted") void syncPushSubscription().then(() => refreshDeviceSubscription());
+    if (Notification.permission === "granted") void resyncPushIfPreferencesEnabled().then(() => refreshDeviceSubscription());
   }, [loadPreferences, refreshDeviceSubscription]);
 
   async function savePreference(patch: Partial<PushNotificationPreferences>, key: string) {

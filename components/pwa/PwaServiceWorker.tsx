@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { syncPushSubscription } from "@/lib/push-subscribe-client";
+import { useEffect, useRef } from "react";
+import { resyncPushIfPreferencesEnabled } from "@/lib/push-subscribe-client";
 
 export default function PwaServiceWorker() {
+  const resyncingRef = useRef(false);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
@@ -15,16 +17,62 @@ export default function PwaServiceWorker() {
 
     if (process.env.NODE_ENV !== "production" && isLocalhost) return;
 
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then(() => {
-        if ("Notification" in window && Notification.permission === "granted") {
-          void syncPushSubscription();
-        }
-      })
-      .catch(() => {
+    let cancelled = false;
+
+    async function runResync() {
+      if (cancelled || resyncingRef.current) return;
+      resyncingRef.current = true;
+      try {
+        await resyncPushIfPreferencesEnabled();
+      } finally {
+        resyncingRef.current = false;
+      }
+    }
+
+    async function setup() {
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
+
+        if (cancelled) return;
+        await runResync();
+
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "activated") void runResync();
+          });
+        });
+      } catch {
         /* non-blocking */
-      });
+      }
+    }
+
+    const onControllerChange = () => {
+      void runResync();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void runResync();
+    };
+
+    const onFocus = () => {
+      void runResync();
+    };
+
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+
+    void setup();
+
+    return () => {
+      cancelled = true;
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   return null;

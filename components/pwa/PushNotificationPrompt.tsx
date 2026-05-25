@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
 import {
   requestPushPermissionAndSubscribe,
-  syncPushSubscription,
+  resyncPushIfPreferencesEnabled,
   vapidPublicKey,
 } from "@/lib/push-subscribe-client";
 
@@ -21,7 +21,7 @@ export default function PushNotificationPrompt() {
     if (localStorage.getItem(DISMISS_KEY) === "1") return;
 
     if (Notification.permission === "granted") {
-      void syncPushSubscription();
+      void resyncPushIfPreferencesEnabled();
       return;
     }
     if (Notification.permission === "denied") return;
