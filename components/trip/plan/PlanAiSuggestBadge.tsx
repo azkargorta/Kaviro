@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { PREMIUM_UPGRADE_HREF } from "@/lib/premium-copy";
 
@@ -12,60 +12,121 @@ type Props = {
   onOpenAssistant?: (suggestion: string) => void;
 };
 
+type SuggestCache = {
+  suggestions: string[];
+  noMore: boolean;
+};
+
+function cacheKey(tripId: string, selectedDate?: string | null) {
+  return `kaviro_plan_suggest:${tripId}:${selectedDate || "all"}`;
+}
+
+function readCache(key: string): SuggestCache | null {
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SuggestCache;
+    if (!parsed || !Array.isArray(parsed.suggestions)) return null;
+    return {
+      suggestions: parsed.suggestions.filter((item) => typeof item === "string" && item.trim()),
+      noMore: Boolean(parsed.noMore),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(key: string, data: SuggestCache) {
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
 export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDate, onOpenAssistant }: Props) {
-  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [noMore, setNoMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingNext, setLoadingNext] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
+
+  const currentSuggestion = suggestions.length > 0 ? suggestions[suggestions.length - 1] : null;
+  const storageKey = cacheKey(tripId, selectedDate);
+
+  const fetchSuggestion = useCallback(
+    async (exclude: string[], mode: "initial" | "next") => {
+      const setBusy = mode === "initial" ? setLoading : setLoadingNext;
+      setBusy(true);
+      try {
+        const res = await fetch("/api/trip-ai/plan-suggestion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tripId,
+            date: selectedDate || undefined,
+            exclude,
+          }),
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(payload?.error || "No disponible");
+
+        const text = typeof payload?.suggestion === "string" ? payload.suggestion.trim() : "";
+        if (text) {
+          setSuggestions((prev) => {
+            const next = [...prev, text];
+            writeCache(storageKey, { suggestions: next, noMore: false });
+            return next;
+          });
+          setNoMore(false);
+          return true;
+        }
+
+        if (mode === "next" && exclude.length > 0) {
+          setNoMore(true);
+          writeCache(storageKey, { suggestions: exclude, noMore: true });
+        }
+
+        return false;
+      } catch {
+        if (mode === "next") {
+          setNoMore(true);
+        }
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [tripId, selectedDate, storageKey]
+  );
 
   useEffect(() => {
     if (!premiumEnabled || dismissed) return;
 
-    const cacheKey = `kaviro_plan_suggest:${tripId}:${selectedDate || "all"}`;
-    try {
-      const cached = window.sessionStorage.getItem(cacheKey);
-      if (cached) {
-        setSuggestion(cached === "none" ? null : cached);
-        return;
-      }
-    } catch {
-      // ignore
+    setSuggestions([]);
+    setNoMore(false);
+
+    const cached = readCache(storageKey);
+    if (cached && cached.suggestions.length > 0) {
+      setSuggestions(cached.suggestions);
+      setNoMore(cached.noMore);
+      return;
     }
 
     let cancelled = false;
-    setLoading(true);
-    void fetch("/api/trip-ai/plan-suggestion", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tripId, date: selectedDate || undefined }),
-    })
-      .then(async (r) => {
-        const payload = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(payload?.error || "No disponible");
-        return payload;
-      })
-      .then((payload) => {
-        if (cancelled) return;
-        const text = typeof payload?.suggestion === "string" ? payload.suggestion.trim() : "";
-        const value = text || null;
-        try {
-          window.sessionStorage.setItem(cacheKey, value ?? "none");
-        } catch {
-          // ignore
-        }
-        setSuggestion(value);
-      })
-      .catch(() => {
-        if (!cancelled) setSuggestion(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    void fetchSuggestion([], "initial");
 
     return () => {
       cancelled = true;
     };
-  }, [tripId, premiumEnabled, selectedDate, dismissed]);
+  }, [tripId, premiumEnabled, selectedDate, dismissed, storageKey, fetchSuggestion]);
+
+  async function handleNext() {
+    if (loadingNext || noMore || suggestions.length === 0) return;
+    const found = await fetchSuggestion(suggestions, "next");
+    if (!found) setNoMore(true);
+  }
 
   if (dismissed) return null;
 
@@ -108,7 +169,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
     );
   }
 
-  if (loading && !suggestion) {
+  if (loading && !currentSuggestion) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
         <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
@@ -117,23 +178,38 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, selectedDat
     );
   }
 
-  if (!suggestion) return null;
+  if (!currentSuggestion) return null;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-slate-900 dark:text-white">✨ IA sugiere</p>
-          <p className="mt-0.5 max-w-[12rem] text-[10px] leading-snug text-slate-500 dark:text-slate-400">{suggestion}</p>
-          {onOpenAssistant ? (
+          <p className="mt-0.5 max-w-[12rem] text-[10px] leading-snug text-slate-500 dark:text-slate-400">{currentSuggestion}</p>
+          {noMore ? (
+            <p className="mt-1.5 max-w-[12rem] text-[10px] font-semibold leading-snug text-amber-600 dark:text-amber-400">
+              No se encuentran nuevas propuestas.
+            </p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {onOpenAssistant ? (
+              <button
+                type="button"
+                onClick={() => onOpenAssistant(currentSuggestion)}
+                className="text-[10px] font-bold text-[#F87171] hover:underline"
+              >
+                Abrir asistente →
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => onOpenAssistant(suggestion)}
-              className="mt-2 text-[10px] font-bold text-[#F87171] hover:underline"
+              onClick={() => void handleNext()}
+              disabled={loadingNext || noMore}
+              className="text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline dark:text-slate-400 dark:hover:text-slate-200"
             >
-              Abrir asistente →
+              {loadingNext ? "Buscando…" : "Siguiente →"}
             </button>
-          ) : null}
+          </div>
         </div>
         <button
           type="button"

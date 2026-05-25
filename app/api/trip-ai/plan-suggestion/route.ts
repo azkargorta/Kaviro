@@ -26,6 +26,13 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const tripId = typeof body?.tripId === "string" ? body.tripId.trim() : "";
     const date = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date.trim()) ? body.date.trim() : "";
+    const exclude = Array.isArray(body?.exclude)
+      ? body.exclude
+          .filter((item: unknown): item is string => typeof item === "string")
+          .map((item: string) => item.trim())
+          .filter(Boolean)
+          .slice(0, 24)
+      : [];
 
     if (!tripId) {
       return NextResponse.json({ error: "Falta el ID del viaje." }, { status: 400 });
@@ -61,13 +68,18 @@ export async function POST(req: Request) {
       ? `Enfócate solo en el día ${date}: huecos horarios, traslados, comidas o mejoras concretas.`
       : "Enfócate en el día más próximo o con más huecos del plan.";
 
+    const excludeHint =
+      exclude.length > 0
+        ? `\nNO repitas ni parafrasees estas sugerencias ya mostradas al usuario:\n${exclude.map((item: string) => `- ${item}`).join("\n")}\nPropón algo distinto y complementario.\n`
+        : "";
+
     const prompt = `${tripSummary}
 
 ${dayHint}
-
+${excludeHint}
 Responde con UNA sola frase corta y accionable en español (máximo 15 palabras), como sugerencia para mejorar el itinerario.
 Ejemplos: "Añadir traslado al aeropuerto", "Reservar comida entre museo y parque".
-Si el plan está bien equilibrado, responde exactamente: null`;
+Si no hay ninguna mejora razonable${exclude.length > 0 ? " distinta de las ya listadas" : ""}, responde exactamente: null`;
 
     const { text, usage } = await askTripAIWithUsage(prompt, "general", {});
     await trackAiUsage({

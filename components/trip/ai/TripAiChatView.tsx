@@ -522,7 +522,7 @@ export default function TripAiChatView({
       defaultAssistantMode: ctxPreset ? null : defaultAssistantMode ?? null,
     })
   );
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(() => initialPrompt?.trim() ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -552,6 +552,8 @@ export default function TripAiChatView({
   const [planActivityCount, setPlanActivityCount] = useState<number | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const questionInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const initialPromptAppliedRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -1472,50 +1474,28 @@ export default function TripAiChatView({
     skipOnboarding,
   ]);
 
-  const initialPromptSentRef = useRef<string | null>(null);
   useEffect(() => {
     const clean = initialPrompt?.trim();
     if (!clean || !isPremium) return;
-    if (!trip || tripDataLoading) return;
-    if (loading || onboardingBusy) return;
-    if (initialPromptSentRef.current === clean) return;
-    initialPromptSentRef.current = clean;
+    if (initialPromptAppliedRef.current === clean) return;
+    initialPromptAppliedRef.current = clean;
 
+    setQuestion(clean);
+    if (initialPromptMode) {
+      setMode(initialPromptMode);
+      setModeSource("manual");
+      setModePickerOpen(false);
+    }
     skipOnboarding();
 
-    const promptMode = initialPromptMode ?? null;
-    let timeoutId = 0;
-    let cancelled = false;
+    const focusId = window.setTimeout(() => {
+      questionInputRef.current?.focus();
+      const len = clean.length;
+      questionInputRef.current?.setSelectionRange(len, len);
+    }, 280);
 
-    timeoutId = window.setTimeout(() => {
-      if (cancelled) return;
-      void sendMessage(
-        clean,
-        null,
-        {
-          onError: () => {
-            initialPromptSentRef.current = null;
-          },
-        },
-        promptMode ? { mode: promptMode, modeSource: "manual" } : undefined
-      );
-    }, 0);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- disparo único por initialPrompt al montar
-  }, [
-    initialPrompt,
-    initialPromptMode,
-    isPremium,
-    trip,
-    tripDataLoading,
-    loading,
-    onboardingBusy,
-    skipOnboarding,
-  ]);
+    return () => window.clearTimeout(focusId);
+  }, [initialPrompt, initialPromptMode, isPremium, skipOnboarding]);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -2484,6 +2464,7 @@ export default function TripAiChatView({
               className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-border)] ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}
             >
               <textarea
+                ref={questionInputRef}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => {
