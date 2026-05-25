@@ -10,6 +10,8 @@ import {
   buildPlanSuggestionPrompt,
   buildPlanSuggestionRetryPrompt,
   cleanPlanSuggestion,
+  fallbackPlanSuggestionFromGaps,
+  loadPlanDayActivities,
 } from "@/lib/plan-suggestion-context";
 import {
   consumePlanSuggestionNextSlot,
@@ -178,6 +180,16 @@ export async function POST(req: Request) {
       usageTotal = mergeUsage(first.usage, second.usage);
     }
 
+    let reason: "found" | "none" | "heuristic" = suggestion ? "found" : "none";
+    if (!suggestion && exclude.length === 0) {
+      const acts = await loadPlanDayActivities(tripId, focusDate);
+      const fallback = fallbackPlanSuggestionFromGaps(acts);
+      if (fallback) {
+        suggestion = fallback;
+        reason = "heuristic";
+      }
+    }
+
     if (usageTotal) {
       await trackAiUsage({
         supabase: gate.supabase,
@@ -195,7 +207,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       suggestion,
       date: focusDate,
-      reason: suggestion ? "found" : "none",
+      reason,
       cached: false,
       nextRemaining: peekPlanSuggestionNextRemaining(userId, tripId),
       nextLimit: PLAN_SUGGESTION_NEXT_LIMIT_PER_HOUR,
