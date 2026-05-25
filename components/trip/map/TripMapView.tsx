@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
-import { CalendarDays, Check, Clock, Copy, GripVertical, MapPin, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock, Copy, GripVertical, MapPin, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
@@ -662,7 +662,9 @@ export default function TripMapView({
   const [routePreview, setRoutePreview] = useState<RoutePreview | null>(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [isMapVisible, setIsMapVisible] = useState(true);
-  const [showRoutesList, setShowRoutesList] = useState(true)  // Open by default;
+  const [autoRoutesOpen, setAutoRoutesOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showRoutesList, setShowRoutesList] = useState(false);
   const [routesBulkMode, setRoutesBulkMode] = useState(false);
   const [selectedRouteKeys, setSelectedRouteKeys] = useState<Set<string>>(new Set());
 
@@ -1624,10 +1626,20 @@ export default function TripMapView({
               Genera un borrador de rutas entre tus planes guardados (por día o para todo el viaje) y luego revísalas antes de guardar.
             </div>
           </div>
-          <div className="shrink-0">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             <StatusChip active={isPremium}>Premium</StatusChip>
+            <button
+              type="button"
+              onClick={() => setAutoRoutesOpen((v) => !v)}
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              aria-expanded={autoRoutesOpen}
+            >
+              {autoRoutesOpen ? "Cerrar" : "Abrir"}
+              <ChevronDown className={`h-4 w-4 transition ${autoRoutesOpen ? "rotate-180" : ""}`} aria-hidden />
+            </button>
           </div>
         </div>
+        {autoRoutesOpen ? (
         <div className="grid gap-3 px-4 py-4">
           {!isPremium ? <PremiumUpsell feature="autoRoutes" showTripCoopHint /> : null}
           {(routesAutoError || routesAutoQuestion) ? (
@@ -1678,6 +1690,7 @@ export default function TripMapView({
             Nota: si faltan coordenadas en algún plan, esas paradas se omitirán al trazar.
           </div>
         </div>
+        ) : null}
       </section>
       ) : null}
 
@@ -1788,13 +1801,25 @@ export default function TripMapView({
         ) : null}
 
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-4 py-4">
-            <div className="text-sm font-extrabold text-slate-950">Filtros y contexto</div>
-            <div className="mt-1 text-xs text-slate-600">
-              Fechas, capas del mapa, tipos del plan y búsqueda en un solo lugar.
+          <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="text-sm font-extrabold text-slate-950">Filtros y contexto</div>
+              <div className="mt-1 text-xs text-slate-600">
+                Fechas, capas del mapa, tipos del plan y búsqueda en un solo lugar.
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              className="inline-flex min-h-[36px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              aria-expanded={filtersOpen}
+            >
+              {filtersOpen ? "Cerrar filtros" : "Abrir filtros"}
+              <ChevronDown className={`h-4 w-4 transition ${filtersOpen ? "rotate-180" : ""}`} aria-hidden />
+            </button>
           </div>
 
+          {filtersOpen ? (
           <div className="space-y-4 px-4 py-4">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
               <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">
@@ -1972,57 +1997,158 @@ export default function TripMapView({
               />
             </label>
           </div>
+          ) : null}
         </section>
 
-        {canManageMap ? (
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-            <div className="rounded-2xl border-0 bg-slate-50 p-3 m-3 mt-0 sm:m-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">{form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}</div>
-                <div className="flex items-center gap-2">
-                  {isRouteFormOpen ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsRouteFormOpen(false);
-                        setForm(defaultRouteForm(form.routeDate || todayISO()));
-                        setRoutePreview(null);
-                        setOrigin({ address: "", latitude: null, longitude: null });
-                        setStop({ address: "", latitude: null, longitude: null });
-                        setDestination({ address: "", latitude: null, longitude: null });
-                        setOriginPlanId("");
-                        setStopPlanId("");
-                        setDestinationPlanId("");
-                      }}
-                      className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Cerrar
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsRouteFormOpen(true);
-                        setForm(defaultRouteForm(reorderDay || filterDateFrom || todayISO()));
-                        setRoutePreview(null);
-                        setOrigin({ address: "", latitude: null, longitude: null });
-                        setStop({ address: "", latitude: null, longitude: null });
-                        setDestination({ address: "", latitude: null, longitude: null });
-                        setOriginPlanId("");
-                        setStopPlanId("");
-                        setDestinationPlanId("");
-                      }}
-                      data-tour="map-new-route-btn" className={`${btnPrimary} inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs`}
-                    >
-                      <Plus className="h-3.5 w-3.5" aria-hidden />
-                      Nueva ruta
-                    </button>
-                  )}
-                </div>
+          <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-sm font-extrabold text-slate-950">Rutas</div>
+                <span className="inline-flex min-h-[24px] items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 text-[11px] font-extrabold text-slate-700">
+                  {routesState.length} guardada{routesState.length === 1 ? "" : "s"}
+                </span>
+                {routesForList.length !== routesState.length ? (
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    · {routesForList.length} visible{routesForList.length === 1 ? "" : "s"} con filtros
+                  </span>
+                ) : null}
               </div>
+              <div className="mt-1 text-xs text-slate-600">
+                Crea rutas manualmente y consulta las guardadas. Filtra por fechas o nombre arriba.
+              </div>
+            </div>
+            <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
+              {canManageMap ? (
+                isRouteFormOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRouteFormOpen(false);
+                      setForm(defaultRouteForm(form.routeDate || todayISO()));
+                      setRoutePreview(null);
+                      setOrigin({ address: "", latitude: null, longitude: null });
+                      setStop({ address: "", latitude: null, longitude: null });
+                      setDestination({ address: "", latitude: null, longitude: null });
+                      setOriginPlanId("");
+                      setStopPlanId("");
+                      setDestinationPlanId("");
+                    }}
+                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cerrar editor
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRouteFormOpen(true);
+                      setForm(defaultRouteForm(reorderDay || filterDateFrom || todayISO()));
+                      setRoutePreview(null);
+                      setOrigin({ address: "", latitude: null, longitude: null });
+                      setStop({ address: "", latitude: null, longitude: null });
+                      setDestination({ address: "", latitude: null, longitude: null });
+                      setOriginPlanId("");
+                      setStopPlanId("");
+                      setDestinationPlanId("");
+                    }}
+                    data-tour="map-new-route-btn"
+                    className={`${btnPrimary} inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs`}
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    Nueva ruta
+                  </button>
+                )
+              ) : null}
+              {routesBulkMode ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRouteKeys(new Set(routesForList.map((r) => tripMapRouteKey(r))))}
+                    disabled={!routesForList.length || saving || savingRoute}
+                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Seleccionar todas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRouteKeys(new Set())}
+                    disabled={saving || savingRoute}
+                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Quitar selección
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoutesBulkMode(false);
+                      setSelectedRouteKeys(new Set());
+                    }}
+                    disabled={saving || savingRoute}
+                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedRouteKeys.size || saving || savingRoute}
+                    onClick={() => void removeSelectedRoutes()}
+                    className="inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                    Eliminar{selectedRouteKeys.size > 0 ? ` (${selectedRouteKeys.size})` : ""}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {canManageMap ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoutesBulkMode(true);
+                        setSelectedRouteKeys(new Set());
+                        setShowRoutesList(true);
+                      }}
+                      disabled={!routesForList.length}
+                      className="inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
+                      title="Eliminar varias rutas"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                      Eliminar
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setShowRoutesList((v) => !v)}
+                    className={`inline-flex min-h-[34px] items-center justify-center rounded-xl border px-3 text-xs font-semibold transition ${
+                      showRoutesList
+                        ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        : "border-[var(--brand)] bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
+                    }`}
+                    title={showRoutesList ? "Ocultar rutas" : "Mostrar rutas"}
+                  >
+                    {showRoutesList ? "Ocultar rutas" : "Mostrar rutas"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFocusedRouteKey(null)}
+                    className="inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    title="Mostrar todas"
+                  >
+                    <RefreshCw className="h-4 w-4" aria-hidden />
+                    Todas
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
 
-              {isRouteFormOpen ? (
-              <div className="mt-4 grid gap-4">
+          {canManageMap && isRouteFormOpen ? (
+          <div className="border-b border-slate-100 px-4 py-4">
+            <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">
+              {form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}
+            </div>
+            <div className="mt-4 grid gap-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">1. Datos básicos</div>
                   <div className="mt-1 text-[11px] text-slate-500">Nombre, fecha, hora y color con el que se mostrará la ruta.</div>
@@ -2322,115 +2448,21 @@ export default function TripMapView({
                     </button>
                   </div>
                 </div>
-              </div>
-              ) : routesState.length === 0 ? (
-                <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
-                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗺️</div>
-                  <p className="text-sm font-bold text-slate-800">Sin rutas todavía</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Crea una ruta manualmente con «Nueva ruta» o usa el bloque superior «Crear rutas automáticamente».
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-5 text-center">
-                  <p className="text-sm font-semibold text-slate-800">
-                    {routesState.length} ruta{routesState.length === 1 ? "" : "s"} guardada{routesState.length === 1 ? "" : "s"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Pulsa «Nueva ruta» para añadir otra, o revisa las existentes en «Rutas guardadas» más abajo.
-                  </p>
-                </div>
-              )}
-            </div>
-        </section>
-        ) : null}
-
-        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-          <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="text-sm font-extrabold text-slate-950">Rutas guardadas</div>
-              <div className="mt-1 text-xs text-slate-600">Consulta y ordena tus recorridos. Filtra por fechas o nombre arriba.</div>
-            </div>
-            <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
-              {routesBulkMode ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRouteKeys(new Set(routesForList.map((r) => tripMapRouteKey(r))))}
-                    disabled={!routesForList.length || saving || savingRoute}
-                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    Seleccionar todas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRouteKeys(new Set())}
-                    disabled={saving || savingRoute}
-                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    Quitar selección
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRoutesBulkMode(false);
-                      setSelectedRouteKeys(new Set());
-                    }}
-                    disabled={saving || savingRoute}
-                    className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!selectedRouteKeys.size || saving || savingRoute}
-                    onClick={() => void removeSelectedRoutes()}
-                    className="inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                    Eliminar{selectedRouteKeys.size > 0 ? ` (${selectedRouteKeys.size})` : ""}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRoutesBulkMode(true);
-                      setSelectedRouteKeys(new Set());
-                    }}
-                    disabled={!routesForList.length}
-                    className="inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
-                    title="Eliminar varias rutas"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                    Eliminar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowRoutesList((v) => !v)}
-                    className={`inline-flex min-h-[34px] items-center justify-center rounded-xl border px-3 text-xs font-semibold transition ${
-                      showRoutesList
-                        ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        : "border-[var(--brand)] bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
-                    }`}
-                    title={showRoutesList ? "Ocultar rutas" : "Mostrar rutas"}
-                  >
-                    {showRoutesList ? "Ocultar rutas" : "Mostrar rutas"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFocusedRouteKey(null)}
-                    className="inline-flex min-h-[34px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    title="Mostrar todas"
-                  >
-                    <RefreshCw className="h-4 w-4" aria-hidden />
-                    Todas
-                  </button>
-                </>
-              )}
             </div>
           </div>
+          ) : null}
+
+          {canManageMap && !isRouteFormOpen && routesState.length === 0 ? (
+            <div className="border-b border-slate-100 px-4 py-5">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">🗺️</div>
+                <p className="text-sm font-bold text-slate-800">Sin rutas todavía</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Crea una ruta con «Nueva ruta» o abre «Crear rutas automáticamente» arriba.
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           <div className="px-4 py-3">
             {reorderDay && routesForList.length > 0 ? (
@@ -2443,6 +2475,10 @@ export default function TripMapView({
               </div>
             ) : routesBulkMode ? (
               <div className="text-[11px] text-slate-500">Toca el círculo o la fila para marcar rutas; luego pulsa Eliminar.</div>
+            ) : !showRoutesList && routesState.length > 0 ? (
+              <div className="text-[11px] text-slate-500">
+                Lista oculta · pulsa «Mostrar rutas» para ver el detalle de cada recorrido.
+              </div>
             ) : null}
           </div>
 
@@ -2597,7 +2633,11 @@ export default function TripMapView({
             )}
           </div>
           ) : (
-            <div className="px-4 py-4 text-sm text-slate-500">La lista de rutas está oculta.</div>
+            <div className="px-4 pb-4 text-sm text-slate-500">
+              {routesState.length === 0
+                ? "No hay rutas guardadas todavía."
+                : `${routesState.length} ruta${routesState.length === 1 ? "" : "s"} guardada${routesState.length === 1 ? "" : "s"}. Pulsa «Mostrar rutas» para ver la lista.`}
+            </div>
           )}
         </section>
         </aside>
