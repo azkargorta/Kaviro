@@ -436,19 +436,25 @@ export default function TripPlanView({
   }, [showForm]);
 
   async function handleSubmit(values: PlanFormValues) {
-    if (editingActivity?.id) {
-      await updateActivity(editingActivity.id, values);
+    try {
+      if (editingActivity?.id) {
+        await updateActivity(editingActivity.id, values);
+      } else {
+        await createActivity(values);
+      }
       setEditingActivity(null);
       setIsFormOpen(false);
-      return;
+    } catch {
+      // El error ya lo muestra useTripActivities; mantenemos el formulario abierto para corregir.
     }
-
-    await createActivity(values);
-    setIsFormOpen(false);
   }
 
-  function handleStartCreate() {
-    setEditingActivity(null);
+  function handleStartCreate(prefillDate?: string | null) {
+    if (prefillDate && /^\d{4}-\d{2}-\d{2}$/.test(prefillDate)) {
+      setEditingActivity({ activity_date: prefillDate } as TripActivity);
+    } else {
+      setEditingActivity(null);
+    }
     setIsFormOpen(true);
   }
 
@@ -585,7 +591,7 @@ export default function TripPlanView({
       {workspaceTab === "itinerary" && canManagePlan && !showForm ? (
         <button
           type="button"
-          onClick={handleStartCreate}
+          onClick={() => handleStartCreate()}
           data-tour="plan-add-btn" className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
           aria-label="Añadir plan"
           title="Añadir plan"
@@ -653,7 +659,7 @@ export default function TripPlanView({
           <button
             data-tour="plan-add-btn"
             type="button"
-            onClick={handleStartCreate}
+            onClick={() => handleStartCreate()}
             className={`hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`}
             title="Crear un plan manual"
           >
@@ -1307,7 +1313,17 @@ export default function TripPlanView({
               <div className="py-6 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">📭</div>
                 <p className="text-base font-extrabold text-slate-900 dark:text-white">Sin actividades este día</p>
-                <p className="mt-1 text-sm text-slate-500">Prueba otra fecha o quita los filtros activos.</p>
+                <p className="mt-1 text-sm text-slate-500">Añade una actividad para este día o prueba otra fecha.</p>
+                {canManagePlan && !showForm ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStartCreate(selectedDate)}
+                    className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--brand-hover)]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Añadir plan este día
+                  </button>
+                ) : null}
               </div>
             ) : isEmpty ? (
               <div className="py-8 text-center">
@@ -1322,7 +1338,7 @@ export default function TripPlanView({
                   <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
                     <button
                       type="button"
-                      onClick={handleStartCreate}
+                      onClick={() => handleStartCreate()}
                       className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />

@@ -253,7 +253,7 @@ export function useTripActivities(
           "crear actividad"
         );
 
-        await load();
+        await load({ silent: true });
         dispatchTripOnboardingRefresh(tripId);
         // Notify other participants (best-effort)
         if (tripId) {
@@ -303,7 +303,7 @@ export function useTripActivities(
           "editar actividad"
         );
 
-        await load();
+        await load({ silent: true });
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo actualizar la actividad.");
         throw err;
@@ -328,7 +328,7 @@ export function useTripActivities(
           "borrar actividad"
         );
 
-        await load();
+        await load({ silent: true });
       } finally {
         setSaving(false);
       }
@@ -349,7 +349,7 @@ export function useTripActivities(
             "borrar actividad"
           );
         }
-        await load();
+        await load({ silent: true });
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo borrar alguna actividad.");
         throw err;

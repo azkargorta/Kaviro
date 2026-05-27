@@ -625,11 +625,19 @@ export default function TripAiChatView({
       setError(null);
       setPlanConflictOpen(false);
       try {
-        const res = await fetch("/api/trip-ai/execute-plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tripId, itinerary: draft, conflictResolution }),
-        });
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 120_000);
+        let res: Response;
+        try {
+          res = await fetch("/api/trip-ai/execute-plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tripId, itinerary: draft, conflictResolution }),
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
         const payload = await res.json().catch(() => null);
         if (!res.ok) throw new Error(payload?.error || "No se pudo ejecutar el plan.");
         const nAct = typeof payload?.created === "number" ? payload.created : null;
@@ -645,9 +653,10 @@ export default function TripAiChatView({
         void reloadTripPlanActivities();
       } catch (e) {
         const raw = e instanceof Error ? e.message : "No se pudo ejecutar el plan.";
-        if (/fetch failed|failed to fetch|networkerror|aborted|timeout/i.test(raw)) {
+        const isAbort = e instanceof Error && e.name === "AbortError";
+        if (isAbort || /fetch failed|failed to fetch|networkerror|aborted|timeout/i.test(raw)) {
           setError(
-            "No se pudo completar la ejecución (red o tiempo de espera). Si el plan es largo, espera un momento, recarga y revisa Plan por si las actividades ya se guardaron; luego vuelve a pulsar «Ejecutar plan» solo si falta algo."
+            "No se pudo completar la ejecución (red o tiempo de espera, hasta 2 min). Si el plan es largo, espera un momento, recarga Plan por si las actividades ya se guardaron y vuelve a ejecutar solo si falta algo."
           );
         } else {
           setError(raw);

@@ -378,11 +378,11 @@ export async function executePlanOnTrip(params: {
       return { ...r, normalizedAddress, latitude, longitude };
     });
 
-    for (const r of geocoded) {
+    const activityRows: Record<string, unknown>[] = geocoded.map((r) => {
       const activity_time = normalizeTime(r.item.start_time ?? null);
       const notes = typeof r.item?.notes === "string" ? r.item.notes.trim() : null;
       const aiMeta = buildAiMetaDescription(r.item);
-      const row: Record<string, unknown> = {
+      return {
         trip_id: tripId,
         title: r.title,
         description: mergeDescriptions(notes, aiMeta),
@@ -397,13 +397,22 @@ export async function executePlanOnTrip(params: {
         source: "ai",
         created_by_user_id: access.userId,
       };
+    });
 
-      const { data: inserted, error } = await supabase.from("trip_activities").insert([row]).select("id").single();
+    const INSERT_BATCH = 30;
+    for (let i = 0; i < activityRows.length; i += INSERT_BATCH) {
+      const chunk = activityRows.slice(i, i + INSERT_BATCH);
+      const { data: insertedRows, error } = await supabase
+        .from("trip_activities")
+        .insert(chunk)
+        .select("id");
       if (error) throw new Error(error.message);
-      if (!inserted?.id) throw new Error("No se pudo crear una actividad del plan.");
+      const n = Array.isArray(insertedRows) ? insertedRows.length : 0;
+      if (n !== chunk.length) throw new Error("No se pudieron crear todas las actividades del plan.");
+      created += n;
+    }
 
-      created += 1;
-
+    for (const r of geocoded) {
       slotMeta.push({
         route_day: r.date,
         title: r.title,
