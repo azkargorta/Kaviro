@@ -8,6 +8,7 @@ import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFl
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
+import DashboardStripesTripSection from "@/components/dashboard/DashboardStripesTripSection";
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
@@ -20,6 +21,7 @@ import {
   ensureDemoTripForUser,
   isFirstDemoOnboardingVisit,
 } from "@/lib/onboarding/createDemoTrip";
+import { getStripesTripSummaryForUser } from "@/lib/onboarding/createStripesTrip";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
 type Trip = {
@@ -174,6 +176,10 @@ export default async function DashboardPage() {
   }
 
   const demoTrips = trips.filter((t) => t.is_demo || (demoTripId && t.id === demoTripId));
+  const stripesSummary = await getStripesTripSummaryForUser(user.id);
+  const stripesTrip = stripesSummary.tripId
+    ? trips.find((t) => t.id === stripesSummary.tripId) ?? null
+    : null;
   const realTrips = trips.filter((t) => !demoTrips.some((d) => d.id === t.id));
 
   const { current, future, past, unscheduled } = categorizeTrips(realTrips);
@@ -268,6 +274,10 @@ export default async function DashboardPage() {
           />
         </>
       )}
+
+      <div className="mx-auto max-w-2xl px-4">
+        <DashboardStripesTripSection trip={stripesTrip} canCreate={!freeTripLimitReached} />
+      </div>
 
       <section
         className={`mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
