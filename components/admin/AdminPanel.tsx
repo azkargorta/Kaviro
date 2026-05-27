@@ -99,9 +99,6 @@ function BarChart({ data, color = "#F87171" }: {
 }
 
 export default function AdminPanel() {
-  const [stripesStatus, setStripesStatus] = React.useState<string | null>(null);
-  const [stripesLoading, setStripesLoading] = React.useState(false);
-
   const [overview, setOverview] = useState<Overview | null>(null);
   const [visits, setVisits] = useState<VisitsPayload | null>(null);
   const [aiMonth, setAiMonth] = useState(monthInputDefault());
@@ -361,84 +358,6 @@ export default function AdminPanel() {
             </div>
           </div>
         ) : null}
-      </section>
-
-
-      {/* ── Stripes × Kaviro ───────────────────────────────────────────────── */}
-      <section className="rounded-3xl border-2 border-[#0A3D6B]/20 bg-[#0A3D6B]/5 p-6 shadow-sm">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="h-12 w-12 rounded-2xl bg-[#0A3D6B] flex items-center justify-center text-white font-extrabold text-lg">S</div>
-          <div>
-            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Stripes × Kaviro</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Demo de viaje deportivo — Chicago & Lambeau Field 🏈🏀</p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-3 mb-5">
-          {[
-            { label: "Usuario demo", value: "fidel@stripes.es / @fidel" },
-            { label: "Contraseña", value: "12345678" },
-            { label: "Viaje", value: "Chicago · 10–17 oct 2026 · 12 personas" },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-2xl border border-[#0A3D6B]/20 bg-white dark:bg-[#0F1623] p-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#0A3D6B]/60 mb-1">{label}</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white font-mono">{value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-[#0A3D6B]/20 bg-white dark:bg-[#0F1623] p-4 mb-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#0A3D6B]/60 mb-3">Itinerario del viaje demo</p>
-          <div className="grid gap-2 text-sm">
-            {[
-              { day: "Sáb 10 oct", events: "🛫 Vuelo MAD → ORD · Llegada y check-in · Cena bienvenida en Portillo's" },
-              { day: "Dom 11 oct", events: "🏈 EXCURSIÓN LAMBEAU FIELD — Bears AT Packers (NFL Week 5 · 15:25 CT)" },
-              { day: "Lun 12 oct", events: "🚢 Crucero arquitectura · Millennium Park · Navy Pier · Deep dish Lou Malnati's" },
-              { day: "Mar 13 oct", events: "🎨 Art Institute · Tour en bici lakeside · The Second City (comedia en vivo)" },
-              { day: "Mié 14 oct", events: "🏀 NBA · Chicago Bulls en United Center (NBA Opening Week 2026-27)" },
-              { day: "Jue 15 oct", events: "🎵 Chicago History Museum · Blues en Buddy Guy's · Jazz en Andy's" },
-              { day: "Vie 16 oct", events: "🛍️ Magnificent Mile · Almuerzo despedida · 🛬 Vuelo ORD → MAD" },
-            ].map(({ day, events }) => (
-              <div key={day} className="flex gap-3">
-                <span className="font-bold text-[#0A3D6B] w-20 shrink-0 text-xs">{day}</span>
-                <span className="text-slate-600 dark:text-slate-400 text-xs">{events}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          disabled={stripesLoading}
-          onClick={async () => {
-            setStripesLoading(true);
-            setStripesStatus(null);
-            try {
-              const res = await fetch("/api/admin/stripes-demo", { method: "POST" });
-              const data = await res.json();
-              if (data.ok) {
-                setStripesStatus(
-                  data.alreadyExisted
-                    ? `✓ El viaje ya existía (ID: ${data.tripId})`
-                    : `✓ Creado correctamente — ${data.activitiesCount} actividades, ${data.expensesCount} gastos, ${data.participantsCount} participantes. Trip ID: ${data.tripId}`
-                );
-              } else {
-                setStripesStatus(`✗ Error: ${data.error}`);
-              }
-            } catch (e) {
-              setStripesStatus(`✗ Error de red`);
-            } finally {
-              setStripesLoading(false);
-            }
-          }}
-          className="inline-flex items-center gap-2 rounded-2xl bg-[#0A3D6B] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#0A3D6B]/80 disabled:opacity-50"
-        >
-          {stripesLoading ? "Creando..." : "🏈 Crear viaje demo Stripes × Kaviro"}
-        </button>
-
-        {stripesStatus && (
-          <p className="mt-3 text-sm font-mono text-slate-600 dark:text-slate-400">{stripesStatus}</p>
-        )}
       </section>
 
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">

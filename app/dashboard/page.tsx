@@ -8,7 +8,6 @@ import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFl
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
-import DashboardStripesTripSection from "@/components/dashboard/DashboardStripesTripSection";
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
@@ -21,8 +20,6 @@ import {
   ensureDemoTripForUser,
   isFirstDemoOnboardingVisit,
 } from "@/lib/onboarding/createDemoTrip";
-import { getStripesTripSummaryForUser } from "@/lib/onboarding/createStripesTrip";
-import { isStripesTripName } from "@/lib/onboarding/stripes-demo-seed";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
 type Trip = {
@@ -177,18 +174,11 @@ export default async function DashboardPage() {
   }
 
   const demoTrips = trips.filter((t) => t.is_demo || (demoTripId && t.id === demoTripId));
-  const stripesSummary = await getStripesTripSummaryForUser(user.id);
-  const stripesTrip = stripesSummary.tripId
-    ? trips.find((t) => t.id === stripesSummary.tripId) ?? null
-    : null;
   const realTrips = trips.filter((t) => !demoTrips.some((d) => d.id === t.id));
-  const realTripsForLimit = realTrips.filter(
-    (t) => t.id !== stripesSummary.tripId && !isStripesTripName(t.name)
-  );
 
   const { current, future, past, unscheduled } = categorizeTrips(realTrips);
   const lockedTripIds = new Set<string>();
-  const freeTripLimitReached = !isPremium && realTripsForLimit.length >= FREE_TRIP_LIMIT;
+  const freeTripLimitReached = !isPremium && realTrips.length >= FREE_TRIP_LIMIT;
 
   const currentIds = new Set(current.map((t) => t.id));
   const futureIds = new Set(future.map((t) => t.id));
@@ -242,15 +232,10 @@ export default async function DashboardPage() {
       />
       <DashboardOfflinePanel />
       <div className="relative">
-        <DashboardHero tripCount={realTripsForLimit.length} isPremium={isPremium} />
+        <DashboardHero tripCount={realTrips.length} isPremium={isPremium} />
       </div>
 
       <DashboardTripInvitesInbox />
-
-      {/* Viaje con Stripes — visible para todos los usuarios */}
-      <div className="mx-auto max-w-2xl px-4" id="viaje-stripes">
-        <DashboardStripesTripSection trip={stripesTrip} canCreate />
-      </div>
 
       {realTrips.length > 0 ? (
         <div className="mx-auto max-w-2xl px-4">
@@ -339,7 +324,7 @@ export default async function DashboardPage() {
           id="create-trip"
           className="mx-auto mt-4 max-w-2xl scroll-mt-20 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50"
         >
-          <CreateTripSection isPremium={isPremium} tripCount={realTripsForLimit.length} />
+          <CreateTripSection isPremium={isPremium} tripCount={realTrips.length} />
         </div>
       </section>
 
