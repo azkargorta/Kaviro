@@ -104,22 +104,7 @@ export async function POST() {
       .single();
 
     if (tripError || !trip) {
-      // Reintentar sin campos opcionales
-      const { data: trip2, error: trip2Error } = await admin
-        .from("trips")
-        .insert({
-          name: STRIPES_TRIP_NAME,
-          destination: STRIPES_TRIP_DESTINATION,
-          start_date,
-          end_date,
-          base_currency: STRIPES_TRIP_BASE_CURRENCY,
-        })
-        .select("id")
-        .single();
-      if (trip2Error || !trip2) {
-        return NextResponse.json({ error: trip2Error?.message || tripError?.message }, { status: 500 });
-      }
-      (trip as unknown as typeof trip2) || Object.assign(trip ?? {}, trip2);
+      return NextResponse.json({ error: tripError?.message || "No se pudo crear el viaje." }, { status: 500 });
     }
 
     const tripId = String((trip as { id: string }).id);
