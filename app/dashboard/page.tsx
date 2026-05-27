@@ -22,6 +22,7 @@ import {
   isFirstDemoOnboardingVisit,
 } from "@/lib/onboarding/createDemoTrip";
 import { getStripesTripSummaryForUser } from "@/lib/onboarding/createStripesTrip";
+import { isStripesTripName } from "@/lib/onboarding/stripes-demo-seed";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
 type Trip = {
@@ -181,10 +182,13 @@ export default async function DashboardPage() {
     ? trips.find((t) => t.id === stripesSummary.tripId) ?? null
     : null;
   const realTrips = trips.filter((t) => !demoTrips.some((d) => d.id === t.id));
+  const realTripsForLimit = realTrips.filter(
+    (t) => t.id !== stripesSummary.tripId && !isStripesTripName(t.name)
+  );
 
   const { current, future, past, unscheduled } = categorizeTrips(realTrips);
   const lockedTripIds = new Set<string>();
-  const freeTripLimitReached = !isPremium && realTrips.length >= FREE_TRIP_LIMIT;
+  const freeTripLimitReached = !isPremium && realTripsForLimit.length >= FREE_TRIP_LIMIT;
 
   const currentIds = new Set(current.map((t) => t.id));
   const futureIds = new Set(future.map((t) => t.id));
@@ -238,10 +242,15 @@ export default async function DashboardPage() {
       />
       <DashboardOfflinePanel />
       <div className="relative">
-        <DashboardHero tripCount={realTrips.length} isPremium={isPremium} />
+        <DashboardHero tripCount={realTripsForLimit.length} isPremium={isPremium} />
       </div>
 
       <DashboardTripInvitesInbox />
+
+      {/* Viaje con Stripes — visible para todos los usuarios */}
+      <div className="mx-auto max-w-2xl px-4" id="viaje-stripes">
+        <DashboardStripesTripSection trip={stripesTrip} canCreate />
+      </div>
 
       {realTrips.length > 0 ? (
         <div className="mx-auto max-w-2xl px-4">
@@ -274,10 +283,6 @@ export default async function DashboardPage() {
           />
         </>
       )}
-
-      <div className="mx-auto max-w-2xl px-4">
-        <DashboardStripesTripSection trip={stripesTrip} canCreate={!freeTripLimitReached} />
-      </div>
 
       <section
         className={`mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
@@ -334,7 +339,7 @@ export default async function DashboardPage() {
           id="create-trip"
           className="mx-auto mt-4 max-w-2xl scroll-mt-20 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50"
         >
-          <CreateTripSection isPremium={isPremium} tripCount={realTrips.length} />
+          <CreateTripSection isPremium={isPremium} tripCount={realTripsForLimit.length} />
         </div>
       </section>
 
@@ -344,7 +349,7 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {realTrips.length === 0 ? null : (
+      {realTrips.length > 0 ? (
         <DashboardTripsClient
           current={current}
           future={future}
@@ -353,7 +358,7 @@ export default async function DashboardPage() {
           favoriteTrips={favoriteTrips}
           lockedTripIds={Array.from(lockedTripIds)}
         />
-      )}
+      ) : null}
     </main>
   );
 }

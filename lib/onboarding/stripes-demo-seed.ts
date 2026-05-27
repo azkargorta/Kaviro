@@ -27,6 +27,12 @@ export function stripesTripDateRange(): { start_date: string; end_date: string }
   return { start_date: "2026-10-10", end_date: "2026-10-16" };
 }
 
+/** Identifica un viaje del catálogo Stripes (no cuenta para límite free). */
+export function isStripesTripName(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return name.startsWith("Viaje con Stripes") || name.startsWith("Stripes ×");
+}
+
 export const STRIPES_GHOST_PARTICIPANTS = [
   { display_name: "Fidel", role: "organizer" as const },
   { display_name: "Txema", role: "editor" as const },

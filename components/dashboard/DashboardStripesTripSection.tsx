@@ -30,10 +30,10 @@ const STRIPES_FEATURES = [
 
 export default function DashboardStripesTripSection({
   trip,
-  canCreate,
+  canCreate = true,
 }: {
   trip: Trip | null;
-  canCreate: boolean;
+  canCreate?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -147,7 +147,7 @@ export default function DashboardStripesTripSection({
             <div className="p-4 space-y-3">
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 Añade el viaje completo a tu panel: plan día a día, gastos de ejemplo, rutas en mapa y listas de
-                equipaje y entradas.
+                equipaje y entradas. Disponible para todos los usuarios — no cuenta en el límite del plan gratuito.
               </p>
               {error ? (
                 <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>

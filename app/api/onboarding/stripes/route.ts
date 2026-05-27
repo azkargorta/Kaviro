@@ -4,7 +4,6 @@ import {
   createStripesTripForUser,
   getStripesTripSummaryForUser,
 } from "@/lib/onboarding/createStripesTrip";
-import { checkTripLimit } from "@/lib/tier";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -43,11 +42,6 @@ export async function POST() {
         created: false,
         redirectTo: `/trip/${existing.tripId}/summary`,
       });
-    }
-
-    const limitCheck = await checkTripLimit(supabase, user.id);
-    if (!limitCheck.ok) {
-      return NextResponse.json({ error: limitCheck.error }, { status: 403 });
     }
 
     const result = await createStripesTripForUser(user);

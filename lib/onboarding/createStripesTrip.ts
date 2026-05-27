@@ -10,6 +10,7 @@ import {
   buildStripesActivities,
   buildStripesExpenses,
   stripesTripDateRange,
+  isStripesTripName,
 } from "@/lib/onboarding/stripes-demo-seed";
 
 export type StripesOnboardingProfile = {
@@ -72,7 +73,7 @@ async function findStripesTripForUser(userId: string): Promise<string | null> {
 
   const match = (trips ?? []).find((t) => {
     const name = String((t as { name?: string }).name ?? "");
-    return name.startsWith("Viaje con Stripes") || name.startsWith("Stripes ×");
+    return isStripesTripName(name);
   });
 
   return match ? String((match as { id: string }).id) : null;

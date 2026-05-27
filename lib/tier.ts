@@ -11,6 +11,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isStripesTripName } from "@/lib/onboarding/stripes-demo-seed";
 
 // ---------------------------------------------------------------------------
 // Constantes de plan
@@ -127,13 +128,14 @@ export async function checkTripLimit(
 
   const limit = PLAN_LIMITS.free.trips;
 
-  // Excluir demo trip del conteo
+  // Excluir demo y viaje Stripes del conteo
   const { data: profile } = await supabase
     .from("profiles")
-    .select("demo_trip_id")
+    .select("demo_trip_id, stripes_trip_id")
     .eq("id", userId)
     .maybeSingle();
   const demoId = (profile as { demo_trip_id?: string } | null)?.demo_trip_id ?? null;
+  const stripesId = (profile as { stripes_trip_id?: string } | null)?.stripes_trip_id ?? null;
 
   const { data: existing, error: countErr } = await supabase
     .from("trip_participants")
@@ -153,12 +155,18 @@ export async function checkTripLimit(
 
   const { data: trips } = await supabase
     .from("trips")
-    .select("id, is_demo")
+    .select("id, name, is_demo")
     .in("id", tripIds);
 
   const nonDemoCount = (
-    (trips as { id: string; is_demo?: boolean }[] | null) ?? []
-  ).filter((t) => !t.is_demo && t.id !== demoId).length;
+    (trips as { id: string; name?: string; is_demo?: boolean }[] | null) ?? []
+  ).filter(
+    (t) =>
+      !t.is_demo &&
+      t.id !== demoId &&
+      t.id !== stripesId &&
+      !isStripesTripName(t.name)
+  ).length;
 
   if (nonDemoCount >= limit) {
     return {
