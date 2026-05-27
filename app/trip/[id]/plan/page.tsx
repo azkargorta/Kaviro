@@ -24,7 +24,12 @@ export default async function TripPlanPage({
   const rawTab = searchParams?.tab;
   const tabParam =
     typeof rawTab === "string" ? rawTab.trim().toLowerCase() : Array.isArray(rawTab) ? String(rawTab[0] || "").trim().toLowerCase() : "";
-  const initialWorkspaceTab = tabParam === "notas" || tabParam === "notes" ? "notes" : "itinerary";
+  const initialWorkspaceTab =
+    tabParam === "notas" || tabParam === "notes"
+      ? "notes"
+      : tabParam === "asistencia" || tabParam === "attendance"
+        ? "attendance"
+        : "itinerary";
 
   const rawDate = searchParams?.date;
   const dateParam =

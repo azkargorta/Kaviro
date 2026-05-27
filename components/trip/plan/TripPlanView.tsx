@@ -29,11 +29,13 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
+  Users,
 } from "lucide-react";
 import TripPlanCalendar from "@/components/trip/plan/TripPlanCalendar";
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
 import TripPlanExploreDrawer, { type ExploreCreatePlanPayload } from "@/components/trip/plan/TripPlanExploreDrawer";
 import TripPlanNotesPanel from "@/components/trip/plan/TripPlanNotesPanel";
+import PlanAttendanceSummary from "@/components/trip/plan/PlanAttendanceSummary";
 import { SortableRow } from "@/components/trip/plan/SortableRow";
 import { activityLikelyNeedsTicket } from "@/lib/trip-plan-ticket-hints";
 import {
@@ -238,7 +240,7 @@ export default function TripPlanView({
   initialTripDescription?: string | null;
   canEditTripNotes?: boolean;
   canManagePlan?: boolean;
-  initialWorkspaceTab?: "itinerary" | "notes";
+  initialWorkspaceTab?: "itinerary" | "notes" | "attendance";
   initialSelectedDate?: string | null;
   initialActivities?: TripActivitiesInitial;
   participants?: string[];
@@ -276,7 +278,7 @@ export default function TripPlanView({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [exploreOpen, setExploreOpen] = useState(initialExploreOpen);
-  const [workspaceTab, setWorkspaceTab] = useState<"itinerary" | "notes">(initialWorkspaceTab);
+  const [workspaceTab, setWorkspaceTab] = useState<"itinerary" | "notes" | "attendance">(initialWorkspaceTab);
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<Set<string>>(new Set());
   // For demo trips (detected via URL), expand all days by default
@@ -562,7 +564,7 @@ export default function TripPlanView({
       <div
         role="tablist"
         aria-label="Vista del plan"
-        className={`${chipGroup} sm:inline-flex sm:max-w-md`}
+        className={`${chipGroup} sm:inline-flex sm:max-w-2xl`}
       >
         <button
           type="button"
@@ -572,6 +574,15 @@ export default function TripPlanView({
           className={`${chipItemBase} sm:flex-1 ${workspaceTab === "itinerary" ? chipItemActive : chipItemInactive}`}
         >
           Itinerario
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={workspaceTab === "attendance"}
+          onClick={() => setWorkspaceTab("attendance")}
+          className={`${chipItemBase} sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
+        >
+          Asistencia
         </button>
         <button
           type="button"
@@ -586,6 +597,15 @@ export default function TripPlanView({
 
       {workspaceTab === "notes" ? (
         <TripPlanNotesPanel tripId={tripId} initialDescription={initialTripDescription} readOnly={!canEditTripNotes} />
+      ) : null}
+
+      {workspaceTab === "attendance" ? (
+        <PlanAttendanceSummary
+          tripId={tripId}
+          activities={activities}
+          enabled={workspaceTab === "attendance"}
+          onActivityClick={(activity) => setDetailActivity(activity)}
+        />
       ) : null}
 
       {workspaceTab === "itinerary" && canManagePlan && !showForm ? (
@@ -923,6 +943,20 @@ export default function TripPlanView({
           <p className="mt-0.5 text-2xl font-bold leading-none text-[var(--brand-text)] md:mt-2 md:text-3xl">{lodgingCount}</p>
         </div>
       </div>
+
+      {activities.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setWorkspaceTab("attendance")}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)]/40 dark:border-[#334155] dark:bg-[#0F1623]"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+            <Users className="h-4 w-4 text-[var(--brand)]" aria-hidden />
+            Quién se apunta a cada actividad
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+        </button>
+      ) : null}
 
       <div className="space-y-2">
         <div className="flex w-full flex-wrap items-center justify-between gap-2">

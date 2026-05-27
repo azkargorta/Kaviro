@@ -39,13 +39,14 @@ async function requireTripParticipant(tripId: string) {
   return { ok: true as const, access: result.access };
 }
 
-// GET /api/trip-activity-reactions?tripId=X&activityId=Y
+// GET /api/trip-activity-reactions?tripId=X — todas las respuestas del viaje
+// GET /api/trip-activity-reactions?tripId=X&activityId=Y — una actividad
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const tripId = searchParams.get("tripId") ?? "";
     const activityId = searchParams.get("activityId") ?? "";
-    if (!tripId || !activityId) return NextResponse.json({ reactions: [], tableReady: true });
+    if (!tripId) return NextResponse.json({ reactions: [], tableReady: true });
 
     const accessResult = await requireTripParticipant(tripId);
     if (!accessResult.ok) {
@@ -53,6 +54,43 @@ export async function GET(req: Request) {
     }
 
     const admin = getServiceRoleClient();
+
+    if (!activityId) {
+      const [{ data, error }, { count: participantCount, error: participantsError }] = await Promise.all([
+        admin
+          .from("trip_activity_reactions")
+          .select("id, user_id, display_name, reaction, comment, activity_id")
+          .eq("trip_id", tripId)
+          .order("created_at"),
+        admin
+          .from("trip_participants")
+          .select("id", { count: "exact", head: true })
+          .eq("trip_id", tripId)
+          .neq("status", "removed"),
+      ]);
+
+      if (error) {
+        if (isMissingTableError(error)) {
+          return NextResponse.json({ reactions: [], tableReady: false, participantCount: 0 });
+        }
+        return apiError(error.message || "No se pudieron cargar las respuestas.", 500);
+      }
+
+      if (participantsError) {
+        return NextResponse.json({
+          reactions: data ?? [],
+          tableReady: true,
+          participantCount: null,
+        });
+      }
+
+      return NextResponse.json({
+        reactions: data ?? [],
+        tableReady: true,
+        participantCount: participantCount ?? 0,
+      });
+    }
+
     const { data, error } = await admin
       .from("trip_activity_reactions")
       .select("id, user_id, display_name, reaction, comment")
