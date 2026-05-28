@@ -55,7 +55,7 @@ export default function RootTopBar() {
             className="min-w-0 shrink outline-none ring-white/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
             aria-label="Ir al panel de viajes"
           >
-            <KaviroLogo variant="light" size="md" withWordmark imageClassName="h-8 max-h-8 sm:h-9 sm:max-h-9" />
+            <KaviroLogo variant="light" size="md" withWordmark />
           </Link>
           <div className="flex items-center gap-2">
             <PremiumBadge />

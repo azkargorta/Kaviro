@@ -1,34 +1,28 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/brand";
 import KaviroMark from "@/components/brand/KaviroMark";
-import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
 
 type Props = {
-  /** Se mantiene por compatibilidad con usos previos. */
+  /** `dark` = texto oscuro (fondos claros). `light` = texto blanco (fondos coral/oscuros). */
   variant?: "light" | "dark";
   size?: "sm" | "md" | "lg";
-  /** Si `true`, muestra el lockup (logo + nombre). Si `false`, solo icono. */
+  /** Si `true`, muestra icono coral + nombre. Si `false`, solo icono. */
   withWordmark?: boolean;
   href?: string;
   className?: string;
-  /** Permite forzar altura/ancho del <img> desde la barra superior. */
+  /** Clases extra para el icono o el lockup. */
   imageClassName?: string;
 };
 
-const KAVIRO_LOCKUP_FULLCOLOR_SRC = "/brand/kaviro-lockup-fullcolor.png";
-const KAVIRO_LOCKUP_WHITE_SRC = "/brand/kaviro-lockup-white.png";
+const iconPx = { sm: 36, md: 42, lg: 52 } as const;
 
-const lockupHeightClass = {
-  sm: "h-7 max-h-7 sm:h-8 sm:max-h-8",
-  md: "h-8 max-h-8 sm:h-9 sm:max-h-9",
-  lg: "h-9 max-h-9 sm:h-10 sm:max-h-10",
+const wordmarkClass = {
+  sm: "text-lg font-extrabold tracking-tight",
+  md: "text-xl font-extrabold tracking-tight",
+  lg: "text-2xl font-extrabold tracking-tight",
 } as const;
-
-const iconPx = { sm: 36, md: 42, lg: 52 };
-const boxPx = { sm: 52, md: 62, lg: 76 };
 
 export default function KaviroLogo({
   variant = "dark",
@@ -39,36 +33,25 @@ export default function KaviroLogo({
   imageClassName = "",
 }: Props) {
   const px = iconPx[size];
-  const box = boxPx[size];
   const isLight = variant === "light";
-
-  const lockupSrc = isLight ? KAVIRO_LOCKUP_WHITE_SRC : KAVIRO_LOCKUP_FULLCOLOR_SRC;
-  const lockupImgClass = [
-    "w-auto object-contain object-left",
-    lockupHeightClass[size],
-    "max-w-[min(840px,96vw)]",
-    isLight
-      ? "opacity-[0.98] drop-shadow-[0_1px_0_rgba(0,0,0,0.35)] drop-shadow-[0_10px_24px_rgba(0,0,0,0.22)]"
-      : ["opacity-[0.98] drop-shadow-[0_10px_18px_rgba(2,6,23,0.10)]", kaviroCoralImageFilter],
-    imageClassName,
-  ]
-    .flat()
-    .filter(Boolean)
-    .join(" ");
+  const textColor = isLight ? "text-white" : "text-slate-900 dark:text-slate-50";
 
   const mark = withWordmark ? (
-    <span className={`inline-flex items-center ${className}`.trim()}>
-      <Image
-        src={lockupSrc}
-        alt={APP_NAME}
-        width={lockupSrc === KAVIRO_LOCKUP_WHITE_SRC ? 341 : 1800}
-        height={lockupSrc === KAVIRO_LOCKUP_WHITE_SRC ? 101 : 608}
-        className={lockupImgClass}
-        priority
+    <span className={`inline-flex items-center gap-2.5 ${className}`.trim()}>
+      <KaviroMark
+        size={px}
+        className={[
+          "shrink-0 overflow-hidden rounded-full shadow-sm",
+          isLight ? "ring-1 ring-white/30" : "ring-1 ring-slate-200/80 dark:ring-slate-600/80",
+          imageClassName,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       />
+      <span className={[wordmarkClass[size], textColor, "leading-none"].join(" ")}>{APP_NAME}</span>
     </span>
   ) : (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
+    <span className={`inline-flex items-center ${className}`.trim()}>
       <KaviroMark
         size={px}
         className={[

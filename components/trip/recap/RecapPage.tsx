@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Download, ImagePlus, X, Loader2, MapPin } from "lucide-react";
 import html2canvas from "html2canvas";
-import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -472,12 +471,13 @@ export default function RecapPage(props: RecapData) {
           <h1 className="text-sm font-bold text-slate-900 dark:text-slate-50">Crear Recap</h1>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">{tripName}</p>
         </div>
-        <Image
-          src="/brand/kaviro-lockup-fullcolor.png"
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/icon.png"
           alt="Kaviro"
-          width={120}
-          height={20}
-          className={`ml-auto h-5 w-auto opacity-80 ${kaviroCoralImageFilter}`}
+          width={24}
+          height={24}
+          className="ml-auto h-6 w-6 shrink-0 rounded-full opacity-90"
         />
       </div>
 

@@ -33,10 +33,10 @@ export default function PublicMarketingHeader() {
     <header className="sticky top-0 z-50 sticky-safe-top border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-[#1E293B] dark:bg-[#080C14]/95">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-safe-inline py-3 sm:px-6">
         <div className="block dark:hidden">
-          <KaviroLogo href="/" variant="dark" size="lg" withWordmark imageClassName="h-9 max-h-9" />
+          <KaviroLogo href="/" variant="dark" size="lg" withWordmark />
         </div>
         <div className="hidden dark:block">
-          <KaviroLogo href="/" variant="light" size="lg" withWordmark imageClassName="h-9 max-h-9 brightness-200" />
+          <KaviroLogo href="/" variant="light" size="lg" withWordmark />
         </div>
         <nav className="flex items-center gap-2">
           <Link

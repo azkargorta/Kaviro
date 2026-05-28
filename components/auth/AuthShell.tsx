@@ -93,7 +93,7 @@ export default function AuthShell({
                       <KaviroLogo href="/" variant="dark" size="lg" withWordmark />
                     </span>
                     <span className="hidden dark:block">
-                      <KaviroLogo href="/" variant="light" size="lg" withWordmark imageClassName="brightness-200" />
+                      <KaviroLogo href="/" variant="light" size="lg" withWordmark />
                     </span>
                   </div>
                   <h3 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
