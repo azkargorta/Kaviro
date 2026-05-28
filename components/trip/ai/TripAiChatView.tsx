@@ -31,6 +31,7 @@ import {
   SEARCH_JSON_START,
 } from "@/lib/trip-ai/travelSearchOffers";
 import TravelSearchOffersCard from "@/components/trip/ai/TravelSearchOffersCard";
+import { formatItineraryDayOneLine } from "@/lib/plan-activity-meta";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
@@ -750,6 +751,14 @@ export default function TripAiChatView({
       setExpandedDay(itineraryDraft.days[0]!.day);
     }
   }, [itineraryDraft, expandedDay]);
+
+  const reviewingItineraryDraft = Boolean(itineraryDraft);
+
+  useEffect(() => {
+    if (reviewingItineraryDraft && layout === "drawer") {
+      setModePickerOpen(false);
+    }
+  }, [reviewingItineraryDraft, layout]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1918,17 +1927,18 @@ export default function TripAiChatView({
                       setExpandedDay(d.day);
                       setItineraryActivityIndex(0);
                     }}
-                    className={`min-w-[120px] shrink-0 snap-start rounded-lg border px-2.5 py-1.5 text-left text-[11px] transition sm:min-w-[132px] ${
+                    className={`max-w-[10.5rem] shrink-0 snap-start rounded-lg border px-2 py-1 text-left transition ${
                       expandedDay === d.day
                         ? "border-[var(--brand-border)] bg-[var(--brand-light)] dark:border-[#F87171]/40 dark:bg-[#F87171]/10"
                         : "border-slate-200 bg-white hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623]"
                     }`}
                   >
-                    <div className="font-bold text-slate-900">
-                      Día {d.day}
-                      {d.date ? ` · ${d.date.slice(5)}` : ""}
+                    <div className="truncate whitespace-nowrap text-[10px] font-bold leading-tight text-slate-900">
+                      {formatItineraryDayOneLine(d.day, d.date)}
                     </div>
-                    <div className="text-slate-600">{(d.items ?? []).length} paradas</div>
+                    <div className="truncate whitespace-nowrap text-[10px] leading-tight text-slate-600">
+                      {(d.items ?? []).length} par.
+                    </div>
                   </button>
                 ))}
               </div>
@@ -1936,7 +1946,7 @@ export default function TripAiChatView({
 
             {expandedDay != null && itineraryDayNav.day ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
-                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-2 py-1.5 dark:border-[#1E293B]">
+                <div className="mx-auto flex w-full max-w-[17rem] shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-1.5 py-1 dark:border-[#1E293B]">
                   <button
                     type="button"
                     disabled={itineraryDayNav.dayIndex <= 0}
@@ -1946,18 +1956,17 @@ export default function TripAiChatView({
                       setExpandedDay(prev.day);
                       setItineraryActivityIndex(0);
                     }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
                     aria-label="Día anterior"
                   >
-                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
                   </button>
-                  <div className="min-w-0 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Día</div>
-                    <div className="text-xs font-extrabold text-slate-900">
-                      {expandedDay}
-                      {itineraryDayNav.day.date ? ` · ${itineraryDayNav.day.date}` : ""}
-                    </div>
-                  </div>
+                  <p
+                    className="min-w-0 flex-1 truncate whitespace-nowrap text-center text-[10px] font-extrabold text-slate-900"
+                    title={formatItineraryDayOneLine(expandedDay, itineraryDayNav.day.date)}
+                  >
+                    {formatItineraryDayOneLine(expandedDay, itineraryDayNav.day.date)}
+                  </p>
                   <button
                     type="button"
                     disabled={itineraryDayNav.dayIndex >= itineraryDraft.days.length - 1}
@@ -1967,29 +1976,29 @@ export default function TripAiChatView({
                       setExpandedDay(next.day);
                       setItineraryActivityIndex(0);
                     }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
                     aria-label="Día siguiente"
                   >
-                    <ChevronRight className="h-4 w-4" aria-hidden />
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 </div>
 
-                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-2 py-1.5 dark:border-[#1E293B]">
+                <div className="mx-auto flex w-full max-w-[12rem] shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-1.5 py-1 dark:border-[#1E293B]">
                   <button
                     type="button"
                     disabled={itineraryDayNav.activityCount <= 1 || itineraryDayNav.safeActivityIndex <= 0}
                     onClick={() => setItineraryActivityIndex((i) => Math.max(0, i - 1))}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
                     aria-label="Parada anterior"
                   >
-                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
                   </button>
-                  <span className="text-center text-[11px] font-semibold text-slate-600">
+                  <span className="min-w-0 whitespace-nowrap text-center text-[10px] font-semibold tabular-nums text-slate-600">
                     Parada{" "}
                     <strong className="text-slate-900">
                       {itineraryDayNav.activityCount ? itineraryDayNav.safeActivityIndex + 1 : 0}
-                    </strong>{" "}
-                    de {itineraryDayNav.activityCount}
+                    </strong>
+                    /{itineraryDayNav.activityCount}
                   </span>
                   <button
                     type="button"
@@ -2002,10 +2011,10 @@ export default function TripAiChatView({
                         Math.min(itineraryDayNav.activityCount - 1, i + 1)
                       )
                     }
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
                     aria-label="Parada siguiente"
                   >
-                    <ChevronRight className="h-4 w-4" aria-hidden />
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 </div>
 
@@ -2423,6 +2432,7 @@ export default function TripAiChatView({
             layout === "drawer" ? "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden" : "overflow-x-hidden"
           }`}
         >
+          {!reviewingItineraryDraft ? (
           <div
             className={`border-b border-slate-200 dark:border-[#1E293B] ${
               layout === "drawer"
@@ -2583,6 +2593,7 @@ export default function TripAiChatView({
               </div>
             )}
           </div>
+          ) : null}
 
           {error ? (
             <div
@@ -2605,7 +2616,7 @@ export default function TripAiChatView({
             </div>
           ) : null}
 
-          {info ? (
+          {info && !reviewingItineraryDraft ? (
             <div
               className={`mx-4 min-w-0 max-w-full break-words rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 sm:mx-5 ${
                 layout === "drawer" ? "mt-2 shrink-0" : "mt-5"
@@ -2790,9 +2801,11 @@ export default function TripAiChatView({
               />
               <div className="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-[#1E293B] px-3 py-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 shrink-0">
-                    ✦ {activeMode?.label || "Asistente"}
-                  </span>
+                  {!reviewingItineraryDraft ? (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                      ✦ {activeMode?.label || "Asistente"}
+                    </span>
+                  ) : null}
                   {question.length > 0 && (
                     <span className={`text-[10px] font-semibold ${question.length > 1800 ? "text-red-500" : "text-slate-400"}`}>
                       {question.length}/2000

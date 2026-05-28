@@ -89,3 +89,12 @@ export function formatPlanDayTabLabel(isoDate: string, dayIndex: number): { day:
     date: formatPlanDayTabDate(isoDate),
   };
 }
+
+/** Una línea para chips del asistente: «Día 6 · 3 nov 2026». */
+export function formatItineraryDayOneLine(dayIndex: number, isoDate: string | null | undefined): string {
+  const base = `Día ${dayIndex}`;
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return base;
+  const short = formatPlanDayTabDate(isoDate);
+  const year = isoDate.slice(0, 4);
+  return short ? `${base} · ${short} ${year}` : base;
+}
