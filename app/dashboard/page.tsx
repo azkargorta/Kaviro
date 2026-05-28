@@ -163,10 +163,10 @@ export default async function DashboardPage() {
     participantData.map((row) => [row.trip_id, row.is_favorite ?? false])
   );
   const joinedViaDemoMap = new Map<string, boolean>(
-    participantData.map((row) => [
-      row.trip_id,
-      String(row.joined_via || "").toLowerCase() === "demo",
-    ])
+    participantData.map((row) => {
+      const via = String(row.joined_via || "").toLowerCase();
+      return [row.trip_id, via === "demo" || via === "stripes"];
+    })
   );
   const tripIds = participantData.map((row) => row.trip_id).filter(Boolean);
 

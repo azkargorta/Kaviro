@@ -13,7 +13,7 @@ import {
   demoTripDateRange,
 } from "@/lib/onboarding/demo-trip-seed";
 import {
-  isCurrentLondonDemoTrip,
+  isCurrentCanonicalDemoTrip,
   isDemoTripForListing,
   type TripDemoFields,
 } from "@/lib/onboarding/is-demo-trip";
@@ -79,7 +79,7 @@ export async function ensureDemoTripForUser(user: User): Promise<{
       .select("id, name, destination, is_demo")
       .eq("id", existing.demo_trip_id)
       .maybeSingle();
-    if (trip?.id && isCurrentLondonDemoTrip(trip as TripDemoFields)) {
+    if (trip?.id && isCurrentCanonicalDemoTrip(trip as TripDemoFields)) {
       return {
         tripId: String(trip.id),
         created: false,
@@ -179,6 +179,9 @@ export async function ensureDemoTripForUser(user: User): Promise<{
         longitude: a.longitude,
         ...(a.rating != null ? { rating: a.rating } : {}),
         ...(a.comment != null ? { comment: a.comment } : {}),
+        ...((a as { notes?: string | null }).notes != null
+          ? { notes: (a as { notes?: string | null }).notes }
+          : {}),
         source: "demo",
         created_by_user_id: user.id,
       }))
@@ -361,7 +364,7 @@ export async function ensureDemoTripForUser(user: User): Promise<{
 }
 
 /**
- * Quita de «Mis viajes» los demos antiguos (p. ej. USA) dejando solo el demo Londres actual.
+ * Quita de «Mis viajes» los demos antiguos (p. ej. Stripes/USA) dejando solo el demo Londres actual.
  */
 export async function detachLegacyDemoTripsForUser(
   userId: string,
@@ -396,7 +399,7 @@ export async function detachLegacyDemoTripsForUser(
 
     const trip = tripMap.get(tripId);
     if (!trip) continue;
-    if (isCurrentLondonDemoTrip(trip)) continue;
+    if (isCurrentCanonicalDemoTrip(trip)) continue;
 
     const joinedViaDemo = String((row as { joined_via?: string }).joined_via || "").toLowerCase() === "demo";
     if (!isDemoTripForListing(trip, { demoTripId: keepDemoTripId, joinedViaDemo })) continue;
@@ -420,7 +423,7 @@ export async function detachLegacyDemoTripsForUser(
   if (
     linkedTrip &&
     isDemoTripForListing(linkedTrip as TripDemoFields) &&
-    !isCurrentLondonDemoTrip(linkedTrip as TripDemoFields)
+    !isCurrentCanonicalDemoTrip(linkedTrip as TripDemoFields)
   ) {
     await admin.from("trips").delete().eq("id", linkedId);
     await admin
