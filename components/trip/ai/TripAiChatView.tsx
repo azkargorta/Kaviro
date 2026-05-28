@@ -43,7 +43,10 @@ import {
   filterItineraryBySelection,
   isItineraryImportIncomplete,
   itineraryItemKey,
+  buildItineraryImportSource,
+  looksLikeAssistantItineraryText,
   looksLikePastedItineraryImport,
+  prepareItineraryTextForImport,
   type ItineraryDraftPayload,
 } from "@/lib/trip-ai/itineraryDraftUtils";
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
@@ -612,11 +615,21 @@ export default function TripAiChatView({
 
   const lastPastedItinerarySource = useMemo(() => {
     if (lastImportSourceRef.current) return lastImportSourceRef.current;
+    let lastUser: string | null = null;
+    let lastAssistant: string | null = null;
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
-      if (m.role === "user" && looksLikePastedItineraryImport(m.content)) {
-        return m.content;
+      if (m.id === "welcome") continue;
+      if (m.role === "assistant" && !lastAssistant && looksLikeAssistantItineraryText(m.content)) {
+        lastAssistant = m.content;
       }
+      if (m.role === "user" && !lastUser && looksLikePastedItineraryImport(m.content)) {
+        lastUser = m.content;
+      }
+      if (lastUser && lastAssistant) break;
+    }
+    if (lastUser || lastAssistant) {
+      return buildItineraryImportSource(lastUser ?? "", lastAssistant ?? "");
     }
     return null;
   }, [messages]);
@@ -733,14 +746,15 @@ export default function TripAiChatView({
 
   const runImportItineraryCards = useCallback(
     async (sourceText: string, assistantHint?: string): Promise<ItineraryPayload | null> => {
-      const text = sourceText.trim();
+      const text = prepareItineraryTextForImport(sourceText);
       if (!text || importingItineraryCards) return null;
+      lastImportSourceRef.current = text;
       setImportingItineraryCards(true);
       setImportProgress(null);
       setImportCardsFailed(false);
       setError(null);
       const sections = splitSourceForImport(text);
-      const useClientChunks = sections.length >= 2 || text.length > 1800;
+      const useClientChunks = sections.length >= 2 || text.length > 1200;
       const hint = assistantHint?.slice(0, 4000) ?? "";
       const mergedParts: ItineraryPayload[] = [];
 
@@ -779,9 +793,32 @@ export default function TripAiChatView({
             }
           }
           if (!mergedParts.length) {
+            setInfo("Reintentando importación completa…");
+            const { res: fullRes, payload: fullPayload } = await fetchJsonWithTimeout(
+              "/api/trip-ai/import-itinerary",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ tripId, sourceText: text, assistantHint: hint }),
+              },
+              IMPORT_FULL_TIMEOUT_MS
+            );
+            if (fullRes.ok && fullPayload?.itinerary) {
+              const draft = fullPayload.itinerary as ItineraryPayload;
+              setInfo(
+                `Tarjetas listas (${draft.days.length} días, ${countItineraryItems(draft)} actividades). Revisa y pulsa «Añadir».`
+              );
+              return draft;
+            }
             setImportCardsFailed(true);
             setInfo(null);
-            setError("No se pudieron generar las tarjetas. Prueba con menos días a la vez.");
+            const apiErr =
+              typeof fullPayload?.error === "string" ? fullPayload.error : null;
+            setError(
+              apiErr ||
+                "No se pudieron generar las tarjetas. Pulsa «Generar tarjetas» o pega solo 2–3 días a la vez."
+            );
             return null;
           }
           const draft = mergeImportedItineraries(mergedParts);
@@ -1467,15 +1504,16 @@ export default function TripAiChatView({
         let maybe = answerStr ? extractItineraryFromAnswer(answerStr) : null;
         setImportCardsFailed(false);
 
-        const pastedSource = clean.length > 200 ? clean : answerStr || clean;
+        const importSource = buildItineraryImportSource(clean, answerStr);
         const shouldRunImport =
-          looksLikePastedItineraryImport(pastedSource) ||
-          looksLikePastedItineraryImport(answerStr) ||
+          looksLikeAssistantItineraryText(importSource) ||
           answerHasTruncatedItineraryJson(answerStr) ||
-          (maybe != null && isItineraryImportIncomplete(maybe, pastedSource));
+          (maybe != null && isItineraryImportIncomplete(maybe, importSource));
 
+        let imported: ItineraryPayload | null = null;
         if (shouldRunImport) {
-          const imported = await runImportItineraryCards(pastedSource, answerStr);
+          lastImportSourceRef.current = importSource;
+          imported = await runImportItineraryCards(importSource, answerStr);
           if (imported) {
             const preferImport =
               !maybe || countItineraryItems(imported) > countItineraryItems(maybe);
@@ -1488,6 +1526,8 @@ export default function TripAiChatView({
           setItinerarySelected(collectItineraryItemKeys(maybe));
           setExpandedDay(maybe.days[0]?.day ?? null);
           setImportCardsFailed(false);
+        } else if (shouldRunImport && !imported) {
+          setImportCardsFailed(true);
         }
 
         const maybeDiff = answerStr ? extractDiff(answerStr) : null;
@@ -1947,7 +1987,7 @@ export default function TripAiChatView({
         </section>
       ) : null}
 
-      {!itineraryDraft && lastPastedItinerarySource && !importingItineraryCards ? (
+      {!itineraryDraft && (lastPastedItinerarySource || importCardsFailed) && !importingItineraryCards ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/30">
           <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
             {importCardsFailed
@@ -1958,7 +1998,7 @@ export default function TripAiChatView({
             type="button"
             disabled={importingItineraryCards || loading}
             onClick={() => {
-              const src = lastPastedItinerarySource;
+              const src = lastPastedItinerarySource ?? lastImportSourceRef.current;
               if (!src) return;
               void runImportItineraryCards(src).then((draft) => {
                 if (!draft) return;

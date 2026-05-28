@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const chunkLabel = typeof body?.chunkLabel === "string" ? body.chunkLabel.trim() : "Tramo";
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
-    const minLen = singleChunk ? 40 : 80;
+    const minLen = singleChunk ? 40 : assistantHint.length > 100 ? 50 : 80;
     if (!sourceText || sourceText.length < minLen) {
       return NextResponse.json({ error: "Texto de itinerario demasiado corto." }, { status: 400 });
     }

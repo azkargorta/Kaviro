@@ -138,7 +138,7 @@ function buildMarkerPrompt(tripSummary: string, sourceText: string) {
 
 /** Parte el texto en bloques por «DÍA …» para agendas muy largas. */
 export function splitSourceByDaySections(sourceText: string): Array<{ header: string; body: string }> {
-  const re = /(?=D[IÍ]A\s+\d+)/gi;
+  const re = /(?=(?:D[IÍ]A|D[ií]a|Day)\s*\d+\b)/gi;
   const parts = sourceText.split(re).map((p) => p.trim()).filter(Boolean);
   if (parts.length <= 1) return [{ header: "Todo", body: sourceText }];
 
