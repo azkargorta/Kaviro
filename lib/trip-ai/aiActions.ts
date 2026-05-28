@@ -1,4 +1,5 @@
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
+import { looksLikePastedItineraryImport } from "@/lib/trip-ai/itineraryDraftUtils";
 
 export const AI_ACTION_IDS = [
   "generate_trip",
@@ -26,6 +27,10 @@ export function parseClientAIAction(input: unknown): AIActionId | null {
  * Clasificación ligera por texto (sin modelo). El servidor puede recibir además `aiAction` explícito desde chips.
  */
 export function inferAIActionFromQuestion(question: string): AIActionId {
+  if (looksLikePastedItineraryImport(question)) {
+    return "generate_trip";
+  }
+
   const q = normalize(question);
 
   if (

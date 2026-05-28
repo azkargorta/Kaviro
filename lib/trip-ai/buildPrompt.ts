@@ -1,3 +1,5 @@
+import { looksLikePastedItineraryImport } from "@/lib/trip-ai/itineraryDraftUtils";
+
 export type TripAiMode =
   | "general"
   | "planning"
@@ -113,10 +115,17 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         '      "items": [',
         "        {",
         '          "title": "string",',
-        '          "activity_kind": "visit|museum|restaurant|transport|activity",',
+        '          "activity_kind": "visit|museum|restaurant|transport|activity|lodging",',
         '          "place_name": "string|null",',
         '          "address": "string|null",',
+        '          "latitude": number|null,',
+        '          "longitude": number|null,',
         '          "start_time": "HH:MM|null",',
+        '          "duration_min": number|null,',
+        '          "requires_ticket": boolean|null,',
+        '          "ticket_notes": "string|null",',
+        '          "visit_type": "string|null",',
+        '          "transport_mode": "string|null",',
         '          "notes": "string|null"',
         "        }",
         "      ]",
@@ -132,6 +141,12 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         "- No repitas la misma visita o atracción principal en días distintos sin motivo (evita duplicados); avanza el recorrido de forma coherente.",
         "- En place_name y address de cada item incluye país o región inequívoca para geocodificar bien (ej. «Tower of London, London, United Kingdom»). Evita topónimos sueltos tipo solo «Londres» si pueden confundirse con homónimos en otros países.",
         "- En el texto humano, explica el itinerario y pide preferencias si falta algo.",
+        "- requires_ticket: true en museos, torres, partidos NBA/NHL/NFL, cruceros, espectáculos de pago; false en paseos libres, tailgates sin entrada nombrada o traslados; null si no aplica.",
+        "- Si el usuario pega una agenda larga (horas tipo 12.00h, bloques DÍA X, vuelos, hotel, partidos), IMPORTA cada actividad con hora y lugar como item separado (no resumas en 2-3 paradas por día).",
+        "- Convierte 12.00h → start_time 12:00. Dirección postal completa en address; nombre del sitio en place_name con ciudad y país.",
+        "- Si hay dos fechas alternativas (ej. 29 Oct o 5 Nov), usa las fechas del CONTEXTO DEL VIAJE; si no encajan, date=null y day coherente con el orden del texto.",
+        "- No omitas vuelos, check-in hotel, partidos, cruceros ni comidas en restaurante nombrado. Consejos sin hora/lugar van en notes del item más cercano, no como item propio.",
+        "- Para variantes (Packers en Green Bay vs Bears en Chicago), crea items solo de la opción principal descrita; la alternativa en notes.",
       ].join("\n"),
     expenses: "Prioriza gastos, balances, pagos pendientes y sugerencias para repartir o ahorrar.",
     optimizer: [
@@ -223,6 +238,13 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
       "- Cuando propongas lugares concretos (en texto o en JSON), escribe siempre la forma más inequívoca: ciudad + país o región administrativa.",
     ].join("\n"),
     modeInstructions[mode],
+    looksLikePastedItineraryImport(question)
+      ? [
+          "",
+          "TAREA ACTUAL: el usuario pegó una agenda detallada. Debes devolver TRIPBOARD_ITINERARY con TODAS las actividades con hora y lugar detectables.",
+          "En el texto previo al JSON, resume cuántos días y actividades has extraído y si faltan fechas del viaje en el contexto.",
+        ].join("\n")
+      : "",
     "",
     "CONTEXTO DEL VIAJE:",
     context,

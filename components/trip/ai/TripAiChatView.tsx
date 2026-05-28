@@ -34,6 +34,14 @@ import TravelSearchOffersCard from "@/components/trip/ai/TravelSearchOffersCard"
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
+import {
+  collectItineraryItemKeys,
+  countItineraryItems,
+  filterItineraryBySelection,
+  itineraryItemKey,
+  normalizeItineraryItem,
+  type ItineraryDraftPayload,
+} from "@/lib/trip-ai/itineraryDraftUtils";
 
 type TripAiChatLayout = "page" | "drawer";
 
@@ -111,9 +119,9 @@ const SEARCH_FOCUS_WELCOME =
 
 const PLANNER_FOCUS_WELCOME =
   "Modo **Planificador (todo el viaje)**\n\n" +
-  "Aquí preparo un itinerario que cubre **cada día del calendario** de este viaje (con actividades o, si toca, días de traslado/descanso explícitos), no solo un resumen.\n\n" +
-  "Cuando el JSON esté listo, usa **«Ejecutar plan»** para volcarlo al Plan y al mapa. Si faltan país inequívoco o fechas, te preguntaré antes.\n\n" +
-  "Puedes describir ritmo y prioridades, o pulsar «Sugerir itinerario» si el plan está vacío.";
+  "Puedes **pegar una agenda completa** (horarios, vuelos, hotel, partidos…) y la analizaré: extraeré título, día, hora, lugar, si lleva entrada y coordenadas cuando consten.\n\n" +
+  "Verás **todas las actividades por día** con casillas: marca las que quieras y pulsa **«Añadir seleccionadas»** para volcarlas al Plan (el resto se descarta).\n\n" +
+  "También puedo crear un itinerario desde cero si describes el viaje o pulsas «Sugerir itinerario» con el plan vacío.";
 
 const DAY_FOCUS_WELCOME =
   "Modo **Desplazamientos y un día**\n\n" +
@@ -240,24 +248,7 @@ type Message = {
   metadata?: Record<string, unknown>;
 };
 
-type ItineraryPayload = {
-  version: 1;
-  title?: string;
-  /** Opcional: cómo calcular rutas entre paradas (driving | walking | cycling). */
-  travelMode?: "driving" | "walking" | "cycling";
-  days: Array<{
-    day: number;
-    date: string | null;
-    items: Array<{
-      title: string;
-      activity_kind?: string | null;
-      place_name?: string | null;
-      address?: string | null;
-      start_time?: string | null;
-      notes?: string | null;
-    }>;
-  }>;
-};
+type ItineraryPayload = ItineraryDraftPayload;
 
 type DiffOperation =
   | { op: "update_activity"; id: string; patch: Record<string, unknown> }
@@ -340,7 +331,7 @@ function extractItinerary(answer: string): ItineraryPayload | null {
       return {
         day: typeof row.day === "number" ? row.day : index + 1,
         date: typeof row.date === "string" ? row.date : null,
-        items: Array.isArray(row.items) ? row.items : [],
+        items: Array.isArray(row.items) ? row.items.map(normalizeItineraryItem) : [],
       };
     });
     return { ...(parsed as ItineraryPayload), days };
@@ -530,6 +521,7 @@ export default function TripAiChatView({
   const [info, setInfo] = useState<string | null>(null);
   const [aiBudgetExceeded, setAiBudgetExceeded] = useState(false);
   const [itineraryDraft, setItineraryDraft] = useState<ItineraryPayload | null>(null);
+  const [itinerarySelected, setItinerarySelected] = useState<Set<string>>(new Set());
   const [diffDraft, setDiffDraft] = useState<DiffPayload | null>(null);
   const [routesDraft, setRoutesDraft] = useState<RoutesDraftPayload | null>(null);
   const [missingCoords, setMissingCoords] = useState<MissingCoordsItem[] | null>(null);
@@ -600,10 +592,18 @@ export default function TripAiChatView({
     return itineraryDraft.days.some((d) => typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date));
   }, [itineraryDraft]);
 
+  const itineraryItemTotal = useMemo(
+    () => (itineraryDraft ? countItineraryItems(itineraryDraft) : 0),
+    [itineraryDraft]
+  );
+
+  const itinerarySelectedCount = itinerarySelected.size;
+
   const itineraryConflictDates = useMemo(() => {
-    if (!itineraryDraft) return [];
+    if (!itineraryDraft || itinerarySelected.size === 0) return [];
+    const filtered = filterItineraryBySelection(itineraryDraft, itinerarySelected);
     const draftDates = new Set<string>();
-    for (const day of itineraryDraft.days) {
+    for (const day of filtered.days) {
       const d = day.date;
       if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) draftDates.add(d);
     }
@@ -614,12 +614,17 @@ export default function TripAiChatView({
       if (typeof ad === "string" && draftDates.has(ad)) used.add(ad);
     }
     return Array.from(used).sort();
-  }, [itineraryDraft, tripPlanActivities]);
+  }, [itineraryDraft, itinerarySelected, tripPlanActivities]);
 
   const runExecutePlan = useCallback(
     async (conflictResolution: "add" | "replace") => {
       const draft = itineraryDraft;
       if (!draft) return;
+      const filtered = filterItineraryBySelection(draft, itinerarySelected);
+      if (countItineraryItems(filtered) === 0) {
+        setError("Marca al menos una actividad para añadirla al plan.");
+        return;
+      }
       setExecutingPlan(true);
       setInfo(null);
       setError(null);
@@ -632,7 +637,7 @@ export default function TripAiChatView({
           res = await fetch("/api/trip-ai/execute-plan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tripId, itinerary: draft, conflictResolution }),
+            body: JSON.stringify({ tripId, itinerary: filtered, conflictResolution }),
             signal: controller.signal,
           });
         } finally {
@@ -648,6 +653,7 @@ export default function TripAiChatView({
           nRoutes != null && nRoutes > 0 ? ` y ${nRoutes} rutas en el mapa` : nRoutes === 0 ? "" : "";
         setInfo([`Plan ejecutado: ${actMsg}${routeMsg}.`, note].filter(Boolean).join(" "));
         setItineraryDraft(null);
+        setItinerarySelected(new Set());
         setExpandedDay(null);
         void reloadTrip();
         void reloadTripPlanActivities();
@@ -665,7 +671,7 @@ export default function TripAiChatView({
         setExecutingPlan(false);
       }
     },
-    [itineraryDraft, tripId, reloadTrip, reloadTripPlanActivities]
+    [itineraryDraft, itinerarySelected, tripId, reloadTrip, reloadTripPlanActivities]
   );
 
   const syncDayStripEdges = useCallback(() => {
@@ -745,6 +751,7 @@ export default function TripAiChatView({
 
       setConversationId(null);
       setItineraryDraft(null);
+      setItinerarySelected(new Set());
       setPlanConflictOpen(false);
       setDiffDraft(null);
       setRoutesDraft(null);
@@ -1253,6 +1260,7 @@ export default function TripAiChatView({
 
       if (hasDayPlannerDiff) {
         setItineraryDraft(null);
+        setItinerarySelected(new Set());
         setExpandedDay(null);
         setDiffDraft(data.diff as DiffPayload);
         setRoutesDraft(tryExtractRoutesDraft(data));
@@ -1260,8 +1268,11 @@ export default function TripAiChatView({
       } else {
         const answerStr = typeof data.answer === "string" ? data.answer : "";
         const maybe = answerStr ? extractItinerary(answerStr) : null;
-        if (maybe) setItineraryDraft(maybe);
-        if (maybe) setExpandedDay(null);
+        if (maybe) {
+          setItineraryDraft(maybe);
+          setItinerarySelected(collectItineraryItemKeys(maybe));
+          setExpandedDay(maybe.days[0]?.day ?? null);
+        }
 
         const maybeDiff = answerStr ? extractDiff(answerStr) : null;
         if (maybeDiff) setDiffDraft(maybeDiff);
@@ -1710,7 +1721,28 @@ export default function TripAiChatView({
                 {itineraryDraft.title || `${itineraryDraft.days.length} días`}
               </div>
               <div className="mt-1 text-xs text-slate-600">
-                Revisa en el chat y, cuando estés conforme, ejecútalo para añadirlo al Plan.
+                Revisa cada actividad por día. Marca las que quieras en el plan y pulsa «Añadir seleccionadas»; las
+                desmarcadas no se guardan.
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                <span>
+                  Seleccionadas: <strong className="text-slate-900">{itinerarySelectedCount}</strong> /{" "}
+                  {itineraryItemTotal}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                  onClick={() => itineraryDraft && setItinerarySelected(collectItineraryItemKeys(itineraryDraft))}
+                >
+                  Todas
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                  onClick={() => setItinerarySelected(new Set())}
+                >
+                  Ninguna
+                </button>
               </div>
               {dayStripEdges.right || dayStripEdges.left ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1818,30 +1850,67 @@ export default function TripAiChatView({
                       const d = itineraryDraft.days.find((x) => x.day === expandedDay);
                       const items = d?.items || [];
                       return items.length ? (
-                        items.map((it, idx) => (
-                          <div key={`${it.title}-${idx}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-[#1E293B] dark:bg-[#080C14]">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="text-xs font-extrabold text-slate-900">
-                                  {it.start_time ? `${it.start_time} · ` : ""}{it.title}
+                        items.map((it, idx) => {
+                          const key = itineraryItemKey(expandedDay, idx);
+                          const checked = itinerarySelected.has(key);
+                          return (
+                            <label
+                              key={key}
+                              className={`flex cursor-pointer gap-3 rounded-xl border px-3 py-2 transition ${
+                                checked
+                                  ? "border-[var(--brand-border)] bg-[var(--brand-light)]/60 dark:border-[#F87171]/35 dark:bg-[#F87171]/10"
+                                  : "border-slate-200 bg-slate-50 opacity-75 dark:border-[#1E293B] dark:bg-[#080C14]"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setItinerarySelected((prev) => {
+                                    const next = new Set(prev);
+                                    if (e.target.checked) next.add(key);
+                                    else next.delete(key);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-extrabold text-slate-900">
+                                      {it.start_time ? `${it.start_time} · ` : ""}
+                                      {it.title}
+                                    </div>
+                                    <div className="mt-0.5 text-[11px] text-slate-600">
+                                      {it.place_name || it.address || "Sin lugar"}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {it.requires_ticket === true ? (
+                                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                                        Entrada
+                                      </span>
+                                    ) : it.requires_ticket === false ? (
+                                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                        Sin entrada
+                                      </span>
+                                    ) : null}
+                                    {it.activity_kind ? (
+                                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-600 dark:border-[#334155] dark:bg-[#1E293B]">
+                                        {it.activity_kind}
+                                      </span>
+                                    ) : null}
+                                  </div>
                                 </div>
-                                <div className="mt-0.5 text-[11px] text-slate-600">
-                                  {it.place_name || it.address || it.activity_kind || "Parada"}
-                                </div>
+                                {it.ticket_notes ? (
+                                  <div className="mt-1 text-[11px] text-amber-900/90">{it.ticket_notes}</div>
+                                ) : null}
+                                {it.notes ? <div className="mt-1 text-[11px] text-slate-600">{it.notes}</div> : null}
                               </div>
-                              {it.activity_kind ? (
-                                <div className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300">
-                                  {it.activity_kind}
-                                </div>
-                              ) : null}
-                            </div>
-                            {it.notes ? (
-                              <div className="mt-2 text-[11px] text-slate-600">
-                                {it.notes}
-                              </div>
-                            ) : null}
-                          </div>
-                        ))
+                            </label>
+                          );
+                        })
                       ) : (
                         <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-xs text-slate-600">
                           No hay items para este día.
@@ -1856,7 +1925,12 @@ export default function TripAiChatView({
             <div className="flex shrink-0 flex-col gap-2">
               <button
                 type="button"
-                disabled={executingPlan || loading || (draftHasCalendarDates && tripPlanActivitiesLoading)}
+                disabled={
+                  executingPlan ||
+                  loading ||
+                  itinerarySelectedCount === 0 ||
+                  (draftHasCalendarDates && tripPlanActivitiesLoading)
+                }
                 onClick={() => {
                   if (!itineraryDraft) return;
                   if (itineraryConflictDates.length) {
@@ -1867,14 +1941,22 @@ export default function TripAiChatView({
                 }}
                 className="inline-flex items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
               >
-                {executingPlan ? "Ejecutando..." : "Ejecutar plan"}
+                {executingPlan
+                  ? "Añadiendo..."
+                  : itinerarySelectedCount === itineraryItemTotal
+                    ? "Añadir todo al plan"
+                    : `Añadir seleccionadas (${itinerarySelectedCount})`}
               </button>
               <button
                 type="button"
-                onClick={() => setItineraryDraft(null)}
+                onClick={() => {
+                  setItineraryDraft(null);
+                  setItinerarySelected(new Set());
+                  setExpandedDay(null);
+                }}
                 className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
-                Descartar
+                Descartar borrador
               </button>
             </div>
           </div>

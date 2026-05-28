@@ -132,7 +132,12 @@ export async function POST(req: Request) {
       effectiveMode
     );
 
-    const { text: answer, usage } = await askTripAIWithUsage(prompt, effectiveMode, { provider });
+    const longPlanningImport =
+      effectiveMode === "planning" && question.length > 1200;
+    const { text: answer, usage } = await askTripAIWithUsage(prompt, effectiveMode, {
+      provider,
+      ...(longPlanningImport ? { maxOutputTokens: 8192 } : {}),
+    });
 
     await trackAiUsage({ supabase, userId, provider: (provider || process.env.AI_PROVIDER || "gemini").toLowerCase(), monthKey, usage });
 
