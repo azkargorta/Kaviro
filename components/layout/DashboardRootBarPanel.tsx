@@ -37,7 +37,7 @@ export default function DashboardRootBarPanel({ variant = "stacked" }: Props) {
       className={
         isInline
           ? "relative min-w-0 flex-1 px-1"
-          : "relative border-t border-white/10 pb-5 pt-4"
+          : "relative z-0 border-t border-white/10 pb-5 pt-4"
       }
     >
       {!isInline ? (

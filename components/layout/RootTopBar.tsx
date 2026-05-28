@@ -25,7 +25,7 @@ function HeaderActions({
   isDashboardHome: boolean;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="relative z-[60] flex shrink-0 items-center gap-2">
       {!isDashboardHome ? <PremiumBadge /> : null}
       <DarkModeToggle heroMode />
       {session === "user" ? (
@@ -80,9 +80,9 @@ export default function RootTopBar() {
   );
 
   return (
-    <div className="sticky top-0 z-50 pt-safe">
+    <div className="sticky top-0 z-50 overflow-visible pt-safe">
       <div
-        className="root-header relative overflow-hidden shadow-sm"
+        className="root-header relative overflow-visible shadow-sm"
         style={{ background: headerGradient }}
       >
         <div className="mx-auto max-w-[1200px] px-safe-inline sm:pl-6 sm:pr-6">
