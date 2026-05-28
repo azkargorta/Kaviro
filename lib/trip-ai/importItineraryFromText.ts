@@ -192,7 +192,7 @@ export function splitSourceForImport(sourceText: string): Array<{ header: string
   return [{ header: "Todo", body: sourceText }];
 }
 
-function mergeItineraries(parts: ExecutableItineraryPayload[]): ExecutableItineraryPayload {
+export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): ExecutableItineraryPayload {
   const days: ItineraryDayPayload[] = [];
   for (const p of parts) {
     for (const d of p.days) {
@@ -262,8 +262,28 @@ async function importByChunks(
     }
   }
   if (!merged.length) return null;
-  const itinerary = mergeItineraries(merged);
+  const itinerary = mergeImportedItineraries(merged);
   return itinerary.days.length ? itinerary : null;
+}
+
+/** Una sola llamada IA para un trozo (usado desde el cliente con progreso por tramo). */
+export async function importItinerarySingleChunk(params: {
+  tripSummary: string;
+  chunkBody: string;
+  chunkLabel: string;
+}): Promise<{ itinerary: ExecutableItineraryPayload; usage: TripAiUsage } | null> {
+  const usageAgg: TripAiUsage = { provider: "gemini", model: null, inputTokens: 0, outputTokens: 0 };
+  const part = await importChunk(
+    params.tripSummary,
+    params.chunkBody.trim(),
+    params.chunkLabel.trim() || "Tramo",
+    usageAgg
+  );
+  if (!part?.days?.length) return null;
+  return {
+    itinerary: fillItineraryDatesFromTripSummary(part, params.tripSummary),
+    usage: usageAgg,
+  };
 }
 
 export async function importItineraryFromText(params: {

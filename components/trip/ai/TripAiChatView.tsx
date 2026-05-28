@@ -48,6 +48,10 @@ import {
 } from "@/lib/trip-ai/itineraryDraftUtils";
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
+  mergeImportedItineraries,
+  splitSourceForImport,
+} from "@/lib/trip-ai/importItineraryFromText";
+import {
   DIFF_JSON_END_ALIASES,
   DIFF_JSON_START_ALIASES,
   extractJsonBetweenMarkers,
@@ -57,6 +61,26 @@ import {
 } from "@/lib/trip-ai/kaviroJsonMarkers";
 
 type TripAiChatLayout = "page" | "drawer";
+
+const IMPORT_FULL_TIMEOUT_MS = 300_000;
+const IMPORT_CHUNK_TIMEOUT_MS = 180_000;
+const EXECUTE_DAY_TIMEOUT_MS = 240_000;
+
+async function fetchJsonWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<{ res: Response; payload: Record<string, unknown> | null }> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    const payload = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+    return { res, payload };
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 
 type AssistantContextPreset = {
   mode: TripAiMode;
@@ -479,6 +503,11 @@ export default function TripAiChatView({
   const [itineraryFullscreenReview, setItineraryFullscreenReview] = useState(true);
   const [itinerarySelected, setItinerarySelected] = useState<Set<string>>(new Set());
   const [importingItineraryCards, setImportingItineraryCards] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    current: number;
+    total: number;
+    label: string;
+  } | null>(null);
   const [importCardsFailed, setImportCardsFailed] = useState(false);
   const [diffDraft, setDiffDraft] = useState<DiffPayload | null>(null);
   const [routesDraft, setRoutesDraft] = useState<RoutesDraftPayload | null>(null);
@@ -492,6 +521,11 @@ export default function TripAiChatView({
   const [diffAllowDeletes, setDiffAllowDeletes] = useState(false);
   const [diffSelected, setDiffSelected] = useState<Set<string>>(new Set());
   const [executingPlan, setExecutingPlan] = useState(false);
+  const [executeProgress, setExecuteProgress] = useState<{
+    current: number;
+    total: number;
+    activitiesCreated: number;
+  } | null>(null);
   const [planConflictOpen, setPlanConflictOpen] = useState(false);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [itineraryActivityIndex, setItineraryActivityIndex] = useState(0);
@@ -614,32 +648,59 @@ export default function TripAiChatView({
         return;
       }
       setExecutingPlan(true);
+      setExecuteProgress(null);
       setInfo(null);
       setError(null);
       setPlanConflictOpen(false);
+      const days = filtered.days.filter((d) => (d.items?.length ?? 0) > 0);
+      const totalDays = days.length;
+      let totalCreated = 0;
+      let totalRoutes = 0;
+      let routesNote = "";
       try {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 120_000);
-        let res: Response;
-        try {
-          res = await fetch("/api/trip-ai/execute-plan", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tripId, itinerary: filtered, conflictResolution }),
-            signal: controller.signal,
+        for (let i = 0; i < days.length; i++) {
+          const day = days[i]!;
+          setExecuteProgress({
+            current: i + 1,
+            total: totalDays,
+            activitiesCreated: totalCreated,
           });
-        } finally {
-          window.clearTimeout(timeoutId);
+          setInfo(
+            totalDays > 1
+              ? `Añadiendo al plan: día ${i + 1} de ${totalDays}…`
+              : "Añadiendo actividades al plan…"
+          );
+          const { res, payload } = await fetchJsonWithTimeout(
+            "/api/trip-ai/execute-plan",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                tripId,
+                itinerary: { ...filtered, days: [day] },
+                conflictResolution: i === 0 ? conflictResolution : "add",
+                generateRoutes: true,
+              }),
+            },
+            EXECUTE_DAY_TIMEOUT_MS
+          );
+          if (!res.ok) {
+            throw new Error(
+              typeof payload?.error === "string" ? payload.error : "No se pudo ejecutar el plan."
+            );
+          }
+          const nAct = typeof payload?.created === "number" ? payload.created : 0;
+          totalCreated += nAct;
+          const nRoutes = typeof payload?.routesCreated === "number" ? payload.routesCreated : 0;
+          totalRoutes += nRoutes;
+          if (typeof payload?.routesNote === "string" && payload.routesNote.trim()) {
+            routesNote = payload.routesNote;
+          }
         }
-        const payload = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(payload?.error || "No se pudo ejecutar el plan.");
-        const nAct = typeof payload?.created === "number" ? payload.created : null;
-        const nRoutes = typeof payload?.routesCreated === "number" ? payload.routesCreated : null;
-        const note = typeof payload?.routesNote === "string" ? payload.routesNote : "";
-        const actMsg = nAct != null ? `${nAct} actividades` : "varias actividades";
-        const routeMsg =
-          nRoutes != null && nRoutes > 0 ? ` y ${nRoutes} rutas en el mapa` : nRoutes === 0 ? "" : "";
-        setInfo([`Plan ejecutado: ${actMsg}${routeMsg}.`, note].filter(Boolean).join(" "));
+        const actMsg = `${totalCreated} actividades`;
+        const routeMsg = totalRoutes > 0 ? ` y ${totalRoutes} rutas en el mapa` : "";
+        setInfo([`Plan ejecutado: ${actMsg}${routeMsg}.`, routesNote].filter(Boolean).join(" "));
         setItineraryDraft(null);
         setItinerarySelected(new Set());
         setExpandedDay(null);
@@ -651,15 +712,20 @@ export default function TripAiChatView({
       } catch (e) {
         const raw = e instanceof Error ? e.message : "No se pudo ejecutar el plan.";
         const isAbort = e instanceof Error && e.name === "AbortError";
+        const partial =
+          totalCreated > 0
+            ? ` Ya se guardaron ${totalCreated} actividades; recarga Plan y continúa solo con lo que falte.`
+            : "";
         if (isAbort || /fetch failed|failed to fetch|networkerror|aborted|timeout/i.test(raw)) {
           setError(
-            "No se pudo completar la ejecución (red o tiempo de espera, hasta 2 min). Si el plan es largo, espera un momento, recarga Plan por si las actividades ya se guardaron y vuelve a ejecutar solo si falta algo."
+            `No se pudo completar la ejecución (red o tiempo de espera por día, hasta ${Math.round(EXECUTE_DAY_TIMEOUT_MS / 60_000)} min por tramo).${partial}`
           );
         } else {
-          setError(raw);
+          setError(raw + partial);
         }
       } finally {
         setExecutingPlan(false);
+        setExecuteProgress(null);
       }
     },
     [itineraryDraft, itinerarySelected, tripId, layout, reloadTrip, reloadTripPlanActivities, router]
@@ -670,43 +736,105 @@ export default function TripAiChatView({
       const text = sourceText.trim();
       if (!text || importingItineraryCards) return null;
       setImportingItineraryCards(true);
+      setImportProgress(null);
       setImportCardsFailed(false);
       setError(null);
-      setInfo("Generando tarjetas para validar el itinerario…");
+      const sections = splitSourceForImport(text);
+      const useClientChunks = sections.length >= 2 || text.length > 1800;
+      const hint = assistantHint?.slice(0, 4000) ?? "";
+      const mergedParts: ItineraryPayload[] = [];
+
       try {
-        const importRes = await fetch("/api/trip-ai/import-itinerary", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tripId,
-            sourceText: text,
-            assistantHint: assistantHint?.slice(0, 4000) ?? "",
-          }),
-        });
-        const importPayload = await importRes.json().catch(() => null);
-        if (!importRes.ok || !importPayload?.itinerary) {
+        if (useClientChunks) {
+          const total = sections.length;
+          for (let i = 0; i < sections.length; i++) {
+            const section = sections[i]!;
+            if (!section.body.trim()) continue;
+            setImportProgress({ current: i + 1, total, label: section.header });
+            setInfo(`Generando tarjetas: tramo ${i + 1} de ${total} (${section.header})…`);
+            const { res, payload } = await fetchJsonWithTimeout(
+              "/api/trip-ai/import-itinerary",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  tripId,
+                  sourceText: section.body,
+                  singleChunk: true,
+                  chunkLabel: section.header,
+                }),
+              },
+              IMPORT_CHUNK_TIMEOUT_MS
+            );
+            if (!res.ok || !payload?.itinerary) {
+              continue;
+            }
+            mergedParts.push(payload.itinerary as ItineraryPayload);
+            const partial = mergeImportedItineraries(mergedParts);
+            setItineraryDraft(partial);
+            setItinerarySelected(collectItineraryItemKeys(partial));
+            if (expandedDay == null && partial.days[0]) {
+              setExpandedDay(partial.days[0]!.day);
+            }
+          }
+          if (!mergedParts.length) {
+            setImportCardsFailed(true);
+            setInfo(null);
+            setError("No se pudieron generar las tarjetas. Prueba con menos días a la vez.");
+            return null;
+          }
+          const draft = mergeImportedItineraries(mergedParts);
+          setInfo(
+            `Tarjetas listas (${draft.days.length} días, ${countItineraryItems(draft)} actividades). Revisa y pulsa «Añadir».`
+          );
+          return draft;
+        }
+
+        setInfo("Generando tarjetas para validar el itinerario…");
+        const { res, payload } = await fetchJsonWithTimeout(
+          "/api/trip-ai/import-itinerary",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ tripId, sourceText: text, assistantHint: hint }),
+          },
+          IMPORT_FULL_TIMEOUT_MS
+        );
+        if (!res.ok || !payload?.itinerary) {
           setImportCardsFailed(true);
           setInfo(null);
           setError(
-            typeof importPayload?.error === "string"
-              ? importPayload.error
-              : "No se pudieron generar las tarjetas."
+            typeof payload?.error === "string" ? payload.error : "No se pudieron generar las tarjetas."
           );
           return null;
         }
-        const draft = importPayload.itinerary as ItineraryPayload;
+        const draft = payload.itinerary as ItineraryPayload;
         setInfo("Tarjetas listas: revisa cada actividad y pulsa «Añadir seleccionadas».");
         return draft;
-      } catch {
+      } catch (e) {
         setImportCardsFailed(true);
         setInfo(null);
-        setError("Error de red al generar las tarjetas.");
-        return null;
+        const isAbort = e instanceof Error && e.name === "AbortError";
+        const partialDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
+        const partialCount = partialDraft ? countItineraryItems(partialDraft) : 0;
+        const partialHint =
+          partialCount > 0
+            ? ` Ya hay ${partialCount} actividades en las tarjetas; puedes revisarlas o volver a generar para el resto.`
+            : "";
+        setError(
+          isAbort
+            ? `Tiempo de espera al generar tarjetas.${partialHint}`
+            : `Error de red al generar las tarjetas.${partialHint}`
+        );
+        return partialDraft;
       } finally {
         setImportingItineraryCards(false);
+        setImportProgress(null);
       }
     },
-    [importingItineraryCards, tripId]
+    [importingItineraryCards, tripId, expandedDay]
   );
 
   const syncDayStripEdges = useCallback(() => {
@@ -1800,9 +1928,22 @@ export default function TripAiChatView({
         </div>
       ) : null}
 
-      {importingItineraryCards && !itineraryDraft ? (
+      {importingItineraryCards ? (
         <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-3 text-sm font-semibold text-[var(--brand-text)]">
-          Generando tarjetas para validar… (puede tardar un minuto en agendas largas)
+          {importProgress ? (
+            <>
+              Generando tarjetas: <strong>tramo {importProgress.current} de {importProgress.total}</strong>
+              {importProgress.label ? ` · ${importProgress.label}` : null}
+              {itineraryDraft ? (
+                <span className="mt-1 block text-xs font-normal text-slate-600">
+                  Ya hay {itineraryDraft.days.length} día{itineraryDraft.days.length !== 1 ? "s" : ""} en
+                  pantalla — sigue cargando el resto.
+                </span>
+              ) : null}
+            </>
+          ) : (
+            "Generando tarjetas para validar… (en agendas largas va tramo a tramo; no cierres la app)"
+          )}
         </section>
       ) : null}
 
@@ -1920,7 +2061,9 @@ export default function TripAiChatView({
                   className="inline-flex flex-1 items-center justify-center rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:opacity-60 sm:flex-none sm:text-sm"
                 >
                   {executingPlan
-                    ? "Añadiendo..."
+                    ? executeProgress
+                      ? `Día ${executeProgress.current}/${executeProgress.total} · ${executeProgress.activitiesCreated} añad.`
+                      : "Añadiendo…"
                     : itinerarySelectedCount === itineraryItemTotal
                       ? "Añadir todo"
                       : `Añadir (${itinerarySelectedCount})`}

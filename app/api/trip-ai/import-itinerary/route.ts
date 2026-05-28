@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildTripSummaryForAi } from "@/lib/trip-ai/buildTripSummary";
-import { importItineraryFromText } from "@/lib/trip-ai/importItineraryFromText";
+import { importItineraryFromText, importItinerarySingleChunk } from "@/lib/trip-ai/importItineraryFromText";
 import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
@@ -14,9 +14,12 @@ export async function POST(req: Request) {
     const tripId = typeof body?.tripId === "string" ? body.tripId : "";
     const sourceText = typeof body?.sourceText === "string" ? body.sourceText.trim() : "";
     const assistantHint = typeof body?.assistantHint === "string" ? body.assistantHint.trim() : "";
+    const singleChunk = body?.singleChunk === true;
+    const chunkLabel = typeof body?.chunkLabel === "string" ? body.chunkLabel.trim() : "Tramo";
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
-    if (!sourceText || sourceText.length < 80) {
+    const minLen = singleChunk ? 40 : 80;
+    if (!sourceText || sourceText.length < minLen) {
       return NextResponse.json({ error: "Texto de itinerario demasiado corto." }, { status: 400 });
     }
 
@@ -50,7 +53,9 @@ export async function POST(req: Request) {
     }
 
     const tripSummary = await buildTripSummaryForAi(tripId);
-    const result = await importItineraryFromText({ tripSummary, sourceText, assistantHint });
+    const result = singleChunk
+      ? await importItinerarySingleChunk({ tripSummary, chunkBody: sourceText, chunkLabel })
+      : await importItineraryFromText({ tripSummary, sourceText, assistantHint });
 
     if (!result) {
       return NextResponse.json(
@@ -70,7 +75,11 @@ export async function POST(req: Request) {
       usage: result.usage,
     });
 
-    return NextResponse.json({ ok: true, itinerary: result.itinerary, answer: result.answer });
+    return NextResponse.json({
+      ok: true,
+      itinerary: result.itinerary,
+      answer: "answer" in result ? result.answer : `Tramo «${chunkLabel}» importado.`,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo importar el itinerario." },

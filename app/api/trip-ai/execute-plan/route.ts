@@ -5,7 +5,7 @@ import { executePlanOnTrip } from "@/lib/trip-ai/executePlanOnTrip";
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     const tripId = typeof body?.tripId === "string" ? body.tripId : "";
     const itinerary = body?.itinerary as ExecutableItineraryPayload | null;
     const conflictResolution = body?.conflictResolution === "replace" ? "replace" : "add";
+    const generateRoutes = body?.generateRoutes !== false;
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!itinerary || itinerary.version !== 1 || !Array.isArray(itinerary.days)) {
@@ -44,8 +45,7 @@ export async function POST(req: Request) {
       conflictResolution,
       access: { userId: access.userId, can_manage_map: access.can_manage_map },
       tripDestination,
-      // En ejecución manual, generamos rutas por defecto.
-      generateRoutes: true,
+      generateRoutes,
     });
 
     if (!result.ok) {
