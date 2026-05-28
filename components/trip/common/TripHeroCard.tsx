@@ -1,3 +1,4 @@
+import KaviroTripHeroLockup from "@/components/brand/KaviroTripHeroLockup";
 import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
 
@@ -79,9 +80,11 @@ export default function TripHeroCard({ tripId, tripName, destination, participan
       {/* Título + acciones (tour: data-tour="trip-hero-toolbar") */}
       <div
         data-tour="trip-hero-toolbar"
-        className="flex items-start justify-between gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] max-md:pl-[max(1rem,var(--safe-area-left))] max-md:pr-[max(1rem,var(--safe-area-right))]"
+        className="flex items-center justify-between gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] max-md:pl-[max(1rem,var(--safe-area-left))] max-md:pr-[max(1rem,var(--safe-area-right))]"
       >
-        <div className="min-w-0 flex-1">
+        <KaviroTripHeroLockup size="sm" href="/dashboard" className="shrink-0" />
+
+        <div className="min-w-0 flex-1 self-center">
           {destLabel && (
             <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
               {destLabel}

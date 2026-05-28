@@ -23,7 +23,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "summary-hero-toolbar", tab: "summary", target: '[data-tour="trip-hero-toolbar"]', placement: "bottom", emoji: "🔧",
     title: "Barra del viaje (arriba)",
-    body: "La franja coral muestra el viaje y, a la derecha, el salvavidas 🛟 (ayuda y tour), la campana 🔔 de novedades, el modo oscuro/claro y el menú 👤. Para volver al panel usa «Mis viajes» en el menú lateral (escritorio) o en Más → abajo en móvil.",
+    body: "A la izquierda, el logo Kaviro vuelve al panel; en el centro, destino y nombre del viaje. A la derecha: salvavidas 🛟 (ayuda y tour), campana 🔔, modo oscuro y menú 👤. Debajo, compartir el plan y «Mis viajes» (blanco y coral) en la misma fila.",
   },
   {
     id: "summary-feed", tab: "summary", target: '[data-tour="topbar-novedades"]', placement: "bottom", emoji: "🔔",
