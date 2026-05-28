@@ -12,6 +12,11 @@ import {
   buildDemoExpenses,
   demoTripDateRange,
 } from "@/lib/onboarding/demo-trip-seed";
+import {
+  isCurrentLondonDemoTrip,
+  isDemoTripForListing,
+  type TripDemoFields,
+} from "@/lib/onboarding/is-demo-trip";
 
 export type DemoOnboardingProfile = {
   demo_trip_id: string | null;
@@ -69,13 +74,24 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   const existing = await readDemoOnboardingProfile(user.id);
 
   if (existing?.demo_trip_id) {
-    const { data: trip } = await admin.from("trips").select("id, is_demo").eq("id", existing.demo_trip_id).maybeSingle();
-    if (trip?.id) {
+    const { data: trip } = await admin
+      .from("trips")
+      .select("id, name, destination, is_demo")
+      .eq("id", existing.demo_trip_id)
+      .maybeSingle();
+    if (trip?.id && isCurrentLondonDemoTrip(trip as TripDemoFields)) {
       return {
         tripId: String(trip.id),
         created: false,
         profile: existing,
       };
+    }
+    if (trip?.id) {
+      await admin.from("trips").delete().eq("id", existing.demo_trip_id);
+      await admin
+        .from("profiles")
+        .update({ demo_trip_id: null, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
     }
   }
 
@@ -344,6 +360,76 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   };
 }
 
+/**
+ * Quita de «Mis viajes» los demos antiguos (p. ej. USA) dejando solo el demo Londres actual.
+ */
+export async function detachLegacyDemoTripsForUser(
+  userId: string,
+  keepDemoTripId: string | null
+): Promise<void> {
+  const admin = createSupabaseAdmin();
+
+  const { data: participantRows } = await admin
+    .from("trip_participants")
+    .select("id, trip_id, joined_via")
+    .eq("user_id", userId)
+    .neq("status", "removed");
+
+  const tripIds = [
+    ...new Set((participantRows ?? []).map((r) => String((r as { trip_id?: string }).trip_id || "")).filter(Boolean)),
+  ];
+  if (!tripIds.length) return;
+
+  const { data: tripRows } = await admin
+    .from("trips")
+    .select("id, name, destination, is_demo")
+    .in("id", tripIds);
+
+  const tripMap = new Map(
+    ((tripRows ?? []) as TripDemoFields[]).map((t) => [String(t.id), t])
+  );
+
+  for (const row of participantRows ?? []) {
+    const participantId = String((row as { id?: string }).id || "");
+    const tripId = String((row as { trip_id?: string }).trip_id || "");
+    if (!participantId || !tripId) continue;
+
+    const trip = tripMap.get(tripId);
+    if (!trip) continue;
+    if (isCurrentLondonDemoTrip(trip)) continue;
+
+    const joinedViaDemo = String((row as { joined_via?: string }).joined_via || "").toLowerCase() === "demo";
+    if (!isDemoTripForListing(trip, { demoTripId: keepDemoTripId, joinedViaDemo })) continue;
+
+    await admin
+      .from("trip_participants")
+      .update({ status: "removed", updated_at: new Date().toISOString() })
+      .eq("id", participantId);
+  }
+
+  const profile = await readDemoOnboardingProfile(userId);
+  const linkedId = profile?.demo_trip_id ?? null;
+  if (!linkedId) return;
+
+  const { data: linkedTrip } = await admin
+    .from("trips")
+    .select("id, name, destination, is_demo")
+    .eq("id", linkedId)
+    .maybeSingle();
+
+  if (
+    linkedTrip &&
+    isDemoTripForListing(linkedTrip as TripDemoFields) &&
+    !isCurrentLondonDemoTrip(linkedTrip as TripDemoFields)
+  ) {
+    await admin.from("trips").delete().eq("id", linkedId);
+    await admin
+      .from("profiles")
+      .update({ demo_trip_id: null, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+  }
+}
+
 export async function resetDemoTripForUser(user: import("@supabase/supabase-js").User): Promise<{ tripId: string }> {
   const admin = createSupabaseAdmin();
 
@@ -388,10 +474,14 @@ export async function markDemoOnboardingCompleted(userId: string): Promise<void>
 
 export async function isTripDemo(tripId: string): Promise<boolean> {
   const admin = createSupabaseAdmin();
-  const { data } = await admin.from("trips").select("is_demo").eq("id", tripId).maybeSingle();
-  if (data && typeof (data as { is_demo?: boolean }).is_demo === "boolean") {
-    return Boolean((data as { is_demo: boolean }).is_demo);
-  }
+  const { data } = await admin
+    .from("trips")
+    .select("id, name, destination, is_demo")
+    .eq("id", tripId)
+    .maybeSingle();
+  if (!data) return false;
   const profile = await admin.from("profiles").select("demo_trip_id").eq("demo_trip_id", tripId).limit(1);
-  return (profile.data?.length ?? 0) > 0;
+  return isDemoTripForListing(data as TripDemoFields, {
+    demoTripId: (profile.data?.[0] as { demo_trip_id?: string } | undefined)?.demo_trip_id ?? tripId,
+  });
 }

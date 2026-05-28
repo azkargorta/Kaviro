@@ -156,9 +156,11 @@ export async function checkTripLimit(
     .select("id, is_demo")
     .in("id", tripIds);
 
+  const { isDemoTripForListing } = await import("@/lib/onboarding/is-demo-trip");
   const nonDemoCount = (
-    (trips as { id: string; is_demo?: boolean }[] | null) ?? []
-  ).filter((t) => !t.is_demo && t.id !== demoId).length;
+    (trips as { id: string; name?: string | null; destination?: string | null; is_demo?: boolean }[] | null) ??
+    []
+  ).filter((t) => !isDemoTripForListing(t, { demoTripId: demoId })).length;
 
   if (nonDemoCount >= limit) {
     return {

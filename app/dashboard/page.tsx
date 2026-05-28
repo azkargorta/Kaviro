@@ -17,9 +17,11 @@ import DashboardOfflineRegistry, {
   DashboardOfflinePanel,
 } from "@/components/dashboard/DashboardOfflineRegistry";
 import {
+  detachLegacyDemoTripsForUser,
   ensureDemoTripForUser,
   isFirstDemoOnboardingVisit,
 } from "@/lib/onboarding/createDemoTrip";
+import { isDemoTripForListing } from "@/lib/onboarding/is-demo-trip";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 
 type Trip = {
@@ -37,6 +39,7 @@ type Trip = {
 type TripParticipantRow = {
   trip_id: string;
   is_favorite?: boolean;
+  joined_via?: string | null;
 };
 
 function formatDate(value: string | null) {
@@ -114,7 +117,7 @@ export default async function DashboardPage() {
       .select("is_premium, demo_trip_id, demo_onboarding_completed_at, demo_onboarding_skipped_at")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase.from("trip_participants").select("trip_id, is_favorite").eq("user_id", user.id),
+    supabase.from("trip_participants").select("trip_id, is_favorite, joined_via").eq("user_id", user.id),
   ]);
 
   const existingDemoProfile = profileRow
@@ -129,6 +132,13 @@ export default async function DashboardPage() {
 
   let demoTripId: string | null = null;
   let isFirstOnboardingVisit = true;
+
+  try {
+    await detachLegacyDemoTripsForUser(user.id, existingDemoProfile?.demo_trip_id ?? null);
+  } catch (legacyErr) {
+    console.error("No se pudieron retirar demos antiguos del listado:", legacyErr);
+  }
+
   if (existingDemoProfile?.demo_trip_id) {
     demoTripId = existingDemoProfile.demo_trip_id;
     isFirstOnboardingVisit = isFirstDemoOnboardingVisit(existingDemoProfile);
@@ -152,6 +162,12 @@ export default async function DashboardPage() {
   const favoriteMap = new Map<string, boolean>(
     participantData.map((row) => [row.trip_id, row.is_favorite ?? false])
   );
+  const joinedViaDemoMap = new Map<string, boolean>(
+    participantData.map((row) => [
+      row.trip_id,
+      String(row.joined_via || "").toLowerCase() === "demo",
+    ])
+  );
   const tripIds = participantData.map((row) => row.trip_id).filter(Boolean);
 
   let trips: Trip[] = [];
@@ -173,7 +189,12 @@ export default async function DashboardPage() {
     }
   }
 
-  const demoTrips = trips.filter((t) => t.is_demo || (demoTripId && t.id === demoTripId));
+  const demoTrips = trips.filter((t) =>
+    isDemoTripForListing(t, {
+      demoTripId,
+      joinedViaDemo: joinedViaDemoMap.get(t.id) ?? false,
+    })
+  );
   const realTrips = trips.filter((t) => !demoTrips.some((d) => d.id === t.id));
 
   const { current, future, past, unscheduled } = categorizeTrips(realTrips);
