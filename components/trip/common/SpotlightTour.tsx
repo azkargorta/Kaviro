@@ -182,6 +182,13 @@ function executeAction(action?: SpotlightStep["action"]) {
     const toggle = document.querySelector('[data-tour="summary-search-toggle"]') as HTMLElement | null;
     toggle?.click();
   }
+  if (action === "open-map-auto-routes") {
+    const section = document.querySelector('[data-tour="map-ai-section"]');
+    if (!section) return;
+    const openBtn = document.querySelector('[data-tour="map-ai-open-btn"]') as HTMLElement | null;
+    const expanded = openBtn?.getAttribute("aria-expanded") === "true";
+    if (!expanded && openBtn) openBtn.click();
+  }
 }
 
 type Props = {

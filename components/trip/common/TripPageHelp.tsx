@@ -187,10 +187,9 @@ const HELP: Record<string, HelpEntry> = {
       {
         heading: "Qué puedes hacer en esta página",
         bullets: [
+          "Crear rutas manualmente con «Nueva ruta» o abrir «Crear rutas automáticamente» (Premium) para un borrador con IA.",
           "Ver en el mapa rutas, puntos y tramos ligados a este viaje.",
-          "Abrir subpantallas según lo que necesites (por ejemplo explorar el entorno o ver gastos en contexto geográfico).",
           "Comprobar distancias y orden geográfico de las paradas respecto al plan del día.",
-          "Volver al resumen del viaje o a otras secciones desde los accesos del header cuando haga falta.",
         ],
       },
       {

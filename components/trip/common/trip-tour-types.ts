@@ -31,5 +31,6 @@ export type SpotlightStep = {
     | "open-resources-lists"
     | "open-participants-invite"
     | "open-participants-qr"
-    | "open-summary-search";
+    | "open-summary-search"
+    | "open-map-auto-routes";
 };

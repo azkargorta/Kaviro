@@ -98,9 +98,10 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Pulsa Nueva ruta para diseñar un trayecto sobre el mapa. Elige origen, paradas intermedias y destino. Kaviro calcula la distancia y el tiempo estimado a pie, en coche o transporte. Cada ruta tiene su propio nombre y color.",
   },
   {
-    id: "map-ai", tab: "map", target: '[data-tour="map-ai-btn"]', placement: "bottom", emoji: "✨",
+    id: "map-ai", tab: "map", target: '[data-tour="map-ai-section"]', targetAlt: '[data-tour="map-ai-btn"]',
+    action: "open-map-auto-routes", placement: "bottom", emoji: "✨",
     title: "Generar rutas con IA (Premium)",
-    body: "El asistente analiza todas las actividades del día y genera automáticamente la ruta óptima conectándolas en el orden más eficiente. Ahorra horas de planificación y evita ir y volver al mismo barrio. Función disponible en el plan Premium.",
+    body: "En «Crear rutas automáticamente» pulsa Abrir, indica preferencias de transporte y luego Crear rutas. La IA enlaza tus planes del día (o del viaje) en un borrador que revisas antes de guardar. Requiere Premium.",
   },
   {
     id: "map-routes-list", tab: "map", target: '[data-tour="map-routes-list-panel"]', placement: "top", emoji: "📋",

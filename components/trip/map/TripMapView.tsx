@@ -1618,7 +1618,10 @@ export default function TripMapView({
     <div className="min-w-0 max-w-full space-y-4 overflow-x-hidden">
       {!canManageMap ? <TripReadOnlyBanner moduleLabel="rutas y mapa" /> : null}
       {canManageMap ? (
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+      <section
+        data-tour="map-ai-section"
+        className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
+      >
         <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="text-sm font-extrabold text-slate-950">Crear rutas automáticamente</div>
@@ -1630,6 +1633,7 @@ export default function TripMapView({
             <StatusChip active={isPremium}>Premium</StatusChip>
             <button
               type="button"
+              data-tour="map-ai-open-btn"
               onClick={() => setAutoRoutesOpen((v) => !v)}
               className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               aria-expanded={autoRoutesOpen}
