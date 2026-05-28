@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeInsertAudit } from "@/lib/audit";
+import { normalizeInviteScope } from "@/lib/activity-invite-scope";
+import {
+  inviteFieldsFromBody,
+  isMissingInviteScopeColumn,
+  syncActivityInvitees,
+} from "@/lib/activity-invitees-api";
 import {
   forbidUnlessCanManagePlan,
   requireTripAccessApi,
@@ -79,13 +85,33 @@ import {
           : undefined
     );
     assign("comment", typeof body?.comment === "string" ? body.comment.trim() : body?.comment === null ? null : undefined);
- 
-    const { data, error } = await supabase
+
+    const hasInvitePatch =
+      body?.invite_scope !== undefined ||
+      body?.inviteScope !== undefined ||
+      body?.invited_participant_ids !== undefined ||
+      body?.invitedParticipantIds !== undefined;
+    const inviteFields = hasInvitePatch ? inviteFieldsFromBody(body) : null;
+    if (inviteFields) {
+      assign("invite_scope", inviteFields.invite_scope);
+    }
+
+    let { data, error } = await supabase
       .from("trip_activities")
       .update(patch)
       .eq("id", params.activityId)
       .select("*")
       .single();
+    if (error && inviteFields && isMissingInviteScopeColumn(error.message)) {
+      const retryPatch = { ...patch };
+      delete retryPatch.invite_scope;
+      ({ data, error } = await supabase
+        .from("trip_activities")
+        .update(retryPatch)
+        .eq("id", params.activityId)
+        .select("*")
+        .single());
+    }
     if (error) {
       const msg = error.message || "No se pudo actualizar la actividad.";
       if (msg.toLowerCase().includes("column") && (msg.toLowerCase().includes("rating") || msg.toLowerCase().includes("comment"))) {
@@ -111,13 +137,36 @@ import {
       actor_email: actor?.user?.email ?? null,
     });
 
+    let inviteWarning: string | undefined;
+    if (inviteFields) {
+      const syncResult = await syncActivityInvitees(
+        supabase,
+        String(row.trip_id),
+        String(data.id),
+        inviteFields.invite_scope,
+        inviteFields.invited_participant_ids,
+        access
+      );
+      if (!syncResult.ok) inviteWarning = syncResult.warning;
+    }
+
+    const activityPayload = {
+      ...data,
+      invite_scope:
+        (data as { invite_scope?: string }).invite_scope ??
+        inviteFields?.invite_scope ??
+        normalizeInviteScope((row as { invite_scope?: string }).invite_scope),
+      invited_participant_ids: inviteFields?.invited_participant_ids,
+    };
+
     const linkedId =
       typeof (data as any)?.linked_reservation_id === "string" ? String((data as any).linked_reservation_id) : null;
     if (linkedId && isLodgingActivityRow(data as any)) {
       if (!access.can_manage_resources) {
         return NextResponse.json({
-          activity: data,
+          activity: activityPayload,
           warning:
+            inviteWarning ||
             "La actividad se guardó en el plan, pero no tienes permiso para actualizar Docs (reservas). Pide acceso de gestión de recursos o edita el alojamiento en Docs.",
         });
       }
@@ -149,7 +198,10 @@ import {
       if (updResErr) throw new Error(updResErr.message);
     }
 
-     return NextResponse.json({ activity: data });
+     return NextResponse.json({
+       activity: activityPayload,
+       warning: inviteWarning,
+     });
    } catch (error) {
      return NextResponse.json(
        { error: error instanceof Error ? error.message : "No se pudo actualizar la actividad." },

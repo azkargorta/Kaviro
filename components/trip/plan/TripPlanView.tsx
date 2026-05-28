@@ -48,6 +48,8 @@ import {
 } from "@/components/ui/brandStyles";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import type { TripActivitiesInitial } from "@/hooks/useTripActivities";
+import type { PlanTripParticipant } from "@/lib/plan-trip-participants";
+import { resolveCreatePlanDate } from "@/lib/plan-create-defaults";
 
 const COMMON_KIND_ICONS: Array<{ emoji: string; label: string }> = [
   { emoji: "📍", label: "Visita" },
@@ -231,6 +233,8 @@ export default function TripPlanView({
   initialSelectedDate = null,
   initialActivities,
   participants = [],
+  tripParticipants = [],
+  currentParticipantId = null,
 }: {
   tripId: string;
   premiumEnabled: boolean;
@@ -244,6 +248,8 @@ export default function TripPlanView({
   initialSelectedDate?: string | null;
   initialActivities?: TripActivitiesInitial;
   participants?: string[];
+  tripParticipants?: PlanTripParticipant[];
+  currentParticipantId?: string | null;
 }) {
   const { trip, activities, loading, saving, error, unseenCount = 0, clearUnseen, createActivity, updateActivity, deleteActivity, deleteActivitiesBulk } =
     useTripActivities(tripId, initialActivities);
@@ -451,12 +457,16 @@ export default function TripPlanView({
     }
   }
 
-  function handleStartCreate(prefillDate?: string | null) {
-    if (prefillDate && /^\d{4}-\d{2}-\d{2}$/.test(prefillDate)) {
-      setEditingActivity({ activity_date: prefillDate } as TripActivity);
-    } else {
-      setEditingActivity(null);
-    }
+  function handleStartCreate() {
+    const activity_date = resolveCreatePlanDate({
+      selectedDate,
+      tripStartDate: trip?.start_date ?? null,
+      activityDays: allDaysWithActivity,
+    });
+    setEditingActivity({
+      activity_date: activity_date ?? null,
+      invite_scope: "all",
+    } as TripActivity);
     setIsFormOpen(true);
   }
 
@@ -471,6 +481,11 @@ export default function TripPlanView({
   }
 
   function openCreateWithExplorePlace(payload: ExploreCreatePlanPayload) {
+    const activity_date = resolveCreatePlanDate({
+      selectedDate,
+      tripStartDate: trip?.start_date ?? null,
+      activityDays: allDaysWithActivity,
+    });
     setEditingActivity({
       title: payload.title,
       place_name: payload.title,
@@ -478,7 +493,9 @@ export default function TripPlanView({
       latitude: payload.latitude,
       longitude: payload.longitude,
       activity_kind: "visit",
-    } as any);
+      activity_date: activity_date ?? null,
+      invite_scope: "all",
+    } as TripActivity);
     setIsFormOpen(true);
   }
 
@@ -1307,6 +1324,8 @@ export default function TripPlanView({
           onSubmit={handleSubmit}
           premiumEnabled={premiumEnabled}
           availableKinds={kindsForSelect}
+          tripParticipants={tripParticipants}
+          currentParticipantId={currentParticipantId}
           />
         </div>
       ) : null}
@@ -1332,6 +1351,8 @@ export default function TripPlanView({
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
           tripId={tripId}
+          canManagePlan={canManagePlan}
+          onAddPlan={canManagePlan ? handleStartCreate : undefined}
           expenseFooter={<PlanExpenseFooter tripId={tripId} />}
           aiSuggest={
             <PlanAiSuggestBadge
@@ -1351,7 +1372,7 @@ export default function TripPlanView({
                 {canManagePlan && !showForm ? (
                   <button
                     type="button"
-                    onClick={() => handleStartCreate(selectedDate)}
+                    onClick={() => handleStartCreate()}
                     className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--brand-hover)]"
                   >
                     <Plus className="h-4 w-4" />

@@ -5,10 +5,15 @@ import { createClient } from "@/lib/supabase/client";
 import { notifyTripParticipants } from "@/lib/pushNotify";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
+import type { ActivityInviteScope } from "@/lib/activity-invite-scope";
+
 export type TripActivity = {
   id: string;
   trip_id?: string;
   linked_reservation_id?: string | null;
+  invite_scope?: ActivityInviteScope | string | null;
+  invited_participant_ids?: string[];
+  created_by_user_id?: string | null;
   title: string;
   description?: string | null;
   rating?: number | null;
@@ -29,6 +34,8 @@ export type TripPlanSummary = {
   id: string;
   name?: string | null;
   destination?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 export type SaveActivityInput = {
@@ -43,6 +50,8 @@ export type SaveActivityInput = {
   latitude?: number | null;
   longitude?: number | null;
   activityKind?: string;
+  inviteScope?: ActivityInviteScope;
+  invitedParticipantIds?: string[];
 };
 
 export type TripActivitiesInitial = {
@@ -248,6 +257,8 @@ export function useTripActivities(
               activity_type: input.activityKind === "lodging" ? "lodging" : "general",
               activity_kind: input.activityKind || "visit",
               source: "manual",
+              invite_scope: input.inviteScope ?? "all",
+              invited_participant_ids: input.invitedParticipantIds ?? [],
             }),
           },
           "crear actividad"
@@ -298,6 +309,8 @@ export function useTripActivities(
               longitude: input.longitude ?? null,
               activity_type: input.activityKind === "lodging" ? "lodging" : "general",
               activity_kind: input.activityKind || "visit",
+              invite_scope: input.inviteScope,
+              invited_participant_ids: input.invitedParticipantIds,
             }),
           },
           "editar actividad"

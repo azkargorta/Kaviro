@@ -6,6 +6,12 @@ import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import { getCachedTripPremium } from "@/lib/entitlements";
 import { canEditTripNotesFromAccess } from "@/lib/trip-module-access";
 import type { TripActivitiesInitial } from "@/hooks/useTripActivities";
+import {
+  attachInvitedParticipantIds,
+  filterActivitiesForViewer,
+} from "@/lib/activity-invite-scope";
+import { loadActivityInviteesForTrip } from "@/lib/activity-invitees-api";
+import type { PlanTripParticipant } from "@/lib/plan-trip-participants";
 
 export default async function TripPlanPage({
   params,
@@ -41,7 +47,7 @@ export default async function TripPlanPage({
   const initialSelectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
 
   const [{ data: tripRow }, { data: profileRow }, { data: activityRows }, { data: participantRows }] = await Promise.all([
-    supabase.from("trips").select("id, name, destination, description").eq("id", params.id).maybeSingle(),
+    supabase.from("trips").select("id, name, destination, description, start_date, end_date").eq("id", params.id).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("id", access.userId).maybeSingle(),
     supabase
       .from("trip_activities")
@@ -52,10 +58,11 @@ export default async function TripPlanPage({
       .order("created_at", { ascending: true }),
     supabase
       .from("trip_participants")
-      .select("profiles(display_name)")
+      .select("id, display_name, user_id")
       .eq("trip_id", params.id)
       .neq("status", "removed")
-      .limit(8),
+      .order("created_at", { ascending: true })
+      .limit(24),
   ]);
 
   const rawDesc = (tripRow as { description?: string | null } | null)?.description;
@@ -65,16 +72,34 @@ export default async function TripPlanPage({
 
   const canEditTripNotes = canEditTripNotesFromAccess(access);
 
-  const participantNames = (participantRows ?? [])
-    .map((r) => {
-      const p = (r as { profiles?: { display_name?: string } | null }).profiles;
-      return p?.display_name?.trim() || null;
-    })
-    .filter((n): n is string => Boolean(n));
+  const tripParticipants: PlanTripParticipant[] = [];
+  for (const r of participantRows ?? []) {
+    const row = r as { id?: string; display_name?: string | null; user_id?: string | null };
+    const name = row.display_name?.trim();
+    if (!row.id || !name) continue;
+    tripParticipants.push({
+      id: row.id,
+      display_name: name,
+      user_id: row.user_id ?? null,
+    });
+  }
+
+  const participantNames = tripParticipants.map((p) => p.display_name);
+
+  const rawActivities = (activityRows ?? []) as TripActivitiesInitial["activities"];
+  const activityIds = rawActivities.map((a) => a.id).filter(Boolean);
+  let inviteesMap = new Map<string, string[]>();
+  try {
+    inviteesMap = await loadActivityInviteesForTrip(supabase, params.id, activityIds);
+  } catch {
+    inviteesMap = new Map();
+  }
+  const withInvitees = attachInvitedParticipantIds(rawActivities, inviteesMap);
+  const visibleActivities = filterActivitiesForViewer(withInvitees, access, inviteesMap);
 
   const initialActivities: TripActivitiesInitial = {
     trip: (tripRow as TripActivitiesInitial["trip"]) || null,
-    activities: (activityRows ?? []) as TripActivitiesInitial["activities"],
+    activities: visibleActivities,
     actorName: currentDisplayName,
   };
 
@@ -102,6 +127,8 @@ export default async function TripPlanPage({
         initialSelectedDate={initialSelectedDate}
         initialActivities={initialActivities}
         participants={participantNames}
+        tripParticipants={tripParticipants}
+        currentParticipantId={access.participantId}
       />
     </main>
   );

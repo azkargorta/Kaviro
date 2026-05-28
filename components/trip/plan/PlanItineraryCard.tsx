@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import {
   formatPlanDayTabLabel,
   formatPlanDestinationLabel,
@@ -18,6 +19,8 @@ type Props = {
   children: React.ReactNode;
   expenseFooter?: React.ReactNode;
   aiSuggest?: React.ReactNode;
+  canManagePlan?: boolean;
+  onAddPlan?: () => void;
 };
 
 export default function PlanItineraryCard({
@@ -31,7 +34,10 @@ export default function PlanItineraryCard({
   children,
   expenseFooter,
   aiSuggest,
+  canManagePlan = false,
+  onAddPlan,
 }: Props) {
+  const addForDay = onAddPlan ? () => onAddPlan() : undefined;
   const destLabel = formatPlanDestinationLabel(destination);
   const shown = participants.slice(0, 5);
   const overflow = participants.length - shown.length;
@@ -47,7 +53,21 @@ export default function PlanItineraryCard({
               ) : null}
               <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
             </div>
-            {aiSuggest ? <div className="flex shrink-0 items-center self-center">{aiSuggest}</div> : null}
+            <div className="flex shrink-0 items-center gap-2 self-center">
+              {aiSuggest ? <div className="flex items-center">{aiSuggest}</div> : null}
+              {canManagePlan && onAddPlan && days.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onAddPlan()}
+                  data-tour="plan-add-btn"
+                  className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-white/50 bg-white/15 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60"
+                  title="Añadir plan"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  <span className="hidden sm:inline">Añadir plan</span>
+                </button>
+              ) : null}
+            </div>
           </div>
           {shown.length ? (
             <div className="flex shrink-0 -space-x-1.5">
@@ -71,8 +91,9 @@ export default function PlanItineraryCard({
       </div>
 
       {days.length > 0 ? (
+        <div className="flex border-b border-slate-100 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14]">
         <div
-          className="flex overflow-x-auto border-b border-slate-100 bg-slate-50 no-scrollbar dark:border-[#1E293B] dark:bg-[#080C14]"
+          className="flex min-w-0 flex-1 overflow-x-auto no-scrollbar"
           role="tablist"
           aria-label="Días del itinerario"
         >
@@ -108,6 +129,21 @@ export default function PlanItineraryCard({
               </button>
             );
           })}
+        </div>
+        {canManagePlan && onAddPlan ? (
+          <div className="flex shrink-0 items-stretch border-l border-slate-200 px-2 dark:border-[#1E293B]">
+            <button
+              type="button"
+              onClick={addForDay}
+              data-tour="plan-add-btn"
+              className="my-2 inline-flex min-h-10 items-center justify-center gap-1.5 self-center rounded-xl bg-[#F87171] px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#EF4444] focus:outline-none focus:ring-2 focus:ring-[#F87171]/50"
+              title={selectedDate ? "Añadir plan para este día" : "Añadir plan"}
+            >
+              <Plus className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="hidden min-[380px]:inline">Añadir</span>
+            </button>
+          </div>
+        ) : null}
         </div>
       ) : null}
 

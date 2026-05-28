@@ -1,10 +1,13 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
-import { Check, Star, X } from "lucide-react";
+import { Check, Star, Users, X } from "lucide-react";
 import { iconInline16, iconSlotFill40 } from "@/components/ui/iconTokens";
+import type { ActivityInviteScope } from "@/lib/activity-invite-scope";
+import { normalizeInviteScope } from "@/lib/activity-invite-scope";
+import type { PlanTripParticipant } from "@/lib/plan-trip-participants";
 
 export type ActivityKind =
   | "visit"
@@ -27,6 +30,8 @@ export type PlanFormValues = {
   latitude: number | null;
   longitude: number | null;
   activityKind: ActivityKind;
+  inviteScope: ActivityInviteScope;
+  invitedParticipantIds: string[];
 };
 
 type EditableActivity = {
@@ -43,6 +48,8 @@ type EditableActivity = {
   longitude?: number | null;
   activity_type?: string | null;
   activity_kind?: string | null;
+  invite_scope?: string | null;
+  invited_participant_ids?: string[] | null;
 };
 
 type Props = {
@@ -52,6 +59,8 @@ type Props = {
   onSubmit: (values: PlanFormValues) => Promise<void>;
   premiumEnabled: boolean;
   availableKinds?: Array<{ key: string; label: string }>;
+  tripParticipants?: PlanTripParticipant[];
+  currentParticipantId?: string | null;
 };
 
 const EMPTY_FORM: PlanFormValues = {
@@ -66,10 +75,23 @@ const EMPTY_FORM: PlanFormValues = {
   latitude: null,
   longitude: null,
   activityKind: "visit",
+  inviteScope: "all",
+  invitedParticipantIds: [],
 };
 
-function fromInitial(initialData?: EditableActivity | null): PlanFormValues {
-  if (!initialData) return EMPTY_FORM;
+function fromInitial(
+  initialData?: EditableActivity | null,
+  allParticipantIds: string[] = []
+): PlanFormValues {
+  if (!initialData) return { ...EMPTY_FORM, inviteScope: "all" };
+  if (!initialData.id) {
+    return {
+      ...EMPTY_FORM,
+      activityDate: initialData.activity_date || "",
+      inviteScope: "all",
+      invitedParticipantIds: allParticipantIds.length ? allParticipantIds : [],
+    };
+  }
   const kindFromType =
     String(initialData.activity_type || "").toLowerCase() === "lodging" ? "lodging" : null;
   const kindFromField =
@@ -92,6 +114,10 @@ function fromInitial(initialData?: EditableActivity | null): PlanFormValues {
     latitude: typeof initialData.latitude === "number" ? initialData.latitude : null,
     longitude: typeof initialData.longitude === "number" ? initialData.longitude : null,
     activityKind: resolvedKind,
+    inviteScope: normalizeInviteScope(initialData.invite_scope),
+    invitedParticipantIds: Array.isArray(initialData.invited_participant_ids)
+      ? initialData.invited_participant_ids.filter(Boolean)
+      : [],
   };
 }
 
@@ -129,18 +155,26 @@ export default function PlanForm({
   onSubmit,
   premiumEnabled: _premiumEnabled,
   availableKinds = [],
+  tripParticipants = [],
+  currentParticipantId = null,
 }: Props) {
-  const [form, setForm] = useState<PlanFormValues>(fromInitial(initialData));
+  const allParticipantIds = useMemo(
+    () => tripParticipants.map((p) => p.id).filter(Boolean),
+    [tripParticipants]
+  );
+  const [form, setForm] = useState<PlanFormValues>(() =>
+    fromInitial(initialData, allParticipantIds)
+  );
   const [error, setError] = useState<string | null>(null);
   const isEditing = Boolean(initialData?.id);
   const [customKind, setCustomKind] = useState<string>("");
   const [kindMode, setKindMode] = useState<"select" | "custom">("select");
 
   useEffect(() => {
-    setForm(fromInitial(initialData));
+    setForm(fromInitial(initialData, allParticipantIds));
     setCustomKind("");
     setKindMode("select");
-  }, [initialData]);
+  }, [initialData, allParticipantIds]);
 
   function update<K extends keyof PlanFormValues>(key: K, value: PlanFormValues[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -175,6 +209,11 @@ export default function PlanForm({
 
     if (!nextKind) {
       setError("Selecciona un tipo de actividad (o escribe uno personalizado).");
+      return;
+    }
+
+    if (form.inviteScope === "selected" && form.invitedParticipantIds.length === 0) {
+      setError("Selecciona al menos un participante invitado al plan.");
       return;
     }
 
@@ -297,6 +336,86 @@ export default function PlanForm({
             </div>
           </label>
         </div>
+
+        {tripParticipants.length > 0 ? (
+          <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-[#334155] dark:bg-[#080C14]/60">
+            <legend className="flex items-center gap-2 px-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              <Users className="h-4 w-4 text-[var(--brand)]" aria-hidden />
+              ¿Quién puede ver este plan?
+            </legend>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Elige si el plan es para todo el grupo, solo para ti o para participantes concretos.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {(
+                [
+                  { value: "all" as const, label: "Todo el viaje", hint: "Todos los participantes" },
+                  { value: "self" as const, label: "Solo yo", hint: "Privado para ti" },
+                  { value: "selected" as const, label: "Algunos", hint: "Elige quién" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      inviteScope: opt.value,
+                      invitedParticipantIds:
+                        opt.value === "selected"
+                          ? current.invitedParticipantIds.length
+                            ? current.invitedParticipantIds
+                            : currentParticipantId
+                              ? [currentParticipantId]
+                              : []
+                          : [],
+                    }))
+                  }
+                  className={`flex min-w-[7.5rem] flex-1 flex-col rounded-xl border px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
+                    form.inviteScope === opt.value
+                      ? "border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                  }`}
+                >
+                  <span className="text-sm font-bold">{opt.label}</span>
+                  <span className="text-[11px] font-medium opacity-80">{opt.hint}</span>
+                </button>
+              ))}
+            </div>
+            {form.inviteScope === "selected" ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {tripParticipants.map((p) => {
+                  const checked = form.invitedParticipantIds.includes(p.id);
+                  return (
+                    <label
+                      key={p.id}
+                      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                        checked
+                          ? "border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={checked}
+                        onChange={() => {
+                          setForm((current) => {
+                            const set = new Set(current.invitedParticipantIds);
+                            if (set.has(p.id)) set.delete(p.id);
+                            else set.add(p.id);
+                            return { ...current, invitedParticipantIds: [...set] };
+                          });
+                        }}
+                      />
+                      {p.display_name}
+                    </label>
+                  );
+                })}
+              </div>
+            ) : null}
+          </fieldset>
+        ) : null}
 
         <label className="space-y-2">
           <span className="text-sm font-semibold text-slate-800">Lugar visible</span>

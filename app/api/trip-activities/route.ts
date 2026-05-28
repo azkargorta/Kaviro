@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { safeInsertAudit } from "@/lib/audit";
 import {
+  attachInvitedParticipantIds,
+  filterActivitiesForViewer,
+} from "@/lib/activity-invite-scope";
+import {
+  inviteFieldsFromBody,
+  isMissingInviteScopeColumn,
+  loadActivityInviteesForTrip,
+  syncActivityInvitees,
+} from "@/lib/activity-invitees-api";
+import {
   forbidUnlessCanManagePlan,
   requireTripAccessApi,
 } from "@/lib/trip-access-api";
@@ -16,7 +26,7 @@ export async function GET(request: Request) {
 
     const [{ data: trip, error: tripError }, { data: activities, error: activitiesError }] =
       await Promise.all([
-        gate.supabase.from("trips").select("id, name, destination").eq("id", tripId).single(),
+        gate.supabase.from("trips").select("id, name, destination, start_date, end_date").eq("id", tripId).single(),
         gate.supabase
           .from("trip_activities")
           .select("*")
@@ -29,7 +39,19 @@ export async function GET(request: Request) {
     if (tripError) throw new Error(tripError.message);
     if (activitiesError) throw new Error(activitiesError.message);
 
-    return NextResponse.json({ trip: trip || null, activities: activities || [] });
+    const rows = activities || [];
+    const activityIds = rows.map((a) => String((a as { id: string }).id)).filter(Boolean);
+    let inviteesMap = new Map<string, string[]>();
+    try {
+      inviteesMap = await loadActivityInviteesForTrip(gate.supabase, tripId, activityIds);
+    } catch {
+      inviteesMap = new Map();
+    }
+
+    const withInvitees = attachInvitedParticipantIds(rows, inviteesMap);
+    const visible = filterActivitiesForViewer(withInvitees, gate.access, inviteesMap);
+
+    return NextResponse.json({ trip: trip || null, activities: visible });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo cargar el plan." },
@@ -58,7 +80,9 @@ export async function POST(request: Request) {
         ? Math.round(ratingRaw)
         : null;
 
-    const payload = {
+    const { invite_scope, invited_participant_ids } = inviteFieldsFromBody(body);
+
+    const payload: Record<string, unknown> = {
       trip_id: tripId,
       title: typeof body?.title === "string" ? body.title.trim() : null,
       description: typeof body?.description === "string" ? body.description.trim() : null,
@@ -75,11 +99,18 @@ export async function POST(request: Request) {
       source: typeof body?.source === "string" ? body.source : "manual",
       created_by_user_id:
         typeof body?.created_by_user_id === "string" ? body.created_by_user_id : access.userId,
+      invite_scope,
     };
 
     if (!payload.title) return NextResponse.json({ error: "Falta title" }, { status: 400 });
 
-    const { data, error } = await supabase.from("trip_activities").insert(payload).select("*").single();
+    let insertPayload = { ...payload };
+    let { data, error } = await supabase.from("trip_activities").insert(insertPayload).select("*").single();
+    if (error && isMissingInviteScopeColumn(error.message)) {
+      const { invite_scope: _omit, ...withoutScope } = insertPayload;
+      insertPayload = withoutScope;
+      ({ data, error } = await supabase.from("trip_activities").insert(insertPayload).select("*").single());
+    }
     if (error) {
       const msg = error.message || "No se pudo crear la actividad.";
       if (
@@ -97,6 +128,15 @@ export async function POST(request: Request) {
       throw new Error(msg);
     }
 
+    const syncResult = await syncActivityInvitees(
+      supabase,
+      tripId,
+      String(data.id),
+      invite_scope,
+      invited_participant_ids,
+      access
+    );
+
     await safeInsertAudit(supabase, {
       trip_id: tripId,
       entity_type: "activity",
@@ -108,7 +148,14 @@ export async function POST(request: Request) {
       actor_email: actor?.user?.email ?? null,
     });
 
-    return NextResponse.json({ activity: data });
+    return NextResponse.json({
+      activity: {
+        ...data,
+        invite_scope: (data as { invite_scope?: string }).invite_scope ?? invite_scope,
+        invited_participant_ids,
+      },
+      warning: syncResult.ok ? undefined : syncResult.warning,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo crear la actividad." },
