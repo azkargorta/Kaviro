@@ -23,7 +23,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "summary-hero-toolbar", tab: "summary", target: '[data-tour="trip-hero-toolbar"]', placement: "bottom", emoji: "🔧",
     title: "Barra del viaje (arriba)",
-    body: "La franja coral de cada pestaña: «Mis viajes» vuelve al panel, el salvavidas 🛟 abre ayuda y este tour, el modo oscuro/claro y el menú 👤 (perfil, suscripción y compartir enlace del viaje). En el siguiente paso verás la campana de novedades.",
+    body: "La franja coral muestra el viaje y, a la derecha, el salvavidas 🛟 (ayuda y tour), la campana 🔔 de novedades, el modo oscuro/claro y el menú 👤. Para volver al panel usa «Mis viajes» en el menú lateral (escritorio) o en Más → abajo en móvil.",
   },
   {
     id: "summary-feed", tab: "summary", target: '[data-tour="topbar-novedades"]', placement: "bottom", emoji: "🔔",

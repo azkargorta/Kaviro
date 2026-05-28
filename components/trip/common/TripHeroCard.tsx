@@ -76,51 +76,50 @@ export default function TripHeroCard({ tripId, tripName, destination, participan
         />
       </div>
 
-      {/* Top strip: back + actions (tour demo: data-tour="trip-hero-toolbar") */}
-      <div data-tour="trip-hero-toolbar">
-        <TripHeroActions tripId={tripId} />
-      </div>
-
-      {/* Content */}
-      <div className="flex items-end justify-between px-4 pb-4 pt-2">
-        {/* Left: destination + trip name */}
-        <div className="min-w-0">
+      {/* Título + acciones (tour: data-tour="trip-hero-toolbar") */}
+      <div
+        data-tour="trip-hero-toolbar"
+        className="flex items-start justify-between gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] max-md:pl-[max(1rem,var(--safe-area-left))] max-md:pr-[max(1rem,var(--safe-area-right))]"
+      >
+        <div className="min-w-0 flex-1">
           {destLabel && (
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
+            <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
               {destLabel}
             </p>
           )}
-          <h1 className="truncate text-xl font-black leading-tight text-white sm:text-2xl">
+          <h1 className="truncate text-lg font-black leading-tight text-white sm:text-xl">
             {tripName}
           </h1>
         </div>
 
-        {/* Right: participant avatars */}
-        {shown.length > 0 && (
-          <div className="ml-4 flex shrink-0 items-center -space-x-2">
-            {shown.map((name, i) => {
-              const color = avatarColor(name);
-              return (
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <TripHeroActions tripId={tripId} />
+          {shown.length > 0 ? (
+            <div className="flex items-center -space-x-2">
+              {shown.map((name, i) => {
+                const color = avatarColor(name);
+                return (
+                  <span
+                    key={i}
+                    title={name}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold ring-2 ring-white/60"
+                    style={{ background: color.bg, color: color.text }}
+                  >
+                    {initials(name)}
+                  </span>
+                );
+              })}
+              {overflow > 0 ? (
                 <span
-                  key={i}
-                  title={name}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-extrabold ring-2 ring-white/60"
-                  style={{ background: color.bg, color: color.text }}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold text-white ring-2 ring-white/60"
+                  title={`+${overflow} más`}
                 >
-                  {initials(name)}
+                  +{overflow}
                 </span>
-              );
-            })}
-            {overflow > 0 && (
-              <span
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-[11px] font-bold text-white ring-2 ring-white/60"
-                title={`+${overflow} más`}
-              >
-                +{overflow}
-              </span>
-            )}
-          </div>
-        )}
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <TripHeroShareBar tripId={tripId} tripName={tripName} destination={destination} />

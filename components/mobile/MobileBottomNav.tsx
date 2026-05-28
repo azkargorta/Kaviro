@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { MoreHorizontal, X, Settings, Map, Users, FileText, Star } from "lucide-react";
+import TripMisViajesLink from "@/components/trip/common/TripMisViajesLink";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -81,8 +82,15 @@ export default function MobileBottomNav({
         <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-[var(--border-default)] bg-[var(--surface-card)] pb-safe shadow-2xl dark:border-[#1E293B]">
           <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-slate-200 dark:bg-[#334155]" />
 
+          <div className="px-4 pt-3">
+            <TripMisViajesLink
+              tour
+              className="flex w-full min-h-11 items-center gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-page)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-card)]"
+            />
+          </div>
+
           {/* Sheet header */}
-          <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center justify-between px-5 py-3">
             <span className="text-sm font-extrabold text-[var(--text-primary)]">Más secciones</span>
             <button
               type="button"

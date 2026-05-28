@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import TripMisViajesLink from "@/components/trip/common/TripMisViajesLink";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
@@ -91,6 +92,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
   return (
     <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">
       <div className="sticky top-24 space-y-2">
+        <TripMisViajesLink tour className="flex w-full min-h-10 items-center gap-2 rounded-xl border border-slate-200/80 bg-[var(--surface-card)] px-3 py-2 text-[12px] font-semibold text-slate-700 shadow-[var(--shadow-card)] transition hover:bg-slate-50 dark:border-[#1E293B] dark:text-slate-200 dark:hover:bg-[#1E293B]" />
 
         {/* Nav card */}
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#1E293B] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
