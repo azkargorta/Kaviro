@@ -9,7 +9,6 @@ import { surfaceAccentCyan } from "@/components/ui/brandStyles";
 import { Sparkles } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
-import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
 import PushNotificationPrompt from "@/components/pwa/PushNotificationPrompt";
@@ -252,9 +251,6 @@ export default async function DashboardPage() {
         }))}
       />
       <DashboardOfflinePanel />
-      <div className="relative">
-        <DashboardHero tripCount={realTrips.length} isPremium={isPremium} />
-      </div>
 
       <DashboardTripInvitesInbox />
 
