@@ -16,6 +16,7 @@ type Props = {
   selected?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   isDragging?: boolean;
+  dataTour?: string;
 };
 
 export default function PlanActivityRow({
@@ -31,6 +32,7 @@ export default function PlanActivityRow({
   selected = false,
   dragHandleProps,
   isDragging = false,
+  dataTour,
 }: Props) {
   const meta = getPlanActivityDisplayMeta(isLodging ? "lodging" : effectivePlanKind({ activity_kind: activityKind }), customByKey);
   const subtitle = (place || "").trim() || "Sin ubicación";
@@ -38,6 +40,7 @@ export default function PlanActivityRow({
 
   return (
     <div
+      {...(dataTour ? { "data-tour": dataTour } : {})}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}

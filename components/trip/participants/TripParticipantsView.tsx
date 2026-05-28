@@ -755,6 +755,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
+                  data-tour="participants-add-btn"
                   onClick={() => (isCreating ? closeCreateParticipant() : openCreateParticipant())}
                   className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
                 >
@@ -763,6 +764,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 </button>
                 <button
                   type="button"
+                  data-tour="participants-invite-btn"
                   onClick={openGenericInvite}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
                 >

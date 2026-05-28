@@ -3,7 +3,7 @@ import { tripTabDocsImageClass } from "@/lib/trip-tab-assets";
 
 export const DEMO_TAB_TOUR: TourStep[] = [
   { id: "home", title: "Resumen", lead: "🏠", body: "Vista general.", mobileTip: "", href: (id) => `/trip/${id}/summary`, visual: { type: "image", tabKey: "summary", alt: "Resumen" } },
-  { id: "plan", title: "Plan", lead: "📅", body: "Itinerario.", mobileTip: "", href: (id) => `/trip/${id}/plan`, visual: { type: "image", tabKey: "plan", alt: "Plan" } },
+  { id: "plan", title: "Plan", lead: "📅", body: "Itinerario coral por días, IA sugiere y RSVP.", mobileTip: "", href: (id) => `/trip/${id}/plan`, visual: { type: "image", tabKey: "plan", alt: "Plan" } },
   { id: "map", title: "Rutas", lead: "🗺️", body: "Mapa.", mobileTip: "", href: (id) => `/trip/${id}/map`, visual: { type: "image", tabKey: "map", alt: "Rutas" } },
   { id: "expenses", title: "Gastos", lead: "💶", body: "Gastos.", mobileTip: "", href: (id) => `/trip/${id}/expenses`, visual: { type: "image", tabKey: "expenses", alt: "Gastos" } },
   { id: "participants", title: "Gente", lead: "👥", body: "Participantes.", mobileTip: "", href: (id) => `/trip/${id}/participants`, visual: { type: "image", tabKey: "participants", alt: "Participantes" } },
@@ -23,7 +23,12 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "summary-hero-toolbar", tab: "summary", target: '[data-tour="trip-hero-toolbar"]', placement: "bottom", emoji: "🔧",
     title: "Barra del viaje (arriba)",
-    body: "La franja coral de cada pestaña: «Mis viajes» vuelve al panel, el salvavidas 🛟 abre ayuda y este tour, la campana 🔔 trae novedades del grupo, el modo oscuro/claro y el menú 👤 (perfil, suscripción y compartir enlace del viaje).",
+    body: "La franja coral de cada pestaña: «Mis viajes» vuelve al panel, el salvavidas 🛟 abre ayuda y este tour, el modo oscuro/claro y el menú 👤 (perfil, suscripción y compartir enlace del viaje). En el siguiente paso verás la campana de novedades.",
+  },
+  {
+    id: "summary-feed", tab: "summary", target: '[data-tour="topbar-novedades"]', placement: "bottom", emoji: "🔔",
+    title: "Novedades del viaje",
+    body: "La campana 🔔 abre el feed de actividad del grupo: cambios en el plan, nuevos gastos, invitaciones y reacciones RSVP. El punto rojo indica avisos sin leer; pulsa un evento para ir directo a esa sección.",
   },
   {
     id: "summary-sidebar", tab: "summary", target: '[data-tour="sidebar-nav"]', targetAlt: '[data-tour="mobile-bottom-nav"]', placement: "top", emoji: "🗂️",
@@ -56,18 +61,27 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Al terminar el viaje, genera una tarjeta visual con estadísticas: días, actividades, km recorridos y foto del destino. Se comparte directamente por WhatsApp o se descarga en formato Stories para Instagram.",
   },
 
-  // ════════ PLAN — 3 pasos ════════
+  // ════════ PLAN — 5 pasos ════════
 
   {
     id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', placement: "bottom", emoji: "➕",
     title: "Añadir y gestionar el plan",
-    body: "Pulsa + Añadir plan para crear una actividad: nombre, lugar con autocompletado, hora, categoría y valoración de 1 a 5 estrellas con comentario. La barra de herramientas también incluye: 🧭 Explorar (busca puntos de interés en tiempo real en el mapa), 🕐 Historial (quién cambió qué y cuándo en el grupo), 📄 PDF (exporta el itinerario completo con portada) y 📅 Calendario (envía cada actividad a Google Calendar o descarga el .ics para Outlook/Apple).",
+    body: "Pulsa + Añadir plan para crear una actividad: nombre, lugar con autocompletado, hora, categoría y valoración. Al guardar puedes elegir quién la ve: todo el viaje, solo tú o participantes concretos. La barra incluye 🧭 Explorar, 🕐 Historial, 📄 PDF y 📅 Calendario (Google, Apple o .ics).",
   },
   {
-    id: "plan-card", tab: "plan", target: '[data-tour="plan-activity-card"]', placement: "right",
-    action: "expand-days", emoji: "☰",
-    title: "Tarjetas de actividad",
-    body: "Cada tarjeta muestra hora, lugar, categoría, estrellas de valoración y comentario del grupo. Usa el icono ≡ para arrastrar y reordenar actividades dentro del día. Pulsa la tarjeta para editar cualquier dato.",
+    id: "plan-itinerary", tab: "plan", target: '[data-tour="plan-itinerary-card"]', placement: "bottom", emoji: "📋",
+    title: "Itinerario del día",
+    body: "La tarjeta coral concentra el viaje: destino, avatares del grupo, pestañas por día con flechas para desplazarte y el resumen de gastos abajo. Cambia de día sin salir del plan; el botón Añadir plan del encabezado crea actividades para la fecha seleccionada.",
+  },
+  {
+    id: "plan-ai-suggest", tab: "plan", target: '[data-tour="plan-ai-suggest"]', placement: "bottom", emoji: "✨",
+    title: "IA sugiere (Premium)",
+    body: "Desde la cabecera del itinerario, IA sugiere analiza todo el plan: detecta huecos, solapes y propone mejoras aplicables. Abre el asistente en modo optimizador con el contexto del día que estés viendo. Disponible con Premium.",
+  },
+  {
+    id: "plan-card", tab: "plan", target: '[data-tour="plan-activity-card"]', placement: "right", emoji: "☰",
+    title: "Filas de actividad",
+    body: "Cada fila compacta muestra hora, lugar y tipo de actividad. Arrastra con ≡ para reordenar el día. Pulsa una fila para editar o abrir el detalle: ahí verás valoraciones, comentarios y RSVP (¿Te apuntas? / No / Quizá) con contadores del grupo.",
   },
   {
     id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-mode"]', placement: "bottom",
@@ -148,10 +162,10 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Genera un enlace único y ábrelo directamente en WhatsApp. El invitado pulsa el enlace, inicia sesión o se registra en Kaviro y queda vinculado automáticamente al viaje. Puedes asignarle el rol antes de enviar: Gestor, Editor, Colaborador o Visor.",
   },
   {
-    id: "participants-qr", tab: "participants", target: '[data-tour="participants-qr-btn"]', placement: "top",
+    id: "participants-qr", tab: "participants", target: '[data-tour="participants-qr"]', placement: "top",
     action: "open-participants-qr", emoji: "📱",
     title: "Código QR de invitación",
-    body: "Pulsa Crear QR y se genera al instante un código QR de invitación. En el aeropuerto o la reunión previa al viaje muéstralo en pantalla y todos pueden unirse escaneando con la cámara. Sin buscar el enlace, sin copiar y pegar.",
+    body: "Tras pulsar Invitar por WhatsApp aparece el panel con enlace y QR. En el aeropuerto o la reunión previa al viaje muéstralo en pantalla: todos escanean con la cámara y entran al viaje sin copiar enlaces.",
   },
 
   // ════════ DOCS — 3 pasos ════════

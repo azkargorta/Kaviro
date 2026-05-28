@@ -1424,7 +1424,7 @@ export default function TripPlanView({
               const ordered = date ? getOrderedItems(date, items) : [];
               const enableDrag = canManagePlan && !bulkDeleteMode && ordered.length > 1;
 
-              const rows = ordered.map((activity) => {
+              const rows = ordered.map((activity, rowIndex) => {
                 const isLodging = isLodgingPlanActivity(activity);
                 const bulkSelectable = canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity);
                 const bulkSelected = selectedActivityIds.has(activity.id);
@@ -1432,6 +1432,7 @@ export default function TripPlanView({
                 const row = (
                   <PlanActivityRow
                     key={activity.id}
+                    dataTour={rowIndex === 0 ? "plan-activity-card" : undefined}
                     title={activity.title || activity.place_name || "Actividad"}
                     place={activity.place_name || activity.address}
                     time={activity.activity_time}

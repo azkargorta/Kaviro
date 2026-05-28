@@ -1678,6 +1678,7 @@ export default function TripMapView({
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               type="button"
+              data-tour="map-ai-btn"
               onClick={() => void generateRoutesDraft()}
               disabled={routesAutoLoading || !isPremium}
               className={`${btnPrimary} inline-flex min-h-[44px] items-center justify-center rounded-2xl px-4 py-2 text-sm disabled:opacity-60`}

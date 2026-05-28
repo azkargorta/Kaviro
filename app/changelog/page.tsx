@@ -16,12 +16,26 @@ type Release = {
 
 const RELEASES: Release[] = [
   {
+    version: "v15",
+    date: "Mayo 2026",
+    tag: "nuevo",
+    title: "Plan renovado, novedades del viaje y tour ampliado",
+    items: [
+      { icon: Calendar, text: "Itinerario coral por días: pestañas con flechas, avatares del grupo y resumen de gastos integrado" },
+      { icon: Sparkles, text: "Badge «IA sugiere» en la cabecera del plan — análisis Premium del itinerario completo" },
+      { icon: Users,    text: "Visibilidad por actividad: todo el viaje, solo tú o participantes seleccionados" },
+      { icon: Star,     text: "RSVP en actividades: ¿Te apuntas?, No o Quizá con contadores del grupo" },
+      { icon: Zap,      text: "Campana de novedades: feed con cambios del plan, gastos e invitaciones sin leer" },
+      { icon: Map,      text: "Tour demo ampliado a 33 pasos — itinerario, IA sugiere y feed de novedades incluidos" },
+    ],
+  },
+  {
     version: "v14",
     date: "Mayo 2026",
     tag: "nuevo",
     title: "Tour interactivo y viaje demo",
     items: [
-      { icon: Sparkles, text: "Tour guiado de 33 pasos con spotlight — ilumina cada funcionalidad en su sección" },
+      { icon: Sparkles, text: "Tour guiado con spotlight — ilumina cada funcionalidad en su sección del viaje demo" },
       { icon: Zap,      text: "Viaje demo de Londres con actividades, gastos, rutas y participantes de ejemplo" },
       { icon: Star,     text: "Valoraciones y comentarios en las actividades del plan" },
       { icon: Map,      text: "3 rutas de ejemplo en el viaje demo (Westminster, Tower Bridge, Hyde Park)" },

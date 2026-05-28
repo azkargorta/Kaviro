@@ -76,8 +76,8 @@ const TAB_TOUR: TourStep[] = [
     id: "plan",
     title: "Plan",
     lead: "Paso 2 de 7",
-    body: "La agenda por días: actividades, horarios y visitas. Es la referencia compartida de qué hace el grupo y cuándo.",
-    mobileTip: "Suele organizarse por día; desplázate dentro de cada día para ver todas las actividades.",
+    body: "Itinerario coral por días: actividades compactas, IA sugiere, visibilidad por actividad y RSVP del grupo.",
+    mobileTip: "Usa las pestañas del itinerario para cambiar de día; pulsa una fila para ver detalle y reacciones.",
     href: (id) => `/trip/${id}/plan`,
     visual: { type: "image", tabKey: "plan", alt: "Plan" },
   },
@@ -140,6 +140,7 @@ const HELP: Record<string, HelpEntry> = {
           "Consultar y, si tienes permiso, editar datos básicos del viaje (nombre, destino, fechas, etc.).",
           "Ir al Plan, Rutas, Gastos, Gente, Docs o asistente personal desde las tarjetas de accesos rápidos o desde el menú inferior.",
           "Leer avisos y recordatorios (clima, datos pendientes, participantes) cuando el viaje aún está incompleto.",
+          "Abrir la campana de novedades para ver cambios recientes del plan, gastos e invitaciones.",
           "Seguir el bloque «Primeros pasos» si el viaje es nuevo: enlaces directos a las tareas más habituales.",
         ],
       },
@@ -156,23 +157,24 @@ const HELP: Record<string, HelpEntry> = {
   plan: {
     title: "Plan del viaje",
     intro:
-      "Aquí construyes la agenda: lugares, fechas, horas y coordenadas que luego alimentan el mapa y el resto del viaje.",
+      "La tarjeta coral del itinerario concentra el día: pestañas por fecha, actividades compactas, IA sugiere y resumen de gastos.",
     blocks: [
       {
         heading: "Qué puedes hacer en esta página",
         bullets: [
-          "Añadir, editar y ordenar actividades por día (visitas, comidas, traslados, tiempo libre).",
-          "Definir horarios y detalles para que el día sea legible de principio a fin.",
-          "Guardar información que después puedes reutilizar al trazar rutas o al consultar con el asistente personal.",
-          "Revisar el plan como lista temporal: qué toca antes y qué después, sin depender de chats sueltos.",
+          "Navegar por días con las pestañas del itinerario y añadir actividades desde la cabecera o la barra de herramientas.",
+          "Definir quién ve cada plan: todo el viaje, solo tú o participantes concretos.",
+          "Pedir a IA sugiere (Premium) un análisis del itinerario con huecos y mejoras aplicables.",
+          "Ver RSVP del grupo (¿Te apuntas?, No, Quizá) y valoraciones al abrir el detalle de una actividad.",
+          "Exportar PDF, historial de cambios, explorar lugares en mapa y vista calendario.",
         ],
       },
       {
         heading: "Ventajas",
         bullets: [
-          "Un solo plan compartido: todo el mundo ve la misma versión del día.",
-          "Menos improvisación last minute: el grupo llega al destino con expectativas alineadas.",
-          "Encaja con Rutas y Gastos: lo que planificas aquí da contexto al resto de herramientas.",
+          "Un solo plan compartido con visibilidad fina: planes privados o solo para parte del grupo.",
+          "Menos improvisación: el grupo coordina asistencia y expectativas sin chats sueltos.",
+          "Encaja con Rutas, Gastos y el feed de novedades: lo que cambias aquí se refleja en todo el viaje.",
         ],
       },
     ],
@@ -233,7 +235,7 @@ const HELP: Record<string, HelpEntry> = {
         heading: "Qué puedes hacer en esta página",
         bullets: [
           "Añadir o revisar participantes y roles (quién organiza, quién solo consulta, etc., según permisos).",
-          "Invitar o gestionar accesos para que el grupo entre al mismo viaje.",
+          "Invitar por WhatsApp, enlace, QR o compañeros de viaje (Travel Mates) para unirse al mismo viaje.",
           "Alinear nombres con los que usarás en Gastos para que los balances te reconozcan bien.",
         ],
       },

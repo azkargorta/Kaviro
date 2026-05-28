@@ -151,7 +151,10 @@ export default function PlanItineraryCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div
+      data-tour="plan-itinerary-card"
+      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]"
+    >
       <div className="bg-gradient-to-r from-[#F87171] to-[#EF4444] px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">

@@ -140,7 +140,7 @@ export function buildOnboardingSteps(tripId: string, isPremium: boolean): Onboar
     id: "plan",
     icon: "📅",
     title: "Crea el plan",
-    description: "Actividades, horarios y lugares por día.",
+    description: "Actividades por día, visibilidad del grupo e IA sugiere.",
     href: `/trip/${id}/plan`,
   };
   const expenses: OnboardingStep = {

@@ -49,6 +49,7 @@ export default function PlanAiSuggestBadge({
       <div className="relative shrink-0">
         <button
           type="button"
+          data-tour="plan-ai-suggest"
           onClick={() => setShowUpsell(true)}
           className={btnClass}
         >
@@ -85,6 +86,7 @@ export default function PlanAiSuggestBadge({
   return (
     <button
       type="button"
+      data-tour="plan-ai-suggest"
       onClick={openPlanAnalysis}
       className={btnClass}
       title="Analizar el plan completo del viaje con IA"

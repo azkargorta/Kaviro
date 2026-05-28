@@ -151,8 +151,10 @@ function executeAction(action?: SpotlightStep["action"]) {
     btn?.click();
   }
   if (action === "open-participants-qr") {
-    const btn = document.querySelector('[data-tour="participants-qr-btn"]') as HTMLElement | null;
-    btn?.click();
+    if (!document.querySelector('[data-tour="participants-qr"]')) {
+      const btn = document.querySelector('[data-tour="participants-invite-btn"]') as HTMLElement | null;
+      btn?.click();
+    }
   }
   if (action === "open-summary-search") {
     const panel = document.querySelector('[data-tour="summary-search-travel"]');
