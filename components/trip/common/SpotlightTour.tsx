@@ -73,6 +73,17 @@ function scrollTargetIntoTourSafeZone(sel: string | null, alt?: string | null) {
     const vh = window.innerHeight;
     const bottomLimit = vh - MOBILE_BOTTOM_UI - MOBILE_TIP_RESERVE - 12;
     const topLimit = MOBILE_TOP_SAFE;
+    const maxVisible = bottomLimit - topLimit;
+
+    // Elementos altos (p. ej. tarjeta entera): alinear el borde superior al área visible
+    if (r.height > maxVisible * 0.85) {
+      if (r.top < topLimit) {
+        window.scrollBy({ top: r.top - topLimit - 16, behavior: "smooth" });
+      } else if (r.top > topLimit + 24) {
+        window.scrollBy({ top: r.top - topLimit - 16, behavior: "smooth" });
+      }
+      return;
+    }
 
     if (r.bottom > bottomLimit) {
       window.scrollBy({ top: r.bottom - bottomLimit + 16, behavior: "smooth" });
@@ -88,12 +99,21 @@ function tipPosDesktop(rect: Rect | null, placement: SpotlightStep["placement"])
   const TH = 230;
   const GAP = 14;
   const SY = window.scrollY;
+  const vh = window.innerHeight;
   if (!rect || placement === "center") {
-    return { top: SY + window.innerHeight / 2 - TH / 2, left: vw / 2 - TW / 2 };
+    return { top: SY + vh / 2 - TH / 2, left: vw / 2 - TW / 2 };
   }
+
+  let effectivePlacement = placement;
+  const spaceBelow = SY + vh - (rect.top + rect.height);
+  const spaceAbove = rect.top - SY;
+  if (placement === "bottom" && spaceBelow < TH + GAP + 16 && spaceAbove > spaceBelow) {
+    effectivePlacement = "top";
+  }
+
   let top = 0;
   let left = 0;
-  switch (placement) {
+  switch (effectivePlacement) {
     case "bottom":
       top = rect.top + rect.height + GAP;
       left = rect.left + rect.width / 2 - TW / 2;
@@ -112,7 +132,7 @@ function tipPosDesktop(rect: Rect | null, placement: SpotlightStep["placement"])
       break;
   }
   return {
-    top: clamp(top, SY + 8, SY + window.innerHeight - TH - 8),
+    top: clamp(top, SY + 8, SY + vh - TH - 8),
     left: clamp(left, 8, vw - TW - 8),
   };
 }

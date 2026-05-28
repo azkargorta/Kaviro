@@ -69,9 +69,9 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Pulsa + Añadir plan para crear una actividad: nombre, lugar con autocompletado, hora, categoría y valoración. Al guardar puedes elegir quién la ve: todo el viaje, solo tú o participantes concretos. La barra incluye 🧭 Explorar, 🕐 Historial, 📄 PDF y 📅 Calendario (Google, Apple o .ics).",
   },
   {
-    id: "plan-itinerary", tab: "plan", target: '[data-tour="plan-itinerary-card"]', placement: "bottom", emoji: "📋",
+    id: "plan-itinerary", tab: "plan", target: '[data-tour="plan-itinerary-highlight"]', placement: "bottom", emoji: "📋",
     title: "Itinerario del día",
-    body: "La tarjeta coral concentra el viaje: destino, avatares del grupo, pestañas por día con flechas para desplazarte y el resumen de gastos abajo. Cambia de día sin salir del plan; el botón Añadir plan del encabezado crea actividades para la fecha seleccionada.",
+    body: "La cabecera coral concentra el viaje: destino, avatares del grupo y botones Añadir plan e IA sugiere. Debajo, las pestañas por día (con flechas si hay muchos días) cambian la agenda sin salir del plan. Más abajo verás las actividades y el resumen de gastos del grupo.",
   },
   {
     id: "plan-ai-suggest", tab: "plan", target: '[data-tour="plan-ai-suggest"]', placement: "bottom", emoji: "✨",
