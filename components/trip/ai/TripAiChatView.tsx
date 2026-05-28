@@ -489,6 +489,7 @@ export default function TripAiChatView({
   const [executingPlan, setExecutingPlan] = useState(false);
   const [planConflictOpen, setPlanConflictOpen] = useState(false);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
+  const [itineraryActivityIndex, setItineraryActivityIndex] = useState(0);
   const dayStripRef = useRef<HTMLDivElement | null>(null);
   const lastImportSourceRef = useRef<string | null>(null);
   const [dayStripEdges, setDayStripEdges] = useState({ left: false, right: false });
@@ -552,6 +553,23 @@ export default function TripAiChatView({
   );
 
   const itinerarySelectedCount = itinerarySelected.size;
+
+  const itineraryDayNav = useMemo(() => {
+    if (!itineraryDraft || expandedDay == null) {
+      return {
+        dayIndex: -1,
+        day: null as ItineraryDraftPayload["days"][number] | null,
+        activityCount: 0,
+        safeActivityIndex: 0,
+      };
+    }
+    const dayIndex = itineraryDraft.days.findIndex((d) => d.day === expandedDay);
+    const day = dayIndex >= 0 ? itineraryDraft.days[dayIndex]! : null;
+    const activityCount = day?.items?.length ?? 0;
+    const safeActivityIndex =
+      activityCount > 0 ? Math.min(Math.max(0, itineraryActivityIndex), activityCount - 1) : 0;
+    return { dayIndex, day, activityCount, safeActivityIndex };
+  }, [itineraryDraft, expandedDay, itineraryActivityIndex]);
 
   const lastPastedItinerarySource = useMemo(() => {
     if (lastImportSourceRef.current) return lastImportSourceRef.current;
@@ -721,6 +739,17 @@ export default function TripAiChatView({
       el.removeEventListener("scroll", onScroll);
     };
   }, [itineraryDraft, itineraryDraft?.days?.length, syncDayStripEdges]);
+
+  useEffect(() => {
+    setItineraryActivityIndex(0);
+  }, [expandedDay]);
+
+  useEffect(() => {
+    if (!itineraryDraft?.days?.length) return;
+    if (expandedDay == null) {
+      setExpandedDay(itineraryDraft.days[0]!.day);
+    }
+  }, [itineraryDraft, expandedDay]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1778,255 +1807,296 @@ export default function TripAiChatView({
 
       {itineraryDraft ? (
         <section
-          className={`rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 p-5 shadow-sm ${
-            layout === "drawer" ? "shrink-0" : ""
+          className={`rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 shadow-sm ${
+            layout === "drawer"
+              ? "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
+              : "max-h-[min(70vh,640px)] overflow-hidden p-5"
           }`}
         >
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">Itinerario propuesto</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">
-                {itineraryDraft.title || `${itineraryDraft.days.length} días`}
-              </div>
-              <div className="mt-1 text-xs text-slate-600">
-                Revisa cada actividad por día. Marca las que quieras en el plan y pulsa «Añadir seleccionadas»; las
-                desmarcadas no se guardan.
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                <span>
-                  Seleccionadas: <strong className="text-slate-900">{itinerarySelectedCount}</strong> /{" "}
-                  {itineraryItemTotal}
-                </span>
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-                  onClick={() => itineraryDraft && setItinerarySelected(collectItineraryItemKeys(itineraryDraft))}
-                >
-                  Todas
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-                  onClick={() => setItinerarySelected(new Set())}
-                >
-                  Ninguna
-                </button>
-              </div>
-              {dayStripEdges.right || dayStripEdges.left ? (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {dayStripEdges.right ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand-border)] bg-[var(--brand-light)] px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-text)] shadow-sm">
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 motion-safe:animate-pulse" aria-hidden />
-                      Hay más días a la derecha (desliza o usa las flechas)
-                    </span>
-                  ) : null}
-                  {dayStripEdges.left ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200">
-                      <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      También hay días a la izquierda
-                    </span>
-                  ) : null}
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">
+                  Itinerario propuesto
                 </div>
-              ) : null}
-              {itineraryDraft.days.length > 6 ? (
-                <p className="mt-1.5 text-[11px] font-medium text-slate-500">
-                  Total {itineraryDraft.days.length} días: usa la barra de desplazamiento inferior o las flechas laterales.
+                <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                  {itineraryDraft.title || `${itineraryDraft.days.length} días`}
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-600">
+                  Navega por día y parada; el chat queda visible debajo. Marca y valida antes de añadir.
                 </p>
-              ) : null}
-              <div className="relative mt-3 min-w-0">
-                {dayStripEdges.left ? (
-                  <div
-                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 rounded-l-lg bg-gradient-to-r from-[#FFF8F8] via-white/75 to-transparent sm:w-16"
-                    aria-hidden
-                  />
-                ) : null}
-                {dayStripEdges.right ? (
-                  <div
-                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-lg bg-gradient-to-l from-[#FFF8F8] via-white/75 to-transparent sm:w-16"
-                    aria-hidden
-                  />
-                ) : null}
-                {dayStripEdges.left ? (
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                  <span>
+                    Seleccionadas: <strong className="text-slate-900">{itinerarySelectedCount}</strong> /{" "}
+                    {itineraryItemTotal}
+                  </span>
                   <button
                     type="button"
-                    aria-label="Ver días anteriores"
-                    onClick={() => scrollDayStrip("left")}
-                    className="absolute left-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-1.5 text-slate-700 shadow-md transition hover:bg-slate-50 sm:left-2 sm:p-2 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
+                    className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                    onClick={() => setItinerarySelected(collectItineraryItemKeys(itineraryDraft))}
                   >
-                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                    Todas
                   </button>
-                ) : null}
-                {dayStripEdges.right ? (
                   <button
                     type="button"
-                    aria-label="Ver más días"
-                    onClick={() => scrollDayStrip("right")}
-                    className="absolute right-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-1.5 text-slate-700 shadow-md transition hover:bg-slate-50 sm:right-2 sm:p-2 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
+                    className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                    onClick={() => setItinerarySelected(new Set())}
                   >
-                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                    Ninguna
                   </button>
-                ) : null}
-                <div
-                  ref={dayStripRef}
-                  className="flex gap-2 overflow-x-auto overflow-y-visible py-1 pl-2 pr-2 pt-0.5 [scrollbar-color:rgba(248,113,113,0.45)_transparent] [scrollbar-width:thin] sm:snap-x sm:snap-mandatory sm:pl-10 sm:pr-10 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#F87171]/60 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-100/50"
-                >
-                  {itineraryDraft.days.map((d) => (
-                    <button
-                      key={d.day}
-                      type="button"
-                      onClick={() => setExpandedDay((prev) => (prev === d.day ? null : d.day))}
-                      className={`min-w-[148px] shrink-0 snap-start rounded-xl border px-3 py-2 text-left text-xs transition sm:min-w-[160px] ${
-                        expandedDay === d.day
-                          ? "border-[var(--brand-border)] bg-[var(--brand-light)] dark:border-[#F87171]/40 dark:bg-[#F87171]/10"
-                          : "border-slate-200 bg-white hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:bg-[#1E293B]"
-                      }`}
-                    >
-                      <div className="font-extrabold text-slate-900">Día {d.day}{d.date ? ` · ${d.date}` : ""}</div>
-                      <div className="mt-0.5 text-slate-600">{(d.items ?? []).length} paradas</div>
-                    </button>
-                  ))}
                 </div>
               </div>
-
-              {expandedDay ? (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">
-                        Detalle del día
-                      </div>
-                      {(() => {
-                        const d = itineraryDraft.days.find((x) => x.day === expandedDay);
-                        return (
-                          <div className="mt-1 text-sm font-semibold text-slate-900">
-                            Día {expandedDay}{d?.date ? ` · ${d.date}` : ""}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedDay(null)}
-                      className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-                    >
-                      Cerrar
-                    </button>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {(() => {
-                      const d = itineraryDraft.days.find((x) => x.day === expandedDay);
-                      const items = d?.items || [];
-                      return items.length ? (
-                        items.map((it, idx) => {
-                          const key = itineraryItemKey(expandedDay, idx);
-                          const checked = itinerarySelected.has(key);
-                          return (
-                            <label
-                              key={key}
-                              className={`flex cursor-pointer gap-3 rounded-xl border px-3 py-2 transition ${
-                                checked
-                                  ? "border-[var(--brand-border)] bg-[var(--brand-light)]/60 dark:border-[#F87171]/35 dark:bg-[#F87171]/10"
-                                  : "border-slate-200 bg-slate-50 opacity-75 dark:border-[#1E293B] dark:bg-[#080C14]"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]"
-                                checked={checked}
-                                onChange={(e) => {
-                                  setItinerarySelected((prev) => {
-                                    const next = new Set(prev);
-                                    if (e.target.checked) next.add(key);
-                                    else next.delete(key);
-                                    return next;
-                                  });
-                                }}
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-extrabold text-slate-900">
-                                      {it.start_time ? `${it.start_time} · ` : ""}
-                                      {it.title}
-                                    </div>
-                                    <div className="mt-0.5 text-[11px] text-slate-600">
-                                      {it.place_name || it.address || "Sin lugar"}
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {it.requires_ticket === true ? (
-                                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
-                                        Entrada
-                                      </span>
-                                    ) : it.requires_ticket === false ? (
-                                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                        Sin entrada
-                                      </span>
-                                    ) : null}
-                                    {it.activity_kind ? (
-                                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-600 dark:border-[#334155] dark:bg-[#1E293B]">
-                                        {it.activity_kind}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </div>
-                                {it.ticket_notes ? (
-                                  <div className="mt-1 text-[11px] text-amber-900/90">{it.ticket_notes}</div>
-                                ) : null}
-                                {it.notes ? <div className="mt-1 text-[11px] text-slate-600">{it.notes}</div> : null}
-                              </div>
-                            </label>
-                          );
-                        })
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-xs text-slate-600">
-                          No hay items para este día.
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex shrink-0 flex-col gap-2">
-              <button
-                type="button"
-                disabled={
-                  executingPlan ||
-                  loading ||
-                  itinerarySelectedCount === 0 ||
-                  (draftHasCalendarDates && tripPlanActivitiesLoading)
-                }
-                onClick={() => {
-                  if (!itineraryDraft) return;
-                  if (itineraryConflictDates.length) {
-                    setPlanConflictOpen(true);
-                    return;
+              <div className="flex shrink-0 flex-row gap-2 sm:flex-col">
+                <button
+                  type="button"
+                  disabled={
+                    executingPlan ||
+                    loading ||
+                    itinerarySelectedCount === 0 ||
+                    (draftHasCalendarDates && tripPlanActivitiesLoading)
                   }
-                  void runExecutePlan("add");
-                }}
-                className="inline-flex items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
-              >
-                {executingPlan
-                  ? "Añadiendo..."
-                  : itinerarySelectedCount === itineraryItemTotal
-                    ? "Añadir todo al plan"
-                    : `Añadir seleccionadas (${itinerarySelectedCount})`}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setItineraryDraft(null);
-                  setItinerarySelected(new Set());
-                  setExpandedDay(null);
-                }}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
-              >
-                Descartar borrador
-              </button>
+                  onClick={() => {
+                    if (itineraryConflictDates.length) {
+                      setPlanConflictOpen(true);
+                      return;
+                    }
+                    void runExecutePlan("add");
+                  }}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:opacity-60 sm:flex-none sm:text-sm"
+                >
+                  {executingPlan
+                    ? "Añadiendo..."
+                    : itinerarySelectedCount === itineraryItemTotal
+                      ? "Añadir todo"
+                      : `Añadir (${itinerarySelectedCount})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setItineraryDraft(null);
+                    setItinerarySelected(new Set());
+                    setExpandedDay(null);
+                    setItineraryActivityIndex(0);
+                  }}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:flex-none sm:text-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                >
+                  Descartar
+                </button>
+              </div>
             </div>
+
+            <div className="relative shrink-0 min-w-0">
+              {dayStripEdges.left ? (
+                <button
+                  type="button"
+                  aria-label="Ver días anteriores"
+                  onClick={() => scrollDayStrip("left")}
+                  className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-1 text-slate-700 shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
+                >
+                  <ChevronLeft className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+              {dayStripEdges.right ? (
+                <button
+                  type="button"
+                  aria-label="Ver más días"
+                  onClick={() => scrollDayStrip("right")}
+                  className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-1 text-slate-700 shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
+                >
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+              <div
+                ref={dayStripRef}
+                className="flex gap-1.5 overflow-x-auto py-0.5 pl-7 pr-7 [scrollbar-width:thin]"
+              >
+                {itineraryDraft.days.map((d) => (
+                  <button
+                    key={d.day}
+                    type="button"
+                    onClick={() => {
+                      setExpandedDay(d.day);
+                      setItineraryActivityIndex(0);
+                    }}
+                    className={`min-w-[120px] shrink-0 snap-start rounded-lg border px-2.5 py-1.5 text-left text-[11px] transition sm:min-w-[132px] ${
+                      expandedDay === d.day
+                        ? "border-[var(--brand-border)] bg-[var(--brand-light)] dark:border-[#F87171]/40 dark:bg-[#F87171]/10"
+                        : "border-slate-200 bg-white hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623]"
+                    }`}
+                  >
+                    <div className="font-bold text-slate-900">
+                      Día {d.day}
+                      {d.date ? ` · ${d.date.slice(5)}` : ""}
+                    </div>
+                    <div className="text-slate-600">{(d.items ?? []).length} paradas</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {expandedDay != null && itineraryDayNav.day ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-2 py-1.5 dark:border-[#1E293B]">
+                  <button
+                    type="button"
+                    disabled={itineraryDayNav.dayIndex <= 0}
+                    onClick={() => {
+                      const prev = itineraryDraft.days[itineraryDayNav.dayIndex - 1];
+                      if (!prev) return;
+                      setExpandedDay(prev.day);
+                      setItineraryActivityIndex(0);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    aria-label="Día anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                  </button>
+                  <div className="min-w-0 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Día</div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      {expandedDay}
+                      {itineraryDayNav.day.date ? ` · ${itineraryDayNav.day.date}` : ""}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={itineraryDayNav.dayIndex >= itineraryDraft.days.length - 1}
+                    onClick={() => {
+                      const next = itineraryDraft.days[itineraryDayNav.dayIndex + 1];
+                      if (!next) return;
+                      setExpandedDay(next.day);
+                      setItineraryActivityIndex(0);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    aria-label="Día siguiente"
+                  >
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </button>
+                </div>
+
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-2 py-1.5 dark:border-[#1E293B]">
+                  <button
+                    type="button"
+                    disabled={itineraryDayNav.activityCount <= 1 || itineraryDayNav.safeActivityIndex <= 0}
+                    onClick={() => setItineraryActivityIndex((i) => Math.max(0, i - 1))}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    aria-label="Parada anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                  </button>
+                  <span className="text-center text-[11px] font-semibold text-slate-600">
+                    Parada{" "}
+                    <strong className="text-slate-900">
+                      {itineraryDayNav.activityCount ? itineraryDayNav.safeActivityIndex + 1 : 0}
+                    </strong>{" "}
+                    de {itineraryDayNav.activityCount}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={
+                      itineraryDayNav.activityCount <= 1 ||
+                      itineraryDayNav.safeActivityIndex >= itineraryDayNav.activityCount - 1
+                    }
+                    onClick={() =>
+                      setItineraryActivityIndex((i) =>
+                        Math.min(itineraryDayNav.activityCount - 1, i + 1)
+                      )
+                    }
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 dark:border-[#334155] dark:text-slate-200"
+                    aria-label="Parada siguiente"
+                  >
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2">
+                  {itineraryDayNav.activityCount > 0 ? (
+                    (() => {
+                      const idx = itineraryDayNav.safeActivityIndex;
+                      const it = itineraryDayNav.day!.items![idx]!;
+                      const key = itineraryItemKey(expandedDay, idx);
+                      const checked = itinerarySelected.has(key);
+                      return (
+                        <label
+                          className={`flex cursor-pointer gap-3 rounded-xl border px-3 py-2.5 transition ${
+                            checked
+                              ? "border-[var(--brand-border)] bg-[var(--brand-light)]/60 dark:border-[#F87171]/35 dark:bg-[#F87171]/10"
+                              : "border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)]"
+                            checked={checked}
+                            onChange={(e) => {
+                              setItinerarySelected((prev) => {
+                                const next = new Set(prev);
+                                if (e.target.checked) next.add(key);
+                                else next.delete(key);
+                                return next;
+                              });
+                            }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-extrabold text-slate-900">
+                              {it.start_time ? `${it.start_time} · ` : ""}
+                              {it.title}
+                            </div>
+                            <div className="mt-0.5 text-xs text-slate-600">
+                              {it.place_name || it.address || "Sin lugar"}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {it.requires_ticket === true ? (
+                                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                                  Entrada
+                                </span>
+                              ) : it.requires_ticket === false ? (
+                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                  Sin entrada
+                                </span>
+                              ) : null}
+                              {it.activity_kind ? (
+                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:border-[#334155] dark:bg-[#1E293B]">
+                                  {it.activity_kind}
+                                </span>
+                              ) : null}
+                            </div>
+                            {it.ticket_notes ? (
+                              <p className="mt-2 text-[11px] leading-relaxed text-amber-900/90">{it.ticket_notes}</p>
+                            ) : null}
+                            {it.notes ? (
+                              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">{it.notes}</p>
+                            ) : null}
+                          </div>
+                        </label>
+                      );
+                    })()
+                  ) : (
+                    <p className="px-2 py-4 text-center text-xs text-slate-500">Sin paradas en este día.</p>
+                  )}
+                </div>
+
+                {itineraryDayNav.activityCount > 1 ? (
+                  <div className="flex shrink-0 justify-center gap-1 border-t border-slate-100 px-2 py-2 dark:border-[#1E293B]">
+                    {itineraryDayNav.day!.items!.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        aria-label={`Ir a parada ${dotIdx + 1}`}
+                        onClick={() => setItineraryActivityIndex(dotIdx)}
+                        className={`h-2 rounded-full transition ${
+                          dotIdx === itineraryDayNav.safeActivityIndex
+                            ? "w-5 bg-[var(--brand)]"
+                            : "w-2 bg-slate-300 dark:bg-slate-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="shrink-0 text-center text-xs text-slate-500">Elige un día en la barra superior.</p>
+            )}
           </div>
         </section>
       ) : null}
