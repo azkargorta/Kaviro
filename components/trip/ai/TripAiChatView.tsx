@@ -39,9 +39,15 @@ import {
   countItineraryItems,
   filterItineraryBySelection,
   itineraryItemKey,
-  normalizeItineraryItem,
+  looksLikePastedItineraryImport,
   type ItineraryDraftPayload,
 } from "@/lib/trip-ai/itineraryDraftUtils";
+import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
+import {
+  findItineraryJsonEnd,
+  findItineraryJsonStart,
+  stripItineraryJsonBlocksForDisplay,
+} from "@/lib/trip-ai/tripboardJsonMarkers";
 
 type TripAiChatLayout = "page" | "drawer";
 
@@ -59,7 +65,7 @@ function assistantContextPreset(surface: TripAssistantSurface): AssistantContext
         modeSource: "manual",
         welcome:
           "Estás en Plan: me centraré en crear o reorganizar el itinerario por días (visitas, horarios, propuestas).\n\n" +
-          "Si ya tienes destino y fechas, pide un borrador de N días o dime qué quieres cambiar. Cuando haya un itinerario listo, podrás usar «Ejecutar plan» o «Aplicar cambios» según el formato que devuelva el asistente.",
+          "Pega una agenda completa y generaré **tarjetas por actividad** para validar antes de añadirlas al plan. También puedes pedir un borrador de N días.",
       };
     case "routes":
       return {
@@ -316,30 +322,6 @@ function tryExtractMissingCoords(data: any): MissingCoordsItem[] | null {
   return out.length ? out : null;
 }
 
-function extractItinerary(answer: string): ItineraryPayload | null {
-  const start = "TRIPBOARD_ITINERARY_JSON_START";
-  const end = "TRIPBOARD_ITINERARY_JSON_END";
-  const iStart = answer.indexOf(start);
-  const iEnd = answer.indexOf(end);
-  if (iStart === -1 || iEnd === -1 || iEnd <= iStart) return null;
-  const raw = answer.slice(iStart + start.length, iEnd).trim();
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.days)) return null;
-    const days = parsed.days.map((day: unknown, index: number) => {
-      const row = day && typeof day === "object" ? (day as Record<string, unknown>) : {};
-      return {
-        day: typeof row.day === "number" ? row.day : index + 1,
-        date: typeof row.date === "string" ? row.date : null,
-        items: Array.isArray(row.items) ? row.items.map(normalizeItineraryItem) : [],
-      };
-    });
-    return { ...(parsed as ItineraryPayload), days };
-  } catch {
-    return null;
-  }
-}
-
 function extractDiff(answer: string): DiffPayload | null {
   const start = "TRIPBOARD_DIFF_JSON_START";
   const end = "TRIPBOARD_DIFF_JSON_END";
@@ -359,11 +341,6 @@ function extractDiff(answer: string): DiffPayload | null {
 /** Oculta bloques JSON internos en la burbuja; el texto completo sigue en estado para extraer itinerario/diff. */
 function stripTripboardJsonBlocksForDisplay(content: string | null | undefined): string {
   const blocks = [
-    {
-      start: "TRIPBOARD_ITINERARY_JSON_START",
-      end: "TRIPBOARD_ITINERARY_JSON_END",
-      label: "Itinerario generado (panel «Itinerario propuesto» arriba)",
-    },
     {
       start: "TRIPBOARD_DIFF_JSON_START",
       end: "TRIPBOARD_DIFF_JSON_END",
@@ -391,7 +368,15 @@ function stripTripboardJsonBlocksForDisplay(content: string | null | undefined):
     }
   }
   out = out.replace(/```(?:json)?\s*[\s\S]*?```/gi, "\n\n— Detalle técnico (revisa el panel de acción arriba) —\n\n");
+  out = stripItineraryJsonBlocksForDisplay(out);
   return out.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function answerHasTruncatedItineraryJson(answer: string): boolean {
+  const start = findItineraryJsonStart(answer);
+  if (!start) return false;
+  const end = findItineraryJsonEnd(answer, start.index + start.marker.length);
+  return !end;
 }
 
 type ModeOption = {
@@ -522,6 +507,8 @@ export default function TripAiChatView({
   const [aiBudgetExceeded, setAiBudgetExceeded] = useState(false);
   const [itineraryDraft, setItineraryDraft] = useState<ItineraryPayload | null>(null);
   const [itinerarySelected, setItinerarySelected] = useState<Set<string>>(new Set());
+  const [importingItineraryCards, setImportingItineraryCards] = useState(false);
+  const [importCardsFailed, setImportCardsFailed] = useState(false);
   const [diffDraft, setDiffDraft] = useState<DiffPayload | null>(null);
   const [routesDraft, setRoutesDraft] = useState<RoutesDraftPayload | null>(null);
   const [missingCoords, setMissingCoords] = useState<MissingCoordsItem[] | null>(null);
@@ -537,6 +524,7 @@ export default function TripAiChatView({
   const [planConflictOpen, setPlanConflictOpen] = useState(false);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const dayStripRef = useRef<HTMLDivElement | null>(null);
+  const lastImportSourceRef = useRef<string | null>(null);
   const [dayStripEdges, setDayStripEdges] = useState({ left: false, right: false });
   const [modeSource, setModeSource] = useState<"auto" | "manual">(() =>
     ctxPreset?.modeSource ?? (defaultAssistantMode ? "manual" : "auto")
@@ -598,6 +586,17 @@ export default function TripAiChatView({
   );
 
   const itinerarySelectedCount = itinerarySelected.size;
+
+  const lastPastedItinerarySource = useMemo(() => {
+    if (lastImportSourceRef.current) return lastImportSourceRef.current;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role === "user" && looksLikePastedItineraryImport(m.content)) {
+        return m.content;
+      }
+    }
+    return null;
+  }, [messages]);
 
   const itineraryConflictDates = useMemo(() => {
     if (!itineraryDraft || itinerarySelected.size === 0) return [];
@@ -672,6 +671,50 @@ export default function TripAiChatView({
       }
     },
     [itineraryDraft, itinerarySelected, tripId, reloadTrip, reloadTripPlanActivities]
+  );
+
+  const runImportItineraryCards = useCallback(
+    async (sourceText: string, assistantHint?: string): Promise<ItineraryPayload | null> => {
+      const text = sourceText.trim();
+      if (!text || importingItineraryCards) return null;
+      setImportingItineraryCards(true);
+      setImportCardsFailed(false);
+      setError(null);
+      setInfo("Generando tarjetas para validar el itinerario…");
+      try {
+        const importRes = await fetch("/api/trip-ai/import-itinerary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tripId,
+            sourceText: text,
+            assistantHint: assistantHint?.slice(0, 4000) ?? "",
+          }),
+        });
+        const importPayload = await importRes.json().catch(() => null);
+        if (!importRes.ok || !importPayload?.itinerary) {
+          setImportCardsFailed(true);
+          setInfo(null);
+          setError(
+            typeof importPayload?.error === "string"
+              ? importPayload.error
+              : "No se pudieron generar las tarjetas."
+          );
+          return null;
+        }
+        const draft = importPayload.itinerary as ItineraryPayload;
+        setInfo("Tarjetas listas: revisa cada actividad y pulsa «Añadir seleccionadas».");
+        return draft;
+      } catch {
+        setImportCardsFailed(true);
+        setInfo(null);
+        setError("Error de red al generar las tarjetas.");
+        return null;
+      } finally {
+        setImportingItineraryCards(false);
+      }
+    },
+    [importingItineraryCards, tripId]
   );
 
   const syncDayStripEdges = useCallback(() => {
@@ -1175,6 +1218,9 @@ export default function TripAiChatView({
         .join("\n")
         .slice(0, 900) || "";
 
+    if (looksLikePastedItineraryImport(clean)) {
+      lastImportSourceRef.current = clean;
+    }
     setMessages((current) => [...current, { id: newChatMessageId(), role: "user", content: clean }]);
     setQuestion("");
     setLoading(true);
@@ -1203,7 +1249,7 @@ export default function TripAiChatView({
             : {
                 tripId,
                 question: clean,
-                mode: effectiveModeSource === "manual" ? effectiveMode : "general",
+                mode: effectiveMode,
                 modeSource: effectiveModeSource,
                 conversationId,
                 provider: provider === "auto" ? null : provider,
@@ -1267,11 +1313,28 @@ export default function TripAiChatView({
         setMissingCoords(tryExtractMissingCoords(data));
       } else {
         const answerStr = typeof data.answer === "string" ? data.answer : "";
-        const maybe = answerStr ? extractItinerary(answerStr) : null;
+        let maybe = answerStr ? extractItineraryFromAnswer(answerStr) : null;
+        setImportCardsFailed(false);
+
+        const shouldBuildCards =
+          !maybe &&
+          (looksLikePastedItineraryImport(clean) ||
+            looksLikePastedItineraryImport(answerStr) ||
+            answerHasTruncatedItineraryJson(answerStr));
+
+        if (!maybe && shouldBuildCards) {
+          const imported = await runImportItineraryCards(
+            clean.length > 200 ? clean : answerStr || clean,
+            answerStr
+          );
+          if (imported) maybe = imported;
+        }
+
         if (maybe) {
           setItineraryDraft(maybe);
           setItinerarySelected(collectItineraryItemKeys(maybe));
           setExpandedDay(maybe.days[0]?.day ?? null);
+          setImportCardsFailed(false);
         }
 
         const maybeDiff = answerStr ? extractDiff(answerStr) : null;
@@ -1712,8 +1775,45 @@ export default function TripAiChatView({
         </div>
       ) : null}
 
+      {importingItineraryCards && !itineraryDraft ? (
+        <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-3 text-sm font-semibold text-[var(--brand-text)]">
+          Generando tarjetas para validar… (puede tardar un minuto en agendas largas)
+        </section>
+      ) : null}
+
+      {!itineraryDraft && lastPastedItinerarySource && !importingItineraryCards ? (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/30">
+          <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+            {importCardsFailed
+              ? "No se pudieron crear las tarjetas automáticamente."
+              : "Si solo ves el itinerario en texto en el chat, genera las tarjetas para validar cada actividad."}
+          </p>
+          <button
+            type="button"
+            disabled={importingItineraryCards || loading}
+            onClick={() => {
+              const src = lastPastedItinerarySource;
+              if (!src) return;
+              void runImportItineraryCards(src).then((draft) => {
+                if (!draft) return;
+                setItineraryDraft(draft);
+                setItinerarySelected(collectItineraryItemKeys(draft));
+                setExpandedDay(draft.days[0]?.day ?? null);
+              });
+            }}
+            className="mt-2 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-60"
+          >
+            Generar tarjetas desde el texto
+          </button>
+        </section>
+      ) : null}
+
       {itineraryDraft ? (
-        <section className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 p-5 shadow-sm">
+        <section
+          className={`rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 p-5 shadow-sm ${
+            layout === "drawer" ? "shrink-0" : ""
+          }`}
+        >
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
               <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">Itinerario propuesto</div>

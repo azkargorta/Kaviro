@@ -1,4 +1,8 @@
 import { looksLikePastedItineraryImport } from "@/lib/trip-ai/itineraryDraftUtils";
+import {
+  TRIPBOARD_ITINERARY_JSON_END,
+  TRIPBOARD_ITINERARY_JSON_START,
+} from "@/lib/trip-ai/tripboardJsonMarkers";
 
 export type TripAiMode =
   | "general"
@@ -100,10 +104,11 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         "Prioriza planificación diaria, orden de visitas, tiempos y recomendaciones prácticas.",
         "OBLIGATORIO: cuando propongas un recorrido por varios días con paradas concretas Y ya sabes en qué país/región es el viaje (por el usuario, el destino guardado en el resumen o aclaración previa), debes incluir SIEMPRE el JSON ejecutable en la MISMA respuesta. Sin el bloque JSON la app no puede guardarlo en el Plan.",
         "Si el destino es ambiguo (p. ej. solo «Londres» o «París» sin país y el resumen del viaje no indica país/región inequívoca), NO emitas todavía el bloque TRIPBOARD_ITINERARY: haz 1–2 preguntas muy cortas para confirmar (ej. «¿Londres, Reino Unido, u otra zona?»). Cuando el usuario confirme, entonces sí devuelves el JSON.",
-        "Si el usuario pide un itinerario/ruta por días (ciudad/país/región + nº de días), debes devolver además un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```):",
-        "TRIPBOARD_ITINERARY_JSON_START",
+        "Si el usuario pide un itinerario/ruta por días (ciudad/país/región + nº de días) o pega una agenda larga, debes devolver un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```). Usa SOLO estos nombres (no KAVIRO_* ni otros):",
+        TRIPBOARD_ITINERARY_JSON_START,
         "{...json...}",
-        "TRIPBOARD_ITINERARY_JSON_END",
+        TRIPBOARD_ITINERARY_JSON_END,
+        "ORDEN OBLIGATORIO si pegan agenda: 1) bloque TRIPBOARD_ITINERARY_JSON completo y cerrado; 2) como máximo 3 frases de resumen humano DESPUÉS. Nunca empieces el JSON al final del mensaje.",
         "Formato del JSON:",
         "{",
         '  "version": 1,',

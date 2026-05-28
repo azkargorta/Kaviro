@@ -142,7 +142,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
               </div>
             </div>
 
-            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-hidden p-3 sm:p-4">
+            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto p-3 sm:p-4">
               <TripAiAssistantErrorBoundary onReset={() => setChatMountKey((k) => k + 1)}>
                 <TripAiChatView
                   key={`${surface}-${chatMountKey}`}
