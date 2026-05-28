@@ -11,6 +11,10 @@ import {
   TRIP_ASSISTANT_OPEN_EVENT,
   type TripAssistantOpenDetail,
 } from "@/lib/trip-assistant-events";
+import {
+  KAVIRO_TRIP_PLAN_REFRESH_EVENT,
+  type TripPlanRefreshDetail,
+} from "@/lib/trip-plan-events";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
 import { iconSlotFab56, iconSlotFill40 } from "@/components/ui/iconTokens";
 import TripAiAssistantErrorBoundary from "@/components/trip/ai/TripAiAssistantErrorBoundary";
@@ -56,6 +60,19 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
 
     window.addEventListener(TRIP_ASSISTANT_OPEN_EVENT, onAssistantOpen);
     return () => window.removeEventListener(TRIP_ASSISTANT_OPEN_EVENT, onAssistantOpen);
+  }, [tripId]);
+
+  useEffect(() => {
+    function onPlanRefresh(event: Event) {
+      const detail = (event as CustomEvent<TripPlanRefreshDetail>).detail;
+      if (!detail?.tripId || detail.tripId !== tripId) return;
+      if (detail.closeAssistant) {
+        setOpen(false);
+        setLaunchPayload(null);
+      }
+    }
+    window.addEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+    return () => window.removeEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
   }, [tripId]);
 
   function closeDock() {
@@ -142,7 +159,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
               </div>
             </div>
 
-            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto p-3 sm:p-4">
+            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-hidden p-3 sm:p-4">
               <TripAiAssistantErrorBoundary onReset={() => setChatMountKey((k) => k + 1)}>
                 <TripAiChatView
                   key={`${surface}-${chatMountKey}`}

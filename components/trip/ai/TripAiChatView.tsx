@@ -32,6 +32,8 @@ import {
 } from "@/lib/trip-ai/travelSearchOffers";
 import TravelSearchOffersCard from "@/components/trip/ai/TravelSearchOffersCard";
 import { formatItineraryDayOneLine } from "@/lib/plan-activity-meta";
+import { dispatchTripPlanRefresh } from "@/lib/trip-plan-events";
+import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
@@ -473,6 +475,8 @@ export default function TripAiChatView({
   const [info, setInfo] = useState<string | null>(null);
   const [aiBudgetExceeded, setAiBudgetExceeded] = useState(false);
   const [itineraryDraft, setItineraryDraft] = useState<ItineraryPayload | null>(null);
+  /** En drawer: itinerario a pantalla completa (oculta chat) hasta «Volver al chat». */
+  const [itineraryFullscreenReview, setItineraryFullscreenReview] = useState(true);
   const [itinerarySelected, setItinerarySelected] = useState<Set<string>>(new Set());
   const [importingItineraryCards, setImportingItineraryCards] = useState(false);
   const [importCardsFailed, setImportCardsFailed] = useState(false);
@@ -639,6 +643,9 @@ export default function TripAiChatView({
         setItineraryDraft(null);
         setItinerarySelected(new Set());
         setExpandedDay(null);
+        dispatchTripPlanRefresh(tripId, { closeAssistant: layout === "drawer" });
+        dispatchTripOnboardingRefresh(tripId);
+        router.refresh();
         void reloadTrip();
         void reloadTripPlanActivities();
       } catch (e) {
@@ -655,7 +662,7 @@ export default function TripAiChatView({
         setExecutingPlan(false);
       }
     },
-    [itineraryDraft, itinerarySelected, tripId, reloadTrip, reloadTripPlanActivities]
+    [itineraryDraft, itinerarySelected, tripId, layout, reloadTrip, reloadTripPlanActivities, router]
   );
 
   const runImportItineraryCards = useCallback(
@@ -753,12 +760,24 @@ export default function TripAiChatView({
   }, [itineraryDraft, expandedDay]);
 
   const reviewingItineraryDraft = Boolean(itineraryDraft);
+  const itineraryFillsDrawer =
+    reviewingItineraryDraft && layout === "drawer" && itineraryFullscreenReview;
 
   useEffect(() => {
     if (reviewingItineraryDraft && layout === "drawer") {
       setModePickerOpen(false);
     }
   }, [reviewingItineraryDraft, layout]);
+
+  const hadItineraryDraftRef = useRef(false);
+  useEffect(() => {
+    const hasDraft = Boolean(itineraryDraft);
+    if (hasDraft && !hadItineraryDraftRef.current && layout === "drawer") {
+      setItineraryFullscreenReview(true);
+    }
+    if (!hasDraft) setItineraryFullscreenReview(true);
+    hadItineraryDraftRef.current = hasDraft;
+  }, [itineraryDraft, layout]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1818,8 +1837,12 @@ export default function TripAiChatView({
         <section
           className={`rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 shadow-sm ${
             layout === "drawer"
-              ? "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
-              : "max-h-[min(70vh,640px)] overflow-hidden p-5"
+              ? itineraryFillsDrawer
+                ? "flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4"
+                : "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
+              : reviewingItineraryDraft
+                ? "flex max-h-[min(85vh,820px)] min-h-0 flex-col overflow-hidden p-5"
+                : "max-h-[min(70vh,640px)] overflow-hidden p-5"
           }`}
         >
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
@@ -1832,7 +1855,30 @@ export default function TripAiChatView({
                   {itineraryDraft.title || `${itineraryDraft.days.length} días`}
                 </div>
                 <p className="mt-0.5 text-[11px] text-slate-600">
-                  Navega por día y parada; el chat queda visible debajo. Marca y valida antes de añadir.
+                  Navega por día y parada. Marca y valida antes de añadir.
+                  {layout === "drawer" && itineraryFillsDrawer ? (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className="font-semibold text-[var(--brand-text)] underline decoration-[var(--brand-border)] underline-offset-2 hover:no-underline"
+                        onClick={() => setItineraryFullscreenReview(false)}
+                      >
+                        Volver al chat
+                      </button>
+                    </>
+                  ) : layout === "drawer" && reviewingItineraryDraft && !itineraryFillsDrawer ? (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className="font-semibold text-[var(--brand-text)] underline decoration-[var(--brand-border)] underline-offset-2 hover:no-underline"
+                        onClick={() => setItineraryFullscreenReview(true)}
+                      >
+                        Ampliar tarjetas
+                      </button>
+                    </>
+                  ) : null}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-600">
                   <span>
@@ -2163,6 +2209,9 @@ export default function TripAiChatView({
                     }
 
                     const appliedCount = filtered.length;
+                    dispatchTripPlanRefresh(tripId, { closeAssistant: layout === "drawer" });
+                    dispatchTripOnboardingRefresh(tripId);
+                    router.refresh();
                     await reloadTripPlanActivities();
                     setDiffDraft(null);
                     setDiffContext(null);
@@ -2377,6 +2426,7 @@ export default function TripAiChatView({
         </section>
       ) : null}
 
+      {!itineraryFillsDrawer ? (
       <section
         className={
           showConvSidebar
@@ -2834,6 +2884,7 @@ export default function TripAiChatView({
           </form>
         </section>
       </section>
+      ) : null}
     </Root>
   );
 }

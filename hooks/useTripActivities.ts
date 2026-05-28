@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { notifyTripParticipants } from "@/lib/pushNotify";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
+import {
+  KAVIRO_TRIP_PLAN_REFRESH_EVENT,
+  type TripPlanRefreshDetail,
+} from "@/lib/trip-plan-events";
 import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
 import type { ActivityInviteScope } from "@/lib/activity-invite-scope";
 
@@ -227,6 +231,16 @@ export function useTripActivities(
       channelRef.current = null;
     };
   }, [tripId, load, subscribeRealtime]);
+
+  useEffect(() => {
+    function onPlanRefresh(event: Event) {
+      const detail = (event as CustomEvent<TripPlanRefreshDetail>).detail;
+      if (!detail?.tripId || detail.tripId !== tripId) return;
+      void load({ silent: true });
+    }
+    window.addEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+    return () => window.removeEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+  }, [tripId, load]);
 
   function clearUnseen() {
     setUnseenCount(0);
