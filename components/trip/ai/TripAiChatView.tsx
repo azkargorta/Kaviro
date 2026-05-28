@@ -44,10 +44,13 @@ import {
 } from "@/lib/trip-ai/itineraryDraftUtils";
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
+  DIFF_JSON_END_ALIASES,
+  DIFF_JSON_START_ALIASES,
+  extractJsonBetweenMarkers,
   findItineraryJsonEnd,
   findItineraryJsonStart,
-  stripItineraryJsonBlocksForDisplay,
-} from "@/lib/trip-ai/tripboardJsonMarkers";
+  stripAllKaviroJsonBlocksForDisplay,
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 
 type TripAiChatLayout = "page" | "drawer";
 
@@ -323,12 +326,8 @@ function tryExtractMissingCoords(data: any): MissingCoordsItem[] | null {
 }
 
 function extractDiff(answer: string): DiffPayload | null {
-  const start = "TRIPBOARD_DIFF_JSON_START";
-  const end = "TRIPBOARD_DIFF_JSON_END";
-  const iStart = answer.indexOf(start);
-  const iEnd = answer.indexOf(end);
-  if (iStart === -1 || iEnd === -1 || iEnd <= iStart) return null;
-  const raw = answer.slice(iStart + start.length, iEnd).trim();
+  const raw = extractJsonBetweenMarkers(answer, DIFF_JSON_START_ALIASES, DIFF_JSON_END_ALIASES);
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.operations)) return null;
@@ -336,40 +335,6 @@ function extractDiff(answer: string): DiffPayload | null {
   } catch {
     return null;
   }
-}
-
-/** Oculta bloques JSON internos en la burbuja; el texto completo sigue en estado para extraer itinerario/diff. */
-function stripTripboardJsonBlocksForDisplay(content: string | null | undefined): string {
-  const blocks = [
-    {
-      start: "TRIPBOARD_DIFF_JSON_START",
-      end: "TRIPBOARD_DIFF_JSON_END",
-      label: "Cambios propuestos (panel «Aplicar cambios» arriba)",
-    },
-    {
-      start: "TRIPBOARD_TRAVEL_DOCS_JSON_START",
-      end: "TRIPBOARD_TRAVEL_DOCS_JSON_END",
-      label: "Checklist de documentos (tarjeta debajo del mensaje)",
-    },
-    {
-      start: SEARCH_JSON_START,
-      end: SEARCH_JSON_END,
-      label: "Opciones de búsqueda (tarjeta debajo del mensaje)",
-    },
-  ];
-  let out = typeof content === "string" ? content : content == null ? "" : String(content);
-  for (const { start, end, label } of blocks) {
-    for (;;) {
-      const a = out.indexOf(start);
-      const b = out.indexOf(end);
-      if (a === -1 || b === -1 || b < a) break;
-      const replacement = `\n\n— ${label} —\n\n`;
-      out = out.slice(0, a) + replacement + out.slice(b + end.length);
-    }
-  }
-  out = out.replace(/```(?:json)?\s*[\s\S]*?```/gi, "\n\n— Detalle técnico (revisa el panel de acción arriba) —\n\n");
-  out = stripItineraryJsonBlocksForDisplay(out);
-  return out.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function answerHasTruncatedItineraryJson(answer: string): boolean {
@@ -2693,7 +2658,7 @@ export default function TripAiChatView({
                       <div className="flex items-start gap-2.5 max-w-[88%]">
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm mt-0.5" aria-hidden>✦</div>
                         <div className="min-w-0 break-words whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-violet-200/60 bg-violet-50/70 px-4 py-3 text-sm leading-7 text-slate-800 dark:border-[#1E293B] dark:bg-[#1E293B] dark:text-slate-200">
-                          {stripTripboardJsonBlocksForDisplay(text)}
+                          {stripAllKaviroJsonBlocksForDisplay(text)}
                         </div>
                       </div>
                     )}

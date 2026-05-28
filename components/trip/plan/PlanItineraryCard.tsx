@@ -42,18 +42,20 @@ function PlanParticipantsHeader({ participants }: { participants: string[] }) {
 
   if (!participants.length) return null;
 
-  const shown = participants.slice(0, 3);
+  const shown = participants.slice(0, 4);
   const extra = participants.length - shown.length;
+  const bubbleClass =
+    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white bg-white/25 text-[10px] font-bold text-white shadow-sm";
 
   return (
     <div ref={rootRef} className="relative shrink-0">
-      <div className="flex -space-x-1.5">
-        {shown.map((name) => (
-          <div
-            key={name}
-            title={name}
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white"
-          >
+      <div
+        className="flex flex-wrap items-center justify-end gap-1.5"
+        role="group"
+        aria-label="Participantes del viaje"
+      >
+        {shown.map((name, index) => (
+          <div key={`${name}-${index}`} title={name} className={bubbleClass}>
             {planParticipantInitials(name)}
           </div>
         ))}
@@ -64,7 +66,7 @@ function PlanParticipantsHeader({ participants }: { participants: string[] }) {
             aria-expanded={open}
             aria-haspopup="listbox"
             aria-label={`Ver ${participants.length} participantes`}
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 text-[10px] font-bold text-white transition hover:bg-white/30"
+            className={`${bubbleClass} transition hover:bg-white/40`}
           >
             +{extra}
           </button>
@@ -108,6 +110,8 @@ export default function PlanItineraryCard({
   onAddPlan,
 }: Props) {
   const destLabel = formatPlanDestinationLabel(destination);
+  const hasHeaderActions = Boolean((canManagePlan && onAddPlan) || aiSuggest);
+  const hasHeaderParticipants = participants.length > 0;
   const daysScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -162,22 +166,29 @@ export default function PlanItineraryCard({
             <p className="mt-0.5 truncate text-lg font-extrabold text-white">{tripName}</p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            {canManagePlan && onAddPlan ? (
-              <button
-                type="button"
-                onClick={() => onAddPlan()}
-                data-tour="plan-add-btn"
-                className={HEADER_ACTION_BTN}
-                title="Añadir plan"
-              >
-                <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="hidden min-[360px]:inline">Añadir plan</span>
-                <span className="min-[360px]:hidden">Añadir</span>
-              </button>
+          <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+            {hasHeaderActions ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {canManagePlan && onAddPlan ? (
+                  <button
+                    type="button"
+                    onClick={() => onAddPlan()}
+                    data-tour="plan-add-btn"
+                    className={HEADER_ACTION_BTN}
+                    title="Añadir plan"
+                  >
+                    <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="hidden min-[360px]:inline">Añadir plan</span>
+                    <span className="min-[360px]:hidden">Añadir</span>
+                  </button>
+                ) : null}
+                {aiSuggest}
+              </div>
             ) : null}
-            {aiSuggest}
-            <PlanParticipantsHeader participants={participants} />
+            {hasHeaderActions && hasHeaderParticipants ? (
+              <span className="hidden h-7 w-px shrink-0 bg-white/40 sm:block" aria-hidden />
+            ) : null}
+            {hasHeaderParticipants ? <PlanParticipantsHeader participants={participants} /> : null}
           </div>
         </div>
       </div>

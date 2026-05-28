@@ -3,6 +3,13 @@ import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { buildTripContext } from "@/lib/trip-ai/buildTripContext";
+import {
+  extractJsonBetweenMarkers,
+  KAVIRO_LIST_JSON_END,
+  KAVIRO_LIST_JSON_START,
+  LIST_JSON_END_ALIASES,
+  LIST_JSON_START_ALIASES,
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 
 export const runtime = "nodejs";
@@ -15,12 +22,8 @@ type ListDraft = {
 };
 
 function extractListDraft(answer: string): ListDraft | null {
-  const start = "TRIPBOARD_LIST_JSON_START";
-  const end = "TRIPBOARD_LIST_JSON_END";
-  const iStart = answer.indexOf(start);
-  const iEnd = answer.indexOf(end);
-  if (iStart === -1 || iEnd === -1 || iEnd <= iStart) return null;
-  const raw = answer.slice(iStart + start.length, iEnd).trim();
+  const raw = extractJsonBetweenMarkers(answer, LIST_JSON_START_ALIASES, LIST_JSON_END_ALIASES);
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || parsed.version !== 1) return null;
@@ -39,9 +42,9 @@ function buildListPrompt(context: string, prompt: string, listTitle?: string | n
     "Responde SIEMPRE en español.",
     "El usuario quiere crear una lista (maleta, compra, documentos a llevar, etc.).",
     "Debes devolver un borrador en JSON ENTRE ESTOS MARCADORES EXACTOS:",
-    "TRIPBOARD_LIST_JSON_START",
+    KAVIRO_LIST_JSON_START,
     "{...json...}",
-    "TRIPBOARD_LIST_JSON_END",
+    KAVIRO_LIST_JSON_END,
     "Formato del JSON:",
     "{",
     '  \"version\": 1,',

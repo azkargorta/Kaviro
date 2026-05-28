@@ -1,7 +1,15 @@
 /**
  * Checklist de documentos / trámites emitida por el asistente (modo travel_docs).
- * El modelo incluye JSON entre marcadores TRIPBOARD_TRAVEL_DOCS_JSON_* para UI y listas.
+ * El modelo incluye JSON entre marcadores KAVIRO_TRAVEL_DOCS_JSON_* para UI y listas.
  */
+
+import {
+  extractJsonBetweenMarkers,
+  KAVIRO_TRAVEL_DOCS_JSON_END,
+  KAVIRO_TRAVEL_DOCS_JSON_START,
+  TRAVEL_DOCS_JSON_END_ALIASES,
+  TRAVEL_DOCS_JSON_START_ALIASES,
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 
 export type TravelDocsChecklistLevel = "obligatorio" | "recomendado" | "verificar";
 
@@ -19,8 +27,9 @@ export type TravelDocsChecklistPayload = {
   items: TravelDocsChecklistItem[];
 };
 
-export const TRAVEL_DOCS_JSON_START = "TRIPBOARD_TRAVEL_DOCS_JSON_START";
-export const TRAVEL_DOCS_JSON_END = "TRIPBOARD_TRAVEL_DOCS_JSON_END";
+/** Marcadores canónicos (alias export para código existente). */
+export const TRAVEL_DOCS_JSON_START = KAVIRO_TRAVEL_DOCS_JSON_START;
+export const TRAVEL_DOCS_JSON_END = KAVIRO_TRAVEL_DOCS_JSON_END;
 
 function normalizeLevel(raw: unknown): TravelDocsChecklistLevel {
   const s = String(raw ?? "")
@@ -35,10 +44,8 @@ function normalizeLevel(raw: unknown): TravelDocsChecklistLevel {
 }
 
 export function parseTravelDocsChecklistFromAnswer(answer: string): TravelDocsChecklistPayload | null {
-  const iStart = answer.indexOf(TRAVEL_DOCS_JSON_START);
-  const iEnd = answer.indexOf(TRAVEL_DOCS_JSON_END);
-  if (iStart === -1 || iEnd === -1 || iEnd <= iStart) return null;
-  const raw = answer.slice(iStart + TRAVEL_DOCS_JSON_START.length, iEnd).trim();
+  const raw = extractJsonBetweenMarkers(answer, TRAVEL_DOCS_JSON_START_ALIASES, TRAVEL_DOCS_JSON_END_ALIASES);
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.items)) return null;

@@ -3,6 +3,13 @@ import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { buildTripContext } from "@/lib/trip-ai/buildTripContext";
+import {
+  DAYPLAN_JSON_END_ALIASES,
+  DAYPLAN_JSON_START_ALIASES,
+  extractJsonBetweenMarkers,
+  KAVIRO_DAYPLAN_JSON_END,
+  KAVIRO_DAYPLAN_JSON_START,
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { createClient } from "@/lib/supabase/server";
 import { safeInsertAudit } from "@/lib/audit";
@@ -539,12 +546,8 @@ function extractDayPlanFromLooseText(text: string, hintText: string): DayPlanPay
 }
 
 function extractDayPlan(text: string, hintText: string): DayPlanPayload | null {
-  const start = "TRIPBOARD_DAYPLAN_JSON_START";
-  const end = "TRIPBOARD_DAYPLAN_JSON_END";
-  const iStart = text.indexOf(start);
-  const iEnd = text.indexOf(end);
-  if (iStart !== -1 && iEnd !== -1 && iEnd > iStart) {
-    const raw = text.slice(iStart + start.length, iEnd).trim();
+  const raw = extractJsonBetweenMarkers(text, DAYPLAN_JSON_START_ALIASES, DAYPLAN_JSON_END_ALIASES);
+  if (raw) {
     const fromMarkers = tryParseDayPlanJson(raw, hintText);
     if (fromMarkers) return fromMarkers;
   }
@@ -974,14 +977,14 @@ export async function POST(req: Request) {
       "",
       "REGLAS CRÍTICAS PARA EL JSON DEL DÍA:",
       "- La fecha puede venir como YYYY-MM-DD o en formato humano (ej. «10/11», «10 de noviembre», «día 2 del viaje»). Si está clara por el mensaje, el historial o el calendario del viaje, NO la vuelvas a pedir.",
-      "- Si ya tienes fecha + ventana horaria + preferencia de transporte + intereses, DEBES generar EN ESTA MISMA RESPUESTA el plan en JSON con los marcadores literales TRIPBOARD_DAYPLAN_JSON_START y TRIPBOARD_DAYPLAN_JSON_END (sin envolverlos en ``` markdown).",
+      `- Si ya tienes fecha + ventana horaria + preferencia de transporte + intereses, DEBES generar EN ESTA MISMA RESPUESTA el plan en JSON con los marcadores literales ${KAVIRO_DAYPLAN_JSON_START} y ${KAVIRO_DAYPLAN_JSON_END} (sin envolverlos en \`\`\` markdown).`,
       "- Si el usuario da reglas mixtas (p. ej. andar si el tramo es corto y bici si es largo), elige travelMode \"cycling\" o \"walking\" según lo que predomine en el día y explica la regla en el texto humano antes del JSON.",
       "- travelMode debe ser exactamente uno de: driving | walking | cycling.",
       "- El JSON debe ser válido (comillas dobles, sin comentarios). Incluye al menos 4 items con query geocodable (nombre + ciudad + país o región del viaje, para evitar homónimos lejanos).",
       "- Si aún faltan datos imprescindibles, haz solo preguntas breves y NO incluyas el bloque JSON todavía.",
       "",
       "Primero pregunta lo mínimo solo si faltan datos (fecha, transporte, horario, preferencias).",
-      "Cuando tengas datos suficientes, devuelve el JSON DayPlan entre TRIPBOARD_DAYPLAN_JSON_START y TRIPBOARD_DAYPLAN_JSON_END (version 1, con date, travelMode, dayStart, dayEnd, items).",
+      `Cuando tengas datos suficientes, devuelve el JSON DayPlan entre ${KAVIRO_DAYPLAN_JSON_START} y ${KAVIRO_DAYPLAN_JSON_END} (version 1, con date, travelMode, dayStart, dayEnd, items).`,
       "",
       resolvedNote ? `NOTA DE LA APP: ${resolvedNote}` : "",
       historyBlock,
@@ -1010,7 +1013,7 @@ export async function POST(req: Request) {
       const detailedAnswer = question.length > 40 || /\d{1,2}:\d{2}/.test(question);
       const dayPlannerHint =
         multiTurn && detailedAnswer
-          ? "No se pudo leer el plan (falta una fecha YYYY-MM-DD en el hilo, el JSON está truncado o es inválido). Incluye la fecha del día en formato 2026-06-01 o pide: «plan del día con TRIPBOARD_DAYPLAN_JSON_START»."
+          ? `No se pudo leer el plan (falta una fecha YYYY-MM-DD en el hilo, el JSON está truncado o es inválido). Incluye la fecha del día en formato 2026-06-01 o pide: «plan del día con ${KAVIRO_DAYPLAN_JSON_START}».`
           : null;
       return NextResponse.json({ answer, plan: null, diff: null, dayPlannerHint });
     }

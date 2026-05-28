@@ -1,8 +1,16 @@
 import { looksLikePastedItineraryImport } from "@/lib/trip-ai/itineraryDraftUtils";
 import {
-  TRIPBOARD_ITINERARY_JSON_END,
-  TRIPBOARD_ITINERARY_JSON_START,
-} from "@/lib/trip-ai/tripboardJsonMarkers";
+  KAVIRO_DAYPLAN_JSON_END,
+  KAVIRO_DAYPLAN_JSON_START,
+  KAVIRO_DIFF_JSON_END,
+  KAVIRO_DIFF_JSON_START,
+  KAVIRO_ITINERARY_JSON_END,
+  KAVIRO_ITINERARY_JSON_START,
+  KAVIRO_SEARCH_JSON_END,
+  KAVIRO_SEARCH_JSON_START,
+  KAVIRO_TRAVEL_DOCS_JSON_END,
+  KAVIRO_TRAVEL_DOCS_JSON_START,
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 
 export type TripAiMode =
   | "general"
@@ -18,16 +26,16 @@ const GLOBAL_RESPONSE_STYLE = [
   "Estilo de respuesta (todos los modos):",
   "- Escribe como un/a compañero/a de viaje experto: tono humano, cercano y claro.",
   "- Organiza en fases cortas cuando ayude (p. ej. «Qué propongo», «Por qué», «Siguiente paso»). Evita muros de texto.",
-  "- NO uses bloques markdown ```json ni ``` para datos ejecutables. La app solo entiende los marcadores TRIPBOARD_*_JSON_START/END cuando aplique.",
+  "- NO uses bloques markdown ```json ni ``` para datos ejecutables. La app solo entiende marcadores KAVIRO_*_JSON_START/END cuando aplique.",
   "- El JSON va al final y la UI lo oculta; el usuario debe entender tu propuesta leyendo solo el texto.",
   "- Usa negrita y listas con moderación; evita símbolos repetitivos innecesarios.",
 ].join("\n");
 
-const TRIPBOARD_DIFF_BLOCK = [
+const KAVIRO_DIFF_BLOCK = [
   "Si propones cambios aplicables en el plan o rutas, incluye un JSON de diff ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```):",
-  "TRIPBOARD_DIFF_JSON_START",
+  KAVIRO_DIFF_JSON_START,
   "{...json...}",
-  "TRIPBOARD_DIFF_JSON_END",
+  KAVIRO_DIFF_JSON_END,
   "Formato del JSON:",
   "{",
   '  "version": 1,',
@@ -66,7 +74,7 @@ const TRIPBOARD_DIFF_BLOCK = [
   "  ]",
   "}",
   "Reglas del diff:",
-  "- Primero explica en 2–5 frases humanas qué cambias y por qué; después el bloque TRIPBOARD_DIFF (nunca al revés).",
+  "- Primero explica en 2–5 frases humanas qué cambias y por qué; después el bloque KAVIRO_DIFF (nunca al revés).",
   "- No incluyas comentarios ni markdown dentro del JSON.",
   "- Usa IDs existentes del contexto cuando sea update/delete.",
   "- Si no estás seguro, no propongas deletes.",
@@ -84,15 +92,15 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
       "Usa destino, fechas y participantes del CONTEXTO DEL VIAJE. Si falta origen en vuelo/tren/bus, asume Madrid salvo que el usuario diga otra ciudad.",
       "Si el usuario no especifica qué buscar, pregunta en una frase (hotel, vuelo, etc.).",
       "Primero redacta 2–5 frases en markdown: resumen de la búsqueda, criterios y aviso de que los precios son orientativos (verificar en la web).",
-      "Cuando propongas opciones concretas (compañías, rutas, hoteles tipo, etc.), al FINAL incluye exactamente un bloque entre TRIPBOARD_SEARCH_JSON_START y TRIPBOARD_SEARCH_JSON_END.",
+      `Cuando propongas opciones concretas (compañías, rutas, hoteles tipo, etc.), al FINAL incluye exactamente un bloque entre ${KAVIRO_SEARCH_JSON_START} y ${KAVIRO_SEARCH_JSON_END}.`,
       "Entre esos marcadores va solo JSON válido (sin markdown), forma:",
       '{ "version": 1, "category": "hotel"|"vuelo"|"tren"|"ferry"|"bus"|"coche", "title": "string corto", "intro": "string|null", "tripLine": "Origen → Destino | fechas | N viajeros|null", "searchParams": { "origin": "string|null", "destination": "string|null", "startDate": "YYYY-MM-DD|null", "endDate": "YYYY-MM-DD|null", "adults": number|null, "tripType": "ida"|"ida-vuelta"|null, "pickup": "string|null", "dropoff": "string|null", "luggage": number|null }, "options": [ { "name": "string", "description": "string|null", "priceHint": "desde X€ o rango|null", "priceNote": "estimado"|"indicativo"|"verificar en web"|null, "bookingUrl": "https://...|null" } ], "tip": "string|null" }',
       "Reglas del JSON:",
-      "- `options` debe tener 2–5 elementos cuando des recomendaciones; si solo haces preguntas sin opciones, omite el bloque TRIPBOARD_SEARCH_JSON.",
+      "- `options` debe tener 2–5 elementos cuando des recomendaciones; si solo haces preguntas sin opciones, omite el bloque KAVIRO_SEARCH_JSON.",
       "- `priceHint` solo si puedes estimar con conocimiento general; si no, null y dilo en el texto.",
       "- `priceNote` debe dejar claro que no es precio en vivo salvo que el usuario aporte un enlace con tarifa.",
       "- `bookingUrl` solo si es una URL https real y estable; si no estás seguro, null (la app mostrará comparadores).",
-      "- No uses bloques TRIPBOARD_ITINERARY, TRIPBOARD_DIFF ni TRIPBOARD_TRAVEL_DOCS en este modo.",
+      "- No uses bloques KAVIRO_ITINERARY, KAVIRO_DIFF ni KAVIRO_TRAVEL_DOCS en este modo.",
     ].join("\n"),
     general:
       [
@@ -103,12 +111,12 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
       [
         "Prioriza planificación diaria, orden de visitas, tiempos y recomendaciones prácticas.",
         "OBLIGATORIO: cuando propongas un recorrido por varios días con paradas concretas Y ya sabes en qué país/región es el viaje (por el usuario, el destino guardado en el resumen o aclaración previa), debes incluir SIEMPRE el JSON ejecutable en la MISMA respuesta. Sin el bloque JSON la app no puede guardarlo en el Plan.",
-        "Si el destino es ambiguo (p. ej. solo «Londres» o «París» sin país y el resumen del viaje no indica país/región inequívoca), NO emitas todavía el bloque TRIPBOARD_ITINERARY: haz 1–2 preguntas muy cortas para confirmar (ej. «¿Londres, Reino Unido, u otra zona?»). Cuando el usuario confirme, entonces sí devuelves el JSON.",
-        "Si el usuario pide un itinerario/ruta por días (ciudad/país/región + nº de días) o pega una agenda larga, debes devolver un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```). Usa SOLO estos nombres (no KAVIRO_* ni otros):",
-        TRIPBOARD_ITINERARY_JSON_START,
+        "Si el destino es ambiguo (p. ej. solo «Londres» o «París» sin país y el resumen del viaje no indica país/región inequívoca), NO emitas todavía el bloque KAVIRO_ITINERARY: haz 1–2 preguntas muy cortas para confirmar (ej. «¿Londres, Reino Unido, u otra zona?»). Cuando el usuario confirme, entonces sí devuelves el JSON.",
+        "Si el usuario pide un itinerario/ruta por días (ciudad/país/región + nº de días) o pega una agenda larga, debes devolver un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```). Usa SOLO estos nombres:",
+        KAVIRO_ITINERARY_JSON_START,
         "{...json...}",
-        TRIPBOARD_ITINERARY_JSON_END,
-        "ORDEN OBLIGATORIO si pegan agenda: 1) bloque TRIPBOARD_ITINERARY_JSON completo y cerrado; 2) como máximo 3 frases de resumen humano DESPUÉS. Nunca empieces el JSON al final del mensaje.",
+        KAVIRO_ITINERARY_JSON_END,
+        "ORDEN OBLIGATORIO si pegan agenda: 1) bloque KAVIRO_ITINERARY_JSON completo y cerrado; 2) como máximo 3 frases de resumen humano DESPUÉS. Nunca empieces el JSON al final del mensaje.",
         "Formato del JSON:",
         "{",
         '  "version": 1,',
@@ -156,13 +164,13 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
     expenses: "Prioriza gastos, balances, pagos pendientes y sugerencias para repartir o ahorrar.",
     optimizer: [
       "Actúa como optimizador del viaje: huecos, conflictos, traslados entre ciudades, comidas faltantes y mejoras prácticas en uno o varios días.",
-      "Si revisas más de un día, agrupa el análisis por fecha y devuelve un único TRIPBOARD_DIFF con todas las operaciones propuestas.",
-      TRIPBOARD_DIFF_BLOCK,
+      "Si revisas más de un día, agrupa el análisis por fecha y devuelve un único KAVIRO_DIFF con todas las operaciones propuestas.",
+      KAVIRO_DIFF_BLOCK,
     ].join("\n"),
     actions: [
       "Modo acciones: cambios puntuales al plan (añadir, modificar o quitar actividades/rutas).",
       "Explica con claridad qué harás y qué verá el usuario en el plan.",
-      TRIPBOARD_DIFF_BLOCK,
+      KAVIRO_DIFF_BLOCK,
     ].join("\n"),
     day_planner:
       [
@@ -176,9 +184,9 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         "- Presupuesto y si quieren reservar restaurante o algo informal.",
         "",
         "Cuando tengas suficiente contexto, debes devolver además un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS:",
-        "TRIPBOARD_DAYPLAN_JSON_START",
+        KAVIRO_DAYPLAN_JSON_START,
         "{...json...}",
-        "TRIPBOARD_DAYPLAN_JSON_END",
+        KAVIRO_DAYPLAN_JSON_END,
         "",
         "Formato del JSON (version 1):",
         "{",
@@ -207,7 +215,7 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         "- Si un sitio necesita entrada, marca `ticketRequired=true` y en `notes` indica 'Necesita entrada'.",
         "- No inventes coordenadas ni URLs en el JSON.",
         "- En el texto humano, explica el porqué del orden y pregunta correcciones.",
-        "- Si el usuario ya respondió con fecha (YYYY-MM-DD), horarios y transporte, emite el bloque TRIPBOARD_DAYPLAN_JSON en la misma respuesta (marcadores literales, sin envolver en ```).",
+        "- Si el usuario ya respondió con fecha (YYYY-MM-DD), horarios y transporte, emite el bloque KAVIRO_DAYPLAN_JSON en la misma respuesta (marcadores literales, sin envolver en ```).",
         "- Reglas mixtas andar/bici: elige travelMode cycling o walking según predomine y explícalo en el texto.",
       ].join("\n"),
     travel_docs: [
@@ -216,13 +224,13 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
       "Si en el CONTEXTO DEL VIAJE ya constan destino, fechas y países o regiones, úsalos. Si falta la nacionalidad del viajero (pasaporte que usará), pregúntala de forma breve antes de cerrar la lista.",
       "Si faltan países concretos a visitar y el contexto no los deja claro, pregunta en una sola frase.",
       "Primero redacta un resumen breve en markdown (2–6 frases máximo): avisos legales, qué verificar en fuentes oficiales y si falta algún dato.",
-      "Cuando enumeres requisitos concretos (no solo preguntas de aclaración), al FINAL incluye exactamente un bloque entre los marcadores literales TRIPBOARD_TRAVEL_DOCS_JSON_START y TRIPBOARD_TRAVEL_DOCS_JSON_END.",
+      `Cuando enumeres requisitos concretos (no solo preguntas de aclaración), al FINAL incluye exactamente un bloque entre los marcadores literales ${KAVIRO_TRAVEL_DOCS_JSON_START} y ${KAVIRO_TRAVEL_DOCS_JSON_END}.`,
       "Entre esos marcadores va solo JSON válido (sin markdown ni texto alrededor), con esta forma:",
       '{ "version": 1, "title": "string corto para el título de la lista", "intro": "string|null", "items": [ { "requirement": "texto del requisito", "level": "obligatorio"|"recomendado"|"verificar", "notes": "string|null", "country": "string|null" } ] }',
       "Cada `requirement` debe ser una frase corta y accionable (ej. «Solicitar ETIAS si aplica», «Seguro de viaje con repatriación»). `country` indica país o región cuando aplique; si es transversal, null.",
-      "`items` debe tener al menos 1 elemento cuando des checklist; si solo haces preguntas sin checklist, omite por completo el bloque TRIPBOARD_TRAVEL_DOCS_JSON.",
+      "`items` debe tener al menos 1 elemento cuando des checklist; si solo haces preguntas sin checklist, omite por completo el bloque KAVIRO_TRAVEL_DOCS_JSON.",
       "Cubre cuando aplique en los items: visados o autorizaciones (ETIAS/ESTA/eTA…), seguro, sanidad/EHIC, conducir (IDP), documentos ID, menores, mascotas, roaming.",
-      "No uses bloques TRIPBOARD_ITINERARY ni TRIPBOARD_DIFF ni JSON ejecutable de plan en este modo.",
+      "No uses bloques KAVIRO_ITINERARY ni KAVIRO_DIFF ni JSON ejecutable de plan en este modo.",
     ].join("\n"),
   };
 
@@ -246,7 +254,7 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
     looksLikePastedItineraryImport(question)
       ? [
           "",
-          "TAREA ACTUAL: el usuario pegó una agenda detallada. Debes devolver TRIPBOARD_ITINERARY con TODAS las actividades con hora y lugar detectables.",
+          "TAREA ACTUAL: el usuario pegó una agenda detallada. Debes devolver KAVIRO_ITINERARY con TODAS las actividades con hora y lugar detectables.",
           "En el texto previo al JSON, resume cuántos días y actividades has extraído y si faltan fechas del viaje en el contexto.",
         ].join("\n")
       : "",

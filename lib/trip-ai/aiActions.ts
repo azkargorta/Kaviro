@@ -91,7 +91,7 @@ export function inferAIActionFromQuestion(question: string): AIActionId {
   ) {
     return "add_activity";
   }
-  // Itinerario / plan por días → modo planificación + JSON TRIPBOARD_ITINERARY (aunque el UI esté en «general»).
+  // Itinerario / plan por días → modo planificación + JSON KAVIRO_ITINERARY (aunque el UI esté en «general»).
   if (
     q.includes("planning") ||
     q.includes("planing") ||

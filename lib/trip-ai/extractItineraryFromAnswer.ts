@@ -2,9 +2,11 @@ import { normalizeItineraryItem, type ItineraryDraftPayload } from "@/lib/trip-a
 import {
   findItineraryJsonEnd,
   findItineraryJsonStart,
+  KAVIRO_ITINERARY_JSON_END,
+  KAVIRO_ITINERARY_JSON_START,
   TRIPBOARD_ITINERARY_JSON_END,
   TRIPBOARD_ITINERARY_JSON_START,
-} from "@/lib/trip-ai/tripboardJsonMarkers";
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 
 function parseItineraryObject(parsed: unknown): ItineraryDraftPayload | null {
   if (!parsed || typeof parsed !== "object") return null;
@@ -112,4 +114,9 @@ export function extractItineraryFromAnswer(answer: string): ItineraryDraftPayloa
   return extractLooseJsonObject(answer);
 }
 
-export { TRIPBOARD_ITINERARY_JSON_START, TRIPBOARD_ITINERARY_JSON_END };
+export {
+  KAVIRO_ITINERARY_JSON_START,
+  KAVIRO_ITINERARY_JSON_END,
+  TRIPBOARD_ITINERARY_JSON_START,
+  TRIPBOARD_ITINERARY_JSON_END,
+};

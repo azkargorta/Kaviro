@@ -1,9 +1,16 @@
 /**
  * Ofertas / opciones de búsqueda (modo search) emitidas por el asistente.
- * JSON entre TRIPBOARD_SEARCH_JSON_*; enlaces de reserva se enriquecen con trip-search-urls.
+ * JSON entre KAVIRO_SEARCH_JSON_*; enlaces de reserva se enriquecen con trip-search-urls.
  */
 
 import type { SearchPlatform, TripType } from "@/lib/trip-search-urls";
+import {
+  extractJsonBetweenMarkers,
+  KAVIRO_SEARCH_JSON_END,
+  KAVIRO_SEARCH_JSON_START,
+  SEARCH_JSON_END_ALIASES,
+  SEARCH_JSON_START_ALIASES,
+} from "@/lib/trip-ai/kaviroJsonMarkers";
 import {
   busPlatformUrls,
   carPlatformUrls,
@@ -13,8 +20,9 @@ import {
   trainPlatformUrls,
 } from "@/lib/trip-search-urls";
 
-export const SEARCH_JSON_START = "TRIPBOARD_SEARCH_JSON_START";
-export const SEARCH_JSON_END = "TRIPBOARD_SEARCH_JSON_END";
+/** Marcadores canónicos (alias export para código existente). */
+export const SEARCH_JSON_START = KAVIRO_SEARCH_JSON_START;
+export const SEARCH_JSON_END = KAVIRO_SEARCH_JSON_END;
 
 export type SearchCategory = "hotel" | "vuelo" | "tren" | "ferry" | "bus" | "coche";
 
@@ -152,10 +160,8 @@ function parseOptions(raw: unknown): TravelSearchOption[] {
 }
 
 export function parseTravelSearchOffersFromAnswer(answer: string): TravelSearchOffersPayload | null {
-  const iStart = answer.indexOf(SEARCH_JSON_START);
-  const iEnd = answer.indexOf(SEARCH_JSON_END);
-  if (iStart === -1 || iEnd === -1 || iEnd <= iStart) return null;
-  const raw = answer.slice(iStart + SEARCH_JSON_START.length, iEnd).trim();
+  const raw = extractJsonBetweenMarkers(answer, SEARCH_JSON_START_ALIASES, SEARCH_JSON_END_ALIASES);
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (!parsed || parsed.version !== 1) return null;
@@ -305,7 +311,7 @@ export function buildSearchModeContextHint(): string {
     "- Usa destino, fechas y número de participantes del resumen del viaje.",
     "- Si falta origen en vuelos/tren/bus, asume Madrid salvo que el usuario indique otra ciudad.",
     "- Los precios en options deben ser estimaciones orientativas (nunca inventes tarifas en tiempo real sin indicarlo en priceNote).",
-    "- Incluye siempre el bloque TRIPBOARD_SEARCH_JSON cuando des opciones concretas.",
+    "- Incluye siempre el bloque KAVIRO_SEARCH_JSON cuando des opciones concretas.",
     "- bookingUrl en cada option puede ser null; la app mostrará enlaces a comparadores (Booking, Google Flights, Omio, etc.).",
   ].join("\n");
 }
