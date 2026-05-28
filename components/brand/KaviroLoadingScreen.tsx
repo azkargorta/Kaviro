@@ -1,6 +1,5 @@
-import Image from "next/image";
 import { APP_NAME } from "@/lib/brand";
-import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
+import KaviroMark from "@/components/brand/KaviroMark";
 
 type Props = {
   /** Pantalla completa fija (navegación) o bloque dentro del layout de Next. */
@@ -20,16 +19,10 @@ export default function KaviroLoadingScreen({ fixed = false, subtitle }: Props) 
   return (
     <div className={shell} role="status" aria-live="polite" aria-busy="true" aria-label="Cargando">
       <div className="flex flex-col items-center">
-        <span className="inline-flex h-[96px] w-[96px] items-center justify-center overflow-hidden rounded-[28px] bg-white shadow-[var(--shadow-raised)] ring-1 ring-[var(--border-default)] dark:bg-[#0F1623] dark:ring-[#1E293B]">
-          <Image
-            src="/brand/icon.png"
-            alt=""
-            width={72}
-            height={72}
-            priority
-            className={`h-[72px] w-[72px] object-contain ${kaviroCoralImageFilter}`}
-          />
-        </span>
+        <KaviroMark
+          size={96}
+          className="overflow-hidden rounded-[28px] shadow-[var(--shadow-raised)] ring-1 ring-[#F87171]/25"
+        />
         <h1
           className="mt-6 text-3xl font-black tracking-tight"
           style={{

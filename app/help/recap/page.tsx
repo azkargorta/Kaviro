@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import KaviroMark from "@/components/brand/KaviroMark";
 import { ArrowLeft, Download, Share2, ImageIcon, Star, Camera } from "lucide-react";
 
 export const metadata = {
@@ -52,7 +52,7 @@ export default function RecapHelpPage() {
           </div>
 
           <div className="flex items-center gap-3 mb-2">
-            <Image src="/brand/icon.png" alt="Kaviro" width={40} height={40} className="rounded-full" />
+            <KaviroMark size={40} className="rounded-full" title="Kaviro" />
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Kaviro · Ayuda</p>
               <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">El Recap del viaje</h1>

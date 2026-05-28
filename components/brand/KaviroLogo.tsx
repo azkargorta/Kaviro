@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/brand";
+import KaviroMark from "@/components/brand/KaviroMark";
 import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
 
 type Props = {
@@ -19,7 +20,6 @@ type Props = {
 
 const KAVIRO_LOCKUP_FULLCOLOR_SRC = "/brand/kaviro-lockup-fullcolor.png";
 const KAVIRO_LOCKUP_WHITE_SRC = "/brand/kaviro-lockup-white.png";
-const KAVIRO_ICON_SRC = "/brand/icon.png";
 
 const lockupHeightClass = {
   sm: "h-7 max-h-7 sm:h-8 sm:max-h-8",
@@ -69,28 +69,16 @@ export default function KaviroLogo({
     </span>
   ) : (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span
-        className={`inline-flex items-center justify-center overflow-hidden rounded-full ${
-          isLight ? "bg-white ring-1 ring-white/30" : "bg-white ring-1 ring-slate-200"
-        }`}
-        style={{ width: box, height: box }}
-        aria-hidden
-      >
-        <Image
-          src={KAVIRO_ICON_SRC}
-          width={px}
-          height={px}
-          alt=""
-          className={[
-            "h-full w-full object-contain",
-            !isLight ? kaviroCoralImageFilter : "",
-            imageClassName,
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          priority
-        />
-      </span>
+      <KaviroMark
+        size={px}
+        className={[
+          "shrink-0 overflow-hidden rounded-full shadow-sm",
+          isLight ? "ring-1 ring-white/40" : "ring-1 ring-slate-200/80",
+          imageClassName,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      />
     </span>
   );
 

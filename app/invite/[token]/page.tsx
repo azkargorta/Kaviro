@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import KaviroMark from "@/components/brand/KaviroMark";
 import type { Metadata } from "next";
 
 type Props = { params: { token: string } };
@@ -32,7 +32,7 @@ export default async function InvitePage({ params }: Props) {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-[var(--surface-page)] px-6 text-center">
       <div className="w-full max-w-sm space-y-6">
-        <Image src="/brand/icon.png" alt="Kaviro" width={64} height={64} className="mx-auto rounded-2xl" />
+        <KaviroMark size={64} className="mx-auto rounded-2xl" title="Kaviro" />
 
         <div>
           <p className="text-sm font-semibold text-[#F87171]">Invitación de {referrerName}</p>

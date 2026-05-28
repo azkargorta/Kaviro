@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Download, ImagePlus, X, Loader2, MapPin } from "lucide-react";
 import html2canvas from "html2canvas";
+import { kaviroCoralImageFilter } from "@/lib/trip-tab-assets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -476,7 +477,7 @@ export default function RecapPage(props: RecapData) {
           alt="Kaviro"
           width={120}
           height={20}
-          className="ml-auto h-5 w-auto opacity-80"
+          className={`ml-auto h-5 w-auto opacity-80 ${kaviroCoralImageFilter}`}
         />
       </div>
 

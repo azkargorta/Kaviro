@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import TripCardItem from "@/components/dashboard/TripCardItem";
+import KaviroMark from "@/components/brand/KaviroMark";
 import { ChevronDown, ChevronUp, MapPin, RefreshCw, Sparkles } from "lucide-react";
 import { DEMO_SPOTLIGHT_STEP_COUNT } from "@/lib/onboarding/demo-tour-copy";
 
@@ -65,7 +65,7 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
         className="w-full flex items-center justify-between rounded-2xl border border-[#F87171]/25 bg-[#F87171]/5 px-4 py-3 text-left transition hover:bg-[#F87171]/10 dark:border-[#F87171]/20 dark:bg-[#F87171]/5"
       >
         <div className="flex items-center gap-2.5">
-          <Image src="/brand/icon.png" alt="Kaviro" width={24} height={24} className="rounded-full shrink-0" />
+          <KaviroMark size={24} className="shrink-0 rounded-full" title="Kaviro" />
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
               Viaje demo · Londres

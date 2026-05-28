@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { APP_NAME } from "@/lib/brand";
+import KaviroMark from "@/components/brand/KaviroMark";
 import { useTripBoardHeader } from "@/components/layout/TripBoardHeaderContext";
 import TripPageHelp from "@/components/trip/common/TripPageHelp";
 import TripActivityFeedButton from "@/components/trip/common/TripActivityFeedButton";
@@ -38,18 +39,10 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
               <Link
                 href="/dashboard"
                 data-tour="topbar-logo"
-                className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full overflow-hidden ring-1 ring-slate-900/10 hover:ring-[var(--brand)] transition-all duration-150 dark:ring-white/30 dark:bg-white"
+                className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full overflow-hidden ring-1 ring-[#F87171]/30 hover:ring-[var(--brand)] transition-all duration-150"
                 title="Mis viajes"
               >
-                <Image
-                  src="/brand/icon.png"
-                  alt={APP_NAME}
-                  width={32}
-                  height={32}
-                  sizes="32px"
-                  className="h-full w-full object-contain"
-                  priority
-                />
+                <KaviroMark size={32} className="h-full w-full" title={APP_NAME} />
               </Link>
 
               {/* Divider */}
