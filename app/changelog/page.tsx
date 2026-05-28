@@ -24,9 +24,9 @@ const RELEASES: Release[] = [
       { icon: Calendar, text: "Itinerario coral por días: pestañas con flechas, avatares del grupo y resumen de gastos integrado" },
       { icon: Sparkles, text: "Badge «IA sugiere» en la cabecera del plan — análisis Premium del itinerario completo" },
       { icon: Users,    text: "Visibilidad por actividad: todo el viaje, solo tú o participantes seleccionados" },
-      { icon: Star,     text: "RSVP en actividades: ¿Te apuntas?, No o Quizá con contadores del grupo" },
+      { icon: Star,     text: "RSVP en actividades y pestaña Asistencia: quién va, pendientes y totales por día" },
       { icon: Zap,      text: "Campana de novedades: feed con cambios del plan, gastos e invitaciones sin leer" },
-      { icon: Map,      text: "Tour demo ampliado a 33 pasos — itinerario, IA sugiere y feed de novedades incluidos" },
+      { icon: Map,      text: "Tour demo con paso de Asistencia y RSVP de ejemplo (Ana, Luis, María) en el viaje Londres" },
     ],
   },
   {

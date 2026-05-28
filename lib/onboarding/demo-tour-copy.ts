@@ -3,7 +3,7 @@ import { tripTabDocsImageClass } from "@/lib/trip-tab-assets";
 
 export const DEMO_TAB_TOUR: TourStep[] = [
   { id: "home", title: "Resumen", lead: "🏠", body: "Vista general.", mobileTip: "", href: (id) => `/trip/${id}/summary`, visual: { type: "image", tabKey: "summary", alt: "Resumen" } },
-  { id: "plan", title: "Plan", lead: "📅", body: "Itinerario coral por días, IA sugiere y RSVP.", mobileTip: "", href: (id) => `/trip/${id}/plan`, visual: { type: "image", tabKey: "plan", alt: "Plan" } },
+  { id: "plan", title: "Plan", lead: "📅", body: "Itinerario coral, IA sugiere, RSVP y pestaña Asistencia.", mobileTip: "", href: (id) => `/trip/${id}/plan`, visual: { type: "image", tabKey: "plan", alt: "Plan" } },
   { id: "map", title: "Rutas", lead: "🗺️", body: "Mapa.", mobileTip: "", href: (id) => `/trip/${id}/map`, visual: { type: "image", tabKey: "map", alt: "Rutas" } },
   { id: "expenses", title: "Gastos", lead: "💶", body: "Gastos.", mobileTip: "", href: (id) => `/trip/${id}/expenses`, visual: { type: "image", tabKey: "expenses", alt: "Gastos" } },
   { id: "participants", title: "Gente", lead: "👥", body: "Participantes.", mobileTip: "", href: (id) => `/trip/${id}/participants`, visual: { type: "image", tabKey: "participants", alt: "Participantes" } },
@@ -61,7 +61,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Al terminar el viaje, genera una tarjeta visual con estadísticas: días, actividades, km recorridos y foto del destino. Se comparte directamente por WhatsApp o se descarga en formato Stories para Instagram.",
   },
 
-  // ════════ PLAN — 5 pasos ════════
+  // ════════ PLAN — 6 pasos ════════
 
   {
     id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', placement: "bottom", emoji: "➕",
@@ -81,7 +81,13 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "plan-card", tab: "plan", target: '[data-tour="plan-activity-card"]', placement: "right", emoji: "☰",
     title: "Filas de actividad",
-    body: "Cada fila compacta muestra hora, lugar y tipo de actividad. Arrastra con ≡ para reordenar el día. Pulsa una fila para editar o abrir el detalle: ahí verás valoraciones, comentarios y RSVP (¿Te apuntas? / No / Quizá) con contadores del grupo.",
+    body: "Cada fila compacta muestra hora, lugar y tipo de actividad. Arrastra con ≡ para reordenar el día. Pulsa una fila para abrir el detalle: valoraciones, comentarios y tu respuesta RSVP (Sí / No / Quizás).",
+  },
+  {
+    id: "plan-attendance", tab: "plan", target: '[data-tour="plan-attendance-panel"]', targetAlt: '[data-tour="plan-attendance-tab"]',
+    action: "open-plan-attendance", placement: "top", emoji: "👥",
+    title: "Asistencia del grupo",
+    body: "La pestaña Asistencia resume quién va a cada plan: contadores Sí / Quizás / No por actividad, quién falta por responder y el desglose por día. En el demo verás respuestas distintas de Ana, Luis y María. Ideal para coordinar sin preguntar en el chat.",
   },
   {
     id: "plan-calendar-mode", tab: "plan", target: '[data-tour="plan-calendar-mode"]', placement: "bottom",

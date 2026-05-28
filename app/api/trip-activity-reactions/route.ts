@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { getTripAccessForApi } from "@/lib/trip-access";
+import {
+  buildDemoAttendanceReactions,
+  isDemoTripForAttendance,
+} from "@/lib/onboarding/demo-activity-attendance-seed";
 
 export const runtime = "nodejs";
 
@@ -84,8 +88,60 @@ export async function GET(req: Request) {
         });
       }
 
+      let reactions = data ?? [];
+
+      const { data: tripRow } = await admin
+        .from("trips")
+        .select("is_demo, name")
+        .eq("id", tripId)
+        .maybeSingle();
+
+      if (tripRow && isDemoTripForAttendance(tripRow as { is_demo?: boolean; name?: string })) {
+        const { data: actRows } = await admin
+          .from("trip_activities")
+          .select("id, title")
+          .eq("trip_id", tripId);
+
+        const { data: ownerParticipant } = await admin
+          .from("trip_participants")
+          .select("display_name")
+          .eq("trip_id", tripId)
+          .eq("user_id", accessResult.access.userId)
+          .maybeSingle();
+
+        const ownerName =
+          String((ownerParticipant as { display_name?: string } | null)?.display_name || "").trim() ||
+          "Tú";
+
+        const demoRows = buildDemoAttendanceReactions(
+          tripId,
+          (actRows ?? []) as Array<{ id: string; title: string }>,
+          ownerName
+        );
+
+        const seen = new Set(
+          reactions.map((r) => `${String(r.activity_id)}:${String(r.user_id)}`)
+        );
+        for (const row of demoRows) {
+          const actId = row.activity_id;
+          if (!actId) continue;
+          const key = `${actId}:${row.user_id}`;
+          if (!seen.has(key)) {
+            reactions.push({
+              id: row.id,
+              user_id: row.user_id,
+              display_name: row.display_name,
+              reaction: row.reaction,
+              comment: row.comment,
+              activity_id: actId,
+            });
+            seen.add(key);
+          }
+        }
+      }
+
       return NextResponse.json({
-        reactions: data ?? [],
+        reactions,
         tableReady: true,
         participantCount: participantCount ?? 0,
       });

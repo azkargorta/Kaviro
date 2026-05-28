@@ -189,6 +189,10 @@ function executeAction(action?: SpotlightStep["action"]) {
     const expanded = openBtn?.getAttribute("aria-expanded") === "true";
     if (!expanded && openBtn) openBtn.click();
   }
+  if (action === "open-plan-attendance") {
+    const tab = document.querySelector('[data-tour="plan-attendance-tab"]') as HTMLElement | null;
+    if (tab?.getAttribute("aria-selected") !== "true") tab?.click();
+  }
 }
 
 type Props = {

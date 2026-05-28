@@ -17,6 +17,7 @@ import {
   isDemoTripForListing,
   type TripDemoFields,
 } from "@/lib/onboarding/is-demo-trip";
+import { getDemoInviteConfig } from "@/lib/onboarding/demo-activity-attendance-seed";
 
 export type DemoOnboardingProfile = {
   demo_trip_id: string | null;
@@ -133,32 +134,48 @@ export async function ensureDemoTripForUser(user: User): Promise<{
     tripId = String((fallback.data as { id: string }).id);
   }
 
-  await admin.from("trip_participants").insert({
-    trip_id: tripId,
-    display_name: ownerName,
-    username: user.user_metadata?.username || user.email?.split("@")[0] || null,
-    user_id: user.id,
-    role: "owner",
-    status: "active",
-    joined_via: "demo",
-    linked_at: new Date().toISOString(),
-    can_manage_trip: true,
-    can_manage_participants: true,
-    can_manage_expenses: true,
-    can_manage_plan: true,
-    can_manage_map: true,
-    can_manage_resources: true,
-  });
+  const participantIdByName = new Map<string, string>();
 
-  for (const ghost of DEMO_GHOST_PARTICIPANTS) {
-    await admin.from("trip_participants").insert({
+  const ownerInsert = await admin
+    .from("trip_participants")
+    .insert({
       trip_id: tripId,
-      display_name: ghost.display_name,
-      role: ghost.role,
+      display_name: ownerName,
+      username: user.user_metadata?.username || user.email?.split("@")[0] || null,
+      user_id: user.id,
+      role: "owner",
       status: "active",
       joined_via: "demo",
-      user_id: null,
-    });
+      linked_at: new Date().toISOString(),
+      can_manage_trip: true,
+      can_manage_participants: true,
+      can_manage_expenses: true,
+      can_manage_plan: true,
+      can_manage_map: true,
+      can_manage_resources: true,
+    })
+    .select("id")
+    .single();
+  if (ownerInsert.data?.id) {
+    participantIdByName.set(ownerName, String((ownerInsert.data as { id: string }).id));
+  }
+
+  for (const ghost of DEMO_GHOST_PARTICIPANTS) {
+    const ghostInsert = await admin
+      .from("trip_participants")
+      .insert({
+        trip_id: tripId,
+        display_name: ghost.display_name,
+        role: ghost.role,
+        status: "active",
+        joined_via: "demo",
+        user_id: null,
+      })
+      .select("id")
+      .single();
+    if (ghostInsert.data?.id) {
+      participantIdByName.set(ghost.display_name, String((ghostInsert.data as { id: string }).id));
+    }
   }
 
   const activities = buildDemoActivities(start_date);
@@ -166,31 +183,80 @@ export async function ensureDemoTripForUser(user: User): Promise<{
   const activityIdByTitle = new Map<string, string>();
   const activityCoordsByTitle = new Map<string, { lat: number; lng: number }>();
   if (activities.length) {
-    const { data: insertedActivities } = await admin.from("trip_activities").insert(
-      activities.map((a) => ({
-        trip_id: tripId,
-        title: a.title,
-        activity_date: a.activity_date,
-        activity_time: a.activity_time,
-        place_name: a.place_name,
-        address: a.address,
-        activity_kind: a.activity_kind,
-        latitude: a.latitude,
-        longitude: a.longitude,
-        ...(a.rating != null ? { rating: a.rating } : {}),
-        ...(a.comment != null ? { comment: a.comment } : {}),
-        ...((a as { notes?: string | null }).notes != null
-          ? { notes: (a as { notes?: string | null }).notes }
-          : {}),
-        source: "demo",
-        created_by_user_id: user.id,
-      }))
+    const { data: insertedActivities, error: actErr } = await admin.from("trip_activities").insert(
+      activities.map((a) => {
+        const invite = getDemoInviteConfig(a.title);
+        return {
+          trip_id: tripId,
+          title: a.title,
+          activity_date: a.activity_date,
+          activity_time: a.activity_time,
+          place_name: a.place_name,
+          address: a.address,
+          activity_kind: a.activity_kind,
+          latitude: a.latitude,
+          longitude: a.longitude,
+          invite_scope: invite.scope,
+          ...(a.rating != null ? { rating: a.rating } : {}),
+          ...(a.comment != null ? { comment: a.comment } : {}),
+          ...((a as { notes?: string | null }).notes != null
+            ? { notes: (a as { notes?: string | null }).notes }
+            : {}),
+          source: "demo",
+          created_by_user_id: user.id,
+        };
+      })
     ).select("id, title, latitude, longitude");
-    if (insertedActivities) {
+
+    if (actErr && actErr.message?.toLowerCase().includes("invite_scope")) {
+      const { data: fallbackActs } = await admin.from("trip_activities").insert(
+        activities.map((a) => ({
+          trip_id: tripId,
+          title: a.title,
+          activity_date: a.activity_date,
+          activity_time: a.activity_time,
+          place_name: a.place_name,
+          address: a.address,
+          activity_kind: a.activity_kind,
+          latitude: a.latitude,
+          longitude: a.longitude,
+          ...(a.rating != null ? { rating: a.rating } : {}),
+          ...(a.comment != null ? { comment: a.comment } : {}),
+          source: "demo",
+          created_by_user_id: user.id,
+        }))
+      ).select("id, title, latitude, longitude");
+      if (fallbackActs) {
+        for (const row of fallbackActs as Array<{ id: string; title: string; latitude: number; longitude: number }>) {
+          activityIdByTitle.set(row.title, row.id);
+          if (row.latitude != null && row.longitude != null) {
+            activityCoordsByTitle.set(row.title, { lat: row.latitude, lng: row.longitude });
+          }
+        }
+      }
+    } else if (insertedActivities) {
+      const ownerPid = participantIdByName.get(ownerName);
       for (const row of insertedActivities as Array<{ id: string; title: string; latitude: number; longitude: number }>) {
         activityIdByTitle.set(row.title, row.id);
         if (row.latitude != null && row.longitude != null) {
           activityCoordsByTitle.set(row.title, { lat: row.latitude, lng: row.longitude });
+        }
+
+        const invite = getDemoInviteConfig(row.title);
+        if (invite.scope === "selected" && invite.invitedNames?.length) {
+          const pidSet = new Set<string>();
+          for (const name of invite.invitedNames) {
+            const pid = participantIdByName.get(name);
+            if (pid) pidSet.add(pid);
+          }
+          if (ownerPid) pidSet.add(ownerPid);
+          const inviteRows = [...pidSet].map((participant_id) => ({
+            activity_id: row.id,
+            participant_id,
+          }));
+          if (inviteRows.length) {
+            await admin.from("trip_activity_invitees").insert(inviteRows);
+          }
         }
       }
     }

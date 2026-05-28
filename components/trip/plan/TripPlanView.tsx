@@ -595,6 +595,7 @@ export default function TripPlanView({
         <button
           type="button"
           role="tab"
+          data-tour="plan-attendance-tab"
           aria-selected={workspaceTab === "attendance"}
           onClick={() => setWorkspaceTab("attendance")}
           className={`${chipItemBase} sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
