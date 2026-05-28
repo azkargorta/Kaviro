@@ -1360,6 +1360,7 @@ export default function TripPlanView({
               premiumEnabled={premiumEnabled}
               tripName={trip?.name}
               selectedDate={selectedDate}
+              appearance="header"
             />
           }
         >

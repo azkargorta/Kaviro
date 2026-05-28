@@ -14,9 +14,23 @@ type Props = {
   premiumEnabled: boolean;
   tripName?: string | null;
   selectedDate?: string | null;
+  /** En cabecera coral del itinerario: fondo blanco y texto coral */
+  appearance?: "header" | "gradient";
 };
 
-export default function PlanAiSuggestBadge({ tripId, premiumEnabled, tripName, selectedDate }: Props) {
+const BTN_HEADER =
+  "inline-flex max-w-[min(100%,11rem)] shrink-0 items-center gap-1.5 rounded-xl border border-white/90 bg-white px-2.5 py-1.5 text-left text-[#F87171] shadow-sm transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/80";
+const BTN_GRADIENT =
+  "inline-flex max-w-[min(100%,11rem)] shrink-0 items-center gap-1.5 rounded-xl border border-white/35 bg-white/15 px-2.5 py-1.5 text-left text-white shadow-sm transition hover:bg-white/25";
+
+export default function PlanAiSuggestBadge({
+  tripId,
+  premiumEnabled,
+  tripName,
+  selectedDate,
+  appearance = "gradient",
+}: Props) {
+  const btnClass = appearance === "header" ? BTN_HEADER : BTN_GRADIENT;
   const [showUpsell, setShowUpsell] = useState(false);
 
   function openPlanAnalysis() {
@@ -36,7 +50,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, tripName, s
         <button
           type="button"
           onClick={() => setShowUpsell(true)}
-          className="inline-flex max-w-[min(100%,11rem)] items-center gap-1.5 rounded-xl border border-white/35 bg-white/15 px-2.5 py-1.5 text-left text-white shadow-sm transition hover:bg-white/25"
+          className={btnClass}
         >
           <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className="text-[11px] font-bold leading-snug">IA sugiere</span>
@@ -72,7 +86,7 @@ export default function PlanAiSuggestBadge({ tripId, premiumEnabled, tripName, s
     <button
       type="button"
       onClick={openPlanAnalysis}
-      className="inline-flex max-w-[min(100%,11rem)] shrink-0 items-center gap-1.5 rounded-xl border border-white/35 bg-white/15 px-2.5 py-1.5 text-left text-white shadow-sm transition hover:bg-white/25"
+      className={btnClass}
       title="Analizar el plan completo del viaje con IA"
     >
       <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
