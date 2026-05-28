@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   fillItineraryDatesFromTripSummary,
   splitSourceByDaySections,
+  splitSourceByTimeSlots,
+  splitSourceForImport,
 } from "@/lib/trip-ai/importItineraryFromText";
 
 describe("splitSourceByDaySections", () => {
@@ -23,6 +25,22 @@ describe("splitSourceByDaySections", () => {
     expect(parts.length).toBeGreaterThanOrEqual(2);
     expect(parts[0]?.body).toMatch(/DÍA\s+29/i);
     expect(parts[1]?.body).toMatch(/DÍA\s+30/i);
+  });
+});
+
+describe("splitSourceByTimeSlots", () => {
+  it("parte agendas sin DÍA N por líneas 12.00h-", () => {
+    const lines = Array.from({ length: 8 }, (_, i) => `${10 + i}.00h- Actividad ${i + 1}`);
+    const parts = splitSourceByTimeSlots(lines.join("\n"), 3);
+    expect(parts.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("splitSourceForImport", () => {
+  it("prefiere trozos por hora si no hay DÍA", () => {
+    const text = Array.from({ length: 10 }, (_, i) => `${9 + i}.30h- Parada ${i}`).join("\n");
+    const parts = splitSourceForImport(text);
+    expect(parts.length).toBeGreaterThanOrEqual(2);
   });
 });
 

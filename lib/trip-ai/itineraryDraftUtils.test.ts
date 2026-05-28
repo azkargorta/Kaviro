@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   collectItineraryItemKeys,
+  countItineraryItems,
+  estimateMinActivitiesFromSource,
   filterItineraryBySelection,
+  isItineraryImportIncomplete,
   looksLikePastedItineraryImport,
 } from "@/lib/trip-ai/itineraryDraftUtils";
 
@@ -14,6 +17,31 @@ describe("looksLikePastedItineraryImport", () => {
 
   it("ignora mensajes cortos", () => {
     expect(looksLikePastedItineraryImport("Hola, ¿qué hacer en Chicago?")).toBe(false);
+  });
+});
+
+describe("estimateMinActivitiesFromSource", () => {
+  it("cuenta bloques horarios sin encabezado DÍA", () => {
+    const text = [
+      "12.00h- Vuelo MADRID-CHICAGO",
+      "15.55h- Llegada",
+      "18.00h- Hotel",
+      "08.00h- Museo",
+      "20.00h- Cena",
+    ].join("\n");
+    expect(estimateMinActivitiesFromSource(text)).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("isItineraryImportIncomplete", () => {
+  it("detecta borrador con una sola actividad en texto largo", () => {
+    const draft = {
+      version: 1 as const,
+      days: [{ day: 1, date: "2026-10-28", items: [{ title: "Solo una" }] }],
+    };
+    const long = `${"12.00h- Actividad\n".repeat(12)}DÍA 2\n${"14.00h- Otra\n".repeat(8)}`;
+    expect(isItineraryImportIncomplete(draft, long)).toBe(true);
+    expect(countItineraryItems(draft)).toBe(1);
   });
 });
 

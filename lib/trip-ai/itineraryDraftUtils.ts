@@ -74,3 +74,29 @@ export function looksLikePastedItineraryImport(question: string): boolean {
     (timeHits >= 6 && q.length > 1200)
   );
 }
+
+/** Estima cuántas actividades debería haber en un texto pegado (heurística conservadora). */
+export function estimateMinActivitiesFromSource(sourceText: string): number {
+  const q = sourceText.trim();
+  if (!q) return 1;
+  const timeHits = (q.match(/\d{1,2}[.:]\d{2}\s*h\s*[-–—]|\d{1,2}[.:]\d{2}\s*h\s+\S/gi) || []).length;
+  const dayHits = (q.match(/d[ií]a\s+\d+/gi) || []).length;
+  if (dayHits >= 2) return Math.max(dayHits * 2, timeHits >= 4 ? Math.floor(timeHits * 0.65) : dayHits);
+  if (timeHits >= 4) return Math.max(4, Math.floor(timeHits * 0.7));
+  if (looksLikePastedItineraryImport(q)) return 3;
+  return 1;
+}
+
+/** True si el borrador tiene muchas menos actividades de las que sugiere el texto original. */
+export function isItineraryImportIncomplete(
+  draft: ItineraryDraftPayload,
+  sourceText: string
+): boolean {
+  const got = countItineraryItems(draft);
+  const expected = estimateMinActivitiesFromSource(sourceText);
+  const dayHits = (sourceText.match(/d[ií]a\s+\d+/gi) || []).length;
+  if (sourceText.length > 2000 && got <= 2) return true;
+  if (dayHits >= 3 && got < dayHits) return true;
+  if (expected >= 5 && got < expected * 0.45) return true;
+  return expected >= 3 && got < Math.min(expected, got + 2);
+}

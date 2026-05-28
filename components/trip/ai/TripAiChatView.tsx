@@ -38,6 +38,7 @@ import {
   collectItineraryItemKeys,
   countItineraryItems,
   filterItineraryBySelection,
+  isItineraryImportIncomplete,
   itineraryItemKey,
   looksLikePastedItineraryImport,
   type ItineraryDraftPayload,
@@ -1281,18 +1282,20 @@ export default function TripAiChatView({
         let maybe = answerStr ? extractItineraryFromAnswer(answerStr) : null;
         setImportCardsFailed(false);
 
-        const shouldBuildCards =
-          !maybe &&
-          (looksLikePastedItineraryImport(clean) ||
-            looksLikePastedItineraryImport(answerStr) ||
-            answerHasTruncatedItineraryJson(answerStr));
+        const pastedSource = clean.length > 200 ? clean : answerStr || clean;
+        const shouldRunImport =
+          looksLikePastedItineraryImport(pastedSource) ||
+          looksLikePastedItineraryImport(answerStr) ||
+          answerHasTruncatedItineraryJson(answerStr) ||
+          (maybe != null && isItineraryImportIncomplete(maybe, pastedSource));
 
-        if (!maybe && shouldBuildCards) {
-          const imported = await runImportItineraryCards(
-            clean.length > 200 ? clean : answerStr || clean,
-            answerStr
-          );
-          if (imported) maybe = imported;
+        if (shouldRunImport) {
+          const imported = await runImportItineraryCards(pastedSource, answerStr);
+          if (imported) {
+            const preferImport =
+              !maybe || countItineraryItems(imported) > countItineraryItems(maybe);
+            if (preferImport) maybe = imported;
+          }
         }
 
         if (maybe) {
