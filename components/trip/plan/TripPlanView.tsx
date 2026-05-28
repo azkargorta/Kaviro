@@ -622,6 +622,8 @@ export default function TripPlanView({
           tripId={tripId}
           activities={activities}
           enabled={workspaceTab === "attendance"}
+          currentUserId={currentUserId}
+          currentDisplayName={currentDisplayName}
           onActivityClick={(activity) => setDetailActivity(activity)}
         />
       ) : null}

@@ -3,8 +3,24 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, RefreshCw, Users } from "lucide-react";
 import { useTripActivityReactions } from "@/hooks/useTripActivityReactions";
-import { REACTION_META, type ActivityReactionStats } from "@/lib/activity-reactions";
+import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
+import {
+  REACTION_META,
+  type ActivityReactionKind,
+  type ActivityReactionStats,
+} from "@/lib/activity-reactions";
 import type { TripActivity } from "@/hooks/useTripActivities";
+
+function myReactionKind(
+  stats: ActivityReactionStats,
+  userId: string | null | undefined
+): ActivityReactionKind | null {
+  if (!userId) return null;
+  if (stats.joiners.some((r) => r.user_id === userId)) return "join";
+  if (stats.maybes.some((r) => r.user_id === userId)) return "maybe";
+  if (stats.skips.some((r) => r.user_id === userId)) return "skip";
+  return null;
+}
 
 function groupByDate(activities: TripActivity[]) {
   const groups = new Map<string, TripActivity[]>();
@@ -71,28 +87,45 @@ function ActivityAttendanceRow({
   activity,
   stats,
   participantCount,
-  onOpen,
+  tripId,
+  currentUserId,
+  currentDisplayName,
+  expanded,
+  onToggle,
+  onReactionChange,
+  onOpenDetail,
 }: {
   activity: TripActivity;
   stats: ActivityReactionStats;
   participantCount: number | null;
-  onOpen?: () => void;
+  tripId: string;
+  currentUserId: string | null;
+  currentDisplayName: string;
+  expanded: boolean;
+  onToggle: () => void;
+  onReactionChange: () => void;
+  onOpenDetail?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const time = formatTime(activity.activity_time);
   const pending =
     participantCount != null && participantCount > stats.total
       ? participantCount - stats.total
       : null;
+  const mine = myReactionKind(stats, currentUserId);
+  const mineMeta = mine ? REACTION_META[mine] : null;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div
+      className={`rounded-2xl border bg-white shadow-sm transition dark:bg-[#0F1623] ${
+        expanded
+          ? "border-[var(--brand-border)] ring-1 ring-[var(--brand-border)]/40"
+          : "border-slate-200 dark:border-[#1E293B]"
+      }`}
+    >
       <button
         type="button"
-        onClick={() => {
-          if (stats.total > 0) setOpen((v) => !v);
-          else onOpen?.();
-        }}
+        onClick={onToggle}
+        aria-expanded={expanded}
         className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50/80 dark:hover:bg-[#1E293B]/40"
       >
         <div className="min-w-0 flex-1">
@@ -101,7 +134,12 @@ function ActivityAttendanceRow({
           {activity.place_name ? (
             <p className="mt-0.5 truncate text-xs text-slate-500">{activity.place_name}</p>
           ) : null}
-          {stats.join > 0 && !open ? (
+          {mineMeta && !expanded ? (
+            <p className="mt-1.5 text-xs font-semibold text-[var(--brand-text)]">
+              Tu respuesta: {mineMeta.icon} {mineMeta.label}
+            </p>
+          ) : null}
+          {stats.join > 0 && !expanded ? (
             <p className="mt-1.5 text-xs text-emerald-800 dark:text-emerald-300">
               <span className="font-semibold">Van: </span>
               {stats.joiners.map((r) => r.display_name).join(", ")}
@@ -115,50 +153,31 @@ function ActivityAttendanceRow({
               {pending} sin responder
             </span>
           ) : null}
-          {stats.total > 0 ? (
-            open ? (
-              <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden />
-            )
-          ) : onOpen ? (
-            <span className="text-[11px] font-bold text-[var(--brand)]">Apuntarse</span>
-          ) : null}
+          {expanded ? (
+            <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden />
+          )}
         </div>
       </button>
 
-      {open && stats.total > 0 ? (
-        <div className="space-y-2 border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
-          {(["join", "maybe", "skip"] as const).map((kind) => {
-            const list =
-              kind === "join" ? stats.joiners : kind === "maybe" ? stats.maybes : stats.skips;
-            if (!list.length) return null;
-            const meta = REACTION_META[kind];
-            return (
-              <div key={kind}>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                  {meta.icon} {meta.label} ({list.length})
-                </p>
-                <ul className="mt-1 space-y-0.5">
-                  {list.map((r) => (
-                    <li key={r.id} className="text-xs text-slate-700 dark:text-slate-300">
-                      <span className="font-semibold">{r.display_name}</span>
-                      {r.comment ? (
-                        <span className="text-slate-400"> — {r.comment}</span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-          {onOpen ? (
+      {expanded ? (
+        <div className="space-y-3 border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
+          <ActivityReactions
+            tripId={tripId}
+            activityId={activity.id}
+            currentUserId={currentUserId}
+            displayName={currentDisplayName}
+            variant="inline"
+            onReactionChange={onReactionChange}
+          />
+          {onOpenDetail ? (
             <button
               type="button"
-              onClick={onOpen}
-              className="text-xs font-bold text-[var(--brand)] hover:underline"
+              onClick={onOpenDetail}
+              className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
             >
-              Ver actividad y cambiar tu respuesta
+              Ver detalle de la actividad
             </button>
           ) : null}
         </div>
@@ -171,6 +190,8 @@ type Props = {
   tripId: string;
   activities: TripActivity[];
   enabled?: boolean;
+  currentUserId?: string | null;
+  currentDisplayName?: string;
   onActivityClick?: (activity: TripActivity) => void;
 };
 
@@ -178,8 +199,11 @@ export default function PlanAttendanceSummary({
   tripId,
   activities,
   enabled = true,
+  currentUserId = null,
+  currentDisplayName = "Yo",
   onActivityClick,
 }: Props) {
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
   const { byActivity, participantCount, tableReady, loading, error, reload } =
     useTripActivityReactions(tripId, enabled);
 
@@ -228,8 +252,11 @@ export default function PlanAttendanceSummary({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Resumen de <strong className="text-slate-900 dark:text-slate-100">¿Te apuntas?</strong> por
-            actividad. Cada persona elige Sí, No o Quizás desde el detalle de la actividad.
+            Pulsa una actividad para desplegarla y elegir{" "}
+            <strong className="text-slate-900 dark:text-slate-100">Sí</strong>,{" "}
+            <strong className="text-slate-900 dark:text-slate-100">No</strong> o{" "}
+            <strong className="text-slate-900 dark:text-slate-100">Quizás</strong>. Puedes cambiar tu
+            respuesta cuando quieras.
           </p>
           {participantCount != null && participantCount > 0 ? (
             <p className="mt-1 text-xs text-slate-500">
@@ -313,7 +340,15 @@ export default function PlanAttendanceSummary({
                       skips: [],
                     }}
                     participantCount={participantCount}
-                    onOpen={onActivityClick ? () => onActivityClick(activity) : undefined}
+                    tripId={tripId}
+                    currentUserId={currentUserId}
+                    currentDisplayName={currentDisplayName}
+                    expanded={expandedActivityId === activity.id}
+                    onToggle={() =>
+                      setExpandedActivityId((prev) => (prev === activity.id ? null : activity.id))
+                    }
+                    onReactionChange={() => void reload()}
+                    onOpenDetail={onActivityClick ? () => onActivityClick(activity) : undefined}
                   />
                 ))}
               </div>

@@ -22,11 +22,16 @@ export function ActivityReactions({
   activityId,
   currentUserId,
   displayName,
+  variant = "card",
+  onReactionChange,
 }: {
   tripId: string;
   activityId: string;
   currentUserId: string | null;
   displayName: string;
+  /** `inline`: botones Sí/No/Quizás sin cabecera (p. ej. pestaña Asistencia). */
+  variant?: "card" | "inline";
+  onReactionChange?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [reactions, setReactions] = useState<Reaction[]>([]);
@@ -76,8 +81,8 @@ export function ActivityReactions({
   }, [load]);
 
   useEffect(() => {
-    if (open) void load();
-  }, [open, load]);
+    if (open || variant === "inline") void load();
+  }, [open, load, variant]);
 
   const myReaction = reactions.find((r) => r.user_id === resolvedUserId);
 
@@ -110,6 +115,7 @@ export function ActivityReactions({
         return;
       }
       await load();
+      onReactionChange?.();
     } catch {
       setVoteError("Error de conexión. Inténtalo de nuevo.");
     } finally {
@@ -128,6 +134,7 @@ export function ActivityReactions({
             { method: "DELETE", credentials: "include" }
           );
           await load();
+          onReactionChange?.();
         } catch {
           setVoteError("No se pudo quitar tu respuesta.");
         } finally {
@@ -145,6 +152,120 @@ export function ActivityReactions({
   for (const r of reactions) counts[r.reaction] = (counts[r.reaction] || 0) + 1;
   const total = reactions.length;
   const joiners = reactions.filter((r) => r.reaction === "join");
+
+  const pickerPanel = (
+    <div
+      className={
+        variant === "inline"
+          ? "space-y-3"
+          : "mt-2.5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5"
+      }
+    >
+      {tableReady === false && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+          ⚠️ Falta la tabla en Supabase. Ejecuta el script{" "}
+          <code className="rounded bg-amber-100 px-1">docs/tripboard_activity_reactions.sql</code> en el SQL Editor y
+          vuelve a probar.
+        </p>
+      )}
+
+      {loading && reactions.length === 0 ? (
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Cargando…
+        </div>
+      ) : (
+        <>
+          {variant === "inline" ? (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">¿Te apuntas?</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(["join", "maybe", "skip"] as const).map((kind) => {
+                  const meta = REACTION_META[kind];
+                  const selected = myReaction?.reaction === kind;
+                  return (
+                    <button
+                      key={kind}
+                      type="button"
+                      disabled={saving || tableReady === false}
+                      onClick={() => void vote(kind)}
+                      className={`inline-flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-2 py-2.5 text-xs font-bold transition disabled:opacity-50 ${
+                        selected
+                          ? "border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand-text)] shadow-sm ring-1 ring-[var(--brand-border)]"
+                          : "border-slate-200 bg-white text-slate-800 hover:border-[var(--brand-border)] hover:bg-slate-50 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-200"
+                      }`}
+                    >
+                      <span className="text-base" aria-hidden>
+                        {meta.icon}
+                      </span>
+                      <span>{meta.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {myReaction ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void handleSelectChange("")}
+                  className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline disabled:opacity-50"
+                >
+                  Quitar mi respuesta
+                </button>
+              ) : null}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" aria-hidden /> : null}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+              <label htmlFor={`rsvp-${activityId}`} className="shrink-0 text-xs font-bold text-slate-700">
+                Tu respuesta
+              </label>
+              <select
+                id={`rsvp-${activityId}`}
+                disabled={saving || tableReady === false}
+                value={myReaction?.reaction ?? ""}
+                onChange={(e) => void handleSelectChange(e.target.value)}
+                className="min-h-[40px] flex-1 cursor-pointer rounded-xl border-2 border-[var(--brand-border)] bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">— Elige una opción —</option>
+                <option value="join">✅ Sí, me apunto</option>
+                <option value="skip">❌ No puedo</option>
+                <option value="maybe">🤔 Quizás</option>
+              </select>
+              {saving && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-400" aria-hidden />}
+            </div>
+          )}
+
+          {voteError ? <p className="text-xs font-semibold text-rose-600">{voteError}</p> : null}
+
+          {reactions.length > 0 ? (
+            <div className={`space-y-2 ${variant === "inline" ? "border-t border-slate-100 pt-3 dark:border-[#1E293B]" : "border-t border-slate-200 pt-2.5"}`}>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Quién va</p>
+              <ul className="space-y-1">
+                {reactions.map((r) => {
+                  const meta = REACTION_META[r.reaction];
+                  return (
+                    <li key={r.id} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <span aria-hidden>{meta.icon}</span>
+                      <span className="font-semibold">{r.display_name}</span>
+                      <span className="text-slate-400">· {meta.label}</span>
+                      {r.comment ? <span className="truncate text-slate-400">— {r.comment}</span> : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">Nadie ha respondido aún. Sé el primero.</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  if (variant === "inline") {
+    return <div>{pickerPanel}</div>;
+  }
 
   return (
     <div>
@@ -184,78 +305,7 @@ export function ActivityReactions({
         </p>
       )}
 
-      {open && (
-        <div className="mt-2.5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5">
-          {tableReady === false && (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
-              ⚠️ Falta la tabla en Supabase. Ejecuta el script{" "}
-              <code className="rounded bg-amber-100 px-1">docs/tripboard_activity_reactions.sql</code> en el SQL Editor y vuelve a probar.
-            </p>
-          )}
-
-          {loading && reactions.length === 0 ? (
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Cargando…
-            </div>
-          ) : (
-            <>
-              {/* Desplegable Sí / No / Quizás */}
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                <label
-                  htmlFor={`rsvp-${activityId}`}
-                  className="shrink-0 text-xs font-bold text-slate-700"
-                >
-                  Tu respuesta
-                </label>
-                <select
-                  id={`rsvp-${activityId}`}
-                  disabled={saving || tableReady === false}
-                  value={myReaction?.reaction ?? ""}
-                  onChange={(e) => void handleSelectChange(e.target.value)}
-                  className="min-h-[40px] flex-1 cursor-pointer rounded-xl border-2 border-[var(--brand-border)] bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">— Elige una opción —</option>
-                  <option value="join">✅ Sí, me apunto</option>
-                  <option value="skip">❌ No puedo</option>
-                  <option value="maybe">🤔 Quizás</option>
-                </select>
-                {saving && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-400" aria-hidden />}
-              </div>
-
-              {voteError && (
-                <p className="text-xs font-semibold text-rose-600">{voteError}</p>
-              )}
-
-              {/* Quién va al plan */}
-              {reactions.length > 0 ? (
-                <div className="space-y-2 border-t border-slate-200 pt-2.5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Quién va
-                  </p>
-                  <ul className="space-y-1">
-                    {reactions.map((r) => {
-                      const meta = REACTION_META[r.reaction];
-                      return (
-                        <li key={r.id} className="flex items-center gap-2 text-xs text-slate-700">
-                          <span aria-hidden>{meta.icon}</span>
-                          <span className="font-semibold">{r.display_name}</span>
-                          <span className="text-slate-400">· {meta.label}</span>
-                          {r.comment ? (
-                            <span className="truncate text-slate-400">— {r.comment}</span>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500">Nadie ha respondido aún. Sé el primero.</p>
-              )}
-            </>
-          )}
-        </div>
-      )}
+      {open ? pickerPanel : null}
     </div>
   );
 }
