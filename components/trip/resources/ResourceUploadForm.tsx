@@ -1,7 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import type { ResourceVisibility } from "@/lib/trip-resources/visibility";
+import { useTripParticipants } from "@/hooks/useTripParticipants";
+import ResourceVisibilityPicker from "@/components/trip/resources/ResourceVisibilityPicker";
 
 type UploadResult = {
   path: string;
@@ -10,6 +13,8 @@ type UploadResult = {
 };
 
 type ResourceUploadFormProps = {
+  tripId: string;
+  currentUserId: string | null;
   saving?: boolean;
   onUpload: (file: File) => Promise<UploadResult>;
   onCreateResource: (input: {
@@ -19,6 +24,8 @@ type ResourceUploadFormProps = {
     upload: UploadResult | null;
     detectedDocumentType?: string | null;
     detectedData?: Record<string, unknown> | null;
+    visibility: ResourceVisibility;
+    visibleToUserIds: string[];
   }) => Promise<void>;
 };
 
@@ -30,19 +37,34 @@ const CATEGORY_OPTIONS = [
   { value: "other", label: "Otro" },
 ];
 
+function titleFromFileName(name: string) {
+  return name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+}
+
 export default function ResourceUploadForm({
+  tripId,
+  currentUserId,
   saving = false,
   onUpload,
   onCreateResource,
 }: ResourceUploadFormProps) {
+  const { participants, loading: loadingParticipants } = useTripParticipants(tripId);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("document");
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [visibility, setVisibility] = useState<ResourceVisibility>("trip");
+  const [visibleToUserIds, setVisibleToUserIds] = useState<string[]>([]);
   const [localError, setLocalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    if (file && !title.trim()) {
+      setTitle(titleFromFileName(file.name));
+    }
+  }, [file, title]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,6 +88,11 @@ export default function ResourceUploadForm({
         return;
       }
 
+      if (visibility === "selected" && visibleToUserIds.length === 0) {
+        setLocalError("Marca al menos un viajero que pueda ver el documento.");
+        return;
+      }
+
       const upload = await onUpload(file);
 
       await onCreateResource({
@@ -75,12 +102,16 @@ export default function ResourceUploadForm({
         upload,
         detectedDocumentType: category === "reservation" ? "manual_reservation_upload" : null,
         detectedData: {},
+        visibility,
+        visibleToUserIds: visibility === "selected" ? visibleToUserIds : [],
       });
 
       setTitle("");
       setCategory("document");
       setNotes("");
       setFile(null);
+      setVisibility("trip");
+      setVisibleToUserIds([]);
       setSuccessMessage("Documento subido correctamente.");
 
       if (fileInputRef.current) {
@@ -88,11 +119,7 @@ export default function ResourceUploadForm({
       }
     } catch (error) {
       console.error("Error subiendo documento:", error);
-      setLocalError(
-        error instanceof Error
-          ? error.message
-          : "No se pudo subir el documento."
-      );
+      setLocalError(error instanceof Error ? error.message : "No se pudo subir el documento.");
     }
   }
 
@@ -106,46 +133,30 @@ export default function ResourceUploadForm({
           </p>
         </div>
 
-        <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800">Título</span>
-          <input
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Reserva Hotel Tours"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800">Categoría</span>
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
-          >
-            {CATEGORY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* D3 — Drag & drop upload zone */}
         <div className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800">Archivo</span>
+          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Archivo</span>
           <div
             className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition ${
-              dragging ? "border-violet-400 bg-violet-50" : file ? "border-emerald-300 bg-emerald-50" : "border-slate-300 bg-slate-50 hover:border-[var(--brand)] hover:bg-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14]"
+              dragging
+                ? "border-violet-400 bg-violet-50"
+                : file
+                  ? "border-emerald-300 bg-emerald-50"
+                  : "border-slate-300 bg-slate-50 hover:border-[var(--brand)] hover:bg-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14]"
             }`}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
             onDragLeave={() => setDragging(false)}
             onDrop={(e) => {
               e.preventDefault();
               setDragging(false);
               const dropped = e.dataTransfer.files?.[0];
-              if (dropped) { setFile(dropped); setLocalError(null); setSuccessMessage(null); }
+              if (dropped) {
+                setFile(dropped);
+                setLocalError(null);
+                setSuccessMessage(null);
+              }
             }}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -165,13 +176,19 @@ export default function ResourceUploadForm({
                 <span className="text-2xl">📄</span>
                 <div className="text-left">
                   <p className="text-sm font-bold text-emerald-800">{file.name}</p>
-                  <p className="text-xs text-emerald-600">{(file.size / 1024).toFixed(0)} KB — listo para subir</p>
+                  <p className="text-xs text-emerald-600">
+                    {(file.size / 1024).toFixed(0)} KB — listo para subir
+                  </p>
                 </div>
               </div>
             ) : (
               <div>
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-[#0F1623] text-2xl shadow-sm">📁</div>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Arrastra aquí o haz clic para seleccionar</p>
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm dark:bg-[#0F1623]">
+                  📁
+                </div>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Arrastra aquí o haz clic para seleccionar
+                </p>
                 <p className="mt-1 text-xs text-slate-400">PDF, imágenes · Máx. 10 MB</p>
               </div>
             )}
@@ -179,11 +196,49 @@ export default function ResourceUploadForm({
         </div>
 
         <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800">Notas</span>
+          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Título</span>
+          <input
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Reserva hotel, billete…"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Categoría</span>
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+          >
+            {CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {!loadingParticipants ? (
+          <ResourceVisibilityPicker
+            visibility={visibility}
+            onVisibilityChange={setVisibility}
+            selectedUserIds={visibleToUserIds}
+            onSelectedUserIdsChange={setVisibleToUserIds}
+            participants={participants}
+            currentUserId={currentUserId}
+            disabled={saving}
+          />
+        ) : null}
+
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notas</span>
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            rows={5}
+            rows={4}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[var(--brand)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           />
         </label>
@@ -200,11 +255,7 @@ export default function ResourceUploadForm({
           </div>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className={btnPrimary}
-        >
+        <button type="submit" disabled={saving} className={btnPrimary}>
           {saving ? "Subiendo documento..." : "Subir documento"}
         </button>
       </form>

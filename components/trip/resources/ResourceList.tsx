@@ -3,6 +3,7 @@
 import type { TripResource } from "@/hooks/useTripResources";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import { resourceVisibilityLabel } from "@/lib/trip-resources/visibility";
 
 export default function ResourceList({
   resources,
@@ -47,8 +48,13 @@ export default function ResourceList({
                     lineClamp={4}
                     className="font-semibold leading-snug text-slate-900"
                   />
-                  <div className="mt-1 break-words text-sm text-slate-500">
-                    {resource.resource_type} {resource.mime_type ? `· ${resource.mime_type}` : ""}
+                  <div className="mt-1 flex flex-wrap items-center gap-2 break-words text-sm text-slate-500">
+                    <span>
+                      {resource.resource_type} {resource.mime_type ? `· ${resource.mime_type}` : ""}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-[#1E293B] dark:text-slate-300">
+                      {resourceVisibilityLabel(resource.visibility)}
+                    </span>
                   </div>
                   {resource.file_url ? (
                     <a

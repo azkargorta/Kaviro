@@ -1,14 +1,14 @@
 /**
- * Extracción híbrida para PDF:
- * 1) pdfjs-dist (principal; fiable en PDFs con diseño complejo)
- * 2) pdf-parse solo en archivos pequeños (pdf-parse puede bloquear el event loop en PDFs grandes)
- * OCR.Space se usa como fallback desde extract-resource-text.ts
+ * Extracción de texto en PDF (servidor):
+ * 1) unpdf — rápido y fiable en Node/Next
+ * 2) pdfjs-dist — respaldo
+ * 3) pdf-parse — solo en archivos pequeños (puede bloquear en PDFs grandes)
  */
 
 const PDF_PARSE_TIMEOUT_MS = 15_000;
-const PDFJS_TIMEOUT_MS = 90_000;
-/** Por encima de este tamaño no usamos pdf-parse (riesgo de bloqueo prolongado). */
+const PDFJS_TIMEOUT_MS = 60_000;
 const PDF_PARSE_MAX_BYTES = 800_000;
+const MIN_GOOD_CHARS = 80;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout: T): Promise<T> {
   return Promise.race([
@@ -17,6 +17,22 @@ function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout: T): Promise<
       setTimeout(() => resolve(onTimeout), ms);
     }),
   ]);
+}
+
+function pickBestText(...candidates: string[]): string {
+  const trimmed = candidates.map((t) => t.trim()).filter(Boolean);
+  if (trimmed.length === 0) return "";
+  return trimmed.sort((a, b) => b.length - a.length)[0] ?? "";
+}
+
+async function tryUnpdf(buffer: Buffer): Promise<string> {
+  try {
+    const { extractText } = await import("unpdf");
+    const result = await extractText(new Uint8Array(buffer), { mergePages: true });
+    return typeof result.text === "string" ? result.text.trim() : "";
+  } catch {
+    return "";
+  }
 }
 
 async function tryPdfParse(buffer: Buffer): Promise<string> {
@@ -57,20 +73,17 @@ async function tryPdfJs(buffer: Buffer): Promise<string> {
   }
 }
 
-function pickBestText(...candidates: string[]): string {
-  const trimmed = candidates.map((t) => t.trim()).filter(Boolean);
-  if (trimmed.length === 0) return "";
-  return trimmed.sort((a, b) => b.length - a.length)[0] ?? "";
-}
-
 export async function extractTextFromPdfWithUnpdf(buffer: Buffer): Promise<string> {
+  const fromUnpdf = await tryUnpdf(buffer);
+  if (fromUnpdf.length >= MIN_GOOD_CHARS) return fromUnpdf;
+
   const fromJs = await withTimeout(tryPdfJs(buffer), PDFJS_TIMEOUT_MS, "");
-  if (fromJs.trim().length >= 80) return fromJs.trim();
+  if (fromJs.length >= MIN_GOOD_CHARS) return fromJs;
 
   if (buffer.length <= PDF_PARSE_MAX_BYTES) {
     const fromParse = await withTimeout(tryPdfParse(buffer), PDF_PARSE_TIMEOUT_MS, "");
-    return pickBestText(fromJs, fromParse);
+    return pickBestText(fromUnpdf, fromJs, fromParse);
   }
 
-  return fromJs.trim();
+  return pickBestText(fromUnpdf, fromJs);
 }

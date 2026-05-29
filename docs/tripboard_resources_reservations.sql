@@ -12,6 +12,8 @@ create table if not exists public.trip_resources (
   detected_document_type text,
   detected_data jsonb default '{}'::jsonb,
   created_by_user_id uuid,
+  visibility text not null default 'trip' check (visibility in ('trip', 'private', 'selected')),
+  visible_to_user_ids uuid[] not null default '{}'::uuid[],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

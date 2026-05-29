@@ -59,7 +59,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const extractedText = (await extractTextFromFileBuffer(buffer, mimeType, fileName)).trim();
+    const clientExtracted =
+      typeof formData.get("extractedText") === "string" ? String(formData.get("extractedText")).trim() : "";
+
+    let extractedText =
+      clientExtracted.length >= 80 ? clientExtracted : (await extractTextFromFileBuffer(buffer, mimeType, fileName)).trim();
     if (extractedText.length < 80) {
       return NextResponse.json(
         {
@@ -85,7 +89,9 @@ export async function POST(request: Request) {
         });
 
       if (!uploadError) {
-        const { data: urlData } = gate.supabase.storage.from("trip-documents").getPublicUrl(storagePath);
+        const { data: signed } = await gate.supabase.storage
+          .from("trip-documents")
+          .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
         const detected_data = mergeExtractedTextIntoDetectedData(
           {
             ...(detected as Record<string, unknown>),
@@ -103,11 +109,13 @@ export async function POST(request: Request) {
             category: "itinerary",
             notes: "Importado desde el asistente personal",
             file_path: storagePath,
-            file_url: urlData.publicUrl ?? null,
+            file_url: signed?.signedUrl ?? null,
             mime_type: mimeType || null,
             detected_document_type: "travel_itinerary",
             detected_data,
             created_by_user_id: gate.access.userId,
+            visibility: "trip",
+            visible_to_user_ids: [],
           })
           .select("id")
           .maybeSingle();

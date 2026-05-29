@@ -140,6 +140,20 @@ export default function TripAiDocumentImportBar({
       formData.append("tripId", tripId);
       formData.append("saveToResources", "1");
 
+      const isPdf =
+        file.type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdf) {
+        try {
+          const { extractTextFromPdfClient } = await import("@/lib/pdfToText");
+          const clientText = (await extractTextFromPdfClient(file)).trim();
+          if (clientText.length >= 80) {
+            formData.append("extractedText", clientText);
+          }
+        } catch {
+          /* el servidor intentará extraer con unpdf */
+        }
+      }
+
       const res = await fetch("/api/trip-ai/import-document", {
         method: "POST",
         body: formData,

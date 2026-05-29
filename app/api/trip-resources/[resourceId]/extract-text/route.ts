@@ -7,6 +7,7 @@ import {
   insufficientExtractedTextMessage,
   mergeExtractedTextIntoDetectedData,
 } from "@/lib/trip-resources/extract-resource-text";
+import { canViewTripResource } from "@/lib/trip-resources/visibility";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
@@ -19,6 +20,9 @@ type ResourceRow = {
   file_url: string | null;
   mime_type: string | null;
   detected_data: Record<string, unknown> | null;
+  visibility?: string | null;
+  visible_to_user_ids?: string[] | null;
+  created_by_user_id?: string | null;
 };
 
 export async function GET(
@@ -51,7 +55,9 @@ export async function GET(
 
     const { data: row, error: rowError } = await gate.supabase
       .from("trip_resources")
-      .select("id, trip_id, title, file_path, file_url, mime_type, detected_data")
+      .select(
+        "id, trip_id, title, file_path, file_url, mime_type, detected_data, visibility, visible_to_user_ids, created_by_user_id"
+      )
       .eq("id", resourceId)
       .eq("trip_id", tripId)
       .maybeSingle();
@@ -60,6 +66,18 @@ export async function GET(
     if (!row) return NextResponse.json({ error: "Documento no encontrado." }, { status: 404 });
 
     const resource = row as ResourceRow;
+
+    const { data: ownerRow } = await gate.supabase
+      .from("trip_participants")
+      .select("user_id")
+      .eq("trip_id", tripId)
+      .eq("role", "owner")
+      .neq("status", "removed")
+      .maybeSingle();
+
+    if (!canViewTripResource(resource, gate.access.userId, { tripOwnerUserId: ownerRow?.user_id ?? null })) {
+      return NextResponse.json({ error: "No tienes permiso para ver este documento." }, { status: 403 });
+    }
     const title = resource.title?.trim() || "Documento";
 
     const cached = getStoredExtractedText(resource.detected_data);

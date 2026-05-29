@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { analyzeTravelDocument, type DetectedDocumentData } from "@/lib/document-analyzer";
 import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
 
@@ -19,6 +18,9 @@ export type TripResource = {
   detected_document_type: string | null;
   detected_data: Record<string, unknown> | null;
   linked_reservation_id: string | null;
+  visibility?: string | null;
+  visible_to_user_ids?: string[] | null;
+  created_by_user_id?: string | null;
   created_at: string;
 };
 
@@ -147,28 +149,25 @@ export function useTripResources(tripId: string) {
         throw new Error("No se ha recibido ningún archivo.");
       }
 
-      const extension = getFileExtension(file.name || "file");
-      const fileName = `${crypto.randomUUID()}.${extension}`;
-      const path = `${tripId}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("trip-documents")
-        .upload(path, file, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: file.type || undefined,
-        });
-
-      if (uploadError) {
-        throw new Error(uploadError.message || "No se pudo subir el archivo a Storage.");
+      const maxBytes = 10 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        throw new Error("El archivo supera el máximo de 10 MB.");
       }
 
-      const { data } = supabase.storage.from("trip-documents").getPublicUrl(path);
+      const formData = new FormData();
+      formData.append("tripId", tripId);
+      formData.append("file", file);
+
+      const payload = await apiRequest<{
+        path: string;
+        publicUrl: string | null;
+        mimeType: string | null;
+      }>("/api/trip-resources/upload", { method: "POST", body: formData }, "subir archivo");
 
       return {
-        path,
-        publicUrl: data.publicUrl ?? null,
-        mimeType: file.type || null,
+        path: payload.path,
+        publicUrl: payload.publicUrl ?? null,
+        mimeType: payload.mimeType || file.type || null,
       };
     },
     [tripId]
@@ -184,6 +183,8 @@ export function useTripResources(tripId: string) {
       detectedData?: Record<string, unknown> | null;
       linkedReservationId?: string | null;
       upload?: ResourceUploadResult | null;
+      visibility?: "trip" | "private" | "selected";
+      visibleToUserIds?: string[];
     }) => {
       setSaving(true);
       setError(null);
@@ -201,6 +202,8 @@ export function useTripResources(tripId: string) {
           detected_document_type: input.detectedDocumentType || null,
           detected_data: input.detectedData || {},
           linked_reservation_id: input.linkedReservationId || null,
+          visibility: input.visibility || "trip",
+          visible_to_user_ids: input.visibleToUserIds || [],
         };
 
         const result = await apiRequest<{ resource: TripResource }>(

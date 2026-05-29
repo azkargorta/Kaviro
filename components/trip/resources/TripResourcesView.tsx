@@ -21,6 +21,8 @@ import ActivityReservationForm from "@/components/trip/resources/ActivityReserva
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
+import { useTripPermissions } from "@/hooks/useTripPermissions";
+import { supabase } from "@/lib/supabase";
 
 function templateFromDetected(data: DetectedDocumentData): ReservationTemplateType {
   if (data.documentType === "hotel_reservation") return "lodging";
@@ -67,6 +69,18 @@ export default function TripResourcesView({
   const [showAnalyzerForm, setShowAnalyzerForm] = useState(false);
   const isDemoTrip = useIsDemoTrip();
   const [showLists, setShowLists] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { participant } = useTripPermissions(tripId);
+
+  useEffect(() => {
+    let mounted = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setCurrentUserId(data.session?.user?.id ?? participant?.user_id ?? null);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [participant?.user_id]);
 
   useEffect(() => {
     if (isDemoTrip) setShowLists(true);
@@ -183,6 +197,8 @@ export default function TripResourcesView({
           {canManageResources && showUploadForm ? (
             <div className="mt-5">
               <ResourceUploadForm
+                tripId={tripId}
+                currentUserId={currentUserId}
                 saving={saving}
                 onUpload={uploadFile}
                 onCreateResource={async (input) => {
@@ -193,6 +209,8 @@ export default function TripResourcesView({
                     upload: input.upload,
                     detectedDocumentType: input.detectedDocumentType || null,
                     detectedData: input.detectedData || {},
+                    visibility: input.visibility,
+                    visibleToUserIds: input.visibleToUserIds,
                   });
                   setShowUploadForm(false);
                 }}

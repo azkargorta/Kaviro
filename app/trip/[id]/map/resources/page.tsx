@@ -1,15 +1,19 @@
-"use client";
-
 import TripResourcesView from "@/components/trip/resources/TripResourcesView";
 import TripTabActions from "@/components/trip/common/TripTabActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
+import { getCachedTripAccess } from "@/lib/trip-access";
+import { createClient } from "@/lib/supabase/server";
+import { getCachedTripPremium } from "@/lib/entitlements";
 
-export default function TripResourcesPage({
+export default async function TripMapResourcesPage({
   params,
 }: {
   params: { id: string };
 }) {
   const tripId = params.id;
+  const access = await getCachedTripAccess(tripId);
+  const supabase = await createClient();
+  const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   return (
     <main className="space-y-6">
@@ -22,7 +26,11 @@ export default function TripResourcesPage({
         actions={<TripTabActions tripId={tripId} />}
       />
 
-      <TripResourcesView tripId={tripId} />
+      <TripResourcesView
+        tripId={tripId}
+        isPremium={isPremium}
+        canManageResources={access.can_manage_resources}
+      />
     </main>
   );
 }
