@@ -19,6 +19,14 @@
     "app/api/trip-ai/execute-plan/route.ts": {
       "maxDuration": 300,
       "memory": 1024
+    },
+    "app/api/trip-ai/import-document/route.ts": {
+      "maxDuration": 120,
+      "memory": 1024
+    },
+    "app/api/trip-resources/[resourceId]/extract-text/route.ts": {
+      "maxDuration": 120,
+      "memory": 1024
     }
   }
 }

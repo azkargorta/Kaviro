@@ -8,6 +8,8 @@ import { extractFirstJsonObject } from "@/lib/ai/llmJson";
 import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { createClient } from "@/lib/supabase/server";
+import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -54,6 +56,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
+    const tripId = typeof formData.get("tripId") === "string" ? String(formData.get("tripId")).trim() : "";
     const provider = typeof formData.get("provider") === "string" ? String(formData.get("provider")) : null;
     const enhance = String(formData.get("enhance") || "").trim() === "1" || process.env.AI_ENHANCE_ANALYSIS === "1";
     const monthKey = monthKeyUtc();
@@ -62,20 +65,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falta el archivo" }, { status: 400 });
     }
 
-    // Premium required: OCR/IA = coste. En plan gratis, 0 gasto.
+    // Premium: por viaje (asistente) o cuenta global (Recursos).
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select("is_premium")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (!Boolean((profileRow as any)?.is_premium)) {
+
+    let premiumOk = false;
+    if (tripId) {
+      const gate = await requireTripAccessApi(tripId);
+      if (!gate.ok) return gate.response;
+      premiumOk = await isPremiumEnabledForTrip({
+        supabase: gate.supabase,
+        userId: gate.access.userId,
+        tripId,
+      });
+    } else {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("is_premium")
+        .eq("id", user.id)
+        .maybeSingle();
+      premiumOk = Boolean((profileRow as { is_premium?: boolean } | null)?.is_premium);
+    }
+    if (!premiumOk) {
       return NextResponse.json(
-        { error: "Necesitas Premium para analizar documentos con el asistente personal.", code: "PREMIUM_REQUIRED" },
+        {
+          error: tripId
+            ? "Premium requerido en este viaje para analizar documentos."
+            : "Necesitas Premium para analizar documentos con el asistente personal.",
+          code: "PREMIUM_REQUIRED",
+        },
         { status: 402 }
       );
     }
@@ -140,6 +161,7 @@ export async function POST(request: Request) {
       ok: true,
       fileName,
       mimeType,
+      extractedText,
       extractedTextLength: extractedText.length,
       ocrSpaceEnabled: isOcrSpaceConfigured(),
       detected,

@@ -34,6 +34,7 @@ import TravelSearchOffersCard from "@/components/trip/ai/TravelSearchOffersCard"
 import { formatItineraryDayOneLine } from "@/lib/plan-activity-meta";
 import { dispatchTripPlanRefresh } from "@/lib/trip-plan-events";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
+import TripAiDocumentImportBar from "@/components/trip/ai/TripAiDocumentImportBar";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
@@ -1994,6 +1995,25 @@ export default function TripAiChatView({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {isPremium && !aiBudgetExceeded ? (
+        <TripAiDocumentImportBar
+          tripId={tripId}
+          disabled={loading || executingPlan}
+          busy={importingItineraryCards}
+          defaultExpanded={mode === "planning" || layout === "drawer"}
+          onStatus={(msg) => setInfo(msg)}
+          onGenerateFromText={async (sourceText, hint) => {
+            const draft = await runImportItineraryCards(sourceText, hint);
+            if (!draft) return null;
+            setItineraryDraft(draft);
+            setItinerarySelected(collectItineraryItemKeys(draft));
+            setExpandedDay(draft.days[0]?.day ?? null);
+            setItineraryFullscreenReview(true);
+            return draft;
+          }}
+        />
       ) : null}
 
       {importingItineraryCards ? (
