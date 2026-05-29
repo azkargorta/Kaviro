@@ -42,6 +42,7 @@ import {
   countItineraryItems,
   filterItineraryBySelection,
   isItineraryImportIncomplete,
+  isItineraryImportSufficient,
   itineraryItemKey,
   buildItineraryImportSource,
   looksLikeAssistantItineraryText,
@@ -67,6 +68,8 @@ type TripAiChatLayout = "page" | "drawer";
 
 const IMPORT_FULL_TIMEOUT_MS = 300_000;
 const IMPORT_CHUNK_TIMEOUT_MS = 180_000;
+/** Tramos en paralelo (2) para acortar «Generar tarjetas» sin saturar la IA. */
+const IMPORT_CHUNK_CONCURRENCY = 2;
 const EXECUTE_DAY_TIMEOUT_MS = 240_000;
 
 async function fetchJsonWithTimeout(
@@ -760,38 +763,63 @@ export default function TripAiChatView({
 
       try {
         if (useClientChunks) {
-          const total = sections.length;
-          for (let i = 0; i < sections.length; i++) {
-            const section = sections[i]!;
-            if (!section.body.trim()) continue;
-            setImportProgress({ current: i + 1, total, label: section.header });
-            setInfo(`Generando tarjetas: tramo ${i + 1} de ${total} (${section.header})…`);
-            const { res, payload } = await fetchJsonWithTimeout(
-              "/api/trip-ai/import-itinerary",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({
-                  tripId,
-                  sourceText: section.body,
-                  singleChunk: true,
-                  chunkLabel: section.header,
-                }),
-              },
-              IMPORT_CHUNK_TIMEOUT_MS
-            );
-            if (!res.ok || !payload?.itinerary) {
-              continue;
-            }
-            mergedParts.push(payload.itinerary as ItineraryPayload);
+          const activeSections = sections.filter((s) => s.body.trim());
+          const total = activeSections.length;
+          let completed = 0;
+
+          const flushPartial = () => {
+            if (!mergedParts.length) return;
             const partial = mergeImportedItineraries(mergedParts);
             setItineraryDraft(partial);
             setItinerarySelected(collectItineraryItemKeys(partial));
             if (expandedDay == null && partial.days[0]) {
               setExpandedDay(partial.days[0]!.day);
             }
+          };
+
+          for (let i = 0; i < activeSections.length; i += IMPORT_CHUNK_CONCURRENCY) {
+            const batch = activeSections.slice(i, i + IMPORT_CHUNK_CONCURRENCY);
+            setImportProgress({ current: completed + 1, total, label: batch.map((s) => s.header).join(" · ") });
+            setInfo(
+              `Generando tarjetas: tramos ${completed + 1}–${Math.min(completed + batch.length, total)} de ${total}…`
+            );
+            const chunkResults = await Promise.all(
+              batch.map(async (section) => {
+                const { res, payload } = await fetchJsonWithTimeout(
+                  "/api/trip-ai/import-itinerary",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                      tripId,
+                      sourceText: section.body,
+                      singleChunk: true,
+                      chunkLabel: section.header,
+                    }),
+                  },
+                  IMPORT_CHUNK_TIMEOUT_MS
+                );
+                if (!res.ok || !payload?.itinerary) return null;
+                return payload.itinerary as ItineraryPayload;
+              })
+            );
+            for (const part of chunkResults) {
+              if (part) mergedParts.push(part);
+            }
+            completed += batch.length;
+            setImportProgress({ current: completed, total, label: batch[batch.length - 1]!.header });
+            flushPartial();
           }
+
+          const mergedDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
+          if (mergedDraft && isItineraryImportSufficient(mergedDraft, text)) {
+            setInfo(
+              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
+            );
+            return mergedDraft;
+          }
+
           if (!mergedParts.length) {
             setInfo("Reintentando importación completa…");
             const { res: fullRes, payload: fullPayload } = await fetchJsonWithTimeout(

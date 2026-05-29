@@ -149,3 +149,40 @@ export function isItineraryImportIncomplete(
   if (expected >= 5 && got < expected * 0.45) return true;
   return expected >= 3 && got < Math.min(expected, got + 2);
 }
+
+/** True si el borrador ya cubre bien el texto (evita reintentos lentos). */
+export function isItineraryImportSufficient(
+  draft: ItineraryDraftPayload,
+  sourceText: string
+): boolean {
+  if (!isItineraryImportIncomplete(draft, sourceText)) return true;
+  const got = countItineraryItems(draft);
+  const expected = estimateMinActivitiesFromSource(sourceText);
+  if (expected >= 6 && got >= Math.floor(expected * 0.72)) return true;
+  if (expected >= 3 && got >= Math.max(expected - 2, Math.floor(expected * 0.85))) return true;
+  return false;
+}
+
+/** Ejecuta tareas con concurrencia limitada (p. ej. importar tramos en paralelo). */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (!items.length) return [];
+  const limit = Math.max(1, Math.min(concurrency, items.length));
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  async function runWorker() {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) break;
+      results[index] = await worker(items[index]!, index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, () => runWorker()));
+  return results;
+}

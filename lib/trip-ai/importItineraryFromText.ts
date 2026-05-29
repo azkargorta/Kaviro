@@ -5,8 +5,9 @@ import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAn
 import {
   countItineraryItems,
   estimateMinActivitiesFromSource,
-  isItineraryImportIncomplete,
+  isItineraryImportSufficient,
   looksLikePastedItineraryImport,
+  mapWithConcurrency,
   normalizeItineraryItem,
 } from "@/lib/trip-ai/itineraryDraftUtils";
 import {
@@ -151,7 +152,7 @@ export function splitSourceByDaySections(sourceText: string): Array<{ header: st
 /** Si no hay «DÍA N», parte por líneas con hora (12.00h-, 15.55h-, etc.). */
 export function splitSourceByTimeSlots(
   sourceText: string,
-  slotsPerChunk = 6
+  slotsPerChunk = 8
 ): Array<{ header: string; body: string }> {
   const lines = sourceText.split(/\n/);
   const segments: string[][] = [];
@@ -251,15 +252,17 @@ async function importByChunks(
   const sections = splitSourceForImport(sourceText);
   if (sections.length < 2) return null;
 
-  const merged: ExecutableItineraryPayload[] = [];
-  for (const section of sections) {
-    if (!section.body.trim()) continue;
+  const active = sections.filter((s) => s.body.trim());
+  const parts = await mapWithConcurrency(active, 2, async (section) => {
     try {
-      const part = await importChunk(tripSummary, section.body, section.header, usageAgg);
-      if (part?.days?.length) merged.push(part);
+      return await importChunk(tripSummary, section.body, section.header, usageAgg);
     } catch {
-      // omitir tramo fallido
+      return null;
     }
+  });
+  const merged: ExecutableItineraryPayload[] = [];
+  for (const part of parts) {
+    if (part?.days?.length) merged.push(part);
   }
   if (!merged.length) return null;
   const itinerary = mergeImportedItineraries(merged);
@@ -311,7 +314,16 @@ export async function importItineraryFromText(params: {
   if (useChunkedFirst) {
     try {
       const chunked = await importByChunks(tripSummary, sourceText, usageAgg);
-      if (chunked) candidates.push(chunked);
+      if (chunked) {
+        if (isItineraryImportSufficient(chunked, sourceText)) {
+          const total = countItineraryItems(chunked);
+          return finish(
+            chunked,
+            `Itinerario importado por tramos (${chunked.days.length} días, ${total} actividades).`
+          );
+        }
+        candidates.push(chunked);
+      }
     } catch {
       // sigue
     }
