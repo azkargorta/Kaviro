@@ -116,7 +116,11 @@ export default async function DashboardPage() {
       .select("is_premium, demo_trip_id, demo_onboarding_completed_at, demo_onboarding_skipped_at")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase.from("trip_participants").select("trip_id, is_favorite, joined_via").eq("user_id", user.id),
+    supabase
+      .from("trip_participants")
+      .select("trip_id, is_favorite, joined_via")
+      .eq("user_id", user.id)
+      .neq("status", "removed"),
   ]);
 
   const existingDemoProfile = profileRow

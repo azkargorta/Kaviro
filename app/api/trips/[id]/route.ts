@@ -7,6 +7,36 @@ export const maxDuration = 60;
 
 const DESC_MAX = 10_000;
 
+type ParticipantGuardRow = {
+  role: string | null;
+  can_manage_trip: boolean | null;
+  status?: string | null;
+};
+
+function canManageTripRow(row: ParticipantGuardRow) {
+  const role = normalizeRole(row.role);
+  return role === "owner" || Boolean(row.can_manage_trip);
+}
+
+async function loadParticipantRowsForUser(supabase: Awaited<ReturnType<typeof createClient>>, tripId: string, userId: string) {
+  const { data, error } = await supabase
+    .from("trip_participants")
+    .select(
+      "role, can_manage_trip, can_manage_plan, can_manage_participants, can_manage_expenses, can_manage_map, can_manage_resources, status"
+    )
+    .eq("trip_id", tripId)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ParticipantGuardRow[];
+}
+
+function pickParticipantRow(rows: ParticipantGuardRow[], options?: { allowRemovedOwner?: boolean }) {
+  const active = rows.filter((r) => String(r.status || "active").toLowerCase() !== "removed");
+  const pool = active.length ? active : options?.allowRemovedOwner ? rows : [];
+  if (!pool.length) return null;
+  return pool.find((r) => normalizeRole(r.role) === "owner") ?? pool[0]!;
+}
+
 async function requireCanManageTrip(tripId: string) {
   const supabase = await createClient();
   const {
@@ -16,20 +46,38 @@ async function requireCanManageTrip(tripId: string) {
   if (userError) throw new Error(userError.message);
   if (!user) return { ok: false as const, status: 401, error: "No autenticado." };
 
-  const { data: participant, error: participantError } = await supabase
-    .from("trip_participants")
-    .select(
-      "role, can_manage_trip, can_manage_plan, can_manage_participants, can_manage_expenses, can_manage_map, can_manage_resources"
-    )
-    .eq("trip_id", tripId)
-    .eq("user_id", user.id)
-    .neq("status", "removed")
-    .maybeSingle();
-  if (participantError) throw new Error(participantError.message);
+  const rows = await loadParticipantRowsForUser(supabase, tripId, user.id);
+  const participant = pickParticipantRow(rows);
   if (!participant) return { ok: false as const, status: 403, error: "Sin acceso al viaje." };
 
-  const can = participant.role === "owner" || Boolean(participant.can_manage_trip);
-  if (!can) return { ok: false as const, status: 403, error: "No tienes permisos para editar el viaje." };
+  if (!canManageTripRow(participant)) {
+    return { ok: false as const, status: 403, error: "No tienes permisos para editar el viaje." };
+  }
+
+  return { ok: true as const, supabase };
+}
+
+/** Eliminar viaje: owner activo o owner aunque conste removed (listados huérfanos). */
+async function requireCanDeleteTrip(tripId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) throw new Error(userError.message);
+  if (!user) return { ok: false as const, status: 401, error: "No autenticado." };
+
+  const rows = await loadParticipantRowsForUser(supabase, tripId, user.id);
+  const participant =
+    pickParticipantRow(rows) ?? pickParticipantRow(rows, { allowRemovedOwner: true });
+
+  if (!participant) {
+    return { ok: false as const, status: 403, error: "Sin acceso al viaje." };
+  }
+
+  if (!canManageTripRow(participant)) {
+    return { ok: false as const, status: 403, error: "No tienes permisos para eliminar el viaje." };
+  }
 
   return { ok: true as const, supabase };
 }
@@ -151,12 +199,21 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     const { id: tripId } = await context.params;
     if (!tripId) return NextResponse.json({ error: "Falta id" }, { status: 400 });
 
-    const guard = await requireCanManageTrip(tripId);
+    const guard = await requireCanDeleteTrip(tripId);
     if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
     const supabase = guard.supabase;
 
-    const { error } = await supabase.from("trips").delete().eq("id", tripId);
+    const { data: deleted, error } = await supabase.from("trips").delete().eq("id", tripId).select("id");
     if (error) throw new Error(error.message);
+    if (!deleted?.length) {
+      return NextResponse.json(
+        {
+          error:
+            "No se pudo eliminar el viaje. Si eres el organizador, contacta con soporte: puede faltar permiso en la base de datos.",
+        },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {

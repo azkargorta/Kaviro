@@ -4,11 +4,12 @@ import { requireTripAccessApi } from "@/lib/trip-access-api";
 import {
   extractTextFromFileBuffer,
   getStoredExtractedText,
+  insufficientExtractedTextMessage,
   mergeExtractedTextIntoDetectedData,
 } from "@/lib/trip-resources/extract-resource-text";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 type ResourceRow = {
   id: string;
@@ -112,8 +113,7 @@ export async function GET(
     if (extractedText.length < 80) {
       return NextResponse.json(
         {
-          error:
-            "No se extrajo suficiente texto del documento (PDF escaneado o imagen poco legible). Prueba otro archivo o pega el itinerario en el chat.",
+          error: insufficientExtractedTextMessage(extractedText.length),
           charCount: extractedText.length,
         },
         { status: 422 }

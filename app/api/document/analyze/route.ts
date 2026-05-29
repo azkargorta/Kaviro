@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { extractTextFromPdfWithUnpdf } from "@/lib/server/pdf-engine";
-import { extractTextFromImageBuffer } from "@/lib/server/document-ocr";
-import { extractTextWithOcrSpace, isOcrSpaceConfigured } from "@/lib/server/ocr-space";
+import { extractTextFromFileBuffer } from "@/lib/trip-resources/extract-resource-text";
+import { isOcrSpaceConfigured } from "@/lib/server/ocr-space";
 import { analyzeDocumentText } from "@/lib/document-analyzer";
 import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { extractFirstJsonObject } from "@/lib/ai/llmJson";
@@ -12,45 +11,7 @@ import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { requireTripAccessApi } from "@/lib/trip-access-api";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
-
-async function extractTextFromPdfBuffer(
-  buffer: Buffer,
-  options?: { fileName?: string | null; mimeType?: string | null }
-): Promise<string> {
-  // En Vercel/producción, algunas librerías de PDF pueden intentar cargar dependencias nativas (canvas)
-  // y provocar cortes de conexión. Si OCR.Space está disponible, lo priorizamos para mantener estabilidad.
-  const isProd = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
-  if (isProd && isOcrSpaceConfigured()) {
-    const ocrText = await extractTextWithOcrSpace({
-      buffer,
-      fileName: options?.fileName,
-      mimeType: options?.mimeType || "application/pdf",
-    });
-    if (ocrText.trim()) return ocrText.trim();
-  }
-
-  const parsedText = await extractTextFromPdfWithUnpdf(buffer);
-  if (parsedText.trim()) return parsedText.trim();
-
-  if (isOcrSpaceConfigured()) {
-    const ocrText = await extractTextWithOcrSpace({
-      buffer,
-      fileName: options?.fileName,
-      mimeType: options?.mimeType || "application/pdf",
-    });
-    if (ocrText.trim()) return ocrText.trim();
-  }
-
-  return "";
-}
-
-async function extractTextFromImage(
-  buffer: Buffer,
-  options?: { fileName?: string | null; mimeType?: string | null }
-): Promise<string> {
-  return extractTextFromImageBuffer(buffer, options);
-}
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
@@ -106,19 +67,7 @@ export async function POST(request: Request) {
     const mimeType = file.type || "";
     const fileName = file.name || "";
 
-    let extractedText = "";
-
-    if (mimeType.includes("pdf") || fileName.toLowerCase().endsWith(".pdf")) {
-      extractedText = await extractTextFromPdfBuffer(buffer, {
-        fileName,
-        mimeType: mimeType || "application/pdf",
-      });
-    } else if (mimeType.startsWith("image/")) {
-      extractedText = await extractTextFromImage(buffer, {
-        fileName,
-        mimeType,
-      });
-    }
+    const extractedText = await extractTextFromFileBuffer(buffer, mimeType, fileName);
 
     const detected = analyzeDocumentText(extractedText, fileName);
 

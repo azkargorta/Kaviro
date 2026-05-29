@@ -50,6 +50,7 @@ export async function requireTripAccess(
     )
     .eq("trip_id", tripId)
     .eq("user_id", user.id)
+    .neq("status", "removed")
     .maybeSingle();
 
   if (error) {
@@ -111,6 +112,7 @@ export async function getTripAccessForApi(
     )
     .eq("trip_id", tripId)
     .eq("user_id", user.id)
+    .neq("status", "removed")
     .maybeSingle();
 
   if (error) {

@@ -4,11 +4,12 @@ import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { analyzeDocumentText } from "@/lib/document-analyzer";
 import {
   extractTextFromFileBuffer,
+  insufficientExtractedTextMessage,
   mergeExtractedTextIntoDetectedData,
 } from "@/lib/trip-resources/extract-resource-text";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 function fileExtension(fileName: string) {
   const parts = fileName.split(".");
@@ -62,8 +63,7 @@ export async function POST(request: Request) {
     if (extractedText.length < 80) {
       return NextResponse.json(
         {
-          error:
-            "No se extrajo suficiente texto. Si es un PDF escaneado, prueba una imagen más nítida o pega el itinerario en el chat.",
+          error: insufficientExtractedTextMessage(extractedText.length),
           charCount: extractedText.length,
         },
         { status: 422 }

@@ -1,7 +1,7 @@
 {
   "functions": {
     "app/api/document/analyze/route.ts": {
-      "maxDuration": 60,
+      "maxDuration": 120,
       "memory": 1024
     },
     "app/api/expense/analyze/route.ts": {
@@ -21,11 +21,11 @@
       "memory": 1024
     },
     "app/api/trip-ai/import-document/route.ts": {
-      "maxDuration": 120,
+      "maxDuration": 180,
       "memory": 1024
     },
     "app/api/trip-resources/[resourceId]/extract-text/route.ts": {
-      "maxDuration": 120,
+      "maxDuration": 180,
       "memory": 1024
     }
   }

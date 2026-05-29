@@ -15,33 +15,37 @@ export function getStoredExtractedText(detectedData: Record<string, unknown> | n
   return "";
 }
 
+export function insufficientExtractedTextMessage(charCount: number): string {
+  const base =
+    "No se extrajo suficiente texto del documento. Si es un PDF escaneado, prueba una imagen más nítida o pega el itinerario en el chat.";
+  if (charCount > 0) {
+    return `${base} (solo ${charCount} caracteres legibles).`;
+  }
+  if (!isOcrSpaceConfigured()) {
+    return `${base} Para PDFs escaneados en servidor, configura OCR_SPACE_API_KEY.`;
+  }
+  return base;
+}
+
 async function extractTextFromPdfBuffer(
   buffer: Buffer,
   options?: { fileName?: string | null; mimeType?: string | null }
 ): Promise<string> {
-  const isProd = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
-  if (isProd && isOcrSpaceConfigured()) {
-    const ocrText = await extractTextWithOcrSpace({
-      buffer,
-      fileName: options?.fileName,
-      mimeType: options?.mimeType || "application/pdf",
-    });
-    if (ocrText.trim()) return ocrText.trim();
-  }
-
-  const parsedText = await extractTextFromPdfWithUnpdf(buffer);
-  if (parsedText.trim()) return parsedText.trim();
+  const parsedText = (await extractTextFromPdfWithUnpdf(buffer)).trim();
+  if (parsedText.length >= MIN_USABLE_TEXT) return parsedText;
 
   if (isOcrSpaceConfigured()) {
-    const ocrText = await extractTextWithOcrSpace({
-      buffer,
-      fileName: options?.fileName,
-      mimeType: options?.mimeType || "application/pdf",
-    });
-    if (ocrText.trim()) return ocrText.trim();
+    const ocrText = (
+      await extractTextWithOcrSpace({
+        buffer,
+        fileName: options?.fileName,
+        mimeType: options?.mimeType || "application/pdf",
+      })
+    ).trim();
+    if (ocrText.length > parsedText.length) return ocrText;
   }
 
-  return "";
+  return parsedText;
 }
 
 /** Extrae texto de un PDF o imagen en memoria (misma lógica que `/api/document/analyze`). */

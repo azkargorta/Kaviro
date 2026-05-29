@@ -1,9 +1,24 @@
 /**
  * Extracción híbrida para PDF:
- * 1) pdf-parse
- * 2) pdfjs-dist
- * 3) si el PDF sigue sin texto, route.ts puede usar OCR.Space como fallback
+ * 1) pdfjs-dist (principal; fiable en PDFs con diseño complejo)
+ * 2) pdf-parse solo en archivos pequeños (pdf-parse puede bloquear el event loop en PDFs grandes)
+ * OCR.Space se usa como fallback desde extract-resource-text.ts
  */
+
+const PDF_PARSE_TIMEOUT_MS = 15_000;
+const PDFJS_TIMEOUT_MS = 90_000;
+/** Por encima de este tamaño no usamos pdf-parse (riesgo de bloqueo prolongado). */
+const PDF_PARSE_MAX_BYTES = 800_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      setTimeout(() => resolve(onTimeout), ms);
+    }),
+  ]);
+}
+
 async function tryPdfParse(buffer: Buffer): Promise<string> {
   try {
     const mod: any = await import("pdf-parse");
@@ -18,11 +33,12 @@ async function tryPdfParse(buffer: Buffer): Promise<string> {
 
 async function tryPdfJs(buffer: Buffer): Promise<string> {
   try {
-    // Nota: en algunos entornos serverless pdfjs-dist puede dar problemas si intenta cargar dependencias nativas.
-    // Aun así, lo intentamos como fallback; si falla, el catch devolverá "".
-
     const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer) });
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      disableFontFace: true,
+      useSystemFonts: true,
+    });
     const pdf = await loadingTask.promise;
 
     const pages: string[] = [];
@@ -41,12 +57,20 @@ async function tryPdfJs(buffer: Buffer): Promise<string> {
   }
 }
 
+function pickBestText(...candidates: string[]): string {
+  const trimmed = candidates.map((t) => t.trim()).filter(Boolean);
+  if (trimmed.length === 0) return "";
+  return trimmed.sort((a, b) => b.length - a.length)[0] ?? "";
+}
+
 export async function extractTextFromPdfWithUnpdf(buffer: Buffer): Promise<string> {
-  const first = await tryPdfParse(buffer);
-  if (first.trim()) return first.trim();
+  const fromJs = await withTimeout(tryPdfJs(buffer), PDFJS_TIMEOUT_MS, "");
+  if (fromJs.trim().length >= 80) return fromJs.trim();
 
-  const second = await tryPdfJs(buffer);
-  if (second.trim()) return second.trim();
+  if (buffer.length <= PDF_PARSE_MAX_BYTES) {
+    const fromParse = await withTimeout(tryPdfParse(buffer), PDF_PARSE_TIMEOUT_MS, "");
+    return pickBestText(fromJs, fromParse);
+  }
 
-  return "";
+  return fromJs.trim();
 }
