@@ -52,6 +52,10 @@ import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import type { TripActivitiesInitial } from "@/hooks/useTripActivities";
 import type { PlanTripParticipant } from "@/lib/plan-trip-participants";
 import { resolveCreatePlanDate } from "@/lib/plan-create-defaults";
+import {
+  KAVIRO_TRIP_PLAN_REFRESH_EVENT,
+  type TripPlanRefreshDetail,
+} from "@/lib/trip-plan-events";
 
 const COMMON_KIND_ICONS: Array<{ emoji: string; label: string }> = [
   { emoji: "📍", label: "Visita" },
@@ -296,7 +300,23 @@ export default function TripPlanView({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detailActivity, setDetailActivity] = useState<TripActivity | null>(null);
   const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
+  const [plansAddedNotice, setPlansAddedNotice] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  useEffect(() => {
+    function onPlanRefresh(event: Event) {
+      const detail = (event as CustomEvent<TripPlanRefreshDetail>).detail;
+      if (!detail?.tripId || detail.tripId !== tripId) return;
+      if (detail.plansAdded && detail.plansAdded > 0) {
+        setPlansAddedNotice(
+          detail.message ||
+            `${detail.plansAdded} plan${detail.plansAdded === 1 ? "" : "es"} añadido${detail.plansAdded === 1 ? "" : "s"} al viaje.`
+        );
+      }
+    }
+    window.addEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+    return () => window.removeEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+  }, [tripId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -650,6 +670,19 @@ export default function TripPlanView({
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      ) : null}
+      {plansAddedNotice ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
+          <p className="font-semibold">Planes añadidos</p>
+          <p className="mt-1 text-emerald-900/90 dark:text-emerald-200/90">{plansAddedNotice}</p>
+          <button
+            type="button"
+            onClick={() => setPlansAddedNotice(null)}
+            className="mt-2 text-xs font-semibold text-emerald-800 underline underline-offset-2 dark:text-emerald-300"
+          >
+            Entendido
+          </button>
         </div>
       ) : null}
       {!canManagePlan ? <TripReadOnlyBanner moduleLabel="el plan del viaje" /> : null}

@@ -4,8 +4,10 @@ import {
   alignItemsToSectionSchedule,
   countScheduleLinesInText,
   fillItineraryDatesFromTripSummary,
+  looksLikeAgencyWeekdayCalendar,
   mergeImportedItineraries,
   normalizeChunkImportResult,
+  parseAgencyCalendarItinerary,
   parseDayOfMonthFromCalendarHeader,
   parseScheduleSlotsFromSection,
   resolveDayOfMonthInTripRange,
@@ -19,6 +21,7 @@ import {
   ARGENTINA_STRIPES_CALENDAR,
   ARGENTINA_TRIP_SUMMARY,
 } from "@/lib/trip-ai/argentinaStripesFixture";
+import { countItineraryItems } from "@/lib/trip-ai/itineraryDraftUtils";
 
 const ARGENTINA_SAMPLE = [
   "CALENDARIO TRIP TO ARGENTINA 2026",
@@ -49,6 +52,27 @@ const ARGENTINA_SAMPLE = [
   "MARTES 8",
   "16.15h LLEGADA A T1, RECOGER MALETAS",
 ].join("\n");
+
+describe("parseAgencyCalendarItinerary", () => {
+  it("detecta calendario Stripes y genera 12 días sin inflar paradas", () => {
+    expect(looksLikeAgencyWeekdayCalendar(ARGENTINA_STRIPES_CALENDAR)).toBe(true);
+    const parsed = parseAgencyCalendarItinerary(ARGENTINA_STRIPES_CALENDAR, ARGENTINA_TRIP_SUMMARY);
+    expect(parsed).toBeTruthy();
+    expect(parsed!.days).toHaveLength(12);
+    expect(countItineraryItems(parsed!)).toBe(countScheduleLinesInText(ARGENTINA_STRIPES_CALENDAR));
+
+    const day7 = parsed!.days.find((d) => d.date === "2026-12-07");
+    expect(day7?.items).toHaveLength(5);
+    expect(day7?.items?.map((it) => it.start_time)).toEqual([
+      "08:00",
+      "11:30",
+      "16:00",
+      "16:30",
+      "18:55",
+    ]);
+    expect(day7?.items?.some((it) => /calafate|imago/i.test(it.title))).toBe(false);
+  });
+});
 
 describe("splitSourceByDaySections", () => {
   it("devuelve un solo bloque si no hay encabezados DÍA", () => {

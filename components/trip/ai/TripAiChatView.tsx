@@ -36,6 +36,7 @@ import { dispatchTripPlanRefresh } from "@/lib/trip-plan-events";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import TripAiDocumentImportBar from "@/components/trip/ai/TripAiDocumentImportBar";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import { useToast } from "@/components/ui/toast";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
 import {
@@ -53,7 +54,10 @@ import {
 } from "@/lib/trip-ai/itineraryDraftUtils";
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
+  alignItineraryDatesForImport,
+  looksLikeAgencyWeekdayCalendar,
   mergeImportedItineraries,
+  parseAgencyCalendarItinerary,
   sanitizeItineraryBySourceSections,
   splitSourceForImport,
 } from "@/lib/trip-ai/importItineraryFromText";
@@ -600,6 +604,7 @@ export default function TripAiChatView({
   }, [trip?.destination, trip?.start_date, trip?.end_date, participants?.length]);
   const { activities: tripPlanActivities, reload: reloadTripPlanActivities, loading: tripPlanActivitiesLoading } =
     useTripActivities(tripId, undefined, { subscribeRealtime: false });
+  const toast = useToast();
 
   const hasAnyPlans = useMemo(() => (tripPlanActivities?.length || 0) > 0, [tripPlanActivities]);
   const hasAnyLodging = useMemo(() => {
@@ -733,17 +738,25 @@ export default function TripAiChatView({
             routesNote = payload.routesNote;
           }
         }
-        const actMsg = `${totalCreated} actividades`;
-        const routeMsg = totalRoutes > 0 ? ` y ${totalRoutes} rutas en el mapa` : "";
-        setInfo([`Plan ejecutado: ${actMsg}${routeMsg}.`, routesNote].filter(Boolean).join(" "));
+        const actMsg =
+          totalCreated === 1 ? "1 plan añadido al viaje" : `${totalCreated} planes añadidos al viaje`;
+        const routeMsg = totalRoutes > 0 ? ` · ${totalRoutes} ruta${totalRoutes === 1 ? "" : "s"} en el mapa` : "";
+        const successMessage = [routesNote, `${actMsg}${routeMsg}.`].filter(Boolean).join(" ");
+        toast.success("Planes añadidos", successMessage);
+        setInfo(successMessage);
+        setItineraryFullscreenReview(false);
         setItineraryDraft(null);
         setItinerarySelected(new Set());
         setExpandedDay(null);
-        dispatchTripPlanRefresh(tripId, { closeAssistant: layout === "drawer" });
+        dispatchTripPlanRefresh(tripId, {
+          closeAssistant: layout === "drawer",
+          plansAdded: totalCreated,
+          message: successMessage,
+        });
         dispatchTripOnboardingRefresh(tripId);
         router.refresh();
-        void reloadTrip();
-        void reloadTripPlanActivities();
+        await reloadTripPlanActivities();
+        await reloadTrip();
       } catch (e) {
         const raw = e instanceof Error ? e.message : "No se pudo ejecutar el plan.";
         const isAbort = e instanceof Error && e.name === "AbortError";
@@ -763,7 +776,7 @@ export default function TripAiChatView({
         setExecuteProgress(null);
       }
     },
-    [itineraryDraft, itinerarySelected, tripId, layout, reloadTrip, reloadTripPlanActivities, router]
+    [itineraryDraft, itinerarySelected, tripId, layout, reloadTrip, reloadTripPlanActivities, router, toast]
   );
 
   const runImportItineraryCards = useCallback(
@@ -784,7 +797,27 @@ export default function TripAiChatView({
           ? `Viaje: ${trip?.name || "Viaje"} | Fechas: ${trip.start_date} → ${trip.end_date}`
           : "";
 
+      const finalizeImportDraft = (draft: ItineraryPayload): ItineraryPayload => {
+        if (!tripSummaryForImport) return draft;
+        return sanitizeItineraryBySourceSections(
+          alignItineraryDatesForImport(draft, tripSummaryForImport, text),
+          text,
+          tripSummaryForImport
+        );
+      };
+
       try {
+        if (tripSummaryForImport && looksLikeAgencyWeekdayCalendar(text)) {
+          const fast = parseAgencyCalendarItinerary(text, tripSummaryForImport);
+          if (fast && fast.days.length >= 2) {
+            const ready = finalizeImportDraft(fast);
+            setInfo(
+              `Tarjetas listas (${ready.days.length} días, ${countItineraryItems(ready)} actividades). Revisa y pulsa «Añadir».`
+            );
+            return ready;
+          }
+        }
+
         if (useClientChunks) {
           const activeSections = sections.filter((s) => s.body.trim());
           const total = activeSections.length;
@@ -812,7 +845,9 @@ export default function TripAiChatView({
 
           const flushPartial = () => {
             if (!mergedParts.length) return;
-            const partial = mergeImportedItineraries(mergedParts);
+            const partial = tripSummaryForImport
+              ? finalizeImportDraft(mergeImportedItineraries(mergedParts))
+              : mergeImportedItineraries(mergedParts);
             setItineraryDraft(partial);
             setItinerarySelected(collectItineraryItemKeys(partial));
             if (expandedDay == null && partial.days[0]) {
@@ -851,7 +886,7 @@ export default function TripAiChatView({
 
           let mergedDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
           if (mergedDraft && tripSummaryForImport) {
-            mergedDraft = sanitizeItineraryBySourceSections(mergedDraft, text, tripSummaryForImport);
+            mergedDraft = finalizeImportDraft(mergedDraft);
           }
           if (mergedDraft && isItineraryImportSufficient(mergedDraft, text)) {
             setInfo(
@@ -860,7 +895,7 @@ export default function TripAiChatView({
             return mergedDraft;
           }
 
-          setInfo("Completando itinerario…");
+          setInfo("Completando días que falten…");
           const { res: fullRes, payload: fullPayload } = await fetchJsonWithTimeout(
             "/api/trip-ai/import-itinerary",
             {
@@ -872,12 +907,10 @@ export default function TripAiChatView({
             IMPORT_FULL_TIMEOUT_MS
           );
           if (fullRes.ok && fullPayload?.itinerary) {
-            const fullDraft = fullPayload.itinerary as ItineraryPayload;
+            let fullDraft = finalizeImportDraft(fullPayload.itinerary as ItineraryPayload);
             if (
               !mergedDraft ||
-              fullDraft.days.length > mergedDraft.days.length ||
-              (fullDraft.days.length === mergedDraft.days.length &&
-                countItineraryItems(fullDraft) > countItineraryItems(mergedDraft) * 1.1)
+              fullDraft.days.length > mergedDraft.days.length
             ) {
               mergedDraft = fullDraft;
             }
@@ -919,14 +952,18 @@ export default function TripAiChatView({
           );
           return null;
         }
-        const draft = payload.itinerary as ItineraryPayload;
+        const draft = finalizeImportDraft(payload.itinerary as ItineraryPayload);
         setInfo("Tarjetas listas: revisa cada actividad y pulsa «Añadir seleccionadas».");
         return draft;
       } catch (e) {
         setImportCardsFailed(true);
         setInfo(null);
         const isAbort = e instanceof Error && e.name === "AbortError";
-        const partialDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
+        const partialDraft = mergedParts.length
+          ? tripSummaryForImport
+            ? finalizeImportDraft(mergeImportedItineraries(mergedParts))
+            : mergeImportedItineraries(mergedParts)
+          : null;
         const partialCount = partialDraft ? countItineraryItems(partialDraft) : 0;
         const partialHint =
           partialCount > 0

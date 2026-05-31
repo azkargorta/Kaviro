@@ -13,6 +13,7 @@ import {
 } from "@/lib/trip-assistant-events";
 import {
   KAVIRO_TRIP_PLAN_REFRESH_EVENT,
+  dispatchTripPlanRefresh,
   type TripPlanRefreshDetail,
 } from "@/lib/trip-plan-events";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
@@ -78,6 +79,9 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
   function closeDock() {
     setOpen(false);
     setLaunchPayload(null);
+    if (surface === "plan") {
+      dispatchTripPlanRefresh(tripId);
+    }
   }
 
   const fullscreenHref = useMemo(() => {

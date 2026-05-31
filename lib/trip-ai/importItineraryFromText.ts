@@ -3,6 +3,7 @@ import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import type { ExecutableItineraryPayload, ItineraryDayPayload } from "@/lib/trip-ai/tripCreationTypes";
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
+  countDaySectionsInSource,
   countItineraryItems,
   estimateMinActivitiesFromSource,
   isItineraryImportSufficient,
@@ -490,6 +491,75 @@ function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string,
   return map;
 }
 
+/** Dossier de agencia: «VIERNES 27» + líneas «07.30h …» (sin depender de la IA). */
+export function looksLikeAgencyWeekdayCalendar(sourceText: string): boolean {
+  const sections = countDaySectionsInSource(sourceText);
+  const times = countScheduleLinesInText(sourceText);
+  return sections >= 3 && times >= sections && times >= 8;
+}
+
+/**
+ * Importación determinística: una tarjeta por línea con hora de cada bloque «VIERNES 27».
+ * Instantánea y alineada al dossier (ideal para calendarios Stripes / agencias).
+ */
+export function parseAgencyCalendarItinerary(
+  sourceText: string,
+  tripSummary: string
+): ExecutableItineraryPayload | null {
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  if (!range) return null;
+
+  const sections = splitSourceByDaySections(sourceText).filter((s) => s.header !== "Todo");
+  if (sections.length < 2) return null;
+
+  const days: ItineraryDayPayload[] = [];
+
+  for (const section of sections) {
+    const dom = parseDayOfMonthFromCalendarHeader(section.header);
+    if (dom == null) continue;
+    const slots = parseScheduleSlotsFromSection(section.body);
+    if (!slots.length) continue;
+    const date = resolveDayOfMonthInTripRange(dom, range.start, range.end);
+    if (!date) continue;
+
+    const items = slots.map((slot) =>
+      normalizeItineraryItem({
+        title: slot.label,
+        start_time: slot.time,
+        activity_kind: inferKindFromSlotLabel(slot.label),
+      })
+    );
+
+    days.push({ day: days.length + 1, date, items });
+  }
+
+  if (days.length < 2) return null;
+
+  return {
+    version: 1,
+    title: "Itinerario importado",
+    days: days.map((d, idx) => ({ ...d, day: idx + 1 })),
+  };
+}
+
+/** Penaliza días con más actividades de las que marca el dossier. */
+function itineraryAlignmentScore(
+  itinerary: ExecutableItineraryPayload,
+  sourceText: string,
+  tripSummary: string
+): number {
+  const bodies = sectionBodyByDate(sourceText, tripSummary);
+  let score = countItineraryItems(itinerary);
+  for (const d of itinerary.days) {
+    const body = d.date ? bodies.get(d.date) : undefined;
+    const expected = body ? countScheduleLinesInText(body) : 0;
+    const got = d.items?.length ?? 0;
+    if (expected > 0 && got > expected) score -= (got - expected) * 12;
+    if (expected > 0 && got < expected) score -= (expected - got) * 2;
+  }
+  return score;
+}
+
 /**
  * Un trozo = un solo día en el resultado. Evita que la IA devuelva varios days[] o actividades de otros días.
  */
@@ -589,10 +659,17 @@ export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): E
   };
 }
 
-function pickBestItinerary(candidates: ExecutableItineraryPayload[]): ExecutableItineraryPayload | null {
+function pickBestItinerary(
+  candidates: ExecutableItineraryPayload[],
+  sourceText: string,
+  tripSummary: string
+): ExecutableItineraryPayload | null {
   if (!candidates.length) return null;
   return candidates.reduce((best, cur) =>
-    countItineraryItems(cur) > countItineraryItems(best) ? cur : best
+    itineraryAlignmentScore(cur, sourceText, tripSummary) >
+    itineraryAlignmentScore(best, sourceText, tripSummary)
+      ? cur
+      : best
   );
 }
 
@@ -668,9 +745,8 @@ export async function importItinerarySingleChunk(params: {
     usageAgg
   );
   if (!part?.days?.length) return null;
-  const filled = fillItineraryDatesFromTripSummary(part, params.tripSummary);
   return {
-    itinerary: sanitizeItineraryBySourceSections(filled, params.chunkBody.trim(), params.tripSummary),
+    itinerary: fillItineraryDatesFromTripSummary(part, params.tripSummary),
     usage: usageAgg,
   };
 }
@@ -697,6 +773,17 @@ export async function importItineraryFromText(params: {
     answer,
     usage: usageAgg,
   });
+
+  if (looksLikeAgencyWeekdayCalendar(sourceText)) {
+    const fast = parseAgencyCalendarItinerary(sourceText, tripSummary);
+    if (fast && isItineraryImportSufficient(fast, sourceText)) {
+      const total = countItineraryItems(fast);
+      return finish(
+        fast,
+        `Calendario importado (${fast.days.length} días, ${total} actividades).`
+      );
+    }
+  }
 
   const candidates: ExecutableItineraryPayload[] = [];
 
@@ -755,7 +842,7 @@ export async function importItineraryFromText(params: {
     }
   }
 
-  const best = pickBestItinerary(candidates);
+  const best = pickBestItinerary(candidates, sourceText, tripSummary);
   if (!best) return null;
 
   const total = countItineraryItems(best);
