@@ -144,3 +144,125 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "No se pudieron crear actividades." }, { status: 500 });
   }
 }
+
+function isLodgingActivityRow(row: { activity_type?: string | null; activity_kind?: string | null }) {
+  const t = String(row.activity_type || "").toLowerCase();
+  const k = String(row.activity_kind || "").toLowerCase();
+  return t === "lodging" || k === "lodging" || k === "hotel";
+}
+
+/** Borra muchos planes en una sola operación (más fiable que N DELETEs secuenciales). */
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json().catch(() => null);
+    const tripId = typeof body?.tripId === "string" ? body.tripId : body?.trip_id;
+    const rawIds = Array.isArray(body?.activityIds) ? body.activityIds : [];
+    const activityIds = [...new Set(rawIds.map((id: unknown) => String(id).trim()).filter(Boolean))];
+
+    if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
+    if (!activityIds.length) return NextResponse.json({ error: "Faltan activityIds" }, { status: 400 });
+
+    const gate = await requireTripAccessApi(String(tripId));
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManagePlan(gate.access, "No tienes permisos.");
+    if (forbidden) return forbidden;
+
+    const { access, supabase } = gate;
+    const { data: actor } = await supabase.auth.getUser();
+
+    const { data: rows, error: fetchErr } = await supabase
+      .from("trip_activities")
+      .select("*")
+      .eq("trip_id", tripId)
+      .in("id", activityIds);
+    if (fetchErr) throw new Error(fetchErr.message);
+
+    const found = rows || [];
+    if (!found.length) {
+      return NextResponse.json({ error: "No se encontraron planes para borrar." }, { status: 404 });
+    }
+
+    const skipped: Array<{ id: string; reason: string }> = [];
+    const reservationIdsToDelete = new Set<string>();
+    const directDeleteIds = new Set<string>();
+
+    for (const row of found) {
+      const id = String((row as { id: string }).id);
+      const linkedReservationId =
+        typeof (row as { linked_reservation_id?: string | null }).linked_reservation_id === "string"
+          ? String((row as { linked_reservation_id: string }).linked_reservation_id)
+          : null;
+
+      if (linkedReservationId && isLodgingActivityRow(row as { activity_type?: string | null; activity_kind?: string | null })) {
+        if (!access.can_manage_resources) {
+          skipped.push({
+            id,
+            reason: "Alojamiento vinculado a Docs: bórralo desde Docs o pide permiso de recursos.",
+          });
+          continue;
+        }
+        reservationIdsToDelete.add(linkedReservationId);
+      } else {
+        directDeleteIds.add(id);
+      }
+    }
+
+    let deleted = 0;
+
+    for (const reservationId of reservationIdsToDelete) {
+      const { error: delActErr } = await supabase
+        .from("trip_activities")
+        .delete()
+        .eq("linked_reservation_id", reservationId);
+      if (delActErr) throw new Error(delActErr.message);
+
+      const { error: delResErr } = await supabase.from("trip_reservations").delete().eq("id", reservationId);
+      if (delResErr) throw new Error(delResErr.message);
+      deleted += 1;
+    }
+
+    const directIds = [...directDeleteIds];
+    if (directIds.length) {
+      const { data: removed, error: delErr } = await supabase
+        .from("trip_activities")
+        .delete()
+        .eq("trip_id", tripId)
+        .in("id", directIds)
+        .select("id");
+      if (delErr) throw new Error(delErr.message);
+      deleted += (removed || []).length;
+    }
+
+    if (deleted > 0) {
+      await safeInsertAudit(supabase, {
+        trip_id: String(tripId),
+        entity_type: "activity",
+        entity_id: "bulk",
+        action: "delete",
+        summary: `Eliminó ${deleted} plan${deleted === 1 ? "" : "es"}`,
+        diff: { count: deleted, skipped: skipped.length },
+        actor_user_id: actor?.user?.id ?? null,
+        actor_email: actor?.user?.email ?? null,
+      });
+    }
+
+    if (deleted === 0 && skipped.length > 0) {
+      return NextResponse.json(
+        { error: skipped[0]?.reason || "No se pudo borrar ningún plan seleccionado." },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      deleted,
+      skipped: skipped.length,
+      skippedDetails: skipped.length ? skipped : undefined,
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "No se pudieron borrar los planes." },
+      { status: 500 }
+    );
+  }
+}

@@ -151,7 +151,7 @@ export function useTripActivities(
       // Trip + actividades via API server-side (evita locks/hangs del navegador)
       const payload = await apiRequest<{ trip: TripPlanSummary | null; activities: TripActivity[] }>(
         `/api/trip-activities?tripId=${encodeURIComponent(tripId)}`,
-        { method: "GET" },
+        { method: "GET", cache: "no-store" },
         "cargar plan"
       );
       setTrip((payload.trip || null) as TripPlanSummary | null);
@@ -365,26 +365,47 @@ export function useTripActivities(
 
   const deleteActivitiesBulk = useCallback(
     async (activityIds: string[]) => {
-      if (!activityIds.length) return;
+      const ids = [...new Set(activityIds.filter(Boolean))];
+      if (!ids.length) return { deleted: 0, skipped: 0 };
+
       setSaving(true);
       setError(null);
       try {
-        for (const activityId of activityIds) {
-          await apiRequest<{ ok: true }>(
-            `/api/trip-activities/${activityId}`,
-            { method: "DELETE" },
-            "borrar actividad"
+        const payload = await apiRequest<{
+          ok: true;
+          deleted: number;
+          skipped?: number;
+          skippedDetails?: Array<{ id: string; reason: string }>;
+        }>(
+          "/api/trip-activities/bulk",
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({ tripId, activityIds: ids }),
+          },
+          "borrar planes"
+        );
+
+        setActivities((prev) => prev.filter((a) => !ids.includes(a.id)));
+
+        if (payload.skipped && payload.skipped > 0) {
+          setError(
+            `Se borraron ${payload.deleted} plan${payload.deleted === 1 ? "" : "es"}. ${payload.skipped} no se pudieron borrar (p. ej. alojamientos vinculados a Docs).`
           );
         }
+
         await load({ silent: true });
+        return { deleted: payload.deleted, skipped: payload.skipped ?? 0 };
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo borrar alguna actividad.");
+        await load({ silent: true });
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [load]
+    [load, tripId]
   );
 
   return {

@@ -382,6 +382,16 @@ export default function TripPlanView({
       });
   }, [activities, kindFilter, query, showLodging]);
 
+  /** En modo selección: todos los planes del viaje (sin filtros de búsqueda/tipo). */
+  const bulkSelectionActivities = useMemo(
+    () =>
+      activities.filter((a) => {
+        if (!showLodging && isLodgingActivity(a)) return false;
+        return true;
+      }),
+    [activities, showLodging]
+  );
+
   const filteredWithCalendarDate = useMemo(() => {
     if (!selectedDate) return filtered;
     return filtered.filter((a) => (a.activity_date || "") === selectedDate);
@@ -396,13 +406,13 @@ export default function TripPlanView({
   }, [isDemoTrip, activities.length]);
 
   const grouped = useMemo(() => groupByDate(filteredWithCalendarDate), [filteredWithCalendarDate]);
-  const allFilteredGrouped = useMemo(() => groupByDate(filtered), [filtered]);
+  const bulkSelectionGrouped = useMemo(() => groupByDate(bulkSelectionActivities), [bulkSelectionActivities]);
 
   const cardGrouped = useMemo(() => {
-    if (bulkDeleteMode) return allFilteredGrouped;
+    if (bulkDeleteMode) return bulkSelectionGrouped;
     if (selectedDate) return grouped.filter(([date]) => date === selectedDate);
     return grouped.length <= 1 ? grouped : grouped.slice(0, 1);
-  }, [allFilteredGrouped, bulkDeleteMode, grouped, selectedDate]);
+  }, [bulkDeleteMode, bulkSelectionGrouped, grouped, selectedDate]);
 
   const singleDayList = grouped.length === 1;
 
@@ -415,13 +425,20 @@ export default function TripPlanView({
   );
 
   const selectableActivityIds = useMemo(
-    () => filtered.filter(canBulkDeletePlanActivity).map((a) => a.id),
-    [filtered]
+    () => bulkSelectionActivities.filter(canBulkDeletePlanActivity).map((a) => a.id),
+    [bulkSelectionActivities]
   );
   const selectableIdsForSelectedDay = useMemo(
-    () => filteredWithCalendarDate.filter(canBulkDeletePlanActivity).map((a) => a.id),
-    [filteredWithCalendarDate]
+    () =>
+      bulkSelectionActivities
+        .filter((a) => (a.activity_date || "") === (selectedDate || ""))
+        .filter(canBulkDeletePlanActivity)
+        .map((a) => a.id),
+    [bulkSelectionActivities, selectedDate]
   );
+  const allSelected =
+    selectableActivityIds.length > 0 &&
+    selectableActivityIds.every((id) => selectedActivityIds.has(id));
   const lodgingCount = useMemo(
     () => activities.filter((item) => isLodgingActivity(item)).length,
     [activities]
@@ -508,6 +525,15 @@ export default function TripPlanView({
     });
   }
 
+  function enterBulkDeleteMode(selectAll = false) {
+    setBulkDeleteMode(true);
+    setSelectedActivityIds(selectAll ? new Set(selectableActivityIds) : new Set());
+  }
+
+  function selectAllPlans() {
+    setSelectedActivityIds(new Set(selectableActivityIds));
+  }
+
   function exitBulkDeleteMode() {
     setBulkDeleteMode(false);
     setSelectedActivityIds(new Set());
@@ -521,8 +547,10 @@ export default function TripPlanView({
     );
     if (!ok) return;
     try {
-      await deleteActivitiesBulk(ids);
-      exitBulkDeleteMode();
+      const result = await deleteActivitiesBulk(ids);
+      if ((result?.deleted ?? 0) > 0) {
+        exitBulkDeleteMode();
+      }
     } catch {
       // useTripActivities ya muestra el error
     }
@@ -714,11 +742,11 @@ export default function TripPlanView({
             <>
               <button
                 type="button"
-                onClick={() => setSelectedActivityIds(new Set(selectableActivityIds))}
-                disabled={!selectableActivityIds.length || saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                onClick={selectAllPlans}
+                disabled={!selectableActivityIds.length || saving || allSelected}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-3 text-sm font-semibold text-violet-900 shadow-sm transition hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto"
               >
-                Seleccionar todos
+                Seleccionar todo ({selectableActivityIds.length})
               </button>
               {selectedDate && selectableIdsForSelectedDay.length > 0 ? (
                 <button
@@ -907,7 +935,7 @@ export default function TripPlanView({
               type="button"
               disabled={saving || selectedActivityIds.size === 0}
               onClick={() => void confirmBulkDelete()}
-              className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50 sm:w-auto"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50 sm:w-auto"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
               Eliminar{selectedActivityIds.size > 0 ? ` (${selectedActivityIds.size})` : ""}
@@ -915,11 +943,8 @@ export default function TripPlanView({
           ) : canManagePlan ? (
             <button
               type="button"
-              onClick={() => {
-                setBulkDeleteMode(true);
-                setSelectedActivityIds(new Set());
-              }}
-              disabled={!filtered.length}
+              onClick={() => enterBulkDeleteMode(false)}
+              disabled={!bulkSelectionActivities.length}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-3 text-sm font-semibold text-violet-900 shadow-sm transition hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto"
               title="Seleccionar varios planes para borrarlos a la vez"
               data-tour="plan-bulk-select-btn"
@@ -932,14 +957,27 @@ export default function TripPlanView({
       </div>
 
       {bulkDeleteMode ? (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-100">
-          <p className="font-semibold">Modo selección</p>
-          <p className="mt-1 text-violet-900/90 dark:text-violet-200/90">
-            Toca los planes para marcarlos. Verás todos los días del viaje y podrás borrar muchos a la vez.
-            {selectedActivityIds.size > 0
-              ? ` · ${selectedActivityIds.size} seleccionado${selectedActivityIds.size === 1 ? "" : "s"}`
-              : ""}
-          </p>
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4 text-sm text-violet-950 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-100">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold">Modo selección</p>
+              <p className="mt-1 text-violet-900/90 dark:text-violet-200/90">
+                Toca los planes para marcarlos o usa el botón para seleccionar todo el viaje de una vez.
+                {selectedActivityIds.size > 0
+                  ? ` · ${selectedActivityIds.size} seleccionado${selectedActivityIds.size === 1 ? "" : "s"}`
+                  : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={allSelected ? () => setSelectedActivityIds(new Set()) : selectAllPlans}
+              disabled={!selectableActivityIds.length || saving}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-300 bg-white px-5 py-2.5 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-50 disabled:opacity-50 dark:border-violet-700 dark:bg-[#0F1623] dark:text-violet-100 dark:hover:bg-violet-950/50"
+            >
+              <CheckSquare className="h-4 w-4" aria-hidden />
+              {allSelected ? "Quitar todo" : `Seleccionar todo (${selectableActivityIds.length})`}
+            </button>
+          </div>
         </div>
       ) : null}
 
