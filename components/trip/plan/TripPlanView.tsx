@@ -16,6 +16,8 @@ import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities"
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";;
 import {
   CalendarDays,
+  Check,
+  CheckSquare,
   ChevronDown,
   ChevronRight,
   ChevronUp,
@@ -394,11 +396,13 @@ export default function TripPlanView({
   }, [isDemoTrip, activities.length]);
 
   const grouped = useMemo(() => groupByDate(filteredWithCalendarDate), [filteredWithCalendarDate]);
+  const allFilteredGrouped = useMemo(() => groupByDate(filtered), [filtered]);
 
   const cardGrouped = useMemo(() => {
+    if (bulkDeleteMode) return allFilteredGrouped;
     if (selectedDate) return grouped.filter(([date]) => date === selectedDate);
     return grouped.length <= 1 ? grouped : grouped.slice(0, 1);
-  }, [grouped, selectedDate]);
+  }, [allFilteredGrouped, bulkDeleteMode, grouped, selectedDate]);
 
   const singleDayList = grouped.length === 1;
 
@@ -411,6 +415,10 @@ export default function TripPlanView({
   );
 
   const selectableActivityIds = useMemo(
+    () => filtered.filter(canBulkDeletePlanActivity).map((a) => a.id),
+    [filtered]
+  );
+  const selectableIdsForSelectedDay = useMemo(
     () => filteredWithCalendarDate.filter(canBulkDeletePlanActivity).map((a) => a.id),
     [filteredWithCalendarDate]
   );
@@ -478,6 +486,46 @@ export default function TripPlanView({
   function handleCancelEditOrClose() {
     setEditingActivity(null);
     setIsFormOpen(false);
+  }
+
+  function toggleActivitySelection(activityId: string) {
+    setSelectedActivityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(activityId)) next.delete(activityId);
+      else next.add(activityId);
+      return next;
+    });
+  }
+
+  function toggleDaySelection(activityIds: string[]) {
+    if (!activityIds.length) return;
+    setSelectedActivityIds((prev) => {
+      const allSelected = activityIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) activityIds.forEach((id) => next.delete(id));
+      else activityIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function exitBulkDeleteMode() {
+    setBulkDeleteMode(false);
+    setSelectedActivityIds(new Set());
+  }
+
+  async function confirmBulkDelete() {
+    const ids = [...selectedActivityIds];
+    if (!ids.length) return;
+    const ok = window.confirm(
+      `¿Eliminar ${ids.length} plan${ids.length === 1 ? "" : "es"} seleccionado${ids.length === 1 ? "" : "s"}? Esta acción no se puede deshacer.`
+    );
+    if (!ok) return;
+    try {
+      await deleteActivitiesBulk(ids);
+      exitBulkDeleteMode();
+    } catch {
+      // useTripActivities ya muestra el error
+    }
   }
 
   function openCreateWithExplorePlace(payload: ExploreCreatePlanPayload) {
@@ -628,7 +676,7 @@ export default function TripPlanView({
         />
       ) : null}
 
-      {workspaceTab === "itinerary" && canManagePlan && !showForm ? (
+      {workspaceTab === "itinerary" && canManagePlan && !showForm && !bulkDeleteMode ? (
         <button
           type="button"
           onClick={() => handleStartCreate()}
@@ -668,33 +716,38 @@ export default function TripPlanView({
                 type="button"
                 onClick={() => setSelectedActivityIds(new Set(selectableActivityIds))}
                 disabled={!selectableActivityIds.length || saving}
-                className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] disabled:opacity-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
                 Seleccionar todos
               </button>
+              {selectedDate && selectableIdsForSelectedDay.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedActivityIds(new Set(selectableIdsForSelectedDay))}
+                  disabled={saving}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
+                >
+                  Solo este día
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setSelectedActivityIds(new Set())}
-                disabled={saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+                disabled={saving || selectedActivityIds.size === 0}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 sm:w-auto"
               >
                 Quitar selección
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setBulkDeleteMode(false);
-                  setSelectedActivityIds(new Set());
-                }}
+                onClick={exitBulkDeleteMode}
                 disabled={saving}
                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
               >
                 Cancelar
               </button>
             </>
-          ) : (
-            <></>
-          )}
+          ) : null}
           {canManagePlan ? (
           <button
             data-tour="plan-add-btn"
@@ -853,19 +906,8 @@ export default function TripPlanView({
             <button
               type="button"
               disabled={saving || selectedActivityIds.size === 0}
-              onClick={() => {
-                const ids = [...selectedActivityIds];
-                if (!ids.length) return;
-                const ok = window.confirm(
-                  `¿Eliminar ${ids.length} plan${ids.length === 1 ? "" : "es"} seleccionado${ids.length === 1 ? "" : "s"}? Esta acción no se puede deshacer.`
-                );
-                if (!ok) return;
-                void deleteActivitiesBulk(ids).then(() => {
-                  setBulkDeleteMode(false);
-                  setSelectedActivityIds(new Set());
-                });
-              }}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50 sm:w-auto"
+              onClick={() => void confirmBulkDelete()}
+              className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50 sm:w-auto"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
               Eliminar{selectedActivityIds.size > 0 ? ` (${selectedActivityIds.size})` : ""}
@@ -877,16 +919,29 @@ export default function TripPlanView({
                 setBulkDeleteMode(true);
                 setSelectedActivityIds(new Set());
               }}
-              disabled={!filteredWithCalendarDate.length}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50 sm:w-auto"
-              title="Eliminar varios planes a la vez"
+              disabled={!filtered.length}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-3 text-sm font-semibold text-violet-900 shadow-sm transition hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-50 sm:w-auto"
+              title="Seleccionar varios planes para borrarlos a la vez"
+              data-tour="plan-bulk-select-btn"
             >
-              <Trash2 className="h-4 w-4" aria-hidden />
-              Eliminar
+              <CheckSquare className="h-4 w-4" aria-hidden />
+              Seleccionar
             </button>
           ) : null}
         </div>
       </div>
+
+      {bulkDeleteMode ? (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-100">
+          <p className="font-semibold">Modo selección</p>
+          <p className="mt-1 text-violet-900/90 dark:text-violet-200/90">
+            Toca los planes para marcarlos. Verás todos los días del viaje y podrás borrar muchos a la vez.
+            {selectedActivityIds.size > 0
+              ? ` · ${selectedActivityIds.size} seleccionado${selectedActivityIds.size === 1 ? "" : "s"}`
+              : ""}
+          </p>
+        </div>
+      ) : null}
 
       <TripPlanExploreDrawer
         tripId={tripId}
@@ -1422,63 +1477,114 @@ export default function TripPlanView({
               </div>
             )
           ) : (
-            (() => {
-              const [date, items] = cardGrouped[0] || ["", [] as TripActivity[]];
-              const ordered = date ? getOrderedItems(date, items) : [];
-              const enableDrag = canManagePlan && !bulkDeleteMode && ordered.length > 1;
+            <div className={bulkDeleteMode ? "space-y-6 pb-24 md:pb-0" : "space-y-6"}>
+              {cardGrouped.map(([date, items], sectionIndex) => {
+                if (!date) return null;
+                const ordered = getOrderedItems(date, items);
+                const enableDrag = canManagePlan && !bulkDeleteMode && ordered.length > 1;
+                const daySelectableIds = ordered.filter(canBulkDeletePlanActivity).map((a) => a.id);
+                const daySelectedCount = daySelectableIds.filter((id) => selectedActivityIds.has(id)).length;
+                const dayAllSelected =
+                  daySelectableIds.length > 0 && daySelectedCount === daySelectableIds.length;
+                const heading = formatPlanDayHeading(date);
 
-              const rows = ordered.map((activity, rowIndex) => {
-                const isLodging = isLodgingPlanActivity(activity);
-                const bulkSelectable = canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity);
-                const bulkSelected = selectedActivityIds.has(activity.id);
+                const rows = ordered.map((activity, rowIndex) => {
+                  const isLodging = isLodgingPlanActivity(activity);
+                  const bulkSelectable = canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity);
+                  const bulkSelected = selectedActivityIds.has(activity.id);
 
-                const row = (
-                  <PlanActivityRow
-                    key={activity.id}
-                    dataTour={rowIndex === 0 ? "plan-activity-card" : undefined}
-                    title={activity.title || activity.place_name || "Actividad"}
-                    place={activity.place_name || activity.address}
-                    time={activity.activity_time}
-                    activityKind={isLodging ? "lodging" : activity.activity_kind}
-                    isLodging={isLodging}
-                    customByKey={customByKey}
-                    selectable={bulkSelectable}
-                    selected={bulkSelected}
-                    onClick={
-                      bulkSelectable
-                        ? () =>
-                            setSelectedActivityIds((prev) => {
-                              const n = new Set(prev);
-                              if (n.has(activity.id)) n.delete(activity.id);
-                              else n.add(activity.id);
-                              return n;
-                            })
-                        : () => setDetailActivity(activity)
-                    }
-                  />
+                  const row = (
+                    <PlanActivityRow
+                      key={activity.id}
+                      dataTour={sectionIndex === 0 && rowIndex === 0 ? "plan-activity-card" : undefined}
+                      title={activity.title || activity.place_name || "Actividad"}
+                      place={activity.place_name || activity.address}
+                      time={activity.activity_time}
+                      activityKind={isLodging ? "lodging" : activity.activity_kind}
+                      isLodging={isLodging}
+                      customByKey={customByKey}
+                      selectable={bulkSelectable}
+                      selected={bulkSelected}
+                      onClick={
+                        bulkSelectable
+                          ? () => toggleActivitySelection(activity.id)
+                          : () => setDetailActivity(activity)
+                      }
+                    />
+                  );
+
+                  if (enableDrag) {
+                    const meta = kindMeta(isLodging ? "lodging" : activity.activity_kind, customByKey);
+                    return (
+                      <SortableRow key={activity.id} id={activity.id} color={meta.color}>
+                        {row}
+                      </SortableRow>
+                    );
+                  }
+                  return row;
+                });
+
+                const listBody = (
+                  <div className="space-y-2 overflow-x-hidden pl-7 pr-0.5">{rows}</div>
                 );
 
-                if (enableDrag) {
-                  const meta = kindMeta(isLodging ? "lodging" : activity.activity_kind, customByKey);
-                  return (
-                    <SortableRow key={activity.id} id={activity.id} color={meta.color}>
-                      {row}
-                    </SortableRow>
-                  );
-                }
-                return row;
-              });
-
-              if (!date) return null;
-
-              return (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                  <SortableContext items={ordered.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2 overflow-x-hidden pl-7 pr-0.5">{rows}</div>
-                  </SortableContext>
-                </DndContext>
-              );
-            })()
+                return (
+                  <div key={date} className="space-y-2">
+                    {bulkDeleteMode && cardGrouped.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleDaySelection(daySelectableIds)}
+                        disabled={!daySelectableIds.length}
+                        className="flex w-full items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/80 px-3 py-2.5 text-left transition hover:bg-violet-100/80 disabled:opacity-50 dark:border-violet-900/30 dark:bg-violet-950/20 dark:hover:bg-violet-950/40"
+                      >
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                            dayAllSelected
+                              ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                              : daySelectedCount > 0
+                                ? "border-[var(--brand)] bg-white text-[var(--brand)]"
+                                : "border-slate-300 bg-white text-transparent"
+                          }`}
+                          aria-hidden
+                        >
+                          <Check className="h-3.5 w-3.5 stroke-[3]" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-800 dark:text-slate-100">
+                            {heading.weekday ? `${heading.weekday} ${heading.dayNum}` : heading.full}
+                          </span>
+                          <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">
+                            {heading.month} · {activityCountLabel(daySelectableIds.length)}
+                          </span>
+                        </span>
+                        {daySelectableIds.length > 0 ? (
+                          <span className="shrink-0 text-[11px] font-bold tabular-nums text-violet-700 dark:text-violet-300">
+                            {daySelectedCount}/{daySelectableIds.length}
+                          </span>
+                        ) : null}
+                      </button>
+                    ) : null}
+                    {enableDrag ? (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={ordered.map((a) => a.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {listBody}
+                        </SortableContext>
+                      </DndContext>
+                    ) : (
+                      listBody
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </PlanItineraryCard>
       </div>
@@ -1500,6 +1606,30 @@ export default function TripPlanView({
           void deleteActivity(activity.id);
         }}
       />
+
+      {bulkDeleteMode && canManagePlan ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:hidden dark:border-[#1E293B] dark:bg-[#0F1623]/95">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={exitBulkDeleteMode}
+              disabled={saving}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={saving || selectedActivityIds.size === 0}
+              onClick={() => void confirmBulkDelete()}
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-900 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden />
+              Eliminar ({selectedActivityIds.size})
+            </button>
+          </div>
+        </div>
+      ) : null}
         </>
       ) : null}
     </div>
