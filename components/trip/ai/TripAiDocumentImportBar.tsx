@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { FileText, Loader2, Paperclip, Upload } from "lucide-react";
+import { FileText, Loader2, Paperclip, Sparkles, Upload } from "lucide-react";
 import type { TripResource } from "@/hooks/useTripResources";
 import {
+  countDaySectionsInSource,
   looksLikeAssistantItineraryText,
   looksLikePastedItineraryImport,
 } from "@/lib/trip-ai/itineraryDraftUtils";
@@ -13,7 +14,6 @@ type Props = {
   tripId: string;
   disabled?: boolean;
   busy?: boolean;
-  /** Abierto por defecto (p. ej. en modo planificación). */
   defaultExpanded?: boolean;
   onGenerateFromText: (sourceText: string, hint?: string) => Promise<unknown>;
   onStatus?: (message: string | null) => void;
@@ -27,10 +27,10 @@ function textLooksLikeItinerary(text: string): boolean {
   const t = text.trim();
   if (t.length < 80) return false;
   if (looksLikePastedItineraryImport(t) || looksLikeAssistantItineraryText(t)) return true;
-  const dayHits = (t.match(/d[ií]a\s+\d+|day\s+\d+/gi) || []).length;
+  const weekdayHits = countDaySectionsInSource(t);
   const timeHits = (t.match(/\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/gi) || []).length;
-  if (dayHits >= 1 && timeHits >= 2) return true;
-  if (t.length >= 500 && (dayHits >= 1 || timeHits >= 3)) return true;
+  if (weekdayHits >= 1 && timeHits >= 2) return true;
+  if (timeHits >= 4 && t.length >= 400) return true;
   return t.length >= 1200;
 }
 
@@ -51,6 +51,10 @@ export default function TripAiDocumentImportBar({
   const [uploading, setUploading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [lastSource, setLastSource] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewHint, setPreviewHint] = useState<string | null>(null);
+  const [previewMeta, setPreviewMeta] = useState<string | null>(null);
+  const [pendingSource, setPendingSource] = useState<string | null>(null);
 
   const loadResources = useCallback(async () => {
     setLoadingList(true);
@@ -83,30 +87,42 @@ export default function TripAiDocumentImportBar({
 
   async function runGenerate(text: string, hint: string, sourceLabel: string) {
     if (!text.trim() || text.trim().length < 80) {
-      setLocalError("El texto extraído es demasiado corto. Prueba otro PDF o pega el itinerario en el chat.");
+      setLocalError("El texto extraído es demasiado corto. Prueba otra imagen más nítida o un PDF con texto seleccionable.");
       return;
     }
     if (!textLooksLikeItinerary(text)) {
       setLocalError(
-        "El archivo tiene poco texto de itinerario (días/horas). Si es un dossier de viaje, puede que sea solo imágenes: prueba un PDF con texto seleccionable o pega el contenido en el chat."
+        "No detectamos un calendario de viaje (días u horarios). Comprueba que sea el dossier completo o pega el texto en el chat."
       );
       return;
     }
     setLocalError(null);
     setLastSource(sourceLabel);
-    onStatus?.(`Leyendo «${sourceLabel}» y generando tarjetas…`);
+    onStatus?.(`Analizando «${sourceLabel}» y generando tarjetas por día…`);
     try {
       await onGenerateFromText(text, hint);
-      onStatus?.(`Tarjetas generadas desde «${sourceLabel}». Revisa y pulsa Añadir.`);
+      onStatus?.(`Tarjetas listas desde «${sourceLabel}». Revisa cada día y pulsa Añadir.`);
     } catch (e) {
       onStatus?.(null);
       throw e;
     }
   }
 
+  function setExtractPreview(params: {
+    text: string;
+    hint: string;
+    sourceLabel: string;
+    meta?: string;
+  }) {
+    setPreviewText(params.text);
+    setPreviewHint(params.hint);
+    setPendingSource(params.sourceLabel);
+    setPreviewMeta(params.meta ?? null);
+  }
+
   async function handleFromResource() {
     if (!selectedId) {
-      setLocalError("Elige un documento del viaje o adjunta un PDF nuevo.");
+      setLocalError("Elige un documento del viaje o adjunta un PDF o imagen nueva.");
       return;
     }
     setExtracting(true);
@@ -122,7 +138,9 @@ export default function TripAiDocumentImportBar({
       }
       const text = typeof data?.extractedText === "string" ? data.extractedText : "";
       const title = typeof data?.title === "string" ? data.title : "Documento";
-      await runGenerate(text, `Documento del viaje: ${title}`, title);
+      const hint = `Documento del viaje: ${title}`;
+      setExtractPreview({ text, hint, sourceLabel: title });
+      await runGenerate(text, hint, title);
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : "No se pudo importar desde el documento.");
       onStatus?.(null);
@@ -140,8 +158,7 @@ export default function TripAiDocumentImportBar({
       formData.append("tripId", tripId);
       formData.append("saveToResources", "1");
 
-      const isPdf =
-        file.type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
+      const isPdf = file.type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
       if (isPdf) {
         try {
           const { extractTextFromPdfClient } = await import("@/lib/pdfToText");
@@ -150,7 +167,7 @@ export default function TripAiDocumentImportBar({
             formData.append("extractedText", clientText);
           }
         } catch {
-          /* el servidor intentará extraer con unpdf */
+          /* servidor + visión */
         }
       }
 
@@ -170,10 +187,21 @@ export default function TripAiDocumentImportBar({
           : typeof data?.fileName === "string"
             ? data.fileName
             : file.name;
-      if (data?.savedToResources) {
-        void loadResources();
-      }
-      await runGenerate(text, `Documento: ${title}`, title);
+      const importHint = typeof data?.importHint === "string" ? data.importHint : "";
+      const method = typeof data?.extractionMethod === "string" ? data.extractionMethod : "";
+      const meta = [
+        method ? `Lectura: ${method}` : null,
+        typeof data?.charCount === "number" ? `${data.charCount} caracteres` : null,
+        data?.visionUsed ? "visión IA" : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+      if (data?.savedToResources) void loadResources();
+
+      const hint = [importHint, `Documento: ${title}`].filter(Boolean).join("\n\n");
+      setExtractPreview({ text, hint, sourceLabel: title, meta });
+      await runGenerate(text, hint, title);
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : "No se pudo leer el archivo.");
       onStatus?.(null);
@@ -183,7 +211,13 @@ export default function TripAiDocumentImportBar({
     }
   }
 
+  async function regenerateFromPreview() {
+    if (!previewText || !pendingSource) return;
+    await runGenerate(previewText, previewHint ?? "", pendingSource);
+  }
+
   const working = extracting || uploading || busy;
+  const dayCount = previewText ? countDaySectionsInSource(previewText) : 0;
 
   return (
     <section
@@ -199,7 +233,7 @@ export default function TripAiDocumentImportBar({
       >
         <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100 sm:text-sm">
           <Paperclip className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
-          Documento del viaje → planes y hoteles
+          Importar dossier (PDF o imagen)
         </span>
         <span className="text-[10px] font-semibold text-slate-500">{open ? "Ocultar" : "Mostrar"}</span>
       </button>
@@ -207,14 +241,15 @@ export default function TripAiDocumentImportBar({
       {open ? (
         <div className="space-y-2 border-t border-[var(--brand-border)]/40 px-3 pb-3 pt-2 sm:px-4 sm:pb-4">
           <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-            Adjunta el dossier PDF (empresa, agencia, etc.) o elige uno de{" "}
+            Sube el calendario de la agencia (PDF o foto). Extraemos vuelos, hoteles, excursiones y horarios; generamos
+            tarjetas por día para que las revises antes de añadirlas al plan. También puedes elegir un archivo de{" "}
             <Link
               href={`/trip/${encodeURIComponent(tripId)}/resources`}
               className="font-semibold text-[var(--brand-text)] underline-offset-2 hover:underline"
             >
               Recursos
             </Link>
-            . Generamos tarjetas para validar cada parada y alojamiento.
+            .
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -246,7 +281,7 @@ export default function TripAiDocumentImportBar({
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-              O desde Recursos del viaje
+              Desde Recursos del viaje
               <select
                 value={selectedId}
                 disabled={working || loadingList || !resources.length}
@@ -271,9 +306,39 @@ export default function TripAiDocumentImportBar({
               className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50"
             >
               {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-              Generar tarjetas
+              Importar
             </button>
           </div>
+
+          {previewText ? (
+            <details className="rounded-xl border border-slate-200 bg-white/90 dark:border-[#334155] dark:bg-[#080C14]">
+              <summary className="cursor-pointer px-3 py-2 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                Texto leído del documento
+                {dayCount >= 2 ? ` · ~${dayCount} días detectados` : null}
+                {previewMeta ? ` · ${previewMeta}` : null}
+              </summary>
+              {previewHint ? (
+                <p className="border-t border-slate-100 px-3 py-2 text-[10px] leading-relaxed text-slate-600 dark:border-[#334155] dark:text-slate-400">
+                  <Sparkles className="mr-1 inline h-3 w-3 text-[var(--brand)]" aria-hidden />
+                  {previewHint.split("\n").slice(0, 6).join(" · ")}
+                </p>
+              ) : null}
+              <pre className="max-h-36 overflow-auto whitespace-pre-wrap border-t border-slate-100 px-3 py-2 text-[10px] leading-relaxed text-slate-700 dark:border-[#334155] dark:text-slate-300">
+                {previewText.slice(0, 3500)}
+                {previewText.length > 3500 ? "\n…" : ""}
+              </pre>
+              <div className="border-t border-slate-100 px-3 py-2 dark:border-[#334155]">
+                <button
+                  type="button"
+                  disabled={working}
+                  onClick={() => void regenerateFromPreview()}
+                  className="text-[11px] font-semibold text-[var(--brand-text)] underline-offset-2 hover:underline disabled:opacity-50"
+                >
+                  Volver a generar tarjetas
+                </button>
+              </div>
+            </details>
+          ) : null}
 
           <div className="flex flex-wrap items-center gap-3">
             <button

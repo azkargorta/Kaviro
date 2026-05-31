@@ -11,6 +11,10 @@ import {
   normalizeItineraryItem,
 } from "@/lib/trip-ai/itineraryDraftUtils";
 import {
+  buildDocumentHintBlock,
+  buildImportExtractionRules,
+} from "@/lib/trip-ai/itineraryImportPrompts";
+import {
   KAVIRO_ITINERARY_JSON_END,
   KAVIRO_ITINERARY_JSON_START,
 } from "@/lib/trip-ai/kaviroJsonMarkers";
@@ -21,19 +25,122 @@ function addUtcDays(isoDate: string, offset: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+const CALENDAR_HEADER_DAY_RE =
+  /(?:^|\s)(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+(\d{1,2})\b/i;
+
+/** Extrae el día del mes de encabezados «VIERNES 27», «lunes 1», etc. */
+export function parseDayOfMonthFromCalendarHeader(text: string): number | null {
+  const m = text.trim().match(CALENDAR_HEADER_DAY_RE);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n >= 1 && n <= 31 ? n : null;
+}
+
+export function parseTripDateRangeFromSummary(
+  tripSummary: string
+): { start: string; end: string } | null {
+  const m = tripSummary.match(/Fechas:\s*(\d{4}-\d{2}-\d{2})\s*→\s*(\d{4}-\d{2}-\d{2})/);
+  if (!m) return null;
+  return { start: m[1]!, end: m[2]! };
+}
+
+/** Resuelve «día 27» / «día 1» dentro del rango del viaje (soporta cambio de mes). */
+export function resolveDayOfMonthInTripRange(
+  dayOfMonth: number,
+  tripStart: string,
+  tripEnd: string
+): string | null {
+  if (!Number.isFinite(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) return null;
+  const matches: string[] = [];
+  const start = new Date(`${tripStart}T12:00:00.000Z`);
+  const end = new Date(`${tripEnd}T12:00:00.000Z`);
+  let y = start.getUTCFullYear();
+  let mo = start.getUTCMonth();
+  const endY = end.getUTCFullYear();
+  const endMo = end.getUTCMonth();
+
+  while (y < endY || (y === endY && mo <= endMo)) {
+    const candidate = new Date(Date.UTC(y, mo, dayOfMonth, 12));
+    if (candidate.getUTCDate() === dayOfMonth) {
+      const iso = candidate.toISOString().slice(0, 10);
+      if (iso >= tripStart && iso <= tripEnd) matches.push(iso);
+    }
+    mo += 1;
+    if (mo > 11) {
+      mo = 0;
+      y += 1;
+    }
+  }
+
+  if (!matches.length) return null;
+  return matches.sort()[0]!;
+}
+
+export function stampItineraryDatesFromChunkLabel(
+  itinerary: ExecutableItineraryPayload,
+  chunkLabel: string,
+  tripSummary: string
+): ExecutableItineraryPayload {
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  if (!range) return itinerary;
+  const dayOfMonth = parseDayOfMonthFromCalendarHeader(chunkLabel);
+  if (dayOfMonth == null) return itinerary;
+  const iso = resolveDayOfMonthInTripRange(dayOfMonth, range.start, range.end);
+  if (!iso) return itinerary;
+  return {
+    ...itinerary,
+    days: itinerary.days.map((d) => ({ ...d, date: iso })),
+  };
+}
+
+/** Alinea fechas al importar: encabezados del dossier primero; si no, secuencial desde inicio del viaje. */
+export function alignItineraryDatesForImport(
+  itinerary: ExecutableItineraryPayload,
+  tripSummary: string,
+  sourceText: string
+): ExecutableItineraryPayload {
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  if (!range) return itinerary;
+
+  const sections = splitSourceForImport(sourceText).filter((s) => s.header !== "Todo");
+  if (sections.length >= 2 && sections.length === itinerary.days.length) {
+    const resolved = sections.map((section) => {
+      const dom = parseDayOfMonthFromCalendarHeader(section.header);
+      if (dom == null) return null;
+      return resolveDayOfMonthInTripRange(dom, range.start, range.end);
+    });
+    if (resolved.every((d) => d != null)) {
+      return {
+        ...itinerary,
+        days: itinerary.days.map((d, i) => ({ ...d, date: resolved[i]! })),
+      };
+    }
+  }
+
+  return {
+    ...itinerary,
+    days: itinerary.days.map((d, idx) => ({
+      ...d,
+      date: addUtcDays(range.start, idx),
+    })),
+  };
+}
+
 /** Rellena `date` null usando «Fechas: YYYY-MM-DD → YYYY-MM-DD» del resumen del viaje. */
 export function fillItineraryDatesFromTripSummary(
   itinerary: ExecutableItineraryPayload,
   tripSummary: string
 ): ExecutableItineraryPayload {
-  const m = tripSummary.match(/Fechas:\s*(\d{4}-\d{2}-\d{2})\s*→\s*(\d{4}-\d{2}-\d{2})/);
-  if (!m) return itinerary;
-  const start = m[1]!;
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  if (!range) return itinerary;
   return {
     ...itinerary,
     days: itinerary.days.map((d, idx) => ({
       ...d,
-      date: d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : addUtcDays(start, idx),
+      date:
+        d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date)
+          ? d.date
+          : addUtcDays(range.start, idx),
     })),
   };
 }
@@ -95,42 +202,34 @@ function buildJsonOnlyPrompt(
   chunkNote?: string
 ) {
   return [
-    "Devuelve UN SOLO objeto JSON válido (sin markdown, sin marcadores KAVIRO_*).",
-    "Esquema:",
-    '{ "version": 1, "title": "string", "days": [{ "day": 1, "date": "YYYY-MM-DD|null", "items": [{',
-    '  "title": "string", "activity_kind": "visit|museum|restaurant|transport|activity|lodging",',
-    '  "place_name": "string|null", "address": "string|null",',
-    '  "start_time": "HH:MM|null", "requires_ticket": true|false|null,',
-    '  "ticket_notes": "string|null", "notes": "string|null" }] }] }',
-    "",
-    "Reglas:",
-    "- Extrae CADA actividad con hora del fragmento (vuelos, hotel, museos, partidos, cruceros, comidas con nombre).",
-    "- 12.00h → 12:00. place_name y address con ciudad y país del viaje (ej. Chicago, IL, USA).",
-    "- Mapea encabezados «DÍA …» o «VIERNES 27» / «sábado 5» a fechas del CONTEXTO DEL VIAJE.",
-    "- requires_ticket: true en museos, torres, NBA/NHL/NFL, cruceros; false en traslados/paseos libres.",
-    "- No omitas ningún bloque horario de ESTE fragmento; un item por línea con hora.",
-    chunkNote ? `- ${chunkNote}` : "",
+    ...buildImportExtractionRules(
+      chunkNote ? `Fragmento «${chunkNote}»: extrae solo las actividades de este trozo.` : undefined
+    ),
     "",
     "CONTEXTO DEL VIAJE:",
     tripSummary,
-    assistantHint ? `\nReferencia (no sustituye el TEXTO):\n${assistantHint.slice(0, 1200)}` : "",
+    buildDocumentHintBlock(assistantHint, 4000),
     "",
-    "TEXTO:",
+    "TEXTO DEL DOSSIER:",
     sourceText,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-function buildMarkerPrompt(tripSummary: string, sourceText: string) {
+function buildMarkerPrompt(tripSummary: string, sourceText: string, assistantHint = "") {
   return [
-    "Extrae itinerario ejecutable. Primero el bloque entre marcadores (JSON válido), luego una línea humana corta.",
+    "Extrae itinerario ejecutable como analista de viajes senior.",
+    "Primero el bloque JSON entre marcadores; después una línea humana breve con nº de días y actividades extraídas.",
     KAVIRO_ITINERARY_JSON_START,
     "{ version: 1, days: [...] }",
     KAVIRO_ITINERARY_JSON_END,
     "",
+    ...buildImportExtractionRules("El JSON va ENTRE los marcadores KAVIRO_ITINERARY_JSON (no JSON suelto).").slice(2),
+    "",
     "CONTEXTO:",
     tripSummary,
+    buildDocumentHintBlock(assistantHint, 4000),
     "",
     "TEXTO:",
     sourceText,
@@ -262,7 +361,9 @@ export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): E
     }
   }
 
-  const days = keyOrder.map((k) => dayByKey.get(k)!);
+  const days = keyOrder
+    .map((k) => dayByKey.get(k)!)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   return {
     version: 1,
     title: parts.find((p) => p.title)?.title || "Itinerario importado",
@@ -303,7 +404,9 @@ async function importChunk(
     `Fragmento «${chunkLabel}»: extrae solo las actividades de este trozo; no inventes días fuera del fragmento.`
   );
   const answer = await callImportModel(prompt, true, usageAgg);
-  return parseFromRawAnswer(answer);
+  const parsed = parseFromRawAnswer(answer);
+  if (!parsed) return null;
+  return stampItineraryDatesFromChunkLabel(parsed, chunkLabel, tripSummary);
 }
 
 async function importByChunks(
@@ -345,8 +448,9 @@ export async function importItinerarySingleChunk(params: {
     usageAgg
   );
   if (!part?.days?.length) return null;
+  const stamped = stampItineraryDatesFromChunkLabel(part, params.chunkLabel.trim() || "Tramo", params.tripSummary);
   return {
-    itinerary: fillItineraryDatesFromTripSummary(part, params.tripSummary),
+    itinerary: fillItineraryDatesFromTripSummary(stamped, params.tripSummary),
     usage: usageAgg,
   };
 }
@@ -365,7 +469,7 @@ export async function importItineraryFromText(params: {
   const useChunkedFirst = pasted && (sections.length >= 2 || sourceText.length > 1800);
 
   const finish = (itinerary: ExecutableItineraryPayload, answer: string) => ({
-    itinerary: fillItineraryDatesFromTripSummary(itinerary, tripSummary),
+    itinerary: alignItineraryDatesForImport(itinerary, tripSummary, sourceText),
     answer,
     usage: usageAgg,
   });
@@ -407,7 +511,7 @@ export async function importItineraryFromText(params: {
   // 3) Marcadores KAVIRO_*
   try {
     const answer = await callImportModel(
-      buildMarkerPrompt(tripSummary, sourceText.slice(0, 28000)),
+      buildMarkerPrompt(tripSummary, sourceText.slice(0, 28000), assistantHint),
       false,
       usageAgg
     );

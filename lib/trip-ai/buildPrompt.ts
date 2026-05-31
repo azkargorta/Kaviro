@@ -109,10 +109,11 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
       ].join("\n"),
     planning:
       [
-        "Prioriza planificación diaria, orden de visitas, tiempos y recomendaciones prácticas.",
+        "Modo planificación profesional: actúa como coordinador/a de operaciones de un tour operador.",
+        "Prioriza dossiers de agencia, calendarios con horas, vuelos, hoteles, traslados y excursiones.",
         "OBLIGATORIO: cuando propongas un recorrido por varios días con paradas concretas Y ya sabes en qué país/región es el viaje (por el usuario, el destino guardado en el resumen o aclaración previa), debes incluir SIEMPRE el JSON ejecutable en la MISMA respuesta. Sin el bloque JSON la app no puede guardarlo en el Plan.",
         "Si el destino es ambiguo (p. ej. solo «Londres» o «París» sin país y el resumen del viaje no indica país/región inequívoca), NO emitas todavía el bloque KAVIRO_ITINERARY: haz 1–2 preguntas muy cortas para confirmar (ej. «¿Londres, Reino Unido, u otra zona?»). Cuando el usuario confirme, entonces sí devuelves el JSON.",
-        "Si el usuario pide un itinerario/ruta por días (ciudad/país/región + nº de días) o pega una agenda larga, debes devolver un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```). Usa SOLO estos nombres:",
+        "Si el usuario pide un itinerario/ruta por días (ciudad/país/región + nº de días) o pega/adjunta una agenda larga, debes devolver un JSON ejecutable ENTRE ESTOS MARCADORES EXACTOS (líneas literales, sin envolver en ```). Usa SOLO estos nombres:",
         KAVIRO_ITINERARY_JSON_START,
         "{...json...}",
         KAVIRO_ITINERARY_JSON_END,
@@ -155,7 +156,10 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
         "- En place_name y address de cada item incluye país o región inequívoca para geocodificar bien (ej. «Tower of London, London, United Kingdom»). Evita topónimos sueltos tipo solo «Londres» si pueden confundirse con homónimos en otros países.",
         "- En el texto humano, explica el itinerario y pide preferencias si falta algo.",
         "- requires_ticket: true en museos, torres, partidos NBA/NHL/NFL, cruceros, espectáculos de pago; false en paseos libres, tailgates sin entrada nombrada o traslados; null si no aplica.",
-        "- Si el usuario pega una agenda larga (horas tipo 12.00h, bloques DÍA X, vuelos, hotel, partidos), IMPORTA cada actividad con hora y lugar como item separado (no resumas en 2-3 paradas por día).",
+        "- Si el usuario pega o importa una agenda larga (horas tipo 12.00h, bloques DÍA X o VIERNES 27, vuelos, hotel, partidos), IMPORTA cada actividad con hora y lugar como item separado (no resumas en 2-3 paradas por día).",
+        "- Vuelos: activity_kind transport; en title/notes incluye ruta, aerolínea y nº de vuelo si consta.",
+        "- Hoteles: activity_kind lodging; check-in/out como items con visit_type check_in o check_out.",
+        "- Códigos PNR/localizador → ticket_notes o notes.",
         "- Convierte 12.00h → start_time 12:00. Dirección postal completa en address; nombre del sitio en place_name con ciudad y país.",
         "- Si hay dos fechas alternativas (ej. 29 Oct o 5 Nov), usa las fechas del CONTEXTO DEL VIAJE; si no encajan, date=null y day coherente con el orden del texto.",
         "- No omitas vuelos, check-in hotel, partidos, cruceros ni comidas en restaurante nombrado. Consejos sin hora/lugar van en notes del item más cercano, no como item propio.",
@@ -254,8 +258,9 @@ export function buildTripPrompt(context: string, question: string, mode: TripAiM
     looksLikePastedItineraryImport(question)
       ? [
           "",
-          "TAREA ACTUAL: el usuario pegó una agenda detallada. Debes devolver KAVIRO_ITINERARY con TODAS las actividades con hora y lugar detectables.",
-          "En el texto previo al JSON, resume cuántos días y actividades has extraído y si faltan fechas del viaje en el contexto.",
+          "TAREA ACTUAL: el usuario pegó o transcribió un dossier/agenda detallada.",
+          "Devuelve KAVIRO_ITINERARY con TODAS las actividades con hora, vuelo, hotel, traslado y excursión detectables.",
+          "En el texto previo al JSON, indica cuántos días y actividades has extraído y si las fechas del viaje en contexto encajan con el calendario.",
         ].join("\n")
       : "",
     "",

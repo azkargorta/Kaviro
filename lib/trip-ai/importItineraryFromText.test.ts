@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  alignItineraryDatesForImport,
   fillItineraryDatesFromTripSummary,
   mergeImportedItineraries,
+  parseDayOfMonthFromCalendarHeader,
+  resolveDayOfMonthInTripRange,
   splitSourceByDaySections,
   splitSourceByTimeSlots,
   splitSourceForImport,
+  stampItineraryDatesFromChunkLabel,
 } from "@/lib/trip-ai/importItineraryFromText";
 
 const ARGENTINA_SAMPLE = [
@@ -133,5 +137,48 @@ describe("fillItineraryDatesFromTripSummary", () => {
     );
     expect(filled.days[0]?.date).toBe("2026-10-28");
     expect(filled.days[1]?.date).toBe("2026-10-29");
+  });
+});
+
+describe("resolveDayOfMonthInTripRange", () => {
+  const summary =
+    "Viaje: Argentina | Destino: Argentina | Fechas: 2026-11-27 → 2026-12-08 | Moneda: EUR";
+
+  it("resuelve VIERNES 27 al inicio del viaje", () => {
+    expect(parseDayOfMonthFromCalendarHeader("VIERNES 27")).toBe(27);
+    expect(resolveDayOfMonthInTripRange(27, "2026-11-27", "2026-12-08")).toBe("2026-11-27");
+  });
+
+  it("resuelve MARTES 1 al mes siguiente dentro del rango", () => {
+    expect(parseDayOfMonthFromCalendarHeader("MARTES 1")).toBe(1);
+    expect(resolveDayOfMonthInTripRange(1, "2026-11-27", "2026-12-08")).toBe("2026-12-01");
+  });
+
+  it("ignora fechas erróneas de la IA y alinea por encabezados del dossier", () => {
+    const aligned = alignItineraryDatesForImport(
+      {
+        version: 1,
+        days: [
+          { day: 1, date: "2026-11-30", items: [{ title: "Barajas" }] },
+          { day: 2, date: "2026-12-01", items: [{ title: "Buenos Aires" }] },
+        ],
+      },
+      summary,
+      ARGENTINA_SAMPLE
+    );
+    expect(aligned.days[0]?.date).toBe("2026-11-27");
+    expect(aligned.days[1]?.date).toBe("2026-11-28");
+  });
+
+  it("asigna fecha desde la etiqueta del tramo (VIERNES 27)", () => {
+    const stamped = stampItineraryDatesFromChunkLabel(
+      {
+        version: 1,
+        days: [{ day: 1, date: "2026-11-30", items: [{ title: "Barajas" }] }],
+      },
+      "VIERNES 27",
+      summary
+    );
+    expect(stamped.days[0]?.date).toBe("2026-11-27");
   });
 });

@@ -115,8 +115,9 @@ function assistantContextPreset(surface: TripAssistantSurface): AssistantContext
         mode: "planning",
         modeSource: "manual",
         welcome:
-          "Estás en Plan: me centraré en crear o reorganizar el itinerario por días (visitas, horarios, propuestas).\n\n" +
-          "Pega una agenda completa y generaré **tarjetas por actividad** para validar antes de añadirlas al plan. También puedes pedir un borrador de N días.",
+          "Estás en **Planificación profesional**.\n\n" +
+          "Puedes **adjuntar el dossier** (PDF o imagen del calendario de la agencia): leemos vuelos, hoteles, excursiones y horarios, y generamos **tarjetas por día** para que las revises antes de añadirlas.\n\n" +
+          "También puedes **pegar la agenda** en el chat o pedir un borrador desde cero. Comprueba que las **fechas del viaje** en ajustes coinciden con el calendario.",
       };
     case "routes":
       return {
@@ -175,10 +176,11 @@ const SEARCH_FOCUS_WELCOME =
   "Ejemplos: «busca hoteles cerca del centro», «vuelos desde Barcelona ida y vuelta», «tren Madrid–Valencia» o «coche de alquiler en el aeropuerto».";
 
 const PLANNER_FOCUS_WELCOME =
-  "Modo **Planificador (todo el viaje)**\n\n" +
-  "Puedes **pegar una agenda completa** (horarios, vuelos, hotel, partidos…) y la analizaré: extraeré título, día, hora, lugar, si lleva entrada y coordenadas cuando consten.\n\n" +
-  "Verás **todas las actividades por día** con casillas: marca las que quieras y pulsa **«Añadir seleccionadas»** para volcarlas al Plan (el resto se descarta).\n\n" +
-  "También puedo crear un itinerario desde cero si describes el viaje o pulsas «Sugerir itinerario» con el plan vacío.";
+  "Modo **Planificación profesional**\n\n" +
+  "1. **Importar dossier** — Adjunta PDF o imagen del calendario (agencia, empresa). Extraemos vuelos, hoteles, traslados y excursiones con hora.\n" +
+  "2. **Revisar tarjetas** — Cada día aparece con sus paradas; marca las que quieras y pulsa **«Añadir seleccionadas»**.\n" +
+  "3. **Pegar texto** — También puedes pegar la agenda en el chat si prefieres.\n\n" +
+  "Importante: las **fechas del viaje** (inicio y fin) deben coincidir con el calendario del dossier.";
 
 const DAY_FOCUS_WELCOME =
   "Modo **Desplazamientos y un día**\n\n" +
@@ -774,7 +776,7 @@ export default function TripAiChatView({
       setError(null);
       const sections = splitSourceForImport(text);
       const useClientChunks = sections.length >= 2 || text.length > 1200;
-      const hint = assistantHint?.slice(0, 4000) ?? "";
+      const hint = assistantHint?.slice(0, 6000) ?? "";
       const mergedParts: ItineraryPayload[] = [];
 
       try {
