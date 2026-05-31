@@ -19,6 +19,22 @@ import {
   KAVIRO_ITINERARY_JSON_END,
   KAVIRO_ITINERARY_JSON_START,
 } from "@/lib/trip-ai/kaviroJsonMarkers";
+import {
+  countScheduleLinesInText,
+  isAgencyCalendarParseAcceptable,
+  looksLikeAgencyWeekdayCalendar,
+  normalizeAgencyCalendarSourceText,
+  parseAgencyCalendarItinerary,
+  splitSourceForAgencyCalendar,
+} from "@/lib/trip-ai/agencyCalendarParse";
+
+export {
+  countScheduleLinesInText,
+  isAgencyCalendarParseAcceptable,
+  looksLikeAgencyWeekdayCalendar,
+  normalizeAgencyCalendarSourceText,
+  parseAgencyCalendarItinerary,
+} from "@/lib/trip-ai/agencyCalendarParse";
 
 function addUtcDays(isoDate: string, offset: number): string {
   const d = new Date(`${isoDate}T12:00:00.000Z`);
@@ -27,7 +43,7 @@ function addUtcDays(isoDate: string, offset: number): string {
 }
 
 const CALENDAR_HEADER_DAY_RE =
-  /(?:^|\s)(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+(\d{1,2})\b/i;
+  /(?:^|\s)(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+(\d{1,2})(?![.:]\d)\b/i;
 
 /** Extrae el día del mes de encabezados «VIERNES 27», «lunes 1», etc. */
 export function parseDayOfMonthFromCalendarHeader(text: string): number | null {
@@ -308,11 +324,19 @@ export function splitSourceByTimeSlots(
 
 /** Estrategia de troceado para importación (días explícitos o bloques horarios). */
 export function splitSourceForImport(sourceText: string): Array<{ header: string; body: string }> {
-  const byDay = splitSourceByDaySections(sourceText);
+  const normalized = normalizeAgencyCalendarSourceText(sourceText);
+
+  if (looksLikeAgencyWeekdayCalendar(normalized)) {
+    const byAgency = splitSourceForAgencyCalendar(normalized);
+    if (byAgency.length >= 2) return byAgency;
+    return [{ header: "Todo", body: normalized }];
+  }
+
+  const byDay = splitSourceByDaySections(normalized);
   if (byDay.length >= 2) return byDay;
-  const byTime = splitSourceByTimeSlots(sourceText);
+  const byTime = splitSourceByTimeSlots(normalized);
   if (byTime.length >= 2) return byTime;
-  return [{ header: "Todo", body: sourceText }];
+  return [{ header: "Todo", body: normalized }];
 }
 
 function itineraryItemFingerprint(item: { title?: string; start_time?: string | null }): string {
@@ -323,16 +347,6 @@ function itineraryItemFingerprint(item: { title?: string; start_time?: string | 
     .replace(/\p{M}/gu, "");
   const time = String(item.start_time ?? "").trim();
   return `${time}|${title}`;
-}
-
-/** Cuenta líneas con hora en un trozo de dossier (12.00h, 19:05h…). */
-export function countScheduleLinesInText(text: string): number {
-  let n = 0;
-  for (const line of text.split(/\n/)) {
-    const t = line.trim();
-    if (/^\d{1,2}[.:]\d{2}\s*h\b/i.test(t) || /^\d{1,2}:\d{2}\b/.test(t)) n++;
-  }
-  return n;
 }
 
 function dedupeItineraryItems(
@@ -482,7 +496,8 @@ function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string,
   const range = parseTripDateRangeFromSummary(tripSummary);
   const map = new Map<string, string>();
   if (!range) return map;
-  for (const section of splitSourceForImport(sourceText).filter((s) => s.header !== "Todo")) {
+  const normalized = normalizeAgencyCalendarSourceText(sourceText);
+  for (const section of splitSourceForImport(normalized).filter((s) => s.header !== "Todo")) {
     const dom = parseDayOfMonthFromCalendarHeader(section.header);
     if (dom == null) continue;
     const iso = resolveDayOfMonthInTripRange(dom, range.start, range.end);
@@ -491,58 +506,9 @@ function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string,
   return map;
 }
 
-/** Dossier de agencia: «VIERNES 27» + líneas «07.30h …» (sin depender de la IA). */
-export function looksLikeAgencyWeekdayCalendar(sourceText: string): boolean {
-  const sections = countDaySectionsInSource(sourceText);
-  const times = countScheduleLinesInText(sourceText);
-  return sections >= 3 && times >= sections && times >= 8;
-}
-
 /**
- * Importación determinística: una tarjeta por línea con hora de cada bloque «VIERNES 27».
- * Instantánea y alineada al dossier (ideal para calendarios Stripes / agencias).
+ * Un trozo = un solo día en el resultado. Evita que la IA devuelva varios days[] o actividades de otros días.
  */
-export function parseAgencyCalendarItinerary(
-  sourceText: string,
-  tripSummary: string
-): ExecutableItineraryPayload | null {
-  const range = parseTripDateRangeFromSummary(tripSummary);
-  if (!range) return null;
-
-  const sections = splitSourceByDaySections(sourceText).filter((s) => s.header !== "Todo");
-  if (sections.length < 2) return null;
-
-  const days: ItineraryDayPayload[] = [];
-
-  for (const section of sections) {
-    const dom = parseDayOfMonthFromCalendarHeader(section.header);
-    if (dom == null) continue;
-    const slots = parseScheduleSlotsFromSection(section.body);
-    if (!slots.length) continue;
-    const date = resolveDayOfMonthInTripRange(dom, range.start, range.end);
-    if (!date) continue;
-
-    const items = slots.map((slot) =>
-      normalizeItineraryItem({
-        title: slot.label,
-        start_time: slot.time,
-        activity_kind: inferKindFromSlotLabel(slot.label),
-      })
-    );
-
-    days.push({ day: days.length + 1, date, items });
-  }
-
-  if (days.length < 2) return null;
-
-  return {
-    version: 1,
-    title: "Itinerario importado",
-    days: days.map((d, idx) => ({ ...d, day: idx + 1 })),
-  };
-}
-
-/** Penaliza días con más actividades de las que marca el dossier. */
 function itineraryAlignmentScore(
   itinerary: ExecutableItineraryPayload,
   sourceText: string,
@@ -756,13 +722,14 @@ export async function importItineraryFromText(params: {
   sourceText: string;
   assistantHint?: string;
 }): Promise<{ itinerary: ExecutableItineraryPayload; answer: string; usage: TripAiUsage } | null> {
-  const sourceText = params.sourceText.trim();
+  const sourceText = normalizeAgencyCalendarSourceText(params.sourceText.trim());
   const assistantHint = params.assistantHint?.trim() || "";
   const tripSummary = params.tripSummary;
   const usageAgg: TripAiUsage = { provider: "gemini", model: null, inputTokens: 0, outputTokens: 0 };
   const pasted = looksLikePastedItineraryImport(sourceText);
+  const isAgencyCalendar = looksLikeAgencyWeekdayCalendar(sourceText);
   const sections = splitSourceForImport(sourceText);
-  const useChunkedFirst = pasted && (sections.length >= 2 || sourceText.length > 1800);
+  const useChunkedFirst = !isAgencyCalendar && pasted && (sections.length >= 2 || sourceText.length > 1800);
 
   const finish = (itinerary: ExecutableItineraryPayload, answer: string) => ({
     itinerary: sanitizeItineraryBySourceSections(
@@ -776,7 +743,7 @@ export async function importItineraryFromText(params: {
 
   if (looksLikeAgencyWeekdayCalendar(sourceText)) {
     const fast = parseAgencyCalendarItinerary(sourceText, tripSummary);
-    if (fast && isItineraryImportSufficient(fast, sourceText)) {
+    if (fast && isAgencyCalendarParseAcceptable(fast, sourceText, tripSummary)) {
       const total = countItineraryItems(fast);
       return finish(
         fast,
@@ -833,7 +800,7 @@ export async function importItineraryFromText(params: {
   }
 
   // 4) Tramos si aún no se intentó
-  if (!useChunkedFirst && sections.length >= 2) {
+  if (!useChunkedFirst && !isAgencyCalendar && sections.length >= 2) {
     try {
       const chunked = await importByChunks(tripSummary, sourceText, usageAgg);
       if (chunked) candidates.push(chunked);

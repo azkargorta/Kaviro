@@ -21,6 +21,11 @@ import {
   ARGENTINA_STRIPES_CALENDAR,
   ARGENTINA_TRIP_SUMMARY,
 } from "@/lib/trip-ai/argentinaStripesFixture";
+import { ARGENTINA_OFFICIAL_PDF_SNIPPET } from "@/lib/trip-ai/argentinaOfficialPdfFixture";
+import {
+  isAgencyCalendarParseAcceptable,
+  normalizeAgencyCalendarSourceText,
+} from "@/lib/trip-ai/agencyCalendarParse";
 import { countItineraryItems } from "@/lib/trip-ai/itineraryDraftUtils";
 
 const ARGENTINA_SAMPLE = [
@@ -71,6 +76,18 @@ describe("parseAgencyCalendarItinerary", () => {
       "18:55",
     ]);
     expect(day7?.items?.some((it) => /calafate|imago/i.test(it.title))).toBe(false);
+  });
+
+  it("prioriza el calendario resumen del PDF oficial (12 días, sin amontonar en día 1)", () => {
+    const normalized = normalizeAgencyCalendarSourceText(ARGENTINA_OFFICIAL_PDF_SNIPPET);
+    expect(looksLikeAgencyWeekdayCalendar(normalized)).toBe(true);
+    const parsed = parseAgencyCalendarItinerary(normalized, ARGENTINA_TRIP_SUMMARY);
+    expect(parsed).toBeTruthy();
+    expect(isAgencyCalendarParseAcceptable(parsed!, normalized, ARGENTINA_TRIP_SUMMARY)).toBe(true);
+    expect(parsed!.days).toHaveLength(12);
+    expect(parsed!.days[0]?.date).toBe("2026-11-27");
+    expect(parsed!.days[0]?.items?.length).toBeLessThanOrEqual(6);
+    expect(parsed!.days.find((d) => d.date === "2026-12-07")?.items).toHaveLength(5);
   });
 });
 

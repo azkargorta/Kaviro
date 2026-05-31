@@ -6,7 +6,7 @@ export function countDaySectionsInSource(sourceText: string): number {
   const diaHits = (sourceText.match(/(?:^|\n)\s*(?:D[IÍ]A|D[ií]a|Day)\s*\d+\b/gim) || []).length;
   const weekdayHits = (
     sourceText.match(
-      /(?:^|\n)\s*(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\b/gim
+      /(?:^|\n)\s*(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}(?![.:]\d)\b/gim
     ) || []
   ).length;
   return Math.max(diaHits, weekdayHits);
@@ -80,7 +80,7 @@ export function looksLikeAssistantItineraryText(text: string): boolean {
   if (looksLikePastedItineraryImport(q)) return true;
   const dayHits = (q.match(/d[ií]a\s+\d+|day\s+\d+/gi) || []).length;
   const weekdayHits = (
-    q.match(/(?:^|\n)\s*(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\b/gim) ||
+    q.match(/(?:^|\n)\s*(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}(?![.:]\d)\b/gim) ||
     []
   ).length;
   const timeHits = (q.match(/\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/gi) || []).length;

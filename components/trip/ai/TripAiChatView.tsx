@@ -55,8 +55,10 @@ import {
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
   alignItineraryDatesForImport,
+  isAgencyCalendarParseAcceptable,
   looksLikeAgencyWeekdayCalendar,
   mergeImportedItineraries,
+  normalizeAgencyCalendarSourceText,
   parseAgencyCalendarItinerary,
   sanitizeItineraryBySourceSections,
   splitSourceForImport,
@@ -781,15 +783,16 @@ export default function TripAiChatView({
 
   const runImportItineraryCards = useCallback(
     async (sourceText: string, assistantHint?: string): Promise<ItineraryPayload | null> => {
-      const text = prepareItineraryTextForImport(sourceText);
+      const text = normalizeAgencyCalendarSourceText(prepareItineraryTextForImport(sourceText));
       if (!text || importingItineraryCards) return null;
       lastImportSourceRef.current = text;
       setImportingItineraryCards(true);
       setImportProgress(null);
       setImportCardsFailed(false);
       setError(null);
+      const isAgencyCalendar = looksLikeAgencyWeekdayCalendar(text);
       const sections = splitSourceForImport(text);
-      const useClientChunks = sections.length >= 2 || text.length > 1200;
+      const useClientChunks = !isAgencyCalendar && (sections.length >= 2 || text.length > 1200);
       const hint = assistantHint?.slice(0, 6000) ?? "";
       const mergedParts: ItineraryPayload[] = [];
       const tripSummaryForImport =
@@ -807,15 +810,41 @@ export default function TripAiChatView({
       };
 
       try {
-        if (tripSummaryForImport && looksLikeAgencyWeekdayCalendar(text)) {
+        if (tripSummaryForImport && isAgencyCalendar) {
           const fast = parseAgencyCalendarItinerary(text, tripSummaryForImport);
-          if (fast && fast.days.length >= 2) {
+          if (fast && isAgencyCalendarParseAcceptable(fast, text, tripSummaryForImport)) {
             const ready = finalizeImportDraft(fast);
             setInfo(
               `Tarjetas listas (${ready.days.length} días, ${countItineraryItems(ready)} actividades). Revisa y pulsa «Añadir».`
             );
             return ready;
           }
+
+          setInfo("Leyendo calendario del dossier…");
+          const { res, payload } = await fetchJsonWithTimeout(
+            "/api/trip-ai/import-itinerary",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ tripId, sourceText: text, assistantHint: hint }),
+            },
+            IMPORT_FULL_TIMEOUT_MS
+          );
+          if (res.ok && payload?.itinerary) {
+            const serverDraft = finalizeImportDraft(payload.itinerary as ItineraryPayload);
+            if (isAgencyCalendarParseAcceptable(serverDraft, text, tripSummaryForImport)) {
+              setInfo(
+                `Tarjetas listas (${serverDraft.days.length} días, ${countItineraryItems(serverDraft)} actividades). Revisa y pulsa «Añadir».`
+              );
+              return serverDraft;
+            }
+          }
+          setImportCardsFailed(true);
+          setError(
+            "No se pudo alinear el calendario día a día. Comprueba que las fechas del viaje coinciden con el dossier (27 nov – 8 dic 2026)."
+          );
+          return null;
         }
 
         if (useClientChunks) {
