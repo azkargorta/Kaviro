@@ -1960,6 +1960,26 @@ export default function TripAiChatView({
     </form>
   );
 
+  const showDocumentImport = isPremium && !aiBudgetExceeded;
+  const documentImportSection = showDocumentImport ? (
+    <TripAiDocumentImportBar
+      tripId={tripId}
+      disabled={loading || executingPlan}
+      busy={importingItineraryCards}
+      defaultExpanded={mode === "planning" || layout === "drawer" || assistantContext === "plan"}
+      onStatus={(msg) => setInfo(msg)}
+      onGenerateFromText={async (sourceText, hint) => {
+        const draft = await runImportItineraryCards(sourceText, hint);
+        if (!draft) return null;
+        setItineraryDraft(draft);
+        setItinerarySelected(collectItineraryItemKeys(draft));
+        setExpandedDay(draft.days[0]?.day ?? null);
+        setItineraryFullscreenReview(true);
+        return draft;
+      }}
+    />
+  ) : null;
+
   if (!isPremium) {
     if (layout === "drawer") {
       return (
@@ -2125,24 +2145,7 @@ export default function TripAiChatView({
         </div>
       ) : null}
 
-      {isPremium && !aiBudgetExceeded ? (
-        <TripAiDocumentImportBar
-          tripId={tripId}
-          disabled={loading || executingPlan}
-          busy={importingItineraryCards}
-          defaultExpanded={mode === "planning" || layout === "drawer"}
-          onStatus={(msg) => setInfo(msg)}
-          onGenerateFromText={async (sourceText, hint) => {
-            const draft = await runImportItineraryCards(sourceText, hint);
-            if (!draft) return null;
-            setItineraryDraft(draft);
-            setItinerarySelected(collectItineraryItemKeys(draft));
-            setExpandedDay(draft.days[0]?.day ?? null);
-            setItineraryFullscreenReview(true);
-            return draft;
-          }}
-        />
-      ) : null}
+      {hideChatForItineraryCards ? documentImportSection : null}
 
       {importingItineraryCards ? (
         <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-3 text-sm font-semibold text-[var(--brand-text)]">
@@ -3192,12 +3195,22 @@ export default function TripAiChatView({
             <div ref={bottomRef} />
           </div>
 
-          {!isMobileDrawer ? chatComposerForm : null}
+          {!hideChatForItineraryCards ? (
+            <div className="shrink-0 space-y-2 border-t border-slate-100 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
+              {!isMobileDrawer ? documentImportSection : null}
+              {!isMobileDrawer ? chatComposerForm : null}
+            </div>
+          ) : null}
         </section>
       </section>
       ) : null}
         </div>
-        {isMobileDrawer ? chatComposerForm : null}
+        {isMobileDrawer ? (
+          <div className="shrink-0 space-y-2 border-t border-slate-100 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
+            {documentImportSection}
+            {chatComposerForm}
+          </div>
+        ) : null}
       </div>
     </Root>
   );
