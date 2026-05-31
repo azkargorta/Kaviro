@@ -106,7 +106,7 @@ function buildJsonOnlyPrompt(
     "Reglas:",
     "- Extrae CADA actividad con hora del fragmento (vuelos, hotel, museos, partidos, cruceros, comidas con nombre).",
     "- 12.00h → 12:00. place_name y address con ciudad y país del viaje (ej. Chicago, IL, USA).",
-    "- Mapea encabezados «DÍA …» a fechas del CONTEXTO DEL VIAJE.",
+    "- Mapea encabezados «DÍA …» o «VIERNES 27» / «sábado 5» a fechas del CONTEXTO DEL VIAJE.",
     "- requires_ticket: true en museos, torres, NBA/NHL/NFL, cruceros; false en traslados/paseos libres.",
     "- No omitas ningún bloque horario de ESTE fragmento; un item por línea con hora.",
     chunkNote ? `- ${chunkNote}` : "",
@@ -137,16 +137,38 @@ function buildMarkerPrompt(tripSummary: string, sourceText: string) {
   ].join("\n");
 }
 
-/** Parte el texto en bloques por «DÍA …» para agendas muy largas. */
-export function splitSourceByDaySections(sourceText: string): Array<{ header: string; body: string }> {
-  const re = /(?=(?:D[IÍ]A|D[ií]a|Day)\s*\d+\b)/gi;
-  const parts = sourceText.split(re).map((p) => p.trim()).filter(Boolean);
-  if (parts.length <= 1) return [{ header: "Todo", body: sourceText }];
+/** Encabezados tipo «VIERNES 27», «sábado 5» (dossiers de agencia). */
+const WEEKDAY_DAY_SPLIT_RE =
+  /(?=(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\b)/gi;
 
-  return parts.map((part) => {
+function sectionHasScheduleLines(body: string): boolean {
+  return /\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/i.test(body);
+}
+
+function mapDaySectionParts(parts: string[], fallbackBody: string): Array<{ header: string; body: string }> {
+  let trimmed = parts;
+  if (trimmed.length >= 2 && trimmed[0] && !sectionHasScheduleLines(trimmed[0])) {
+    trimmed = trimmed.slice(1);
+  }
+  if (trimmed.length < 2) return [{ header: "Todo", body: fallbackBody }];
+
+  return trimmed.map((part) => {
     const firstLine = part.split("\n")[0]?.trim() || "Día";
     return { header: firstLine.slice(0, 80), body: part };
   });
+}
+
+
+/** Parte el texto en bloques por «DÍA …» o «VIERNES 27» para agendas muy largas. */
+export function splitSourceByDaySections(sourceText: string): Array<{ header: string; body: string }> {
+  const diaRe = /(?=(?:D[IÍ]A|D[ií]a|Day)\s*\d+\b)/gi;
+  const diaParts = sourceText.split(diaRe).map((p) => p.trim()).filter(Boolean);
+  if (diaParts.length >= 2) return mapDaySectionParts(diaParts, sourceText);
+
+  const weekdayParts = sourceText.split(WEEKDAY_DAY_SPLIT_RE).map((p) => p.trim()).filter(Boolean);
+  if (weekdayParts.length >= 2) return mapDaySectionParts(weekdayParts, sourceText);
+
+  return [{ header: "Todo", body: sourceText }];
 }
 
 /** Si no hay «DÍA N», parte por líneas con hora (12.00h-, 15.55h-, etc.). */
@@ -193,14 +215,54 @@ export function splitSourceForImport(sourceText: string): Array<{ header: string
   return [{ header: "Todo", body: sourceText }];
 }
 
+function itineraryItemFingerprint(item: { title?: string; start_time?: string | null }): string {
+  const title = String(item.title ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  const time = String(item.start_time ?? "").trim();
+  return `${time}|${title}`;
+}
+
+function dayMergeKey(d: ItineraryDayPayload): string {
+  if (typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) {
+    return `date:${d.date}`;
+  }
+  const items = d.items ?? [];
+  if (items.length) {
+    return `sig:${items.slice(0, 2).map(itineraryItemFingerprint).join("|")}`;
+  }
+  return `num:${d.day}`;
+}
+
 export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): ExecutableItineraryPayload {
-  const days: ItineraryDayPayload[] = [];
+  const dayByKey = new Map<string, ItineraryDayPayload>();
+  const keyOrder: string[] = [];
+
   for (const p of parts) {
     for (const d of p.days) {
       if (!d.items?.length) continue;
-      days.push(d);
+      const key = dayMergeKey(d);
+      const prev = dayByKey.get(key);
+      if (!prev) {
+        dayByKey.set(key, { ...d, items: [...d.items] });
+        keyOrder.push(key);
+        continue;
+      }
+      const seen = new Set((prev.items ?? []).map(itineraryItemFingerprint));
+      for (const it of d.items) {
+        const fp = itineraryItemFingerprint(it);
+        if (!seen.has(fp)) {
+          prev.items!.push(it);
+          seen.add(fp);
+        }
+      }
+      if (!prev.date && d.date) prev.date = d.date;
     }
   }
+
+  const days = keyOrder.map((k) => dayByKey.get(k)!);
   return {
     version: 1,
     title: parts.find((p) => p.title)?.title || "Itinerario importado",

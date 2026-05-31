@@ -1,6 +1,17 @@
 import type { ExecutableItineraryPayload } from "@/lib/trip-ai/tripCreationTypes";
 import { findItineraryJsonEnd, findItineraryJsonStart } from "@/lib/trip-ai/kaviroJsonMarkers";
 
+/** Cuenta bloques de día detectables (DÍA N o «viernes 27»). */
+export function countDaySectionsInSource(sourceText: string): number {
+  const diaHits = (sourceText.match(/(?:^|\n)\s*(?:D[IÍ]A|D[ií]a|Day)\s*\d+\b/gim) || []).length;
+  const weekdayHits = (
+    sourceText.match(
+      /(?:^|\n)\s*(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\b/gim
+    ) || []
+  ).length;
+  return Math.max(diaHits, weekdayHits);
+}
+
 export type ItineraryItemDraft = ExecutableItineraryPayload["days"][number]["items"][number];
 
 export type ItineraryDraftPayload = ExecutableItineraryPayload;
@@ -68,13 +79,19 @@ export function looksLikeAssistantItineraryText(text: string): boolean {
   if (q.length < 280) return false;
   if (looksLikePastedItineraryImport(q)) return true;
   const dayHits = (q.match(/d[ií]a\s+\d+|day\s+\d+/gi) || []).length;
+  const weekdayHits = (
+    q.match(/(?:^|\n)\s*(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\b/gim) ||
+    []
+  ).length;
   const timeHits = (q.match(/\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/gi) || []).length;
   const itineraryCue =
     /\bitinerario\b|\bagenda\b|\bparadas?\b|\b\d+\s*d[ií]as\b|desde el \d{1,2} de \w+/i.test(q);
   return (
     (itineraryCue && q.length >= 500) ||
     (dayHits >= 1 && timeHits >= 2) ||
+    (weekdayHits >= 2 && timeHits >= 2) ||
     dayHits >= 2 ||
+    weekdayHits >= 3 ||
     (timeHits >= 5 && q.length > 800)
   );
 }
@@ -116,10 +133,12 @@ export function looksLikePastedItineraryImport(question: string): boolean {
   if (q.length < 400) return false;
   const timeHits = (q.match(/\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/gi) || []).length;
   const dayHits = (q.match(/d[ií]a\s+\d+/gi) || []).length;
+  const weekdayHits = countDaySectionsInSource(q);
   const hasScheduleCue = /\d{1,2}[.:]\d{2}\s*h\s*[-–—]/i.test(q) || /quedada|llegada|vuelo|check[- ]?out/i.test(q);
   return (
-    (timeHits >= 3 && (dayHits >= 1 || hasScheduleCue)) ||
+    (timeHits >= 3 && (dayHits >= 1 || weekdayHits >= 1 || hasScheduleCue)) ||
     (dayHits >= 2 && q.length > 900) ||
+    (weekdayHits >= 3 && timeHits >= 2) ||
     (timeHits >= 6 && q.length > 1200)
   );
 }
@@ -130,6 +149,8 @@ export function estimateMinActivitiesFromSource(sourceText: string): number {
   if (!q) return 1;
   const timeHits = (q.match(/\d{1,2}[.:]\d{2}\s*h\s*[-–—]|\d{1,2}[.:]\d{2}\s*h\s+\S/gi) || []).length;
   const dayHits = (q.match(/d[ií]a\s+\d+/gi) || []).length;
+  const weekdayHits = countDaySectionsInSource(q);
+  if (weekdayHits >= 2) return Math.max(weekdayHits * 2, timeHits >= 4 ? Math.floor(timeHits * 0.65) : weekdayHits);
   if (dayHits >= 2) return Math.max(dayHits * 2, timeHits >= 4 ? Math.floor(timeHits * 0.65) : dayHits);
   if (timeHits >= 4) return Math.max(4, Math.floor(timeHits * 0.7));
   if (looksLikePastedItineraryImport(q)) return 3;
@@ -144,8 +165,12 @@ export function isItineraryImportIncomplete(
   const got = countItineraryItems(draft);
   const expected = estimateMinActivitiesFromSource(sourceText);
   const dayHits = (sourceText.match(/d[ií]a\s+\d+/gi) || []).length;
+  const weekdayHits = countDaySectionsInSource(sourceText);
+  const expectedDays = Math.max(dayHits, weekdayHits);
   if (sourceText.length > 2000 && got <= 2) return true;
+  if (expectedDays >= 3 && draft.days.length < expectedDays) return true;
   if (dayHits >= 3 && got < dayHits) return true;
+  if (weekdayHits >= 3 && draft.days.length < weekdayHits) return true;
   if (expected >= 5 && got < expected * 0.45) return true;
   return expected >= 3 && got < Math.min(expected, got + 2);
 }

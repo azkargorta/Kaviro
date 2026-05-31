@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   collectItineraryItemKeys,
+  countDaySectionsInSource,
   countItineraryItems,
   estimateMinActivitiesFromSource,
   filterItineraryBySelection,
@@ -30,6 +31,13 @@ describe("estimateMinActivitiesFromSource", () => {
       "20.00h- Cena",
     ].join("\n");
     expect(estimateMinActivitiesFromSource(text)).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("countDaySectionsInSource", () => {
+  it("cuenta encabezados VIERNES 27 / sábado 5", () => {
+    const text = "VIERNES 27\n10.00h Vuelo\nSABADO 28\n12.00h Museo\nDOMINGO 29\n09.00h Tour";
+    expect(countDaySectionsInSource(text)).toBe(3);
   });
 });
 

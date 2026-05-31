@@ -783,6 +783,26 @@ export default function TripAiChatView({
           const total = activeSections.length;
           let completed = 0;
 
+          const importOneSection = async (section: { header: string; body: string }) => {
+            const { res, payload } = await fetchJsonWithTimeout(
+              "/api/trip-ai/import-itinerary",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  tripId,
+                  sourceText: section.body,
+                  singleChunk: true,
+                  chunkLabel: section.header,
+                }),
+              },
+              IMPORT_CHUNK_TIMEOUT_MS
+            );
+            if (!res.ok || !payload?.itinerary) return null;
+            return payload.itinerary as ItineraryPayload;
+          };
+
           const flushPartial = () => {
             if (!mergedParts.length) return;
             const partial = mergeImportedItineraries(mergedParts);
@@ -793,42 +813,36 @@ export default function TripAiChatView({
             }
           };
 
+          const sectionResults: Array<ItineraryPayload | null> = new Array(total).fill(null);
+
           for (let i = 0; i < activeSections.length; i += IMPORT_CHUNK_CONCURRENCY) {
             const batch = activeSections.slice(i, i + IMPORT_CHUNK_CONCURRENCY);
             setImportProgress({ current: completed + 1, total, label: batch.map((s) => s.header).join(" · ") });
             setInfo(
               `Generando tarjetas: tramos ${completed + 1}–${Math.min(completed + batch.length, total)} de ${total}…`
             );
-            const chunkResults = await Promise.all(
-              batch.map(async (section) => {
-                const { res, payload } = await fetchJsonWithTimeout(
-                  "/api/trip-ai/import-itinerary",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({
-                      tripId,
-                      sourceText: section.body,
-                      singleChunk: true,
-                      chunkLabel: section.header,
-                    }),
-                  },
-                  IMPORT_CHUNK_TIMEOUT_MS
-                );
-                if (!res.ok || !payload?.itinerary) return null;
-                return payload.itinerary as ItineraryPayload;
-              })
-            );
-            for (const part of chunkResults) {
+            const chunkResults = await Promise.all(batch.map((section) => importOneSection(section)));
+            chunkResults.forEach((part, batchIdx) => {
+              const globalIdx = i + batchIdx;
+              sectionResults[globalIdx] = part;
               if (part) mergedParts.push(part);
-            }
+            });
             completed += batch.length;
             setImportProgress({ current: completed, total, label: batch[batch.length - 1]!.header });
             flushPartial();
           }
 
-          const mergedDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
+          const failedSections = activeSections.filter((_, idx) => !sectionResults[idx]);
+          if (failedSections.length) {
+            setInfo(`Reintentando ${failedSections.length} tramo(s) que no se generaron…`);
+            for (const section of failedSections) {
+              const part = await importOneSection(section);
+              if (part) mergedParts.push(part);
+            }
+            flushPartial();
+          }
+
+          let mergedDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
           if (mergedDraft && isItineraryImportSufficient(mergedDraft, text)) {
             setInfo(
               `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
@@ -836,40 +850,51 @@ export default function TripAiChatView({
             return mergedDraft;
           }
 
-          if (!mergedParts.length) {
-            setInfo("Reintentando importación completa…");
-            const { res: fullRes, payload: fullPayload } = await fetchJsonWithTimeout(
-              "/api/trip-ai/import-itinerary",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ tripId, sourceText: text, assistantHint: hint }),
-              },
-              IMPORT_FULL_TIMEOUT_MS
-            );
-            if (fullRes.ok && fullPayload?.itinerary) {
-              const draft = fullPayload.itinerary as ItineraryPayload;
-              setInfo(
-                `Tarjetas listas (${draft.days.length} días, ${countItineraryItems(draft)} actividades). Revisa y pulsa «Añadir».`
-              );
-              return draft;
-            }
-            setImportCardsFailed(true);
-            setInfo(null);
-            const apiErr =
-              typeof fullPayload?.error === "string" ? fullPayload.error : null;
-            setError(
-              apiErr ||
-                "No se pudieron generar las tarjetas. Pulsa «Generar tarjetas» o pega solo 2–3 días a la vez."
-            );
-            return null;
-          }
-          const draft = mergeImportedItineraries(mergedParts);
-          setInfo(
-            `Tarjetas listas (${draft.days.length} días, ${countItineraryItems(draft)} actividades). Revisa y pulsa «Añadir».`
+          setInfo("Completando itinerario…");
+          const { res: fullRes, payload: fullPayload } = await fetchJsonWithTimeout(
+            "/api/trip-ai/import-itinerary",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ tripId, sourceText: text, assistantHint: hint }),
+            },
+            IMPORT_FULL_TIMEOUT_MS
           );
-          return draft;
+          if (fullRes.ok && fullPayload?.itinerary) {
+            const fullDraft = fullPayload.itinerary as ItineraryPayload;
+            if (mergedDraft) {
+              const combined = mergeImportedItineraries([mergedDraft, fullDraft]);
+              const pickCombined =
+                combined.days.length > mergedDraft.days.length ||
+                countItineraryItems(combined) > countItineraryItems(mergedDraft);
+              mergedDraft = pickCombined ? combined : mergedDraft;
+              if (
+                countItineraryItems(fullDraft) > countItineraryItems(mergedDraft) &&
+                fullDraft.days.length >= mergedDraft.days.length
+              ) {
+                mergedDraft = fullDraft;
+              }
+            } else {
+              mergedDraft = fullDraft;
+            }
+          }
+
+          if (mergedDraft) {
+            setInfo(
+              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
+            );
+            return mergedDraft;
+          }
+
+          setImportCardsFailed(true);
+          setInfo(null);
+          const apiErr = typeof fullPayload?.error === "string" ? fullPayload.error : null;
+          setError(
+            apiErr ||
+              "No se pudieron generar las tarjetas. Pulsa «Generar tarjetas» o pega solo 2–3 días a la vez."
+          );
+          return null;
         }
 
         setInfo("Generando tarjetas para validar el itinerario…");
