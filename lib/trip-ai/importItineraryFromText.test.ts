@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   alignItineraryDatesForImport,
+  alignItemsToSectionSchedule,
   countScheduleLinesInText,
   fillItineraryDatesFromTripSummary,
   mergeImportedItineraries,
   normalizeChunkImportResult,
   parseDayOfMonthFromCalendarHeader,
+  parseScheduleSlotsFromSection,
   resolveDayOfMonthInTripRange,
   sanitizeItineraryBySourceSections,
   splitSourceByDaySections,
@@ -13,6 +15,10 @@ import {
   splitSourceForImport,
   stampItineraryDatesFromChunkLabel,
 } from "@/lib/trip-ai/importItineraryFromText";
+import {
+  ARGENTINA_STRIPES_CALENDAR,
+  ARGENTINA_TRIP_SUMMARY,
+} from "@/lib/trip-ai/argentinaStripesFixture";
 
 const ARGENTINA_SAMPLE = [
   "CALENDARIO TRIP TO ARGENTINA 2026",
@@ -143,9 +149,63 @@ describe("fillItineraryDatesFromTripSummary", () => {
   });
 });
 
+describe("parseScheduleSlotsFromSection", () => {
+  it("extrae horarios del dossier Argentina (LUNES 7 = 5 actividades)", () => {
+    const section = splitSourceForImport(ARGENTINA_STRIPES_CALENDAR).find((s) =>
+      /LUNES\s+7/i.test(s.header)
+    );
+    expect(section).toBeTruthy();
+    const slots = parseScheduleSlotsFromSection(section!.body);
+    expect(slots).toHaveLength(5);
+    expect(slots.map((s) => s.time)).toEqual(["08:00", "11:30", "16:00", "16:30", "18:55"]);
+  });
+});
+
+describe("alignItemsToSectionSchedule", () => {
+  it("descarta actividades de otros días en LUNES 30 aunque compartan hora", () => {
+    const section = splitSourceForImport(ARGENTINA_STRIPES_CALENDAR).find((s) =>
+      /LUNES\s+30/i.test(s.header)
+    )!;
+    const polluted = [
+      { title: "Quedada T1 Barajas", start_time: "16:00" },
+      { title: "Vuelo Madrid-Buenos Aires", start_time: "19:05" },
+      { title: "Desayuno en Hotel", start_time: "07:30" },
+      { title: "Excursión Buenos Aires Sur", start_time: "08:30" },
+      { title: "Desayuno en Hotel", start_time: "07:30" },
+      { title: "Excursión Buenos Aires Norte", start_time: "08:30" },
+      { title: "Tarde libre", start_time: "17:30" },
+      { title: "Posible partido fútbol", start_time: "20:00" },
+    ];
+    const aligned = alignItemsToSectionSchedule(polluted, section.body);
+    expect(aligned).toHaveLength(4);
+    expect(aligned.some((it) => /barajas|madrid|sur/i.test(it.title))).toBe(false);
+    expect(aligned.some((it) => /norte/i.test(it.title))).toBe(true);
+  });
+
+  it("reduce LUNES 7 hinchado a exactamente 5 actividades del dossier", () => {
+    const section = splitSourceForImport(ARGENTINA_STRIPES_CALENDAR).find((s) =>
+      /LUNES\s+7/i.test(s.header)
+    )!;
+    const bloated = Array.from({ length: 22 }, (_, i) => ({
+      title: i % 2 === 0 ? `El Calafate traslado ${i}` : `Iguazú extra ${i}`,
+      start_time: `${8 + (i % 10)}:${i % 2 === 0 ? "00" : "30"}`,
+    }));
+    bloated.push(
+      { title: "Desayuno en hotel", start_time: "08:00" },
+      { title: "Cataratas Brasil", start_time: "11:30" },
+      { title: "Quedada bus aeropuerto", start_time: "16:00" },
+      { title: "Facturación aeropuerto", start_time: "16:30" },
+      { title: "Vuelo Iguazú-Madrid", start_time: "18:55" }
+    );
+    const aligned = alignItemsToSectionSchedule(bloated, section.body);
+    expect(aligned).toHaveLength(5);
+    expect(aligned.map((it) => it.start_time)).toEqual(["08:00", "11:30", "16:00", "16:30", "18:55"]);
+    expect(aligned.some((it) => /calafate/i.test(it.title))).toBe(false);
+  });
+});
+
 describe("resolveDayOfMonthInTripRange", () => {
-  const summary =
-    "Viaje: Argentina | Destino: Argentina | Fechas: 2026-11-27 → 2026-12-08 | Moneda: EUR";
+  const summary = ARGENTINA_TRIP_SUMMARY;
 
   it("resuelve VIERNES 27 al inicio del viaje", () => {
     expect(parseDayOfMonthFromCalendarHeader("VIERNES 27")).toBe(27);
@@ -220,9 +280,7 @@ describe("resolveDayOfMonthInTripRange", () => {
     );
     expect(normalized.days).toHaveLength(1);
     expect(normalized.days[0]?.date).toBe("2026-12-07");
-    expect(normalized.days[0]?.items?.length).toBeLessThanOrEqual(
-      maxItemsForTest(lunes7Body)
-    );
+    expect(normalized.days[0]?.items).toHaveLength(5);
     expect(normalized.days[0]?.items?.some((it) => /calafate/i.test(it.title))).toBe(false);
   });
 
@@ -240,15 +298,19 @@ describe("resolveDayOfMonthInTripRange", () => {
         },
       ],
     };
-    const lunes7Section = splitSourceForImport(ARGENTINA_SAMPLE).find((s) => /LUNES\s+7/i.test(s.header));
-    expect(lunes7Section).toBeTruthy();
-    const sanitized = sanitizeItineraryBySourceSections(bloated, ARGENTINA_SAMPLE, summary);
+    const sanitized = sanitizeItineraryBySourceSections(
+      bloated,
+      ARGENTINA_STRIPES_CALENDAR,
+      summary
+    );
     const day7 = sanitized.days.find((d) => d.date === "2026-12-07");
-    expect(day7?.items?.length).toBeLessThanOrEqual(3);
+    expect(day7?.items).toHaveLength(5);
+    expect(day7?.items?.map((it) => it.start_time)).toEqual([
+      "08:00",
+      "11:30",
+      "16:00",
+      "16:30",
+      "18:55",
+    ]);
   });
 });
-
-function maxItemsForTest(body: string) {
-  const expected = countScheduleLinesInText(body);
-  return Math.max(expected + 1, Math.ceil(expected * 1.15));
-}
