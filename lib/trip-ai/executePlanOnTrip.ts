@@ -223,6 +223,8 @@ export async function executePlanOnTrip(params: {
   tripDestination: string | null;
   /** Si false, no genera rutas OSRM (solo actividades). */
   generateRoutes?: boolean;
+  /** Si true, no llama a geocodificación externa (solo coords ya presentes en el item). */
+  skipGeocoding?: boolean;
 }): Promise<
   | { ok: true; created: number; routesCreated: number; routesNote?: string }
   | { ok: false; error: string }
@@ -230,6 +232,7 @@ export async function executePlanOnTrip(params: {
   try {
     const { supabase, tripId, itinerary, conflictResolution, access, tripDestination } = params;
     const generateRoutes = params.generateRoutes !== false;
+    const skipGeocoding = params.skipGeocoding === true;
 
     const itineraryDates: string[] = [];
     for (const day of itinerary.days) {
@@ -347,9 +350,19 @@ export async function executePlanOnTrip(params: {
     const GEOCODE_CONCURRENCY = 8;
     const geocoded = await runWithConcurrency(prepared, GEOCODE_CONCURRENCY, async (r) => {
       let normalizedAddress: string | null = r.address;
-      const query = buildGeocodeQuery({ placeName: r.place_name, address: r.address, tripDestination });
       let latitude: number | null = null;
       let longitude: number | null = null;
+
+      if (typeof r.latHint === "number" && typeof r.lngHint === "number") {
+        latitude = r.latHint;
+        longitude = r.lngHint;
+      }
+
+      if (skipGeocoding) {
+        return { ...r, normalizedAddress, latitude, longitude };
+      }
+
+      const query = buildGeocodeQuery({ placeName: r.place_name, address: r.address, tripDestination });
 
       // Si la IA devolvió coordenadas, solo las aceptamos si están cerca del ancla del viaje.
       if (typeof r.latHint === "number" && typeof r.lngHint === "number") {
@@ -430,7 +443,14 @@ export async function executePlanOnTrip(params: {
     let routesCreated = 0;
 
     if (!generateRoutes) {
-      return { ok: true, created, routesCreated: 0, routesNote: "Actividades creadas. La generación de rutas está desactivada." };
+      return {
+        ok: true,
+        created,
+        routesCreated: 0,
+        routesNote: skipGeocoding
+          ? "Actividades añadidas al plan. Ubicaciones en mapa se pueden completar después."
+          : "Actividades creadas. La generación de rutas está desactivada.",
+      };
     }
 
     if (!access.can_manage_map) {

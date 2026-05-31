@@ -8,12 +8,19 @@ export type TripPlanRefreshDetail = {
   plansAdded?: number;
   /** Mensaje opcional para la pestaña Plan. */
   message?: string;
+  /** Selecciona este día en la vista Plan tras recargar. */
+  focusDate?: string;
 };
 
 /** Pide a las vistas de Plan que recarguen actividades (p. ej. tras ejecutar itinerario en IA). */
 export function dispatchTripPlanRefresh(
   tripId: string,
-  options?: { closeAssistant?: boolean; plansAdded?: number; message?: string }
+  options?: {
+    closeAssistant?: boolean;
+    plansAdded?: number;
+    message?: string;
+    focusDate?: string;
+  }
 ): void {
   if (typeof window === "undefined") return;
   try {
@@ -24,6 +31,7 @@ export function dispatchTripPlanRefresh(
           closeAssistant: options?.closeAssistant,
           plansAdded: options?.plansAdded,
           message: options?.message,
+          focusDate: options?.focusDate,
         },
       })
     );

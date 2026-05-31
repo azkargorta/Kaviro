@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     const itinerary = body?.itinerary as ExecutableItineraryPayload | null;
     const conflictResolution = body?.conflictResolution === "replace" ? "replace" : "add";
     const generateRoutes = body?.generateRoutes !== false;
+    const skipGeocoding = body?.skipGeocoding === true;
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!itinerary || itinerary.version !== 1 || !Array.isArray(itinerary.days)) {
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
       access: { userId: access.userId, can_manage_map: access.can_manage_map },
       tripDestination,
       generateRoutes,
+      skipGeocoding,
     });
 
     if (!result.ok) {

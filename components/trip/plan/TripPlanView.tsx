@@ -307,6 +307,9 @@ export default function TripPlanView({
     function onPlanRefresh(event: Event) {
       const detail = (event as CustomEvent<TripPlanRefreshDetail>).detail;
       if (!detail?.tripId || detail.tripId !== tripId) return;
+      if (detail.focusDate && /^\d{4}-\d{2}-\d{2}$/.test(detail.focusDate)) {
+        setSelectedDate(detail.focusDate);
+      }
       if (detail.plansAdded && detail.plansAdded > 0) {
         setPlansAddedNotice(
           detail.message ||
