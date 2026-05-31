@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   alignItineraryDatesForImport,
+  countScheduleLinesInText,
   fillItineraryDatesFromTripSummary,
   mergeImportedItineraries,
+  normalizeChunkImportResult,
   parseDayOfMonthFromCalendarHeader,
   resolveDayOfMonthInTripRange,
+  sanitizeItineraryBySourceSections,
   splitSourceByDaySections,
   splitSourceByTimeSlots,
   splitSourceForImport,
@@ -181,4 +184,71 @@ describe("resolveDayOfMonthInTripRange", () => {
     );
     expect(stamped.days[0]?.date).toBe("2026-11-27");
   });
+
+  it("colapsa varios days[] de la IA en un solo día acotado al trozo", () => {
+    const lunes7Body = [
+      "LUNES 7",
+      "08.00h Desayuno en hotel",
+      "11.30h EXCURSION CATARATAS ZONA BRASILENA",
+      "16.00h QUEDADA PARA BUS AL AIRPORT",
+      "16.30h LLEGADA A AIRPORT",
+      "18.55h Vuelo IGUAZU-MADRID",
+    ].join("\n");
+    const normalized = normalizeChunkImportResult(
+      {
+        version: 1,
+        days: [
+          { day: 1, date: null, items: [{ title: "Desayuno", start_time: "08:00" }] },
+          {
+            day: 2,
+            date: null,
+            items: [
+              { title: "Quedada hall hotel El Calafate", start_time: "11:30" },
+              { title: "Vuelo", start_time: "18:55" },
+            ],
+          },
+          ...Array.from({ length: 20 }, (_, i) => ({
+            day: i + 3,
+            date: null as string | null,
+            items: [{ title: `Extra ${i}`, start_time: "10:00" }],
+          })),
+        ],
+      },
+      "LUNES 7",
+      lunes7Body,
+      summary
+    );
+    expect(normalized.days).toHaveLength(1);
+    expect(normalized.days[0]?.date).toBe("2026-12-07");
+    expect(normalized.days[0]?.items?.length).toBeLessThanOrEqual(
+      maxItemsForTest(lunes7Body)
+    );
+    expect(normalized.days[0]?.items?.some((it) => /calafate/i.test(it.title))).toBe(false);
+  });
+
+  it("recorta un día hinchado tras fusionar importaciones duplicadas", () => {
+    const bloated = {
+      version: 1,
+      days: [
+        {
+          day: 11,
+          date: "2026-12-07",
+          items: Array.from({ length: 22 }, (_, i) => ({
+            title: `Actividad ${i}`,
+            start_time: `${8 + (i % 10)}:00`,
+          })),
+        },
+      ],
+    };
+    const lunes7Section = splitSourceForImport(ARGENTINA_SAMPLE).find((s) => /LUNES\s+7/i.test(s.header));
+    expect(lunes7Section).toBeTruthy();
+    const sanitized = sanitizeItineraryBySourceSections(bloated, ARGENTINA_SAMPLE, summary);
+    const day7 = sanitized.days.find((d) => d.date === "2026-12-07");
+    expect(day7?.items?.length).toBeLessThanOrEqual(3);
+  });
 });
+
+function maxItemsForTest(body: string) {
+  const expected = countScheduleLinesInText(body);
+  return Math.max(expected + 1, Math.ceil(expected * 1.15));
+}

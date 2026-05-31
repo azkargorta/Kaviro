@@ -324,6 +324,98 @@ function itineraryItemFingerprint(item: { title?: string; start_time?: string | 
   return `${time}|${title}`;
 }
 
+/** Cuenta líneas con hora en un trozo de dossier (12.00h, 19:05h…). */
+export function countScheduleLinesInText(text: string): number {
+  let n = 0;
+  for (const line of text.split(/\n/)) {
+    const t = line.trim();
+    if (/^\d{1,2}[.:]\d{2}\s*h\b/i.test(t) || /^\d{1,2}:\d{2}\b/.test(t)) n++;
+  }
+  return n;
+}
+
+function dedupeItineraryItems(
+  items: ItineraryDayPayload["items"]
+): ItineraryDayPayload["items"] {
+  const seen = new Set<string>();
+  const out: ItineraryDayPayload["items"] = [];
+  for (const it of items) {
+    const fp = itineraryItemFingerprint(it);
+    if (seen.has(fp)) continue;
+    seen.add(fp);
+    out.push(it);
+  }
+  return out;
+}
+
+function maxItemsForSectionBody(body: string): number {
+  const expected = countScheduleLinesInText(body);
+  if (expected >= 1) return Math.max(expected + 1, Math.ceil(expected * 1.15));
+  return 12;
+}
+
+/**
+ * Un trozo = un solo día en el resultado. Evita que la IA devuelva varios days[] o actividades de otros días.
+ */
+export function normalizeChunkImportResult(
+  parsed: ExecutableItineraryPayload,
+  chunkLabel: string,
+  chunkBody: string,
+  tripSummary: string
+): ExecutableItineraryPayload {
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  const dayOfMonth = parseDayOfMonthFromCalendarHeader(chunkLabel);
+  let date: string | null = null;
+  if (range && dayOfMonth != null) {
+    date = resolveDayOfMonthInTripRange(dayOfMonth, range.start, range.end);
+  }
+
+  const allItems = dedupeItineraryItems(parsed.days.flatMap((d) => d.items ?? []));
+  const cap = maxItemsForSectionBody(chunkBody);
+  const items = allItems.slice(0, cap);
+
+  if (!items.length) return { version: 1, title: parsed.title, days: [] };
+
+  return {
+    version: 1,
+    title: parsed.title,
+    days: [{ day: 1, date, items }],
+  };
+}
+
+/** Limita actividades por día según horarios del dossier (evita acumular tramos duplicados). */
+export function sanitizeItineraryBySourceSections(
+  itinerary: ExecutableItineraryPayload,
+  sourceText: string,
+  tripSummary: string
+): ExecutableItineraryPayload {
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  if (!range) return itinerary;
+
+  const maxByDate = new Map<string, number>();
+  for (const section of splitSourceForImport(sourceText).filter((s) => s.header !== "Todo")) {
+    const dom = parseDayOfMonthFromCalendarHeader(section.header);
+    if (dom == null) continue;
+    const iso = resolveDayOfMonthInTripRange(dom, range.start, range.end);
+    if (!iso) continue;
+    maxByDate.set(iso, maxItemsForSectionBody(section.body));
+  }
+
+  const days = itinerary.days
+    .map((d) => {
+      let items = dedupeItineraryItems(d.items ?? []);
+      const cap = d.date ? maxByDate.get(d.date) : undefined;
+      if (cap != null && items.length > cap) items = items.slice(0, cap);
+      return { ...d, items };
+    })
+    .filter((d) => (d.items?.length ?? 0) > 0);
+
+  return {
+    ...itinerary,
+    days: days.map((d, idx) => ({ ...d, day: idx + 1 })),
+  };
+}
+
 function dayMergeKey(d: ItineraryDayPayload): string {
   if (typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) {
     return `date:${d.date}`;
@@ -397,16 +489,17 @@ async function importChunk(
   chunkLabel: string,
   usageAgg: TripAiUsage
 ): Promise<ExecutableItineraryPayload | null> {
+  const scheduleLines = countScheduleLinesInText(chunkBody);
   const prompt = buildJsonOnlyPrompt(
     tripSummary,
     chunkBody.slice(0, 12000),
     "",
-    `Fragmento «${chunkLabel}»: extrae solo las actividades de este trozo; no inventes días fuera del fragmento.`
+    `Fragmento «${chunkLabel}»: devuelve days[] con UN SOLO día y como máximo ${scheduleLines || "?"} actividades con hora de ESTE trozo; no incluyas otros días del viaje.`
   );
   const answer = await callImportModel(prompt, true, usageAgg);
   const parsed = parseFromRawAnswer(answer);
   if (!parsed) return null;
-  return stampItineraryDatesFromChunkLabel(parsed, chunkLabel, tripSummary);
+  return normalizeChunkImportResult(parsed, chunkLabel, chunkBody, tripSummary);
 }
 
 async function importByChunks(
@@ -431,7 +524,8 @@ async function importByChunks(
   }
   if (!merged.length) return null;
   const itinerary = mergeImportedItineraries(merged);
-  return itinerary.days.length ? itinerary : null;
+  if (!itinerary.days.length) return null;
+  return sanitizeItineraryBySourceSections(itinerary, sourceText, tripSummary);
 }
 
 /** Una sola llamada IA para un trozo (usado desde el cliente con progreso por tramo). */
@@ -448,9 +542,9 @@ export async function importItinerarySingleChunk(params: {
     usageAgg
   );
   if (!part?.days?.length) return null;
-  const stamped = stampItineraryDatesFromChunkLabel(part, params.chunkLabel.trim() || "Tramo", params.tripSummary);
+  const filled = fillItineraryDatesFromTripSummary(part, params.tripSummary);
   return {
-    itinerary: fillItineraryDatesFromTripSummary(stamped, params.tripSummary),
+    itinerary: sanitizeItineraryBySourceSections(filled, params.chunkBody.trim(), params.tripSummary),
     usage: usageAgg,
   };
 }
@@ -469,7 +563,11 @@ export async function importItineraryFromText(params: {
   const useChunkedFirst = pasted && (sections.length >= 2 || sourceText.length > 1800);
 
   const finish = (itinerary: ExecutableItineraryPayload, answer: string) => ({
-    itinerary: alignItineraryDatesForImport(itinerary, tripSummary, sourceText),
+    itinerary: sanitizeItineraryBySourceSections(
+      alignItineraryDatesForImport(itinerary, tripSummary, sourceText),
+      sourceText,
+      tripSummary
+    ),
     answer,
     usage: usageAgg,
   });

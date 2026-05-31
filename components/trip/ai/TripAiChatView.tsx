@@ -54,6 +54,7 @@ import {
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
   mergeImportedItineraries,
+  sanitizeItineraryBySourceSections,
   splitSourceForImport,
 } from "@/lib/trip-ai/importItineraryFromText";
 import {
@@ -778,6 +779,10 @@ export default function TripAiChatView({
       const useClientChunks = sections.length >= 2 || text.length > 1200;
       const hint = assistantHint?.slice(0, 6000) ?? "";
       const mergedParts: ItineraryPayload[] = [];
+      const tripSummaryForImport =
+        trip?.start_date && trip?.end_date
+          ? `Viaje: ${trip?.name || "Viaje"} | Fechas: ${trip.start_date} → ${trip.end_date}`
+          : "";
 
       try {
         if (useClientChunks) {
@@ -845,6 +850,9 @@ export default function TripAiChatView({
           }
 
           let mergedDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
+          if (mergedDraft && tripSummaryForImport) {
+            mergedDraft = sanitizeItineraryBySourceSections(mergedDraft, text, tripSummaryForImport);
+          }
           if (mergedDraft && isItineraryImportSufficient(mergedDraft, text)) {
             setInfo(
               `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
@@ -865,19 +873,12 @@ export default function TripAiChatView({
           );
           if (fullRes.ok && fullPayload?.itinerary) {
             const fullDraft = fullPayload.itinerary as ItineraryPayload;
-            if (mergedDraft) {
-              const combined = mergeImportedItineraries([mergedDraft, fullDraft]);
-              const pickCombined =
-                combined.days.length > mergedDraft.days.length ||
-                countItineraryItems(combined) > countItineraryItems(mergedDraft);
-              mergedDraft = pickCombined ? combined : mergedDraft;
-              if (
-                countItineraryItems(fullDraft) > countItineraryItems(mergedDraft) &&
-                fullDraft.days.length >= mergedDraft.days.length
-              ) {
-                mergedDraft = fullDraft;
-              }
-            } else {
+            if (
+              !mergedDraft ||
+              fullDraft.days.length > mergedDraft.days.length ||
+              (fullDraft.days.length === mergedDraft.days.length &&
+                countItineraryItems(fullDraft) > countItineraryItems(mergedDraft) * 1.1)
+            ) {
               mergedDraft = fullDraft;
             }
           }
@@ -942,7 +943,7 @@ export default function TripAiChatView({
         setImportProgress(null);
       }
     },
-    [importingItineraryCards, tripId, expandedDay]
+    [importingItineraryCards, tripId, expandedDay, trip?.start_date, trip?.end_date, trip?.name]
   );
 
   const syncDayStripEdges = useCallback(() => {
