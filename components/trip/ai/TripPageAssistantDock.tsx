@@ -118,32 +118,32 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[1100] flex w-full min-w-0 items-end justify-center overflow-x-hidden px-2 pb-0 pt-0 md:items-center md:justify-end md:p-6 md:px-6">
+        <div className="fixed inset-0 z-[1100] flex w-full min-w-0 max-md:flex-col md:items-center md:justify-end md:overflow-x-hidden md:p-6">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+            className="absolute inset-0 hidden bg-slate-950/45 backdrop-blur-[2px] md:block"
             aria-label="Cerrar asistente personal"
             onClick={closeDock}
           />
           <div
-            className="relative flex max-h-[min(92dvh,880px)] w-full min-w-0 max-w-full flex-col overflow-x-hidden overflow-y-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-[560px] md:max-h-[min(88dvh,820px)] md:rounded-3xl dark:border-[#1E293B] dark:bg-[#0F1623]"
+            className="relative flex h-[100dvh] max-h-[100dvh] w-full min-w-0 max-w-full flex-col overflow-hidden border-slate-200 bg-white shadow-2xl max-md:rounded-none max-md:border-0 md:max-h-[min(88dvh,820px)] md:w-full md:max-w-[560px] md:rounded-3xl md:border dark:border-[#1E293B] dark:bg-[#0F1623]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="trip-assistant-dock-title"
           >
-            <div className="flex min-w-0 flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:border-[#1E293B] dark:bg-[#0D1117]">
+            <div className="flex shrink-0 min-w-0 flex-col gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3 dark:border-[#1E293B] dark:bg-[#0D1117]">
               <div className="min-w-0 pr-1">
                 <p id="trip-assistant-dock-title" className="break-words text-sm font-bold text-slate-950 dark:text-white">
-                  Asistente personal · {surfaceLabel}
+                  Asistente · {surfaceLabel}
                 </p>
-                <p className="mt-0.5 break-words text-xs leading-snug text-slate-600 dark:text-slate-400">
+                <p className="mt-0.5 hidden break-words text-xs leading-snug text-slate-600 sm:block dark:text-slate-400">
                   Modo alineado con esta pestaña; puedes cambiar el modo manual si lo necesitas.
                 </p>
               </div>
-              <div className="flex min-w-0 shrink-0 items-stretch justify-end gap-2 sm:items-center">
+              <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
                 <Link
                   href={fullscreenHref}
-                  className="inline-flex min-h-10 min-w-0 flex-1 items-center justify-center whitespace-normal rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold leading-snug text-slate-800 shadow-sm transition hover:bg-slate-50 sm:flex-none sm:min-w-[9.5rem] dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155]"
+                  className="hidden min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 md:inline-flex dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155]"
                   onClick={closeDock}
                 >
                   Pantalla completa
@@ -151,7 +151,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
                 <button
                   type="button"
                   onClick={closeDock}
-                  className={`inline-flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155] ${iconSlotFill40}`}
+                  className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-200 dark:hover:bg-[#334155] ${iconSlotFill40}`}
                   aria-label="Cerrar"
                 >
                   <X aria-hidden />
@@ -159,7 +159,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
               </div>
             </div>
 
-            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-hidden p-3 sm:p-4">
+            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden p-2 sm:p-4">
               <TripAiAssistantErrorBoundary onReset={() => setChatMountKey((k) => k + 1)}>
                 <TripAiChatView
                   key={`${surface}-${chatMountKey}`}

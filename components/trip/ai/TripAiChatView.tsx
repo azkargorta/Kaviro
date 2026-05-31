@@ -73,6 +73,19 @@ const IMPORT_CHUNK_TIMEOUT_MS = 180_000;
 const IMPORT_CHUNK_CONCURRENCY = 2;
 const EXECUTE_DAY_TIMEOUT_MS = 240_000;
 
+function useMobileViewport(maxWidthPx = 767) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia(`(max-width: ${maxWidthPx}px)`);
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, [maxWidthPx]);
+  return isMobile;
+}
+
 async function fetchJsonWithTimeout(
   url: string,
   init: RequestInit,
@@ -486,6 +499,8 @@ export default function TripAiChatView({
   initialPromptMode?: TripAiMode | null;
 }) {
   const ctxPreset = assistantContext ? assistantContextPreset(assistantContext) : null;
+  const isMobileViewport = useMobileViewport();
+  const isMobileDrawer = layout === "drawer" && isMobileViewport;
   const router = useRouter();
   const pathname = usePathname();
 
@@ -955,7 +970,8 @@ export default function TripAiChatView({
 
   const reviewingItineraryDraft = Boolean(itineraryDraft);
   const itineraryFillsDrawer =
-    reviewingItineraryDraft && layout === "drawer" && itineraryFullscreenReview;
+    reviewingItineraryDraft && layout === "drawer" && itineraryFullscreenReview && !isMobileViewport;
+  const hideChatForItineraryCards = itineraryFillsDrawer;
 
   useEffect(() => {
     if (reviewingItineraryDraft && layout === "drawer") {
@@ -966,12 +982,12 @@ export default function TripAiChatView({
   const hadItineraryDraftRef = useRef(false);
   useEffect(() => {
     const hasDraft = Boolean(itineraryDraft);
-    if (hasDraft && !hadItineraryDraftRef.current && layout === "drawer") {
+    if (hasDraft && !hadItineraryDraftRef.current && layout === "drawer" && !isMobileViewport) {
       setItineraryFullscreenReview(true);
     }
     if (!hasDraft) setItineraryFullscreenReview(true);
     hadItineraryDraftRef.current = hasDraft;
-  }, [itineraryDraft, layout]);
+  }, [itineraryDraft, layout, isMobileViewport]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1843,8 +1859,81 @@ export default function TripAiChatView({
   /** En drawer el panel tiene altura fija: columna flex + scroll solo en mensajes para que el envío quede visible. */
   const rootClass =
     layout === "drawer"
-      ? "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-3 overflow-x-hidden overflow-y-hidden"
+      ? isMobileDrawer
+        ? "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden"
+        : "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-3 overflow-x-hidden overflow-y-hidden"
       : "w-full min-w-0 max-w-full space-y-6 overflow-x-hidden";
+
+  const chatComposerForm = (
+    <form
+      data-tour="ai-input"
+      onSubmit={handleSubmit}
+      className={`min-w-0 max-w-full border-t border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] ${
+        layout === "drawer"
+          ? isMobileDrawer
+            ? "shrink-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
+            : "shrink-0 p-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:p-5"
+          : "p-4 sm:p-5"
+      }`}
+    >
+      <div
+        className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-border)] ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}
+      >
+        <textarea
+          ref={questionInputRef}
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !loading && question.trim() && isPremium && !aiBudgetExceeded) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
+          rows={layout === "drawer" ? 3 : 4}
+          placeholder={placeholder}
+          disabled={!isPremium || aiBudgetExceeded}
+          className={`w-full resize-none border-0 bg-transparent px-4 py-3.5 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 ${
+            layout === "drawer" ? "min-h-[72px]" : "min-h-[100px]"
+          }`}
+        />
+        <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 dark:border-[#1E293B]">
+          <div className="flex min-w-0 items-center gap-2">
+            {!reviewingItineraryDraft ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                ✦ {activeMode?.label || "Asistente"}
+              </span>
+            ) : null}
+            {question.length > 0 ? (
+              <span className={`text-[10px] font-semibold ${question.length > 1800 ? "text-red-500" : "text-slate-400"}`}>
+                {question.length}/2000
+              </span>
+            ) : (
+              <span className="hidden text-[10px] text-slate-300 sm:inline">Intro para enviar · Shift+Intro para nueva línea</span>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {question.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setQuestion("")}
+                disabled={loading}
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 disabled:opacity-40 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300 dark:hover:bg-[#334155]"
+              >
+                ✕
+              </button>
+            ) : null}
+            <button
+              type="submit"
+              disabled={loading || !question.trim() || !isPremium || aiBudgetExceeded}
+              className="rounded-xl bg-[var(--brand)] px-4 py-1.5 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-[#1E293B]"
+            >
+              Enviar →
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  );
 
   if (!isPremium) {
     if (layout === "drawer") {
@@ -1876,6 +1965,20 @@ export default function TripAiChatView({
 
   return (
     <Root className={rootClass}>
+      <div
+        className={
+          isMobileDrawer
+            ? "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+            : undefined
+        }
+      >
+        <div
+          className={
+            isMobileDrawer
+              ? "min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
+              : undefined
+          }
+        >
       {showPageHeader ? (
         <TripBoardPageHeader
           section="Asistente personal del viaje"
@@ -2068,7 +2171,9 @@ export default function TripAiChatView({
             layout === "drawer"
               ? itineraryFillsDrawer
                 ? "flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4"
-                : "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
+                : isMobileDrawer
+                  ? "flex min-h-[min(52dvh,560px)] shrink-0 flex-col overflow-hidden p-2 sm:p-4"
+                  : "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
               : reviewingItineraryDraft
                 ? "flex max-h-[min(85vh,820px)] min-h-0 flex-col overflow-hidden p-5"
                 : "max-h-[min(70vh,640px)] overflow-hidden p-5"
@@ -2657,13 +2762,15 @@ export default function TripAiChatView({
         </section>
       ) : null}
 
-      {!itineraryFillsDrawer ? (
+      {!hideChatForItineraryCards ? (
       <section
         className={
           showConvSidebar
             ? "grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]"
             : layout === "drawer"
-              ? "flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+              ? isMobileDrawer
+                ? "flex shrink-0 flex-col gap-2 overflow-visible"
+                : "flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
               : "grid grid-cols-1 gap-3"
         }
       >
@@ -2709,8 +2816,12 @@ export default function TripAiChatView({
         ) : null}
 
         <section
-          className={`chat-panel order-1 min-w-0 max-w-full rounded-[28px] border border-slate-200 bg-white shadow-sm xl:order-2 ${
-            layout === "drawer" ? "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden" : "overflow-x-hidden"
+          className={`chat-panel order-1 min-w-0 max-w-full xl:order-2 ${
+            layout === "drawer"
+              ? isMobileDrawer
+                ? "flex flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm"
+                : "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
+              : "overflow-x-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
           }`}
         >
           {!reviewingItineraryDraft ? (
@@ -2910,8 +3021,10 @@ export default function TripAiChatView({
           <div
             className={
               layout === "drawer"
-                ? "min-h-0 min-w-0 max-w-full flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-3 sm:px-5"
-                : "max-h-[560px] min-w-0 max-w-full space-y-5 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5"
+                ? isMobileDrawer
+                  ? "min-w-0 max-w-full space-y-4 overflow-visible px-3 py-2 sm:px-4"
+                  : "min-h-0 min-w-0 max-w-full flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-3 sm:px-5"
+                : "max-md:max-h-none max-md:overflow-visible min-w-0 max-w-full space-y-5 overflow-y-auto overflow-x-hidden px-4 py-5 sm:max-h-[560px] sm:px-5"
             }
           >
             {mode === "day_planner" && (!hasAnyPlans || !hasAnyLodging) ? (
@@ -3054,68 +3167,13 @@ export default function TripAiChatView({
             <div ref={bottomRef} />
           </div>
 
-          <form
-            data-tour="ai-input"
-            onSubmit={handleSubmit}
-            className={`min-w-0 max-w-full border-t border-slate-200 dark:border-[#1E293B] p-4 sm:p-5 ${layout === "drawer" ? "shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]" : ""}`}
-          >
-            {/* AI5 — Input with contextual placeholder, char counter, Enter to send */}
-            <div
-              className={`min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-border)] ${question.length > 0 ? "border-violet-300" : "border-slate-200"}`}
-            >
-              <textarea
-                ref={questionInputRef}
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && !loading && question.trim() && isPremium && !aiBudgetExceeded) {
-                    e.preventDefault();
-                    e.currentTarget.form?.requestSubmit();
-                  }
-                }}
-                rows={layout === "drawer" ? 3 : 4}
-                placeholder={placeholder}
-                disabled={!isPremium || aiBudgetExceeded}
-                className={`w-full resize-none border-0 bg-transparent px-4 py-3.5 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 ${
-                  layout === "drawer" ? "min-h-[72px]" : "min-h-[100px]"
-                }`}
-              />
-              <div className="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-[#1E293B] px-3 py-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  {!reviewingItineraryDraft ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
-                      ✦ {activeMode?.label || "Asistente"}
-                    </span>
-                  ) : null}
-                  {question.length > 0 && (
-                    <span className={`text-[10px] font-semibold ${question.length > 1800 ? "text-red-500" : "text-slate-400"}`}>
-                      {question.length}/2000
-                    </span>
-                  )}
-                  {question.length === 0 && (
-                    <span className="text-[10px] text-slate-300 hidden sm:inline">Intro para enviar · Shift+Intro para nueva línea</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {question.length > 0 && (
-                    <button type="button" onClick={() => setQuestion("")} disabled={loading} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 transition disabled:opacity-40 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300 dark:hover:bg-[#334155]">
-                      ✕
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={loading || !question.trim() || !isPremium || aiBudgetExceeded}
-                    className="rounded-xl bg-[var(--brand)] px-4 py-1.5 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-[#1E293B]"
-                  >
-                    Enviar →
-                  </button>
-                </div>
-              </div>
-            </div>
-          </form>
+          {!isMobileDrawer ? chatComposerForm : null}
         </section>
       </section>
       ) : null}
+        </div>
+        {isMobileDrawer ? chatComposerForm : null}
+      </div>
     </Root>
   );
 }
