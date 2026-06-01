@@ -185,7 +185,7 @@ describe("orderItineraryDaysBySourceSections", () => {
       expect(dates[i]! >= dates[i - 1]!).toBe(true);
     }
     expect(dates[0]).toBe("2026-11-27");
-    expect(dates[dates.length - 1]).toBe("2026-12-08");
+    expect(dates[dates.length - 1]).toBe("2026-12-04");
   });
 });
 
@@ -341,6 +341,22 @@ describe("alignItemsToSectionSchedule", () => {
     expect(aligned).toHaveLength(5);
     expect(aligned.map((it) => it.start_time)).toEqual(["08:00", "11:30", "16:00", "16:30", "18:55"]);
     expect(aligned.some((it) => /calafate/i.test(it.title))).toBe(false);
+  });
+
+  it("corrige horas incorrectas de la IA usando las del dossier", () => {
+    const section = splitSourceForImport(ARGENTINA_STRIPES_CALENDAR).find((s) =>
+      /LUNES\s+7/i.test(s.header)
+    )!;
+    const wrongTimes = [
+      { title: "Vuelo Iguazú-Madrid", start_time: "08:00" },
+      { title: "Desayuno en hotel", start_time: "18:55" },
+      { title: "Cataratas Brasil", start_time: "16:00" },
+      { title: "Quedada bus aeropuerto", start_time: "11:30" },
+      { title: "Facturación aeropuerto", start_time: "08:00" },
+    ];
+    const aligned = alignItemsToSectionSchedule(wrongTimes, section.body);
+    expect(aligned.map((it) => it.start_time)).toEqual(["08:00", "11:30", "16:00", "16:30", "18:55"]);
+    expect(aligned.find((it) => /vuelo|iguazú/i.test(it.title ?? ""))?.start_time).toBe("18:55");
   });
 });
 

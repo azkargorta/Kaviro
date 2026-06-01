@@ -30,9 +30,14 @@ import {
   buildDocumentHintBlock,
   buildImportExtractionRules,
 } from "@/lib/trip-ai/itineraryImportPrompts";
-import { enrichItemFromScheduleSlot, type ScheduleSlot } from "@/lib/trip-ai/scheduleSlotEnrich";
-
-export type { ScheduleSlot };
+export {
+  alignItemsToSectionSchedule,
+  buildItemsFromSectionSchedule,
+  extractScheduleSlotFromLine,
+  parseHourMinuteToken,
+  parseScheduleSlotsFromSection,
+  type ScheduleSlot,
+} from "@/lib/trip-ai/parseScheduleSlots";
 import {
   KAVIRO_ITINERARY_JSON_END,
   KAVIRO_ITINERARY_JSON_START,
@@ -402,144 +407,7 @@ function dedupeItineraryItems(
   return out;
 }
 
-function maxItemsForSectionBody(body: string): number {
-  const expected = countScheduleLinesInText(body);
-  if (expected >= 1) return Math.max(expected + 1, Math.ceil(expected * 1.15));
-  return 12;
-}
-
-function normalizeTimeForMatch(t: string | null | undefined): string | null {
-  if (!t) return null;
-  const m = t.trim().match(/^(\d{1,2})[:.](\d{2})/);
-  if (!m) return null;
-  return `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-}
-
-function normalizeTextForMatch(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Horarios literales del trozo de dossier (07.30h Desayuno…). */
-export function parseScheduleSlotsFromSection(body: string): ScheduleSlot[] {
-  const slots: ScheduleSlot[] = [];
-  for (const line of body.split("\n")) {
-    const t = line.trim();
-    if (!t) continue;
-    let m = t.match(/^[-•●]\s*(\d{1,2})[.:](\d{2})\s*h?\s*(.+)$/i);
-    if (m) {
-      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-      slots.push({ time, label: m[3]!.trim(), line: t });
-      continue;
-    }
-    m = t.match(/^(\d{1,2})[.:](\d{2})\s*h\s*[-–—]?\s*(.+)$/i);
-    if (m) {
-      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-      slots.push({ time, label: m[3]!.trim(), line: t });
-      continue;
-    }
-    m = t.match(/^(\d{1,2}):(\d{2})\s+(.+)$/);
-    if (m) {
-      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-      slots.push({ time, label: m[3]!.trim(), line: t });
-      continue;
-    }
-    m = t.match(/^(.+?)\s+(\d{1,2})[.:](\d{2})\s*h?\s*$/i);
-    if (m) {
-      const time = `${Number(m[2]).toString().padStart(2, "0")}:${m[3]}`;
-      slots.push({ time, label: m[1]!.trim(), line: t });
-    }
-  }
-  return slots;
-}
-
-function tokenOverlapScore(a: string, b: string): number {
-  const na = normalizeTextForMatch(a);
-  const nb = normalizeTextForMatch(b);
-  if (!na || !nb) return 0;
-  if (na.includes(nb) || nb.includes(na)) return 1;
-  const wordsA = na.split(" ").filter((w) => w.length >= 3);
-  const wordsB = new Set(nb.split(" ").filter((w) => w.length >= 3));
-  if (!wordsA.length) return 0;
-  let hits = 0;
-  for (const w of wordsA) {
-    if (wordsB.has(w)) hits += 1;
-    else {
-      for (const bw of wordsB) {
-        if (bw.includes(w) || w.includes(bw)) {
-          hits += 0.75;
-          break;
-        }
-      }
-    }
-  }
-  return hits / wordsA.length;
-}
-
-function inferKindFromSlotLabel(label: string): string | null {
-  const l = label.toLowerCase();
-  if (/vuelo|flight|aterrizaje|airport|factur|aterriz/i.test(l)) return "transport";
-  if (/desayuno|comida|cena/.test(l)) return "restaurant";
-  if (/hotel|check[- ]?in|check[- ]?out|llegada a hotel|early check/i.test(l)) return "lodging";
-  if (/excursi|glaciar|catarata|parque|quedada|bus al airport|mañana libre|tarde libre|noche libre|partido/i.test(l))
-    return "activity";
-  return "activity";
-}
-
-function scoreItemForSlot(item: ItineraryDayPayload["items"][number], slot: ScheduleSlot): number {
-  const itemTime = normalizeTimeForMatch(item.start_time);
-  if (!itemTime || itemTime !== slot.time) return 0;
-  const blob = [item.title, item.place_name, item.notes].filter(Boolean).join(" ");
-  const labelScore = tokenOverlapScore(blob, slot.label);
-  if (labelScore >= 0.2) return 0.45 + labelScore * 0.55;
-  return 0.12;
-}
-
-/**
- * Una actividad por línea con hora del dossier. Descarta items de otros días aunque compartan hora.
- */
-export function alignItemsToSectionSchedule(
-  items: ItineraryDayPayload["items"],
-  sectionBody: string
-): ItineraryDayPayload["items"] {
-  const slots = parseScheduleSlotsFromSection(sectionBody);
-  const pool = dedupeItineraryItems(items);
-  if (!slots.length) return pool.slice(0, maxItemsForSectionBody(sectionBody));
-
-  const used = new Set<number>();
-  const result: ItineraryDayPayload["items"] = [];
-
-  for (const slot of slots) {
-    let bestIdx = -1;
-    let bestScore = 0;
-    for (let i = 0; i < pool.length; i++) {
-      if (used.has(i)) continue;
-      const score = scoreItemForSlot(pool[i]!, slot);
-      if (score > bestScore) {
-        bestScore = score;
-        bestIdx = i;
-      }
-    }
-    if (bestIdx >= 0 && bestScore >= 0.25) {
-      used.add(bestIdx);
-      result.push(enrichItemFromScheduleSlot(pool[bestIdx]!, slot, inferKindFromSlotLabel));
-    } else {
-      result.push(
-        enrichItemFromScheduleSlot(
-          normalizeItineraryItem({ title: slot.label }),
-          slot,
-          inferKindFromSlotLabel
-        )
-      );
-    }
-  }
-  return result;
-}
+import { alignItemsToSectionSchedule } from "@/lib/trip-ai/parseScheduleSlots";
 
 function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string, string> {
   const map = new Map<string, string>();

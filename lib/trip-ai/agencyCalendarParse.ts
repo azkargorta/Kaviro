@@ -1,8 +1,7 @@
 import type { ExecutableItineraryPayload, ItineraryDayPayload } from "@/lib/trip-ai/tripCreationTypes";
 import { countDaySectionsInSource, countItineraryItems, normalizeItineraryItem } from "@/lib/trip-ai/itineraryDraftUtils";
-import { enrichItemFromScheduleSlot, type ScheduleSlot } from "@/lib/trip-ai/scheduleSlotEnrich";
-
-export type { ScheduleSlot };
+import { enrichItemFromScheduleSlot } from "@/lib/trip-ai/scheduleSlotEnrich";
+import { parseScheduleSlotsFromSection } from "@/lib/trip-ai/parseScheduleSlots";
 
 const CALENDAR_HEADER_DAY_RE =
   /(?:^|\s)(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+(\d{1,2})(?![.:]\d)\b/i;
@@ -107,38 +106,6 @@ export function countScheduleLinesInText(text: string): number {
   return n;
 }
 
-export function parseScheduleSlotsFromSection(body: string): ScheduleSlot[] {
-  const slots: ScheduleSlot[] = [];
-  for (const line of body.split("\n")) {
-    const t = line.trim();
-    if (!t) continue;
-    let m = t.match(/^[-•●]\s*(\d{1,2})[.:](\d{2})\s*h?\s*(.+)$/i);
-    if (m) {
-      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-      slots.push({ time, label: m[3]!.trim(), line: t });
-      continue;
-    }
-    m = t.match(/^(\d{1,2})[.:](\d{2})\s*h\s*[-–—]?\s*(.+)$/i);
-    if (m) {
-      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-      slots.push({ time, label: m[3]!.trim(), line: t });
-      continue;
-    }
-    m = t.match(/^(\d{1,2}):(\d{2})\s+(.+)$/);
-    if (m) {
-      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
-      slots.push({ time, label: m[3]!.trim(), line: t });
-      continue;
-    }
-    m = t.match(/^(.+?)\s+(\d{1,2})[.:](\d{2})\s*h?\s*$/i);
-    if (m) {
-      const time = `${Number(m[2]).toString().padStart(2, "0")}:${m[3]}`;
-      slots.push({ time, label: m[1]!.trim(), line: t });
-    }
-  }
-  return slots;
-}
-
 function sectionHasScheduleLines(body: string): boolean {
   return /\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/i.test(body);
 }
@@ -191,9 +158,10 @@ export function normalizeAgencyCalendarSourceText(sourceText: string): string {
   t = t.replace(/(?<=[^\n])(?=(?:D[IÍ]A|D[ií]a|Day)\s+\d{1,2}\s+de\s+\w+)/gi, "\n");
   t = t.replace(/(?<=[^\n])(?=(?:D[IÍ]A|D[ií]a|Day)\s*\d+\b)/gi, "\n");
 
-  t = t.replace(/(?<=[^\n])(?=\d{1,2}[.:]\d{2}\s*h\s)/gi, "\n");
-  t = t.replace(/(?<=[^\n])(?=\d{1,2}:\d{2}\s+\S)/gi, "\n");
-  t = t.replace(/(?<=[^\n])(?=-\s*\d{1,2}[.:]\d{2}\s*h\b)/gi, "\n");
+  // No partir tras un dígito (evita romper «11.30h» en «1» + «1.30h»).
+  t = t.replace(/(?<=[^\n\d])(?=\d{1,2}[.:]\d{2}\s*h\s)/gi, "\n");
+  t = t.replace(/(?<=[^\n\d])(?=\d{1,2}:\d{2}\s+\S)/gi, "\n");
+  t = t.replace(/(?<=[^\n\d])(?=-\s*\d{1,2}[.:]\d{2}\s*h\b)/gi, "\n");
 
   t = t.replace(/(\d{1,2}[.:]\d{2})\s+h\b/gi, "$1h");
 
@@ -434,7 +402,11 @@ export function isAgencyCalendarParseAcceptable(
   return draft.days.length >= 2;
 }
 
-function scoreAgencyDayParse(days: ItineraryDayPayload[], sourceText: string): number {
+function scoreAgencyDayParse(
+  days: ItineraryDayPayload[],
+  sourceText: string,
+  tripSummary: string
+): number {
   const items = days.reduce((n, d) => n + (d.items?.length ?? 0), 0);
   const times = countScheduleLinesInText(sourceText);
   const maxPerDay = Math.max(...days.map((d) => d.items?.length ?? 0), 0);
@@ -442,18 +414,28 @@ function scoreAgencyDayParse(days: ItineraryDayPayload[], sourceText: string): n
   if (times >= 8 && items >= times * 0.65) score += 80;
   if (maxPerDay > 18) score -= 500;
   if (maxPerDay > 12) score -= (maxPerDay - 12) * 40;
+
+  const range = parseTripDateRangeFromSummary(tripSummary);
+  if (range) {
+    const expected = tripDayCount(range.start, range.end);
+    if (days.length === expected) score += 280;
+    else if (days.length > expected) score -= (days.length - expected) * 140;
+    else score -= (expected - days.length) * 35;
+  }
+
   return score;
 }
 
 function pickBestAgencyDayParse(
   candidates: ItineraryDayPayload[][],
-  sourceText: string
+  sourceText: string,
+  tripSummary: string
 ): ItineraryDayPayload[] {
   let best: ItineraryDayPayload[] = [];
   let bestScore = -Infinity;
   for (const days of candidates) {
     if (days.length < 2) continue;
-    const score = scoreAgencyDayParse(days, sourceText);
+    const score = scoreAgencyDayParse(days, sourceText, tripSummary);
     if (score > bestScore) {
       bestScore = score;
       best = days;
@@ -502,7 +484,7 @@ export function parseAgencyCalendarItinerary(
   const inline = parseByInlineDayMarkers(compact ?? normalized, tripSummary);
   if (inline?.length) candidates.push(inline);
 
-  const days = pickBestAgencyDayParse(candidates, compact ?? normalized);
+  const days = pickBestAgencyDayParse(candidates, compact ?? normalized, tripSummary);
   if (days.length < 2) return null;
 
   return {
