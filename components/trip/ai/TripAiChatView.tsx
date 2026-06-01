@@ -66,6 +66,7 @@ import {
   sanitizeItineraryBySourceSections,
   splitSourceForImport,
 } from "@/lib/trip-ai/importItineraryFromText";
+import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
   DIFF_JSON_END_ALIASES,
   DIFF_JSON_START_ALIASES,
