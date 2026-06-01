@@ -116,9 +116,10 @@ function ActionMenu({
       <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg dark:border-[#1E293B] dark:bg-[#0F1623]">
         <button
           type="button"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
             onEdit();
-            (document.activeElement as HTMLElement | null)?.blur?.();
+            (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
           }}
           className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
         >
@@ -128,11 +129,12 @@ function ActionMenu({
         {canInvite ? (
           <>
             <button
-            data-tour="participants-invite-btn"
+              data-tour="participants-invite-btn"
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 onInvite();
-                (document.activeElement as HTMLElement | null)?.blur?.();
+                (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
               }}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-50"
             >
@@ -141,9 +143,10 @@ function ActionMenu({
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 onLink();
-                (document.activeElement as HTMLElement | null)?.blur?.();
+                (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
               }}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-violet-900 hover:bg-violet-50"
             >
@@ -155,9 +158,10 @@ function ActionMenu({
         <div className="my-1 h-px bg-slate-100 dark:bg-[#1E293B]" />
         <button
           type="button"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
             onRemove();
-            (document.activeElement as HTMLElement | null)?.blur?.();
+            (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
           }}
           className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
         >
@@ -189,10 +193,10 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [serverAccessLoaded, setServerAccessLoaded] = useState(false);
 
   const [isCreating, setIsCreating] = useState(false);
-  const [isInviting, setIsInviting] = useState(false);
-  const [inviteParticipant, setInviteParticipant] = useState<TripParticipant | null>(null);
   const [editingParticipant, setEditingParticipant] = useState<TripParticipant | null>(null);
-  const [linkingParticipant, setLinkingParticipant] = useState<TripParticipant | null>(null);
+  /** Un solo panel lateral activo: invitar (WhatsApp) o vincular cuenta (nunca ambos). */
+  const [asidePanel, setAsidePanel] = useState<"none" | "invite" | "link">("none");
+  const [asideParticipant, setAsideParticipant] = useState<TripParticipant | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
@@ -201,22 +205,34 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const participantFormRef = useRef<HTMLDivElement | null>(null);
+  const asidePanelRef = useRef<HTMLDivElement | null>(null);
 
   const showParticipantForm = Boolean(isCreating || editingParticipant);
 
   useEffect(() => {
-    if (!showParticipantForm) return;
+    if (!isCreating) return;
     const t = window.setTimeout(() => {
       participantFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     return () => window.clearTimeout(t);
-  }, [showParticipantForm, editingParticipant?.id, isCreating]);
+  }, [isCreating]);
+
+  useEffect(() => {
+    if (asidePanel === "none") return;
+    const t = window.setTimeout(() => {
+      asidePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [asidePanel, asideParticipant?.id]);
+
+  function closeAsidePanel() {
+    setAsidePanel("none");
+    setAsideParticipant(null);
+  }
 
   function openCreateParticipant() {
     setEditingParticipant(null);
-    setInviteParticipant(null);
-    setIsInviting(false);
-    setLinkingParticipant(null);
+    closeAsidePanel();
     setIsCreating(true);
   }
 
@@ -226,9 +242,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
 
   function openEditParticipant(participant: TripParticipant) {
     setIsCreating(false);
-    setInviteParticipant(null);
-    setIsInviting(false);
-    setLinkingParticipant(null);
+    closeAsidePanel();
     setEditingParticipant(participant);
   }
 
@@ -266,10 +280,10 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   }, [tripId]);
 
   useEffect(() => {
-    if (!linkingParticipant) return;
-    const row = participants.find((p) => p.id === linkingParticipant.id);
-    if (row?.user_id) setLinkingParticipant(null);
-  }, [linkingParticipant, participants]);
+    if (asidePanel !== "link" || !asideParticipant) return;
+    const row = participants.find((p) => p.id === asideParticipant.id);
+    if (row?.user_id) closeAsidePanel();
+  }, [asidePanel, asideParticipant, participants]);
 
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => a.display_name.localeCompare(b.display_name, "es"));
@@ -392,10 +406,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
       setActionError(null);
       await removeParticipant(id);
       if (editingParticipant?.id === id) setEditingParticipant(null);
-      if (inviteParticipant?.id === id) {
-        setInviteParticipant(null);
-        setIsInviting(false);
-      }
+      if (asideParticipant?.id === id) closeAsidePanel();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "No se pudo eliminar");
     }
@@ -403,26 +414,30 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
 
   function openGenericInvite() {
     setEditingParticipant(null);
-    setLinkingParticipant(null);
     setIsCreating(false);
-    setInviteParticipant(null);
-    setIsInviting((prev) => !prev);
+    setBulkImportOpen(false);
+    if (asidePanel === "invite" && !asideParticipant) {
+      closeAsidePanel();
+      return;
+    }
+    setAsideParticipant(null);
+    setAsidePanel("invite");
   }
 
   function openParticipantInvite(participant: TripParticipant) {
     setEditingParticipant(null);
-    setLinkingParticipant(null);
     setIsCreating(false);
-    setInviteParticipant(participant);
-    setIsInviting(true);
+    setBulkImportOpen(false);
+    setAsideParticipant(participant);
+    setAsidePanel("invite");
   }
 
   function openLinkProfile(participant: TripParticipant) {
-    setInviteParticipant(null);
-    setIsInviting(false);
-    setIsCreating(false);
     setEditingParticipant(null);
-    setLinkingParticipant((prev) => (prev?.id === participant.id ? null : participant));
+    setIsCreating(false);
+    setBulkImportOpen(false);
+    setAsideParticipant(participant);
+    setAsidePanel("link");
   }
 
   if (loading) {
@@ -790,7 +805,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
                 >
                   <MessageCircle className="h-4 w-4 text-emerald-600" aria-hidden />
-                  {isInviting && !inviteParticipant ? "Cerrar invitación" : "Invitar por WhatsApp"}
+                  {asidePanel === "invite" && !asideParticipant ? "Cerrar invitación" : "Invitar por WhatsApp"}
                 </button>
                 <button
                   type="button"
@@ -798,8 +813,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                     setBulkImportOpen((v) => !v);
                     if (!bulkImportOpen) {
                       closeCreateParticipant();
-                      setIsInviting(false);
-                      setLinkingParticipant(null);
+                      closeAsidePanel();
                     }
                   }}
                   className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-950 shadow-sm transition hover:bg-violet-100 sm:col-span-2"
@@ -841,33 +855,32 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             </div>
           )}
 
-          {canManageParticipants && isInviting ? (
-            <div data-tour="participants-qr" className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-1 shadow-sm">
+          {canManageParticipants && asidePanel === "invite" ? (
+            <div
+              ref={asidePanelRef}
+              data-tour="participants-qr"
+              className="scroll-mt-24"
+            >
               <InviteParticipantPanel
                 tripId={tripId}
-                participant={inviteParticipant}
-                onCreated={() => {
-                  setIsInviting(false);
-                  setInviteParticipant(null);
-                }}
-                onCancel={() => {
-                  setIsInviting(false);
-                  setInviteParticipant(null);
-                }}
+                participant={asideParticipant}
+                onCreated={closeAsidePanel}
+                onCancel={closeAsidePanel}
               />
             </div>
           ) : null}
 
-          {canManageParticipants && linkingParticipant ? (
-            <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-1 shadow-sm">
+          {canManageParticipants && asidePanel === "link" && asideParticipant ? (
+            <div ref={asidePanelRef} className="scroll-mt-24">
               <ParticipantLinkProfilePanel
-                participant={linkingParticipant}
+                participant={asideParticipant}
                 onSearchProfiles={searchProfiles}
+                onCancel={closeAsidePanel}
                 onLinkProfile={async (profile) => {
                   setActionError(null);
                   try {
-                    await linkParticipantToProfile(linkingParticipant.id, profile);
-                    setLinkingParticipant(null);
+                    await linkParticipantToProfile(asideParticipant.id, profile);
+                    closeAsidePanel();
                   } catch (e) {
                     setActionError(e instanceof Error ? e.message : "No se pudo vincular el usuario.");
                   }

@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useTripInvites } from "@/hooks/useTripInvites";
 import type { TripRole, TripParticipant } from "@/hooks/useTripParticipants";
 import { useToast } from "@/components/ui/toast";
 import { btnPrimary } from "@/components/ui/brandStyles";
-import { Link2, MessageCircle, Copy, Check, X, UserPlus2 } from "lucide-react";
+import { MessageCircle, Copy, Check, X, UserPlus2 } from "lucide-react";
 
 type InviteParticipantPanelProps = {
   tripId: string;
@@ -30,12 +30,20 @@ export default function InviteParticipantPanel({
   const [inviteUrl, setInviteUrl] = useState("");
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    setDisplayName(participant?.display_name ?? "");
+    setPhone(participant?.phone ?? "");
+    setRole(participant?.role ?? "viewer");
+    setInviteUrl("");
+    setCopied(false);
+  }, [participant?.id]);
+
   const title = participant
-    ? `Vincular a ${participant.display_name}`
+    ? `Invitar a ${participant.display_name} por WhatsApp`
     : "Invitación por WhatsApp";
 
   const description = participant
-    ? "Genera un enlace para que este participante manual se registre o inicie sesión y quede vinculado."
+    ? "Genera un enlace personal para esta persona. Al abrirlo podrá registrarse o iniciar sesión y quedará vinculada al viaje."
     : "Crea un enlace de invitación y compártelo por WhatsApp.";
 
   const whatsappHref = useMemo(() => {
@@ -79,15 +87,14 @@ export default function InviteParticipantPanel({
   }
 
   return (
-    <div className={`overflow-hidden rounded-2xl border shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${participant ? "border-violet-200 bg-white" : "border-emerald-300 bg-gradient-to-br from-emerald-50 to-white"}`}>
-      {/* Ge4 — WhatsApp header strip */}
-      <div className={`flex items-start gap-3 px-5 py-4 ${participant ? "border-b border-violet-100 bg-violet-50/60" : "border-b border-emerald-200/60 bg-emerald-500"}`}>
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${participant ? "bg-violet-100 text-violet-700" : "bg-white/30 text-white"}`}>
-          {participant ? <Link2 className="h-5 w-5" aria-hidden /> : <MessageCircle className="h-5 w-5" aria-hidden />}
+    <div className="overflow-hidden rounded-2xl border border-emerald-300 bg-gradient-to-br from-emerald-50 to-white shadow-sm dark:border-emerald-900/50 dark:from-emerald-950/30 dark:to-[#0F1623]">
+      <div className="flex items-start gap-3 border-b border-emerald-200/60 bg-emerald-500 px-5 py-4 dark:border-emerald-800/60">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/30 text-white">
+          <MessageCircle className="h-5 w-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className={`text-sm font-extrabold ${participant ? "text-violet-950" : "text-white"}`}>{title}</h2>
-          <p className={`mt-0.5 text-xs font-semibold ${participant ? "text-violet-700" : "text-emerald-100"}`}>{description}</p>
+          <h2 className="text-sm font-extrabold text-white">{title}</h2>
+          <p className="mt-0.5 text-xs font-semibold text-emerald-100">{description}</p>
         </div>
         {onCancel ? (
           <button
@@ -102,35 +109,39 @@ export default function InviteParticipantPanel({
         ) : null}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-4 grid gap-3">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
-            <span>Nombre visible</span>
-            <input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Ej. Ceci"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
-            />
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">
+            Nombre visible
+          </span>
+          <input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Ej. Ceci"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+          />
+        </label>
 
-          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
-            <span>Teléfono WhatsApp</span>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Ej. 34600111222"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
-            />
-          </label>
-        </div>
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">
+            Teléfono WhatsApp
+          </span>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Ej. 34600111222 (con prefijo país)"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+          />
+        </label>
 
-        <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
-          <span>Rol inicial</span>
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">
+            Rol inicial
+          </span>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as TripRole)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           >
             <option value="viewer">Lector</option>
             <option value="editor">Editor</option>
@@ -138,14 +149,14 @@ export default function InviteParticipantPanel({
           </select>
         </label>
 
-        <div className="mt-1 flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button
             type="submit"
             disabled={loading}
-            className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-60`}
+            className={`${btnPrimary} inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm disabled:opacity-60 sm:w-auto`}
           >
-            {participant ? <Link2 className="h-4 w-4" aria-hidden /> : <UserPlus2 className="h-4 w-4" aria-hidden />}
-            {loading ? "Creando…" : participant ? "Crear enlace de vinculación" : "Crear invitación"}
+            <UserPlus2 className="h-4 w-4" aria-hidden />
+            {loading ? "Creando…" : "Generar enlace de invitación"}
           </button>
 
           {inviteUrl ? (
@@ -219,7 +230,7 @@ export default function InviteParticipantPanel({
       </form>
 
       {error ? (
-        <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+        <div className="mx-5 mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
           {error}
         </div>
       ) : null}
