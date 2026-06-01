@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isValidEmail } from "@/lib/validators/auth";
-import { withTimeout } from "@/lib/with-timeout";
+import { goTruePasswordGrant } from "@/lib/supabase/goTruePasswordGrant";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -11,7 +11,7 @@ type CookieRow = { name: string; value: string; options: CookieOptions };
 
 /**
  * Login email/contraseña en servidor y cookies en la respuesta.
- * Evita signInWithPassword en el cliente, que a veces no termina (mismo problema que getSession).
+ * GoTrue REST + setSession (más fiable en Vercel que signInWithPassword del SDK).
  */
 export async function POST(request: Request) {
   let body: unknown;
@@ -46,47 +46,33 @@ export async function POST(request: Request) {
     );
   }
 
+  const grant = await goTruePasswordGrant(supabaseUrl, supabaseAnonKey, email, password);
+  if (!grant.ok) {
+    const status = grant.status === 504 ? 504 : grant.status === 401 || grant.status === 400 ? 401 : 502;
+    return NextResponse.json({ error: grant.message }, { status });
+  }
+
   const cookieStore = await cookies();
   const cookieWrites: CookieRow[] = [];
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(toSet) {
-          cookieWrites.push(...toSet);
-        },
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
       },
-    }
-  );
+      setAll(toSet) {
+        cookieWrites.push(...toSet);
+      },
+    },
+  });
 
-  const AUTH_TIMEOUT_MS = 18_000;
-  const AUTH_TIMEOUT_MSG = "AUTH_TIMEOUT";
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: grant.access_token,
+    refresh_token: grant.refresh_token,
+  });
 
-  let error: { message: string } | null = null;
-  try {
-    const result = await withTimeout(
-      supabase.auth.signInWithPassword({ email, password }),
-      AUTH_TIMEOUT_MS,
-      AUTH_TIMEOUT_MSG
-    );
-    error = result.error;
-  } catch (e) {
-    if (e instanceof Error && e.message === AUTH_TIMEOUT_MSG) {
-      return NextResponse.json(
-        {
-          error:
-            "No se pudo contactar con el servicio de autenticación. Comprueba tu conexión e inténtalo de nuevo.",
-        },
-        { status: 504 }
-      );
-    }
-    throw e;
-  }
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 401 });
+  if (sessionError) {
+    return NextResponse.json({ error: sessionError.message }, { status: 500 });
   }
 
   const res = NextResponse.json({ ok: true });

@@ -91,6 +91,19 @@ export async function signInWithEmail(params: {
   );
 
   const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+
+  // Si Vercel no alcanza Supabase, el navegador a veces sí (red distinta).
+  if (res.status === 502 || res.status === 504) {
+    const client = createClient();
+    const { error } = await withTimeout(
+      client.auth.signInWithPassword({ email, password: params.password }),
+      20_000,
+      "El servidor tardó demasiado. Reintenta."
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  }
+
   if (!res.ok) {
     throw new Error(payload?.error || `Error ${res.status}`);
   }
