@@ -53,8 +53,26 @@ export async function POST(req: Request) {
     }
 
     const tripSummary = await buildTripSummaryForAi(tripId);
+    const fullSourceText =
+      typeof body?.fullSourceText === "string" ? body.fullSourceText.trim() : "";
+    const chunkSectionIndex =
+      typeof body?.chunkSectionIndex === "number" && Number.isFinite(body.chunkSectionIndex)
+        ? body.chunkSectionIndex
+        : undefined;
+    const chunkSectionTotal =
+      typeof body?.chunkSectionTotal === "number" && Number.isFinite(body.chunkSectionTotal)
+        ? body.chunkSectionTotal
+        : undefined;
+
     const result = singleChunk
-      ? await importItinerarySingleChunk({ tripSummary, chunkBody: sourceText, chunkLabel })
+      ? await importItinerarySingleChunk({
+          tripSummary,
+          chunkBody: sourceText,
+          chunkLabel,
+          fullSourceText: fullSourceText || undefined,
+          chunkSectionIndex,
+          chunkSectionTotal,
+        })
       : await importItineraryFromText({ tripSummary, sourceText, assistantHint });
 
     if (!result) {

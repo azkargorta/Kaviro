@@ -38,11 +38,52 @@ function addUtcDays(isoDate: string, offset: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function tripDayCount(start: string, end: string): number {
+export function tripDayCount(start: string, end: string): number {
   const a = new Date(`${start}T12:00:00.000Z`).getTime();
   const b = new Date(`${end}T12:00:00.000Z`).getTime();
   if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return 1;
   return Math.floor((b - a) / 86400000) + 1;
+}
+
+const DOCUMENT_RANGE_RE =
+  /del\s+(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+de\s+(\d{4}))?\s+al\s+(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+de\s+(\d{4}))?/i;
+
+/** Rango de fechas explícito en el dossier («del 27 de Noviembre al 8 de Diciembre 2026»). */
+export function parseDocumentTripRangeFromText(sourceText: string): { start: string; end: string } | null {
+  const m = sourceText.match(DOCUMENT_RANGE_RE);
+  if (!m) return null;
+  const yStart = m[3] ? Number(m[3]) : null;
+  const yEnd = m[6] ? Number(m[6]) : yStart;
+  const year = yEnd ?? yStart ?? new Date().getUTCFullYear();
+  const m1 = MONTH_NAME_TO_NUM[m[2]!.toLowerCase()];
+  const m2 = MONTH_NAME_TO_NUM[m[5]!.toLowerCase()];
+  if (!m1 || !m2 || !Number.isFinite(year)) return null;
+  const dom1 = Number(m[1]);
+  const dom2 = Number(m[4]);
+  const start = new Date(Date.UTC(year, m1 - 1, dom1, 12));
+  const endYear = m[6] ? Number(m[6]) : year;
+  const end = new Date(Date.UTC(endYear, m2 - 1, dom2, 12));
+  if (start.getUTCDate() !== dom1 || end.getUTCDate() !== dom2) return null;
+  const startIso = start.toISOString().slice(0, 10);
+  const endIso = end.toISOString().slice(0, 10);
+  return startIso <= endIso ? { start: startIso, end: endIso } : { start: endIso, end: startIso };
+}
+
+function rangesOverlap(a: { start: string; end: string }, b: { start: string; end: string }): boolean {
+  return a.start <= b.end && a.end >= b.start;
+}
+
+function tripDateBySectionIndex(
+  tripRange: { start: string; end: string },
+  sectionIndex: number,
+  totalSections: number
+): string {
+  const totalTripDays = tripDayCount(tripRange.start, tripRange.end);
+  if (totalSections <= 1 || totalTripDays <= 1) {
+    return addUtcDays(tripRange.start, Math.min(sectionIndex, totalTripDays - 1));
+  }
+  const offset = Math.round((sectionIndex / (totalSections - 1)) * (totalTripDays - 1));
+  return addUtcDays(tripRange.start, Math.min(Math.max(offset, 0), totalTripDays - 1));
 }
 
 export function parseDayOfMonthFromCalendarHeader(text: string): number | null {
@@ -260,45 +301,94 @@ export function countDayMarkersInText(sourceText: string): number {
   return splitSourceByDayMarkers(normalizeAgencyCalendarSourceText(sourceText)).length;
 }
 
-function resolveDateFromDiaDeMesHeader(header: string, tripSummary: string): string | null {
+function resolveDateFromDiaDeMesHeader(
+  header: string,
+  tripSummary: string,
+  documentRange: { start: string; end: string } | null
+): string | null {
   const m = header.match(DIA_DE_MES_HEADER_RE);
   if (!m) return null;
   const dom = Number(m[1]);
   const month = MONTH_NAME_TO_NUM[m[2]!.toLowerCase()];
   if (!Number.isFinite(dom) || !month) return null;
 
-  const range = parseTripDateRangeFromSummary(tripSummary);
-  if (!range) return null;
+  const tripRange = parseTripDateRangeFromSummary(tripSummary);
+  const years = new Set<number>();
+  if (documentRange) {
+    years.add(Number(documentRange.start.slice(0, 4)));
+    years.add(Number(documentRange.end.slice(0, 4)));
+  }
+  if (tripRange) {
+    years.add(Number(tripRange.start.slice(0, 4)));
+    years.add(Number(tripRange.end.slice(0, 4)));
+  }
+  if (!years.size) years.add(new Date().getUTCFullYear());
 
-  const years = new Set([range.start.slice(0, 4), range.end.slice(0, 4)]);
-  const matches: string[] = [];
+  const candidates: string[] = [];
   for (const year of years) {
     const iso = `${year}-${String(month).padStart(2, "0")}-${String(dom).padStart(2, "0")}`;
-    if (iso >= range.start && iso <= range.end) matches.push(iso);
+    const d = new Date(`${iso}T12:00:00.000Z`);
+    if (d.getUTCDate() === dom) candidates.push(iso);
   }
-  if (matches.length) return matches.sort()[0]!;
-  return resolveDayOfMonthInTripRange(dom, range.start, range.end);
+  if (!candidates.length) return null;
+
+  if (tripRange) {
+    const inTrip = candidates.filter((c) => c >= tripRange.start && c <= tripRange.end);
+    if (inTrip.length) return inTrip.sort()[0]!;
+  }
+  if (documentRange) {
+    const inDoc = candidates.filter((c) => c >= documentRange.start && c <= documentRange.end);
+    if (inDoc.length) return inDoc.sort()[0]!;
+  }
+  return candidates.sort()[0]!;
 }
 
-export function resolveSectionDate(header: string, tripSummary: string): string | null {
-  const fromDiaDeMes = resolveDateFromDiaDeMesHeader(header, tripSummary);
+export function resolveSectionDate(
+  header: string,
+  tripSummary: string,
+  sourceText?: string,
+  sectionIndex?: number,
+  totalSections?: number
+): string | null {
+  const tripRange = parseTripDateRangeFromSummary(tripSummary);
+  const documentRange = sourceText ? parseDocumentTripRangeFromText(sourceText) : null;
+  const mapByOrder =
+    tripRange &&
+    documentRange &&
+    !rangesOverlap(documentRange, tripRange) &&
+    typeof sectionIndex === "number" &&
+    sectionIndex >= 0 &&
+    (totalSections ?? 0) >= 2;
+
+  if (mapByOrder) {
+    return tripDateBySectionIndex(tripRange, sectionIndex, totalSections!);
+  }
+
+  const fromDiaDeMes = resolveDateFromDiaDeMesHeader(header, tripSummary, documentRange);
   if (fromDiaDeMes) return fromDiaDeMes;
 
-  const range = parseTripDateRangeFromSummary(tripSummary);
-  if (!range) return null;
+  if (!tripRange) return null;
 
   const dom = parseDayOfMonthFromCalendarHeader(header);
   if (dom != null) {
-    return resolveDayOfMonthInTripRange(dom, range.start, range.end);
+    const inTrip = resolveDayOfMonthInTripRange(dom, tripRange.start, tripRange.end);
+    if (inTrip) return inTrip;
+    if (typeof sectionIndex === "number" && sectionIndex >= 0 && (totalSections ?? 0) >= 2) {
+      return tripDateBySectionIndex(tripRange, sectionIndex, totalSections!);
+    }
   }
 
   const diaM = header.match(DIA_N_HEADER_RE);
   if (diaM) {
     const n = Number(diaM[1]);
     if (Number.isFinite(n) && n >= 1) {
-      const iso = addUtcDays(range.start, n - 1);
-      if (iso >= range.start && iso <= range.end) return iso;
+      const iso = addUtcDays(tripRange.start, n - 1);
+      if (iso >= tripRange.start && iso <= tripRange.end) return iso;
     }
+  }
+
+  if (typeof sectionIndex === "number" && sectionIndex >= 0) {
+    return tripDateBySectionIndex(tripRange, sectionIndex, Math.max(totalSections ?? 1, sectionIndex + 1));
   }
 
   return null;
@@ -314,17 +404,21 @@ function inferKindFromSlotLabel(label: string): string | null {
   return "activity";
 }
 
-function buildDaysFromSections(
+export function buildDaysFromSections(
   sections: Array<{ header: string; body: string }>,
-  tripSummary: string
+  tripSummary: string,
+  sourceText?: string
 ): ItineraryDayPayload[] {
   const days: ItineraryDayPayload[] = [];
+  const total = sections.length;
 
-  for (const section of sections) {
-    const date = resolveSectionDate(section.header, tripSummary);
-    if (!date) continue;
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!;
     const slots = parseScheduleSlotsFromSection(section.body);
     if (!slots.length) continue;
+
+    const date = resolveSectionDate(section.header, tripSummary, sourceText, i, total);
+    if (!date) continue;
 
     const items = slots.map((slot) =>
       enrichItemFromScheduleSlot(
@@ -338,6 +432,98 @@ function buildDaysFromSections(
   }
 
   return days;
+}
+
+/** Un día desde horarios del dossier (sin IA). */
+export function buildItineraryPayloadFromSectionSchedule(
+  section: { header: string; body: string },
+  tripSummary: string,
+  sourceText: string,
+  sectionIndex: number,
+  totalSections: number
+): ExecutableItineraryPayload | null {
+  const slots = parseScheduleSlotsFromSection(section.body);
+  if (!slots.length) return null;
+
+  const date = resolveSectionDate(section.header, tripSummary, sourceText, sectionIndex, totalSections);
+  if (!date) return null;
+
+  const items = slots.map((slot) =>
+    enrichItemFromScheduleSlot(
+      normalizeItineraryItem({ title: slot.label }),
+      slot,
+      inferKindFromSlotLabel
+    )
+  );
+
+  return {
+    version: 1,
+    days: [{ day: 1, date, items }],
+  };
+}
+
+/**
+ * Si el PDF tiene «DÍA 27» y «VIERNES 27», queda un solo trozo por fecha (el que más horarios tenga).
+ */
+export function dedupeImportSectionsByDate(
+  sections: Array<{ header: string; body: string }>,
+  tripSummary: string,
+  sourceText: string
+): Array<{ header: string; body: string }> {
+  if (sections.length < 2) return sections;
+
+  const bestByDate = new Map<string, { section: { header: string; body: string }; slots: number }>();
+  const noDate: Array<{ header: string; body: string }> = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!;
+    const date = resolveSectionDate(section.header, tripSummary, sourceText, i, sections.length);
+    const slots = parseScheduleSlotsFromSection(section.body).length;
+    if (!date) {
+      noDate.push(section);
+      continue;
+    }
+    const prev = bestByDate.get(date);
+    if (!prev || slots > prev.slots) {
+      bestByDate.set(date, { section, slots });
+    }
+  }
+
+  const seen = new Set<string>();
+  const out: Array<{ header: string; body: string }> = [];
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!;
+    const date = resolveSectionDate(section.header, tripSummary, sourceText, i, sections.length);
+    if (date) {
+      if (seen.has(date)) continue;
+      seen.add(date);
+      out.push(bestByDate.get(date)!.section);
+      continue;
+    }
+    out.push(section);
+  }
+
+  return out.length >= 2 ? out : sections;
+}
+
+function dedupeDaysByDate(days: ItineraryDayPayload[]): ItineraryDayPayload[] {
+  const byDate = new Map<string, ItineraryDayPayload>();
+  const order: string[] = [];
+
+  for (const d of days) {
+    if (!d.date || !/^\d{4}-\d{2}-\d{2}$/.test(d.date)) continue;
+    const prev = byDate.get(d.date);
+    if (!prev) {
+      byDate.set(d.date, { ...d, items: [...(d.items ?? [])] });
+      order.push(d.date);
+      continue;
+    }
+    if ((d.items?.length ?? 0) > (prev.items?.length ?? 0)) {
+      byDate.set(d.date, { ...d, items: [...(d.items ?? [])] });
+    }
+  }
+
+  return order.map((iso, idx) => ({ ...byDate.get(iso)!, day: idx + 1 }));
 }
 
 function parseByInlineDayMarkers(sourceText: string, tripSummary: string): ItineraryDayPayload[] | null {
@@ -359,7 +545,7 @@ function parseByInlineDayMarkers(sourceText: string, tripSummary: string): Itine
     return { header: marker.header, body: sourceText.slice(start, end) };
   });
 
-  const days = buildDaysFromSections(sections, tripSummary);
+  const days = buildDaysFromSections(sections, tripSummary, sourceText);
   return days.length >= 2 ? days : null;
 }
 
@@ -389,10 +575,10 @@ export function isAgencyCalendarParseAcceptable(
 
   const range = parseTripDateRangeFromSummary(tripSummary);
   if (range) {
-    const markers = Math.max(countDayMarkersInText(normalized), countDaySectionsInSource(normalized));
+    const markers = countDayMarkersInText(normalized);
     const tripDays = tripDayCount(range.start, range.end);
-    const minExpected = markers >= 2 ? Math.min(markers, tripDays) : 2;
-    if (draft.days.length < Math.min(minExpected, tripDays) * 0.55) return false;
+    const minExpected = tripDays >= 2 ? tripDays : markers >= 2 ? markers : 2;
+    if (draft.days.length < Math.max(2, Math.ceil(minExpected * 0.85))) return false;
   }
 
   for (const d of draft.days) {
@@ -435,10 +621,12 @@ function pickBestAgencyDayParse(
   let bestScore = -Infinity;
   for (const days of candidates) {
     if (days.length < 2) continue;
-    const score = scoreAgencyDayParse(days, sourceText, tripSummary);
+    const deduped = dedupeDaysByDate(days);
+    if (deduped.length < 2) continue;
+    const score = scoreAgencyDayParse(deduped, sourceText, tripSummary);
     if (score > bestScore) {
       bestScore = score;
-      best = days;
+      best = deduped;
     }
   }
   return best;
@@ -446,9 +634,10 @@ function pickBestAgencyDayParse(
 
 function buildDaysFromSourceSections(
   sections: Array<{ header: string; body: string }>,
-  tripSummary: string
+  tripSummary: string,
+  sourceText: string
 ): ItineraryDayPayload[] {
-  return buildDaysFromSections(sections, tripSummary);
+  return buildDaysFromSections(sections, tripSummary, sourceText);
 }
 
 export function parseAgencyCalendarItinerary(
@@ -462,24 +651,25 @@ export function parseAgencyCalendarItinerary(
   const compact = extractCompactAgencyCalendarBlock(normalized);
 
   if (compact) {
-    const compactSections =
+    let compactSections =
       splitSourceByDayMarkers(compact).length >= 2
         ? splitSourceByDayMarkers(compact)
         : splitSourceByDaySections(compact).filter((s) => s.header !== "Todo");
-    const compactDays = buildDaysFromSourceSections(compactSections, tripSummary);
+    compactSections = dedupeImportSectionsByDate(compactSections, tripSummary, normalized);
+    const compactDays = buildDaysFromSourceSections(compactSections, tripSummary, normalized);
     if (compactDays.length >= 2) candidates.push(compactDays);
+  } else {
+    let sections = splitSourceByDayMarkers(normalized);
+    if (sections.length < 2) {
+      sections = splitSourceByDiaDeMesMarkers(normalized);
+    }
+    if (sections.length < 2) {
+      sections = splitSourceByDaySections(normalized).filter((s) => s.header !== "Todo");
+    }
+    sections = dedupeImportSectionsByDate(sections, tripSummary, normalized);
+    const fullDays = buildDaysFromSourceSections(sections, tripSummary, normalized);
+    if (fullDays.length >= 2) candidates.push(fullDays);
   }
-
-  let sections = splitSourceByDayMarkers(normalized);
-  if (sections.length < 2) {
-    sections = splitSourceByDiaDeMesMarkers(normalized);
-  }
-  if (sections.length < 2) {
-    sections = splitSourceByDaySections(normalized).filter((s) => s.header !== "Todo");
-  }
-
-  const fullDays = buildDaysFromSourceSections(sections, tripSummary);
-  if (fullDays.length >= 2) candidates.push(fullDays);
 
   const inline = parseByInlineDayMarkers(compact ?? normalized, tripSummary);
   if (inline?.length) candidates.push(inline);
@@ -494,15 +684,30 @@ export function parseAgencyCalendarItinerary(
   };
 }
 
-export function splitSourceForAgencyCalendar(sourceText: string): Array<{ header: string; body: string }> {
+export function splitSourceForAgencyCalendar(
+  sourceText: string,
+  tripSummary?: string
+): Array<{ header: string; body: string }> {
   const normalized = normalizeAgencyCalendarSourceText(sourceText);
   const compact = extractCompactAgencyCalendarBlock(normalized);
   const base = compact ?? normalized;
+  const summary = tripSummary ?? "";
+
+  let sections: Array<{ header: string; body: string }>;
   const byMarkers = splitSourceByDayMarkers(base);
-  if (byMarkers.length >= 2) return byMarkers;
-  const byDiaDeMes = splitSourceByDiaDeMesMarkers(normalized);
-  if (byDiaDeMes.length >= 2) return byDiaDeMes;
-  const byDay = splitSourceByDaySections(base);
-  if (byDay.length >= 2) return byDay;
-  return [{ header: "Todo", body: normalized }];
+  if (byMarkers.length >= 2) sections = byMarkers;
+  else {
+    const byDiaDeMes = splitSourceByDiaDeMesMarkers(normalized);
+    if (byDiaDeMes.length >= 2) sections = byDiaDeMes;
+    else {
+      const byDay = splitSourceByDaySections(base);
+      if (byDay.length >= 2) sections = byDay;
+      else return [{ header: "Todo", body: normalized }];
+    }
+  }
+
+  if (summary) {
+    return dedupeImportSectionsByDate(sections, summary, normalized);
+  }
+  return sections;
 }

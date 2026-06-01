@@ -47,9 +47,13 @@ import {
   isAgencyCalendarParseAcceptable,
   looksLikeAgencyWeekdayCalendar,
   normalizeAgencyCalendarSourceText,
+  buildDaysFromSections,
+  buildItineraryPayloadFromSectionSchedule,
+  dedupeImportSectionsByDate,
   parseAgencyCalendarItinerary,
   resolveSectionDate,
   splitSourceForAgencyCalendar,
+  tripDayCount,
 } from "@/lib/trip-ai/agencyCalendarParse";
 
 export {
@@ -146,7 +150,9 @@ export function alignItineraryDatesForImport(
 
   const sections = splitSourceForImport(sourceText).filter((s) => s.header !== "Todo");
   if (sections.length >= 2) {
-    const resolved = sections.map((section) => resolveSectionDate(section.header, tripSummary));
+    const resolved = sections.map((section, i) =>
+      resolveSectionDate(section.header, tripSummary, sourceText, i, sections.length)
+    );
 
     if (resolved.every((d) => d != null) && sections.length === itinerary.days.length) {
       return dedupeItineraryDays({
@@ -367,11 +373,14 @@ export function splitSourceByTimeSlots(
 }
 
 /** Estrategia de troceado para importación (días explícitos o bloques horarios). */
-export function splitSourceForImport(sourceText: string): Array<{ header: string; body: string }> {
+export function splitSourceForImport(
+  sourceText: string,
+  tripSummary?: string
+): Array<{ header: string; body: string }> {
   const normalized = normalizeAgencyCalendarSourceText(sourceText);
 
   if (looksLikeAgencyWeekdayCalendar(normalized)) {
-    const byAgency = splitSourceForAgencyCalendar(normalized);
+    const byAgency = splitSourceForAgencyCalendar(normalized, tripSummary);
     if (byAgency.length >= 2) return byAgency;
     return [{ header: "Todo", body: normalized }];
   }
@@ -412,11 +421,52 @@ import { alignItemsToSectionSchedule } from "@/lib/trip-ai/parseScheduleSlots";
 function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string, string> {
   const map = new Map<string, string>();
   const normalized = normalizeAgencyCalendarSourceText(sourceText);
-  for (const section of splitSourceForImport(normalized).filter((s) => s.header !== "Todo")) {
-    const iso = resolveSectionDate(section.header, tripSummary);
+  const sections = splitSourceForImport(normalized).filter((s) => s.header !== "Todo");
+  sections.forEach((section, i) => {
+    const iso = resolveSectionDate(section.header, tripSummary, normalized, i, sections.length);
     if (iso) map.set(iso, section.body);
-  }
+  });
   return map;
+}
+
+/** Completa días que faltan leyendo horarios del dossier (p. ej. dossier de otro viaje). */
+export function supplementItineraryFromSourceSections(
+  itinerary: ExecutableItineraryPayload,
+  sourceText: string,
+  tripSummary: string
+): ExecutableItineraryPayload {
+  const normalized = normalizeAgencyCalendarSourceText(sourceText);
+  const sections = dedupeImportSectionsByDate(
+    splitSourceForImport(normalized, tripSummary).filter((s) => s.header !== "Todo"),
+    tripSummary,
+    normalized
+  );
+  if (sections.length < 2) return itinerary;
+
+  const tripRange = parseTripDateRangeFromSummary(tripSummary);
+  const expectedTripDays = tripRange ? tripDayCount(tripRange.start, tripRange.end) : 0;
+  const targetDays = Math.max(sections.length, expectedTripDays, itinerary.days.length);
+
+  const fromSchedule = buildDaysFromSections(sections, tripSummary, normalized);
+  if (fromSchedule.length < 2) return itinerary;
+
+  const schedulePayload: ExecutableItineraryPayload = {
+    version: 1,
+    title: itinerary.title,
+    days: fromSchedule,
+  };
+
+  if (fromSchedule.length >= targetDays && itinerary.days.length >= targetDays) {
+    return dedupeItineraryDays(itinerary);
+  }
+
+  if (fromSchedule.length >= itinerary.days.length) {
+    return dedupeItineraryDays(
+      pickChunkedOrFullItinerary(itinerary, schedulePayload, normalized, targetDays)
+    );
+  }
+
+  return itinerary;
 }
 
 /**
@@ -446,13 +496,27 @@ export function normalizeChunkImportResult(
   parsed: ExecutableItineraryPayload,
   chunkLabel: string,
   chunkBody: string,
-  tripSummary: string
+  tripSummary: string,
+  sectionContext?: { sourceText?: string; sectionIndex?: number; totalSections?: number }
 ): ExecutableItineraryPayload {
   const range = parseTripDateRangeFromSummary(tripSummary);
   const dayOfMonth = parseDayOfMonthFromCalendarHeader(chunkLabel);
   let date: string | null = null;
   if (range && dayOfMonth != null) {
     date = resolveDayOfMonthInTripRange(dayOfMonth, range.start, range.end);
+  }
+  if (
+    !date &&
+    sectionContext?.sourceText &&
+    typeof sectionContext.sectionIndex === "number"
+  ) {
+    date = resolveSectionDate(
+      chunkLabel,
+      tripSummary,
+      sectionContext.sourceText,
+      sectionContext.sectionIndex,
+      sectionContext.totalSections
+    );
   }
 
   const allItems = dedupeItineraryItems(parsed.days.flatMap((d) => d.items ?? []));
@@ -630,8 +694,9 @@ export function orderItineraryDaysBySourceSections(
   const ordered: ItineraryDayPayload[] = [];
   const usedDates = new Set<string>();
 
-  for (const section of sections) {
-    const iso = resolveSectionDate(section.header, tripSummary);
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!;
+    const iso = resolveSectionDate(section.header, tripSummary, sourceText, i, sections.length);
     if (iso && byDate.has(iso) && !usedDates.has(iso)) {
       ordered.push(byDate.get(iso)!);
       usedDates.add(iso);
@@ -706,7 +771,8 @@ async function importChunk(
   tripSummary: string,
   chunkBody: string,
   chunkLabel: string,
-  usageAgg: TripAiUsage
+  usageAgg: TripAiUsage,
+  sectionContext?: { sourceText?: string; sectionIndex?: number; totalSections?: number }
 ): Promise<ExecutableItineraryPayload | null> {
   const scheduleLines = countScheduleLinesInText(chunkBody);
   const prompt = buildJsonOnlyPrompt(
@@ -717,8 +783,21 @@ async function importChunk(
   );
   const answer = await callImportModel(prompt, true, usageAgg);
   const parsed = parseFromRawAnswer(answer);
-  if (!parsed) return null;
-  return normalizeChunkImportResult(parsed, chunkLabel, chunkBody, tripSummary);
+  if (!parsed) {
+    if (sectionContext?.sourceText && typeof sectionContext.sectionIndex === "number") {
+      return (
+        buildItineraryPayloadFromSectionSchedule(
+          { header: chunkLabel, body: chunkBody },
+          tripSummary,
+          sectionContext.sourceText,
+          sectionContext.sectionIndex,
+          sectionContext.totalSections ?? 1
+        ) ?? null
+      );
+    }
+    return null;
+  }
+  return normalizeChunkImportResult(parsed, chunkLabel, chunkBody, tripSummary, sectionContext);
 }
 
 async function importByChunks(
@@ -730,9 +809,13 @@ async function importByChunks(
   if (sections.length < 2) return null;
 
   const active = sections.filter((s) => s.body.trim());
-  const parts = await mapWithConcurrency(active, 2, async (section) => {
+  const parts = await mapWithConcurrency(active, 2, async (section, sectionIndex) => {
     try {
-      return await importChunk(tripSummary, section.body, section.header, usageAgg);
+      return await importChunk(tripSummary, section.body, section.header, usageAgg, {
+        sourceText,
+        sectionIndex,
+        totalSections: active.length,
+      });
     } catch {
       return null;
     }
@@ -752,14 +835,39 @@ export async function importItinerarySingleChunk(params: {
   tripSummary: string;
   chunkBody: string;
   chunkLabel: string;
+  fullSourceText?: string;
+  chunkSectionIndex?: number;
+  chunkSectionTotal?: number;
 }): Promise<{ itinerary: ExecutableItineraryPayload; usage: TripAiUsage } | null> {
   const usageAgg: TripAiUsage = { provider: "gemini", model: null, inputTokens: 0, outputTokens: 0 };
-  const part = await importChunk(
+  const sectionContext =
+    params.fullSourceText && typeof params.chunkSectionIndex === "number"
+      ? {
+          sourceText: params.fullSourceText,
+          sectionIndex: params.chunkSectionIndex,
+          totalSections: params.chunkSectionTotal,
+        }
+      : undefined;
+
+  let part = await importChunk(
     params.tripSummary,
     params.chunkBody.trim(),
     params.chunkLabel.trim() || "Tramo",
-    usageAgg
+    usageAgg,
+    sectionContext
   );
+
+  if (!part?.days?.length && sectionContext) {
+    part =
+      buildItineraryPayloadFromSectionSchedule(
+        { header: params.chunkLabel.trim() || "Tramo", body: params.chunkBody.trim() },
+        params.tripSummary,
+        sectionContext.sourceText,
+        sectionContext.sectionIndex,
+        sectionContext.totalSections ?? 1
+      ) ?? null;
+  }
+
   if (!part?.days?.length) return null;
   return {
     itinerary: fillItineraryDatesFromTripSummary(part, params.tripSummary),
@@ -779,21 +887,16 @@ export async function importItineraryFromText(params: {
   const pasted = looksLikePastedItineraryImport(sourceText);
   const isAgencyCalendar = looksLikeAgencyWeekdayCalendar(sourceText);
   const sections = splitSourceForImport(sourceText);
-  const useChunkedFirst = !isAgencyCalendar && pasted && (sections.length >= 2 || sourceText.length > 1800);
+  const useChunkedFirst =
+    (sections.length >= 2 || sourceText.length > 1800) && (pasted || isAgencyCalendar);
 
-  const finish = (itinerary: ExecutableItineraryPayload, answer: string) => ({
-    itinerary: sanitizeItineraryBySourceSections(
-      orderItineraryDaysBySourceSections(
-        alignItineraryDatesForImport(itinerary, tripSummary, sourceText),
-        sourceText,
-        tripSummary
-      ),
-      sourceText,
-      tripSummary
-    ),
-    answer,
-    usage: usageAgg,
-  });
+  const finish = (itinerary: ExecutableItineraryPayload, answer: string) => {
+    let draft = alignItineraryDatesForImport(itinerary, tripSummary, sourceText);
+    draft = supplementItineraryFromSourceSections(draft, sourceText, tripSummary);
+    draft = orderItineraryDaysBySourceSections(draft, sourceText, tripSummary);
+    draft = sanitizeItineraryBySourceSections(draft, sourceText, tripSummary);
+    return { itinerary: draft, answer, usage: usageAgg };
+  };
 
   if (looksLikeAgencyWeekdayCalendar(sourceText)) {
     const fast = parseAgencyCalendarItinerary(sourceText, tripSummary);

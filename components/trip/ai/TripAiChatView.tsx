@@ -70,7 +70,12 @@ import {
   parseAgencyCalendarItinerary,
   sanitizeItineraryBySourceSections,
   splitSourceForImport,
+  supplementItineraryFromSourceSections,
 } from "@/lib/trip-ai/importItineraryFromText";
+import {
+  buildItineraryPayloadFromSectionSchedule,
+  tripDayCount,
+} from "@/lib/trip-ai/agencyCalendarParse";
 
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
@@ -835,70 +840,56 @@ export default function TripAiChatView({
       setImportCardsFailed(false);
       setError(null);
       const isAgencyCalendar = looksLikeAgencyWeekdayCalendar(text);
-      const sections = splitSourceForImport(text);
-      const useClientChunks = !isAgencyCalendar && (sections.length >= 2 || text.length > 1200);
+      const tripSummaryForImport =
+        trip?.start_date && trip?.end_date
+          ? `Viaje: ${trip?.name || "Viaje"} | Fechas: ${trip.start_date} → ${trip.end_date}`
+          : "";
+      const sections = splitSourceForImport(text, tripSummaryForImport || undefined);
+      const useClientChunks = sections.length >= 2 || text.length > 1200;
       const detectedDays = countDaySectionsInSource(text);
       const dayCountPrefix =
         detectedDays >= 2
           ? `IMPORTANTE: el dossier tiene ${detectedDays} días de calendario. Genera exactamente ${detectedDays} tarjetas/días en el mismo orden.\n\n`
           : "";
       const hint = `${dayCountPrefix}${assistantHint?.slice(0, 6000) ?? ""}`;
-      const tripSummaryForImport =
-        trip?.start_date && trip?.end_date
-          ? `Viaje: ${trip?.name || "Viaje"} | Fechas: ${trip.start_date} → ${trip.end_date}`
-          : "";
 
-      const expectedSectionDays = Math.max(
-        detectedDays,
-        sections.filter((s) => s.header !== "Todo").length
-      );
+      const tripDays =
+        trip?.start_date && trip?.end_date ? tripDayCount(trip.start_date, trip.end_date) : 0;
+      const sectionCount = sections.filter((s) => s.header !== "Todo").length;
+      const expectedSectionDays =
+        tripDays >= 2 ? Math.max(tripDays, sectionCount) : Math.max(detectedDays, sectionCount);
 
       const finalizeImportDraft = (draft: ItineraryPayload): ItineraryPayload => {
         const deduped = dedupeItineraryDays(draft);
         if (!tripSummaryForImport) return deduped;
-        const aligned = alignItineraryDatesForImport(deduped, tripSummaryForImport, text);
-        const ordered = orderItineraryDaysBySourceSections(aligned, text, tripSummaryForImport);
-        return sanitizeItineraryBySourceSections(ordered, text, tripSummaryForImport);
+        let out = alignItineraryDatesForImport(deduped, tripSummaryForImport, text);
+        out = supplementItineraryFromSourceSections(out, text, tripSummaryForImport);
+        out = orderItineraryDaysBySourceSections(out, text, tripSummaryForImport);
+        return sanitizeItineraryBySourceSections(out, text, tripSummaryForImport);
       };
 
       let sectionResults: Array<ItineraryPayload | null> = [];
 
       try {
+        let agencyQuickDraft: ItineraryPayload | null = null;
         if (tripSummaryForImport && isAgencyCalendar) {
           const fast = parseAgencyCalendarItinerary(text, tripSummaryForImport);
-          if (fast && isAgencyCalendarParseAcceptable(fast, text, tripSummaryForImport)) {
-            const ready = finalizeImportDraft(fast);
-            setInfo(
-              `Tarjetas listas (${ready.days.length} días, ${countItineraryItems(ready)} actividades). Revisa y pulsa «Añadir».`
-            );
-            return ready;
-          }
-
-          setInfo("Leyendo calendario del dossier…");
-          const { res, payload } = await fetchJsonWithTimeout(
-            "/api/trip-ai/import-itinerary",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ tripId, sourceText: text, assistantHint: hint }),
-            },
-            IMPORT_FULL_TIMEOUT_MS
-          );
-          if (res.ok && payload?.itinerary) {
-            const serverDraft = finalizeImportDraft(payload.itinerary as ItineraryPayload);
-            if (isAgencyCalendarParseAcceptable(serverDraft, text, tripSummaryForImport)) {
+          if (fast) {
+            agencyQuickDraft = finalizeImportDraft(fast);
+            const minDays =
+              tripDays >= 2
+                ? Math.max(2, Math.ceil(tripDays * 0.95))
+                : Math.max(2, Math.floor(expectedSectionDays * 0.88));
+            if (
+              isAgencyCalendarParseAcceptable(agencyQuickDraft, text, tripSummaryForImport) &&
+              agencyQuickDraft.days.length >= minDays
+            ) {
               setInfo(
-                `Tarjetas listas (${serverDraft.days.length} días, ${countItineraryItems(serverDraft)} actividades). Revisa y pulsa «Añadir».`
+                `Tarjetas listas (${agencyQuickDraft.days.length} días, ${countItineraryItems(agencyQuickDraft)} actividades). Revisa y pulsa «Añadir».`
               );
-              return serverDraft;
+              return agencyQuickDraft;
             }
           }
-          setImportCardsFailed(true);
-          setError(
-            "No se pudo alinear el calendario día a día. Comprueba que las fechas del viaje coinciden con el dossier (27 nov – 8 dic 2026)."
-          );
-          return null;
         }
 
         if (useClientChunks) {
@@ -906,7 +897,10 @@ export default function TripAiChatView({
           const total = activeSections.length;
           let completed = 0;
 
-          const importOneSection = async (section: { header: string; body: string }) => {
+          const importOneSection = async (
+            section: { header: string; body: string },
+            sectionIndex: number
+          ) => {
             const { res, payload } = await fetchJsonWithTimeout(
               "/api/trip-ai/import-itinerary",
               {
@@ -918,12 +912,26 @@ export default function TripAiChatView({
                   sourceText: section.body,
                   singleChunk: true,
                   chunkLabel: section.header,
+                  fullSourceText: text,
+                  chunkSectionIndex: sectionIndex,
+                  chunkSectionTotal: total,
                 }),
               },
               IMPORT_CHUNK_TIMEOUT_MS
             );
-            if (!res.ok || !payload?.itinerary) return null;
-            return payload.itinerary as ItineraryPayload;
+            if (res.ok && payload?.itinerary) {
+              return payload.itinerary as ItineraryPayload;
+            }
+            if (!tripSummaryForImport) return null;
+            return (
+              buildItineraryPayloadFromSectionSchedule(
+                section,
+                tripSummaryForImport,
+                text,
+                sectionIndex,
+                total
+              ) as ItineraryPayload | null
+            );
           };
 
           const orderedPartsFromSections = () =>
@@ -950,7 +958,9 @@ export default function TripAiChatView({
             setInfo(
               `Generando tarjetas: tramos ${completed + 1}–${Math.min(completed + batch.length, total)} de ${total}…`
             );
-            const chunkResults = await Promise.all(batch.map((section) => importOneSection(section)));
+            const chunkResults = await Promise.all(
+              batch.map((section, batchOffset) => importOneSection(section, i + batchOffset))
+            );
             chunkResults.forEach((part, batchIdx) => {
               const globalIdx = i + batchIdx;
               sectionResults[globalIdx] = part;
@@ -965,7 +975,7 @@ export default function TripAiChatView({
             setInfo(`Reintentando ${missingCount} tramo(s) que no se generaron…`);
             for (let idx = 0; idx < activeSections.length; idx++) {
               if (sectionResults[idx]) continue;
-              const part = await importOneSection(activeSections[idx]!);
+              const part = await importOneSection(activeSections[idx]!, idx);
               if (part) sectionResults[idx] = part;
             }
             flushPartial();
@@ -995,12 +1005,13 @@ export default function TripAiChatView({
             return mergedDraft;
           }
 
-          const shouldTryFullImport =
-            !mergedDraft ||
-            expectedSectionDays < 2 ||
-            mergedDraft.days.length < Math.max(2, Math.floor(expectedSectionDays * 0.75));
+          const needsMoreDays =
+            tripDays >= 2
+              ? !mergedDraft || mergedDraft.days.length < tripDays
+              : !mergedDraft ||
+                mergedDraft.days.length < Math.max(2, Math.floor(expectedSectionDays * 0.9));
 
-          if (!shouldTryFullImport && mergedDraft) {
+          if (!needsMoreDays && mergedDraft) {
             setInfo(
               `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
             );
@@ -1026,6 +1037,14 @@ export default function TripAiChatView({
               text,
               expectedSectionDays
             );
+          }
+
+          if (mergedDraft && agencyQuickDraft) {
+            mergedDraft = finalizeImportDraft(
+              pickChunkedOrFullItinerary(agencyQuickDraft, mergedDraft, text, expectedSectionDays)
+            );
+          } else if (!mergedDraft && agencyQuickDraft) {
+            mergedDraft = agencyQuickDraft;
           }
 
           if (mergedDraft) {
@@ -2360,12 +2379,16 @@ export default function TripAiChatView({
                 : isMobileDrawer
                   ? "flex min-h-[min(52dvh,560px)] shrink-0 flex-col overflow-hidden p-2 sm:p-4"
                   : "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
-              : reviewingItineraryDraft
-                ? "flex max-h-[min(85vh,820px)] min-h-0 flex-col overflow-hidden p-5"
-                : "max-h-[min(70vh,640px)] overflow-hidden p-5"
+              : layout === "page"
+                ? "flex max-h-[min(82vh,860px)] min-h-[min(48vh,420px)] flex-col overflow-hidden p-4 sm:p-5 xl:max-h-[calc(100dvh-10rem)]"
+                : "flex max-h-[min(85vh,820px)] min-h-0 flex-col overflow-hidden p-5"
           }`}
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+          <div
+            className={`flex min-h-0 flex-1 flex-col gap-2 ${
+              layout === "page" ? "overflow-y-auto overscroll-y-contain" : "overflow-hidden"
+            }`}
+          >
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">
@@ -3006,7 +3029,9 @@ export default function TripAiChatView({
               ? isMobileDrawer
                 ? "flex flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm"
                 : "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
-              : "overflow-x-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
+              : itineraryDraft
+                ? "flex max-h-[min(88vh,900px)] min-h-[min(52vh,520px)] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm xl:max-h-[calc(100dvh-9rem)]"
+                : "overflow-x-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
           }`}
         >
           {!reviewingItineraryDraft ? (
@@ -3209,7 +3234,9 @@ export default function TripAiChatView({
                 ? isMobileDrawer
                   ? "min-w-0 max-w-full space-y-4 overflow-visible px-3 py-2 sm:px-4"
                   : "min-h-0 min-w-0 max-w-full flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-3 sm:px-5"
-                : "max-md:max-h-none max-md:overflow-visible min-w-0 max-w-full space-y-5 overflow-y-auto overflow-x-hidden px-4 py-5 sm:max-h-[560px] sm:px-5"
+                : layout === "page" && itineraryDraft
+                  ? "min-h-0 min-w-0 max-w-full flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-3 sm:max-h-[min(28vh,240px)] sm:px-5"
+                  : "max-md:max-h-none max-md:overflow-visible min-w-0 max-w-full space-y-5 overflow-y-auto overflow-x-hidden px-4 py-5 sm:max-h-[560px] sm:px-5"
             }
           >
             {mode === "day_planner" && (!hasAnyPlans || !hasAnyLodging) ? (
