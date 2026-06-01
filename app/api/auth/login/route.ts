@@ -2,8 +2,10 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isValidEmail } from "@/lib/validators/auth";
+import { withTimeout } from "@/lib/with-timeout";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 type CookieRow = { name: string; value: string; options: CookieOptions };
 
@@ -35,13 +37,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email no válido." }, { status: 400 });
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: "Autenticación no configurada en el servidor. Contacta con soporte." },
+      { status: 503 }
+    );
+  }
+
   const cookieStore = await cookies();
   const cookieWrites: CookieRow[] = [];
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -53,7 +61,29 @@ export async function POST(request: Request) {
     }
   );
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const AUTH_TIMEOUT_MS = 18_000;
+  const AUTH_TIMEOUT_MSG = "AUTH_TIMEOUT";
+
+  let error: { message: string } | null = null;
+  try {
+    const result = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      AUTH_TIMEOUT_MS,
+      AUTH_TIMEOUT_MSG
+    );
+    error = result.error;
+  } catch (e) {
+    if (e instanceof Error && e.message === AUTH_TIMEOUT_MSG) {
+      return NextResponse.json(
+        {
+          error:
+            "No se pudo contactar con el servicio de autenticación. Comprueba tu conexión e inténtalo de nuevo.",
+        },
+        { status: 504 }
+      );
+    }
+    throw e;
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 401 });
