@@ -554,7 +554,10 @@ export function looksLikeAgencyWeekdayCalendar(sourceText: string): boolean {
   const sections = countDaySectionsInSource(normalized);
   const markers = countDayMarkersInText(normalized);
   const times = countScheduleLinesInText(normalized);
-  const travelCue = /calendario|itinerario|programa|vuelo|excursi|stripes|argentina/i.test(normalized);
+  const travelCue =
+    /calendario|itinerario|programa|vuelo|excursi|itinerary|schedule|flight|tour|trip\b/i.test(
+      normalized
+    );
 
   return (
     (times >= 8 && (sections >= 2 || markers >= 2)) ||

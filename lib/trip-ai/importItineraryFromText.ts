@@ -307,6 +307,10 @@ function buildMarkerPrompt(tripSummary: string, sourceText: string, assistantHin
 const WEEKDAY_DAY_SPLIT_RE =
   /(?=(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\b)/gi;
 
+/** Encabezados «Monday 15», «Friday 3» (itinerarios en inglés). */
+const EN_WEEKDAY_DAY_SPLIT_RE =
+  /(?=(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d{1,2}\b)/gi;
+
 function sectionHasScheduleLines(body: string): boolean {
   return /\d{1,2}[.:]\d{2}\s*h\b|\d{1,2}:\d{2}/i.test(body);
 }
@@ -334,6 +338,9 @@ export function splitSourceByDaySections(sourceText: string): Array<{ header: st
   const weekdayParts = sourceText.split(WEEKDAY_DAY_SPLIT_RE).map((p) => p.trim()).filter(Boolean);
   if (weekdayParts.length >= 2) return mapDaySectionParts(weekdayParts, sourceText);
 
+  const enWeekdayParts = sourceText.split(EN_WEEKDAY_DAY_SPLIT_RE).map((p) => p.trim()).filter(Boolean);
+  if (enWeekdayParts.length >= 2) return mapDaySectionParts(enWeekdayParts, sourceText);
+
   return [{ header: "Todo", body: sourceText }];
 }
 
@@ -347,9 +354,14 @@ export function splitSourceByTimeSlots(
   let current: string[] = [];
   let slotsInSegment = 0;
 
-  const isTimeLine = (line: string) =>
-    /^\d{1,2}[.:]\d{2}\s*h\s*[-–—]/i.test(line.trim()) ||
-    /^\d{1,2}[.:]\d{2}\s*h\s+\S/i.test(line.trim());
+  const isTimeLine = (line: string) => {
+    const t = line.trim();
+    return (
+      /^\d{1,2}[.:]\d{2}\s*h\s*[-–—]/i.test(t) ||
+      /^\d{1,2}[.:]\d{2}\s*h\s+\S/i.test(t) ||
+      /^\d{1,2}:\d{2}\s+\S/i.test(t)
+    );
+  };
 
   for (const line of lines) {
     if (isTimeLine(line)) {
@@ -373,20 +385,31 @@ export function splitSourceByTimeSlots(
 }
 
 /** Estrategia de troceado para importación (días explícitos o bloques horarios). */
+function prefersEnglishDayNumberSections(
+  sections: Array<{ header: string; body: string }>
+): boolean {
+  return (
+    sections.length >= 2 &&
+    sections.filter((s) => /^\s*Day\s+\d+/i.test(s.header.trim())).length >= 2
+  );
+}
+
 export function splitSourceForImport(
   sourceText: string,
   tripSummary?: string
 ): Array<{ header: string; body: string }> {
   const normalized = normalizeAgencyCalendarSourceText(sourceText);
+  const byDay = splitSourceByDaySections(normalized);
+
+  if (prefersEnglishDayNumberSections(byDay)) return byDay;
 
   if (looksLikeAgencyWeekdayCalendar(normalized)) {
     const byAgency = splitSourceForAgencyCalendar(normalized, tripSummary);
     if (byAgency.length >= 2) return byAgency;
-    return [{ header: "Todo", body: normalized }];
   }
 
-  const byDay = splitSourceByDaySections(normalized);
-  if (byDay.length >= 2) return byDay;
+  if (byDay.length >= 2 && byDay[0]?.header !== "Todo") return byDay;
+
   const byTime = splitSourceByTimeSlots(normalized);
   if (byTime.length >= 2) return byTime;
   return [{ header: "Todo", body: normalized }];
@@ -418,7 +441,9 @@ function dedupeItineraryItems(
 
 import {
   alignItemsToSectionSchedule,
+  buildItemsFromSectionSchedule,
   parseScheduleSlotsFromSection,
+  type ScheduleSlot,
 } from "@/lib/trip-ai/parseScheduleSlots";
 
 function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string, string> {
@@ -427,7 +452,9 @@ function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string,
   const sections = splitSourceForImport(normalized).filter((s) => s.header !== "Todo");
   sections.forEach((section, i) => {
     const iso = resolveSectionDate(section.header, tripSummary, normalized, i, sections.length);
-    if (iso) map.set(iso, section.body);
+    if (iso) {
+      map.set(iso, isolateChunkBodyForLabel(section.header, section.body));
+    }
   });
   return map;
 }
@@ -470,6 +497,156 @@ export function supplementItineraryFromSourceSections(
   }
 
   return itinerary;
+}
+
+function normalizeChunkHeaderLabel(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function chunkHeadersLikelyMatch(a: string, b: string): boolean {
+  const na = normalizeChunkHeaderLabel(a);
+  const nb = normalizeChunkHeaderLabel(b);
+  if (!na || !nb) return false;
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  const domA = parseDayOfMonthFromCalendarHeader(a);
+  const domB = parseDayOfMonthFromCalendarHeader(b);
+  return domA != null && domB != null && domA === domB;
+}
+
+function isDayHeaderLine(line: string): boolean {
+  const t = line.trim();
+  if (!t) return false;
+  if (/^D[IÍ]A\s*\d+/i.test(t)) return true;
+  if (/^day\s*\d+/i.test(t)) return true;
+  if (
+    /^(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d{1,2}\b/i.test(t)
+  ) {
+    return true;
+  }
+  return (
+    /^(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\b/i.test(t) &&
+    parseDayOfMonthFromCalendarHeader(t) != null
+  );
+}
+
+/**
+ * En el último tramo el PDF a veces repite el calendario entero; quedarse solo con el bloque del día pedido.
+ */
+export function isolateChunkBodyForLabel(chunkLabel: string, chunkBody: string): string {
+  const trimmed = chunkBody.trim();
+  if (!trimmed) return trimmed;
+
+  const inner = splitSourceByDaySections(trimmed);
+  if (inner.length >= 2) {
+    const exact = inner.find((s) => chunkHeadersLikelyMatch(s.header, chunkLabel));
+    if (exact?.body.trim()) return exact.body.trim();
+    const labelDom = parseDayOfMonthFromCalendarHeader(chunkLabel);
+    if (labelDom != null) {
+      const byDom = inner.find((s) => parseDayOfMonthFromCalendarHeader(s.header) === labelDom);
+      if (byDom?.body.trim()) return byDom.body.trim();
+    }
+  }
+
+  const lines = trimmed.split("\n");
+  let start = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!.trim();
+    if (!line) continue;
+    if (chunkHeadersLikelyMatch(line, chunkLabel)) {
+      start = i;
+      break;
+    }
+  }
+
+  const out: string[] = [];
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i]!;
+    const t = line.trim();
+    if (i > start && t && isDayHeaderLine(t) && !chunkHeadersLikelyMatch(t, chunkLabel)) {
+      break;
+    }
+    out.push(line);
+  }
+
+  return (out.length ? out.join("\n") : trimmed).trim();
+}
+
+function scoreItemsAgainstSlots(
+  items: ItineraryDayPayload["items"],
+  slots: ScheduleSlot[]
+): number {
+  if (!slots.length) return items?.length ?? 0;
+  const times = new Set(slots.map((s) => s.time));
+  let score = 0;
+  for (const it of items ?? []) {
+    const t = String(it.start_time ?? "").trim();
+    if (t && times.has(t)) score += 4;
+  }
+  return score;
+}
+
+function pickAiPoolForChunkImport(
+  parsed: ExecutableItineraryPayload,
+  isolatedBody: string,
+  sectionContext?: { sectionIndex?: number; totalSections?: number }
+): ItineraryDayPayload["items"] {
+  const slots = parseScheduleSlotsFromSection(isolatedBody);
+  const days = parsed.days.filter((d) => (d.items?.length ?? 0) > 0);
+  if (!days.length) return [];
+
+  if (days.length === 1) return dedupeItineraryItems(days[0]!.items ?? []);
+
+  let best = days[0]!;
+  let bestScore = scoreItemsAgainstSlots(best.items ?? [], slots);
+  for (const d of days.slice(1)) {
+    const s = scoreItemsAgainstSlots(d.items ?? [], slots);
+    const count = d.items?.length ?? 0;
+    const bestCount = best.items?.length ?? 0;
+    if (
+      s > bestScore ||
+      (s === bestScore &&
+        slots.length > 0 &&
+        Math.abs(count - slots.length) < Math.abs(bestCount - slots.length))
+    ) {
+      best = d;
+      bestScore = s;
+    }
+  }
+
+  const isLastChunk =
+    typeof sectionContext?.sectionIndex === "number" &&
+    typeof sectionContext?.totalSections === "number" &&
+    sectionContext.sectionIndex === sectionContext.totalSections - 1;
+
+  if (bestScore === 0 && isLastChunk) {
+    const last = days[days.length - 1]!;
+    const firstCount = days[0]!.items?.length ?? 0;
+    const lastCount = last.items?.length ?? 0;
+    if (lastCount > 0 && lastCount <= Math.max(slots.length, 1) * 3 && lastCount < firstCount) {
+      best = last;
+    }
+  }
+
+  return dedupeItineraryItems(best.items ?? []);
+}
+
+function trimAiPoolToSectionSlots(
+  pool: ItineraryDayPayload["items"],
+  slots: ScheduleSlot[]
+): ItineraryDayPayload["items"] {
+  if (!slots.length || pool.length <= slots.length + 1) return pool;
+  const times = new Set(slots.map((s) => s.time));
+  const matched = pool.filter((it) => {
+    const t = String(it.start_time ?? "").trim();
+    return t && times.has(t);
+  });
+  if (matched.length >= 1 && matched.length <= slots.length + 2) return matched;
+  return [];
 }
 
 /**
@@ -522,29 +699,11 @@ export function normalizeChunkImportResult(
     );
   }
 
-  // Solo usar items del primer día si la IA devolvió varios días en el mismo chunk
-  // (el último tramo suele devolver todos los días anteriores también)
-  const slotsInBody = parseScheduleSlotsFromSection(chunkBody).length;
-  const maxAllowedItems = Math.max(slotsInBody + 2, 4);
-
-  let allItems: ItineraryDayPayload["items"];
-  if (parsed.days.length === 1) {
-    // Caso normal: la IA devolvió exactamente 1 día → usar sus items
-    allItems = dedupeItineraryItems(parsed.days[0]?.items ?? []);
-  } else if (parsed.days.length > 1) {
-    // La IA devolvió varios días en este chunk (bug del último tramo)
-    // Usar solo los items del primer día y capear por el número de slots del body
-    const firstDayItems = parsed.days[0]?.items ?? [];
-    const allDayItems = dedupeItineraryItems(parsed.days.flatMap((d) => d.items ?? []));
-    // Si el primer día tiene suficientes items, usarlo solo
-    allItems = firstDayItems.length >= slotsInBody && firstDayItems.length <= maxAllowedItems * 2
-      ? dedupeItineraryItems(firstDayItems)
-      : allDayItems.slice(0, maxAllowedItems);
-  } else {
-    allItems = [];
-  }
-
-  const items = alignItemsToSectionSchedule(allItems, chunkBody);
+  const isolatedBody = isolateChunkBodyForLabel(chunkLabel, chunkBody);
+  const slots = parseScheduleSlotsFromSection(isolatedBody);
+  let pool = pickAiPoolForChunkImport(parsed, isolatedBody, sectionContext);
+  pool = trimAiPoolToSectionSlots(pool, slots);
+  const items = buildItemsFromSectionSchedule(pool, isolatedBody);
 
   if (!items.length) return { version: 1, title: parsed.title, days: [] };
 
@@ -901,8 +1060,17 @@ export async function importItinerarySingleChunk(params: {
   }
 
   if (!part?.days?.length) return null;
+  let itinerary = fillItineraryDatesFromTripSummary(part, params.tripSummary);
+  const sourceForSanitize = params.fullSourceText?.trim() || params.chunkBody.trim();
+  if (sourceForSanitize) {
+    itinerary = sanitizeItineraryBySourceSections(
+      itinerary,
+      sourceForSanitize,
+      params.tripSummary
+    );
+  }
   return {
-    itinerary: fillItineraryDatesFromTripSummary(part, params.tripSummary),
+    itinerary,
     usage: usageAgg,
   };
 }
