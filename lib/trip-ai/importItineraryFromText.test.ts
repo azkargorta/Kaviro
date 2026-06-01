@@ -5,8 +5,10 @@ import {
   countScheduleLinesInText,
   fillItineraryDatesFromTripSummary,
   looksLikeAgencyWeekdayCalendar,
+  dedupeItineraryDays,
   mergeImportedItineraries,
   normalizeChunkImportResult,
+  pickChunkedOrFullItinerary,
   parseAgencyCalendarItinerary,
   parseDayOfMonthFromCalendarHeader,
   parseScheduleSlotsFromSection,
@@ -139,6 +141,57 @@ describe("splitSourceByTimeSlots", () => {
     const lines = Array.from({ length: 8 }, (_, i) => `${10 + i}.00h- Actividad ${i + 1}`);
     const parts = splitSourceByTimeSlots(lines.join("\n"), 3);
     expect(parts.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("dedupeItineraryDays", () => {
+  it("fusiona días con la misma fecha", () => {
+    const out = dedupeItineraryDays({
+      version: 1,
+      days: [
+        { day: 1, date: "2026-11-27", items: [{ title: "Vuelo", start_time: "19:05" }] },
+        { day: 2, date: "2026-11-27", items: [{ title: "Quedada", start_time: "16:00" }] },
+        { day: 3, date: "2026-11-28", items: [{ title: "Desayuno", start_time: "07:30" }] },
+      ],
+    });
+    expect(out.days).toHaveLength(2);
+    expect(out.days[0]?.items).toHaveLength(2);
+  });
+});
+
+describe("pickChunkedOrFullItinerary", () => {
+  it("prefiere tramos cuando el dossier completo duplica días", () => {
+    const chunked = {
+      version: 1 as const,
+      days: [
+        "2026-11-27",
+        "2026-11-28",
+        "2026-11-29",
+        "2026-11-30",
+        "2026-12-01",
+        "2026-12-02",
+        "2026-12-03",
+        "2026-12-04",
+        "2026-12-05",
+        "2026-12-06",
+        "2026-12-07",
+        "2026-12-08",
+      ].map((date, i) => ({
+        day: i + 1,
+        date,
+        items: [{ title: `Act ${i}`, start_time: "10:00" }],
+      })),
+    };
+    const full = {
+      version: 1 as const,
+      days: [
+        ...chunked.days,
+        ...chunked.days.slice(0, 2).map((d, i) => ({ ...d, day: 13 + i })),
+      ],
+    };
+    const picked = pickChunkedOrFullItinerary(chunked, full, ARGENTINA_SAMPLE, 12);
+    expect(picked.days.length).toBeLessThanOrEqual(13);
+    expect(picked.days.length).toBeGreaterThanOrEqual(12);
   });
 });
 

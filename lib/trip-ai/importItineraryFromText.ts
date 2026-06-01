@@ -141,10 +141,10 @@ export function alignItineraryDatesForImport(
     const resolved = sections.map((section) => resolveSectionDate(section.header, tripSummary));
 
     if (resolved.every((d) => d != null) && sections.length === itinerary.days.length) {
-      return {
+      return dedupeItineraryDays({
         ...itinerary,
         days: itinerary.days.map((d, i) => ({ ...d, date: resolved[i]! })),
-      };
+      });
     }
 
     const days = itinerary.days.map((d, i) => {
@@ -154,13 +154,13 @@ export function alignItineraryDatesForImport(
       return { ...d, date: addUtcDays(range.start, i) };
     });
 
-    return {
+    return dedupeItineraryDays({
       ...itinerary,
       days: days.map((d, idx) => ({ ...d, day: idx + 1 })),
-    };
+    });
   }
 
-  return {
+  return dedupeItineraryDays({
     ...itinerary,
     days: itinerary.days.map((d, idx) => ({
       ...d,
@@ -169,7 +169,7 @@ export function alignItineraryDatesForImport(
           ? d.date
           : addUtcDays(range.start, idx),
     })),
-  };
+  });
 }
 
 /** Rellena `date` null usando «Fechas: YYYY-MM-DD → YYYY-MM-DD» del resumen del viaje. */
@@ -653,11 +653,87 @@ export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): E
   const days = keyOrder
     .map((k) => dayByKey.get(k)!)
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  return {
+  return dedupeItineraryDays({
     version: 1,
     title: parts.find((p) => p.title)?.title || "Itinerario importado",
     days: days.map((d, idx) => ({ ...d, day: idx + 1 })),
-  };
+  });
+}
+
+/** Fusiona días repetidos (misma fecha o mismo contenido) tras importación completa o por tramos. */
+export function dedupeItineraryDays(
+  itinerary: ExecutableItineraryPayload
+): ExecutableItineraryPayload {
+  const dateOrder: string[] = [];
+  const byDate = new Map<string, ItineraryDayPayload>();
+  const noDateDays: ItineraryDayPayload[] = [];
+
+  for (const d of itinerary.days) {
+    if (!(d.items?.length ?? 0)) continue;
+    const date =
+      typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : null;
+    if (date) {
+      const prev = byDate.get(date);
+      if (!prev) {
+        byDate.set(date, { ...d, items: dedupeItineraryItems([...(d.items ?? [])]) });
+        dateOrder.push(date);
+        continue;
+      }
+      const seen = new Set((prev.items ?? []).map(itineraryItemFingerprint));
+      for (const it of d.items ?? []) {
+        const fp = itineraryItemFingerprint(it);
+        if (!seen.has(fp)) {
+          prev.items!.push(it);
+          seen.add(fp);
+        }
+      }
+      continue;
+    }
+    noDateDays.push(d);
+  }
+
+  const seenNoDate = new Set<string>();
+  const uniqueNoDate: ItineraryDayPayload[] = [];
+  for (const d of noDateDays) {
+    const sig = (d.items ?? []).slice(0, 3).map(itineraryItemFingerprint).join("|");
+    if (sig && seenNoDate.has(sig)) continue;
+    if (sig) seenNoDate.add(sig);
+    uniqueNoDate.push({ ...d, items: dedupeItineraryItems(d.items ?? []) });
+  }
+
+  const days = [...dateOrder.map((iso) => byDate.get(iso)!), ...uniqueNoDate].map((d, idx) => ({
+    ...d,
+    day: idx + 1,
+  }));
+
+  return { ...itinerary, days };
+}
+
+/** Tras import por tramos, evita sustituir por un dossier entero que duplica días. */
+export function pickChunkedOrFullItinerary(
+  chunked: ExecutableItineraryPayload | null,
+  full: ExecutableItineraryPayload,
+  sourceText: string,
+  expectedDayCount: number
+): ExecutableItineraryPayload {
+  const fullClean = dedupeItineraryDays(full);
+  if (!chunked) return fullClean;
+
+  const chunkedClean = dedupeItineraryDays(chunked);
+  const expected =
+    expectedDayCount >= 2 ? expectedDayCount : countDaySectionsInSource(sourceText);
+
+  if (expected >= 2 && chunkedClean.days.length >= expected) {
+    if (fullClean.days.length > expected + 1) return chunkedClean;
+    const chunkedItems = countItineraryItems(chunkedClean);
+    const fullItems = countItineraryItems(fullClean);
+    if (fullClean.days.length > chunkedClean.days.length && fullItems <= chunkedItems * 1.05) {
+      return chunkedClean;
+    }
+    if (chunkedItems >= fullItems * 0.85) return chunkedClean;
+  }
+
+  return fullClean.days.length > chunkedClean.days.length ? fullClean : chunkedClean;
 }
 
 function pickBestItinerary(

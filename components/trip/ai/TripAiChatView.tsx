@@ -61,13 +61,16 @@ import {
   alignItineraryDatesForImport,
   isAgencyCalendarParseAcceptable,
   looksLikeAgencyWeekdayCalendar,
+  dedupeItineraryDays,
   mergeImportedItineraries,
   normalizeAgencyCalendarSourceText,
+  pickChunkedOrFullItinerary,
   prepareDocumentTextForItineraryImport,
   parseAgencyCalendarItinerary,
   sanitizeItineraryBySourceSections,
   splitSourceForImport,
 } from "@/lib/trip-ai/importItineraryFromText";
+
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
   DIFF_JSON_END_ALIASES,
@@ -845,10 +848,16 @@ export default function TripAiChatView({
           ? `Viaje: ${trip?.name || "Viaje"} | Fechas: ${trip.start_date} → ${trip.end_date}`
           : "";
 
+      const expectedSectionDays = Math.max(
+        detectedDays,
+        sections.filter((s) => s.header !== "Todo").length
+      );
+
       const finalizeImportDraft = (draft: ItineraryPayload): ItineraryPayload => {
-        if (!tripSummaryForImport) return draft;
+        const deduped = dedupeItineraryDays(draft);
+        if (!tripSummaryForImport) return deduped;
         return sanitizeItineraryBySourceSections(
-          alignItineraryDatesForImport(draft, tripSummaryForImport, text),
+          alignItineraryDatesForImport(deduped, tripSummaryForImport, text),
           text,
           tripSummaryForImport
         );
@@ -962,7 +971,31 @@ export default function TripAiChatView({
           if (mergedDraft && tripSummaryForImport) {
             mergedDraft = finalizeImportDraft(mergedDraft);
           }
+
+          if (
+            mergedDraft &&
+            expectedSectionDays >= 2 &&
+            mergedDraft.days.length >= expectedSectionDays
+          ) {
+            setInfo(
+              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
+            );
+            return mergedDraft;
+          }
+
           if (mergedDraft && isItineraryImportSufficient(mergedDraft, text)) {
+            setInfo(
+              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
+            );
+            return mergedDraft;
+          }
+
+          const shouldTryFullImport =
+            !mergedDraft ||
+            expectedSectionDays < 2 ||
+            mergedDraft.days.length < Math.max(2, Math.floor(expectedSectionDays * 0.75));
+
+          if (!shouldTryFullImport && mergedDraft) {
             setInfo(
               `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
             );
@@ -981,13 +1014,13 @@ export default function TripAiChatView({
             IMPORT_FULL_TIMEOUT_MS
           );
           if (fullRes.ok && fullPayload?.itinerary) {
-            let fullDraft = finalizeImportDraft(fullPayload.itinerary as ItineraryPayload);
-            if (
-              !mergedDraft ||
-              fullDraft.days.length > mergedDraft.days.length
-            ) {
-              mergedDraft = fullDraft;
-            }
+            const fullDraft = finalizeImportDraft(fullPayload.itinerary as ItineraryPayload);
+            mergedDraft = pickChunkedOrFullItinerary(
+              mergedDraft,
+              fullDraft,
+              text,
+              expectedSectionDays
+            );
           }
 
           if (mergedDraft) {

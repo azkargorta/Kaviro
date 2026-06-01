@@ -180,6 +180,11 @@ export function isItineraryImportSufficient(
   draft: ItineraryDraftPayload,
   sourceText: string
 ): boolean {
+  const weekdayHits = countDaySectionsInSource(sourceText);
+  if (weekdayHits >= 2 && draft.days.length >= weekdayHits) {
+    const items = countItineraryItems(draft);
+    if (items >= weekdayHits) return true;
+  }
   if (!isItineraryImportIncomplete(draft, sourceText)) return true;
   const got = countItineraryItems(draft);
   const expected = estimateMinActivitiesFromSource(sourceText);
