@@ -2,14 +2,29 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { TripAiUsage } from "@/lib/trip-ai/providers";
 
 const VISION_PROMPT = [
-  "Transcribe este documento de viaje (dossier de agencia, calendario, PDF escaneado o captura).",
-  "Devuelve SOLO texto plano en español o idioma original.",
-  "Formato obligatorio:",
-  "- Cada día del calendario en su propia línea de encabezado: «VIERNES 27», «SÁBADO 28», «DÍA 3», etc.",
-  "- Debajo de cada encabezado, una actividad por línea con su hora (07.30h, 19:05h, - 16.00h …).",
-  "- Conserva TODOS los días visibles; no fusiones varios días en uno.",
-  "- Vuelos, hoteles, excursiones, traslados, comidas, códigos PNR/localizador.",
-  "No añadas comentarios ni markdown.",
+  "Transcribe este documento de viaje (dossier, calendario, tabla, captura de pantalla, PDF escaneado o imagen).",
+  "El documento puede estar en español, inglés u otro idioma. Transcribe en el idioma original.",
+  "Devuelve SOLO texto plano estructurado, sin markdown, sin JSON, sin comentarios.",
+  "",
+  "FORMATO OBLIGATORIO — sigue estas reglas estrictamente:",
+  "1. Cada día en su propia línea de encabezado. Usa el formato que aparezca en el documento:",
+  "   - «DÍA 1», «DÍA 2», «Day 1», «Day 2»",
+  "   - «VIERNES 27», «SÁBADO 28», «Friday October 11»",
+  "   - «LUNES 1 DE OCTUBRE», «Monday, October 1»",
+  "2. Debajo de cada encabezado de día, una actividad POR LÍNEA con este formato:",
+  "   HH:MM - Nombre de la actividad o lugar",
+  "   Si no hay hora: 00:00 - Nombre de la actividad",
+  "3. Si el documento es una TABLA con columnas (Hora | Actividad | Lugar):",
+  "   - Lee cada fila como una línea: HH:MM - [Actividad] - [Lugar]",
+  "   - Incluye el lugar si aparece en la tabla",
+  "4. Incluye ABSOLUTAMENTE TODO lo visible:",
+  "   - Vuelos (aerolínea, número, origen-destino, hora salida/llegada, terminal)",
+  "   - Hoteles (nombre, ciudad, check-in/check-out)",
+  "   - Excursiones, tours, partidos deportivos, museos, restaurantes",
+  "   - Traslados, transfers, tiempo libre, descansos",
+  "   - Códigos de reserva, localizadores, notas importantes",
+  "5. NO fusiones días, NO omitas actividades, NO resumas.",
+  "6. Si hay texto en inglés: transCRIBE en inglés tal como aparece.",
 ].join("\n");
 
 export async function extractItineraryTextWithVision(params: {
@@ -74,9 +89,11 @@ export function shouldTryVisionExtract(params: {
   fileName?: string;
 }): boolean {
   if (!process.env.GEMINI_API_KEY) return false;
-  if (params.mimeType.startsWith("image/")) return params.ocrTextLength < 2500;
+  // Imágenes: SIEMPRE usar visión — OCR clásico no entiende tablas ni layouts visuales
+  if (params.mimeType.startsWith("image/")) return true;
+  // PDFs: usar visión si el texto extraído es escaso (PDF escaneado o con imágenes)
   if (params.mimeType.includes("pdf") || params.fileName?.toLowerCase().endsWith(".pdf")) {
-    return params.ocrTextLength < 200;
+    return params.ocrTextLength < 800;
   }
   return false;
 }

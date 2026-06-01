@@ -200,9 +200,25 @@ export async function POST(request: Request) {
       }
     }
 
+    // Detectar tipo de documento para añadir hints específicos al prompt
+    const isSportsDossier = /NFL|NBA|MLB|NHL|SuperBowl|partido.*deportiv|estadio|Bears|Packers|Bulls|Lambeau|Soldier Field|United Center|match.*ticket|game.*day/i.test(ocrText);
+    const isTableFormat = /\|.*\|.*\||[\t]{2,}|hora.*actividad|time.*activity|schedule.*table/i.test(ocrText);
+    const isEnglishDoc = (ocrText.match(/\b(the|and|for|with|from|hotel|flight|day|morning|afternoon|evening)\b/gi) || []).length > 10;
+
+    const sportsHint = isSportsDossier
+      ? "\n\nDOSSIER DEPORTIVO: activity_kind \"sport\" para partidos, \"excursion\" para desplazamientos a otros estadios, \"tour\" para tours. start_time obligatorio (00:00 si no aparece)."
+      : "";
+    const tableHint = isTableFormat
+      ? "\n\nFORMATO TABLA: cada fila de la tabla es un item. Lee columna hora y columna actividad/descripción por separado."
+      : "";
+    const englishHint = isEnglishDoc
+      ? "\n\nDOCUMENTO EN INGLÉS: extrae títulos en inglés tal como aparecen en el texto."
+      : "";
+
     return NextResponse.json({
       ok: true,
       extractedText: prepareDocumentTextForItineraryImport(ocrText),
+      sportsHint,
       fileName,
       charCount: ocrText.length,
       resourceId,
@@ -210,8 +226,11 @@ export async function POST(request: Request) {
       savedToResources: Boolean(resourceId),
       extractionMethod,
       visionUsed,
-      importHint,
+      importHint: importHint + (sportsHint || "") + (tableHint || "") + (englishHint || ""),
       documentInsights,
+      isSportsDossier: isSportsDossier ?? false,
+      isTableFormat: isTableFormat ?? false,
+      isEnglishDoc: isEnglishDoc ?? false,
     });
   } catch (error) {
     return NextResponse.json(

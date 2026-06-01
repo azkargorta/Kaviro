@@ -55,11 +55,30 @@ function tokenOverlapScore(a: string, b: string): number {
 
 function inferKindFromSlotLabel(label: string): string | null {
   const l = label.toLowerCase();
-  if (/vuelo|flight|aterrizaje|airport|factur|aterriz/i.test(l)) return "transport";
-  if (/desayuno|comida|cena/.test(l)) return "restaurant";
-  if (/hotel|check[- ]?in|check[- ]?out|llegada a hotel|early check/i.test(l)) return "lodging";
-  if (/excursi|glaciar|catarata|parque|quedada|bus al airport|mañana libre|tarde libre|noche libre|partido/i.test(l))
-    return "activity";
+  // Transporte
+  if (/vuelo|flight|aterrizaje|despegue|airport|aeropuerto|facturación|boarding|embarque|tren|transfer|traslado|taxi|uber|metro|autobus|autobús|bus al airport|shuttle/i.test(l)) return "transport";
+  // Alojamiento
+  if (/hotel|check[- ]?in|check[- ]?out|llegada a hotel|early check|alojamiento|hostel|airbnb|resort|apartamento/i.test(l)) return "lodging";
+  // Restaurante / comida
+  if (/desayuno|comida|cena|lunch|dinner|breakfast|brunch|restaurante|restaurant|tapas|barbacoa|tailgate.*comida/i.test(l)) return "restaurant";
+  // Partidos deportivos
+  if (/partido|nfl|nba|mlb|nhl|bears|packers|bulls|cubs|white sox|blackhawks|match|game.*stadium|stadium.*game|super bowl|playoffs|final/i.test(l)) return "sport";
+  // Tours y visitas guiadas
+  if (/tour|crucero arquitectura|city tour|bus panorámico|hop on|guided tour|visita guiada|arquitectura.*barco/i.test(l)) return "tour";
+  // Excursiones
+  if (/excursi|day trip|glaciar|catarata|parque nacional|safari|lambeau|green bay|fuera de la ciudad/i.test(l)) return "excursion";
+  // Museos
+  if (/museo|museum|galería|gallery|exposición|exhibition|art institute|history museum/i.test(l)) return "museum";
+  // Cultura y espectáculos
+  if (/teatro|theatre|theater|concierto|concert|ópera|opera|espectáculo|show|comedy|second city|jazz|blues|broadway/i.test(l)) return "culture";
+  // Noche
+  if (/noche libre|vida nocturna|bar|pub|disco|club|nightlife|buddy guy|andy.s jazz/i.test(l)) return "night";
+  // Compras
+  if (/compras|shopping|outlet|mercado|market|magnificent mile|mall/i.test(l)) return "shopping";
+  // Tiempo libre / sin actividad estructurada
+  if (/mañana libre|tarde libre|tiempo libre|free time|descanso|rest|relax/i.test(l)) return "activity";
+  // Naturaleza / miradores
+  if (/playa|beach|lago|lake|montaña|mountain|mirador|viewpoint|parque.*natural|park/i.test(l)) return "nature";
   return "activity";
 }
 
