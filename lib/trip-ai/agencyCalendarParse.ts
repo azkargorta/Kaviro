@@ -1,5 +1,8 @@
 import type { ExecutableItineraryPayload, ItineraryDayPayload } from "@/lib/trip-ai/tripCreationTypes";
 import { countDaySectionsInSource, countItineraryItems, normalizeItineraryItem } from "@/lib/trip-ai/itineraryDraftUtils";
+import { enrichItemFromScheduleSlot, type ScheduleSlot } from "@/lib/trip-ai/scheduleSlotEnrich";
+
+export type { ScheduleSlot };
 
 const CALENDAR_HEADER_DAY_RE =
   /(?:^|\s)(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+(\d{1,2})(?![.:]\d)\b/i;
@@ -29,8 +32,6 @@ const MONTH_NAME_TO_NUM: Record<string, number> = {
   noviembre: 11,
   diciembre: 12,
 };
-
-export type ScheduleSlot = { time: string; label: string; line: string };
 
 function addUtcDays(isoDate: string, offset: number): string {
   const d = new Date(`${isoDate}T12:00:00.000Z`);
@@ -358,11 +359,11 @@ function buildDaysFromSections(
     if (!slots.length) continue;
 
     const items = slots.map((slot) =>
-      normalizeItineraryItem({
-        title: slot.label,
-        start_time: slot.time,
-        activity_kind: inferKindFromSlotLabel(slot.label),
-      })
+      enrichItemFromScheduleSlot(
+        normalizeItineraryItem({ title: slot.label }),
+        slot,
+        inferKindFromSlotLabel
+      )
     );
 
     days.push({ day: days.length + 1, date, items });

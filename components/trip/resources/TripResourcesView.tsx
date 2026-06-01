@@ -59,6 +59,7 @@ export default function TripResourcesView({
     createReservation,
     updateReservation,
     deleteResource,
+    deleteResources,
     deleteReservation,
   } = useTripResources(tripId);
 
@@ -470,9 +471,10 @@ export default function TripResourcesView({
 
         <ResourceList
           resources={resources}
+          deleting={saving}
           {...(canManageResources
             ? {
-                onDelete: deleteResource,
+                onDeleteMany: deleteResources,
                 onAdd: () => {
                   setShowUploadForm(true);
                   window.scrollTo({ top: 0, behavior: "smooth" });

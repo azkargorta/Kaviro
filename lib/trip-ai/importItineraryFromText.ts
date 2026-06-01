@@ -30,6 +30,9 @@ import {
   buildDocumentHintBlock,
   buildImportExtractionRules,
 } from "@/lib/trip-ai/itineraryImportPrompts";
+import { enrichItemFromScheduleSlot, type ScheduleSlot } from "@/lib/trip-ai/scheduleSlotEnrich";
+
+export type { ScheduleSlot };
 import {
   KAVIRO_ITINERARY_JSON_END,
   KAVIRO_ITINERARY_JSON_START,
@@ -405,8 +408,6 @@ function maxItemsForSectionBody(body: string): number {
   return 12;
 }
 
-export type ScheduleSlot = { time: string; label: string; line: string };
-
 function normalizeTimeForMatch(t: string | null | undefined): string | null {
   if (!t) return null;
   const m = t.trim().match(/^(\d{1,2})[:.](\d{2})/);
@@ -430,7 +431,19 @@ export function parseScheduleSlotsFromSection(body: string): ScheduleSlot[] {
   for (const line of body.split("\n")) {
     const t = line.trim();
     if (!t) continue;
-    let m = t.match(/^(\d{1,2})[.:](\d{2})\s*h\s*(.+)$/i);
+    let m = t.match(/^[-•●]\s*(\d{1,2})[.:](\d{2})\s*h?\s*(.+)$/i);
+    if (m) {
+      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
+      slots.push({ time, label: m[3]!.trim(), line: t });
+      continue;
+    }
+    m = t.match(/^(\d{1,2})[.:](\d{2})\s*h\s*[-–—]?\s*(.+)$/i);
+    if (m) {
+      const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
+      slots.push({ time, label: m[3]!.trim(), line: t });
+      continue;
+    }
+    m = t.match(/^(\d{1,2}):(\d{2})\s+(.+)$/);
     if (m) {
       const time = `${Number(m[1]).toString().padStart(2, "0")}:${m[2]}`;
       slots.push({ time, label: m[3]!.trim(), line: t });
@@ -512,16 +525,16 @@ export function alignItemsToSectionSchedule(
         bestIdx = i;
       }
     }
-    if (bestIdx >= 0 && bestScore >= 0.35) {
+    if (bestIdx >= 0 && bestScore >= 0.25) {
       used.add(bestIdx);
-      result.push(pool[bestIdx]!);
+      result.push(enrichItemFromScheduleSlot(pool[bestIdx]!, slot, inferKindFromSlotLabel));
     } else {
       result.push(
-        normalizeItineraryItem({
-          title: slot.label,
-          start_time: slot.time,
-          activity_kind: inferKindFromSlotLabel(slot.label),
-        })
+        enrichItemFromScheduleSlot(
+          normalizeItineraryItem({ title: slot.label }),
+          slot,
+          inferKindFromSlotLabel
+        )
       );
     }
   }
@@ -832,7 +845,7 @@ async function importChunk(
     tripSummary,
     chunkBody.slice(0, 12000),
     "",
-    `Fragmento «${chunkLabel}»: devuelve days[] con UN SOLO día y como máximo ${scheduleLines || "?"} actividades con hora de ESTE trozo; no incluyas otros días del viaje.`
+    `Fragmento «${chunkLabel}»: devuelve days[] con UN SOLO día y como máximo ${scheduleLines || "?"} actividades de ESTE trozo; cada actividad con start_time HH:MM si el texto trae hora y place_name si nombra sitio/ciudad/hotel; no incluyas otros días del viaje.`
   );
   const answer = await callImportModel(prompt, true, usageAgg);
   const parsed = parseFromRawAnswer(answer);

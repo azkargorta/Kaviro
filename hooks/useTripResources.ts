@@ -371,6 +371,43 @@ export function useTripResources(tripId: string) {
     [load]
   );
 
+  const deleteResources = useCallback(
+    async (resourceIds: string[]) => {
+      const unique = [...new Set(resourceIds.filter(Boolean))];
+      if (!unique.length) return;
+
+      const confirmed = window.confirm(
+        unique.length === 1
+          ? "¿Seguro que quieres eliminar este documento?"
+          : `¿Seguro que quieres eliminar ${unique.length} documentos?`
+      );
+      if (!confirmed) return;
+
+      setSaving(true);
+      setError(null);
+
+      try {
+        const results = await Promise.allSettled(
+          unique.map((id) =>
+            apiRequest<{ ok: true }>(`/api/trip-resources/${id}`, { method: "DELETE" }, "borrar recurso")
+          )
+        );
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+          setError(
+            failed === unique.length
+              ? "No se pudieron eliminar los documentos."
+              : `No se pudieron eliminar ${failed} de ${unique.length} documentos.`
+          );
+        }
+        await load();
+      } finally {
+        setSaving(false);
+      }
+    },
+    [load]
+  );
+
   const deleteReservation = useCallback(
     async (reservationId: string) => {
       const confirmed = window.confirm("¿Seguro que quieres eliminar esta reserva?");
@@ -421,6 +458,7 @@ export function useTripResources(tripId: string) {
     createReservation,
     updateReservation,
     deleteResource,
+    deleteResources,
     deleteReservation,
     analyzeDocument,
   };
