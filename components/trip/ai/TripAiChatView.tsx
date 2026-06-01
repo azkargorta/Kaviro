@@ -41,6 +41,7 @@ import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { newChatMessageId, normalizeChatMessage } from "@/lib/chat-message-utils";
 import {
   collectItineraryItemKeys,
+  countDaySectionsInSource,
   countItineraryItems,
   filterItineraryBySelection,
   isItineraryImportIncomplete,
@@ -62,6 +63,7 @@ import {
   looksLikeAgencyWeekdayCalendar,
   mergeImportedItineraries,
   normalizeAgencyCalendarSourceText,
+  prepareDocumentTextForItineraryImport,
   parseAgencyCalendarItinerary,
   sanitizeItineraryBySourceSections,
   splitSourceForImport,
@@ -819,7 +821,9 @@ export default function TripAiChatView({
 
   const runImportItineraryCards = useCallback(
     async (sourceText: string, assistantHint?: string): Promise<ItineraryPayload | null> => {
-      const text = normalizeAgencyCalendarSourceText(prepareItineraryTextForImport(sourceText));
+      const text = prepareDocumentTextForItineraryImport(
+        prepareItineraryTextForImport(sourceText)
+      );
       if (!text || importingItineraryCards) return null;
       lastImportSourceRef.current = text;
       setImportingItineraryCards(true);
@@ -829,7 +833,12 @@ export default function TripAiChatView({
       const isAgencyCalendar = looksLikeAgencyWeekdayCalendar(text);
       const sections = splitSourceForImport(text);
       const useClientChunks = !isAgencyCalendar && (sections.length >= 2 || text.length > 1200);
-      const hint = assistantHint?.slice(0, 6000) ?? "";
+      const detectedDays = countDaySectionsInSource(text);
+      const dayCountPrefix =
+        detectedDays >= 2
+          ? `IMPORTANTE: el dossier tiene ${detectedDays} días de calendario. Genera exactamente ${detectedDays} tarjetas/días en el mismo orden.\n\n`
+          : "";
+      const hint = `${dayCountPrefix}${assistantHint?.slice(0, 6000) ?? ""}`;
       const mergedParts: ItineraryPayload[] = [];
       const tripSummaryForImport =
         trip?.start_date && trip?.end_date

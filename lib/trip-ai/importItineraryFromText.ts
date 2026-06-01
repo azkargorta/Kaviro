@@ -11,6 +11,21 @@ import {
   mapWithConcurrency,
   normalizeItineraryItem,
 } from "@/lib/trip-ai/itineraryDraftUtils";
+
+function expectedDayCountRule(sourceText: string, assistantHint: string): string | undefined {
+  const fromMeta = assistantHint.match(/D[ií]as detectados[^:]*:\s*(\d+)/i);
+  if (fromMeta) {
+    const n = Number(fromMeta[1]);
+    if (Number.isFinite(n) && n >= 2) {
+      return `El dossier tiene ${n} días de calendario: devuelve days[] con EXACTAMENTE ${n} entradas (una por día), en el mismo orden que el texto.`;
+    }
+  }
+  const fromText = countDaySectionsInSource(sourceText);
+  if (fromText >= 2) {
+    return `El texto tiene ${fromText} bloques de día: devuelve days[] con EXACTAMENTE ${fromText} entradas, una por día, en orden.`;
+  }
+  return undefined;
+}
 import {
   buildDocumentHintBlock,
   buildImportExtractionRules,
@@ -25,6 +40,7 @@ import {
   looksLikeAgencyWeekdayCalendar,
   normalizeAgencyCalendarSourceText,
   parseAgencyCalendarItinerary,
+  resolveSectionDate,
   splitSourceForAgencyCalendar,
 } from "@/lib/trip-ai/agencyCalendarParse";
 
@@ -34,6 +50,7 @@ export {
   looksLikeAgencyWeekdayCalendar,
   normalizeAgencyCalendarSourceText,
   parseAgencyCalendarItinerary,
+  prepareDocumentTextForItineraryImport,
 } from "@/lib/trip-ai/agencyCalendarParse";
 
 function addUtcDays(isoDate: string, offset: number): string {
@@ -120,25 +137,37 @@ export function alignItineraryDatesForImport(
   if (!range) return itinerary;
 
   const sections = splitSourceForImport(sourceText).filter((s) => s.header !== "Todo");
-  if (sections.length >= 2 && sections.length === itinerary.days.length) {
-    const resolved = sections.map((section) => {
-      const dom = parseDayOfMonthFromCalendarHeader(section.header);
-      if (dom == null) return null;
-      return resolveDayOfMonthInTripRange(dom, range.start, range.end);
-    });
-    if (resolved.every((d) => d != null)) {
+  if (sections.length >= 2) {
+    const resolved = sections.map((section) => resolveSectionDate(section.header, tripSummary));
+
+    if (resolved.every((d) => d != null) && sections.length === itinerary.days.length) {
       return {
         ...itinerary,
         days: itinerary.days.map((d, i) => ({ ...d, date: resolved[i]! })),
       };
     }
+
+    const days = itinerary.days.map((d, i) => {
+      const fromHeader = i < resolved.length ? resolved[i] : null;
+      if (fromHeader) return { ...d, date: fromHeader };
+      if (typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) return d;
+      return { ...d, date: addUtcDays(range.start, i) };
+    });
+
+    return {
+      ...itinerary,
+      days: days.map((d, idx) => ({ ...d, day: idx + 1 })),
+    };
   }
 
   return {
     ...itinerary,
     days: itinerary.days.map((d, idx) => ({
       ...d,
-      date: addUtcDays(range.start, idx),
+      date:
+        typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)
+          ? d.date
+          : addUtcDays(range.start, idx),
     })),
   };
 }
@@ -218,9 +247,16 @@ function buildJsonOnlyPrompt(
   assistantHint: string,
   chunkNote?: string
 ) {
+  const dayRule = chunkNote ? undefined : expectedDayCountRule(sourceText, assistantHint);
   return [
     ...buildImportExtractionRules(
-      chunkNote ? `Fragmento «${chunkNote}»: extrae solo las actividades de este trozo.` : undefined
+      [
+        chunkNote ? `Fragmento «${chunkNote}»: extrae solo las actividades de este trozo.` : undefined,
+        dayRule,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        || undefined
     ),
     "",
     "CONTEXTO DEL VIAJE:",
@@ -493,14 +529,10 @@ export function alignItemsToSectionSchedule(
 }
 
 function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string, string> {
-  const range = parseTripDateRangeFromSummary(tripSummary);
   const map = new Map<string, string>();
-  if (!range) return map;
   const normalized = normalizeAgencyCalendarSourceText(sourceText);
   for (const section of splitSourceForImport(normalized).filter((s) => s.header !== "Todo")) {
-    const dom = parseDayOfMonthFromCalendarHeader(section.header);
-    if (dom == null) continue;
-    const iso = resolveDayOfMonthInTripRange(dom, range.start, range.end);
+    const iso = resolveSectionDate(section.header, tripSummary);
     if (iso) map.set(iso, section.body);
   }
   return map;
@@ -578,25 +610,28 @@ export function sanitizeItineraryBySourceSections(
   };
 }
 
-function dayMergeKey(d: ItineraryDayPayload): string {
+function dayMergeKey(d: ItineraryDayPayload, partIndex: number, dayIndexInPart: number): string {
   if (typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) {
     return `date:${d.date}`;
   }
   const items = d.items ?? [];
   if (items.length) {
-    return `sig:${items.slice(0, 2).map(itineraryItemFingerprint).join("|")}`;
+    const sig = items.slice(0, 2).map(itineraryItemFingerprint).join("|");
+    return `part:${partIndex}:sig:${sig}`;
   }
-  return `num:${d.day}`;
+  return `part:${partIndex}:day:${dayIndexInPart}`;
 }
 
 export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): ExecutableItineraryPayload {
   const dayByKey = new Map<string, ItineraryDayPayload>();
   const keyOrder: string[] = [];
 
-  for (const p of parts) {
-    for (const d of p.days) {
+  for (let partIndex = 0; partIndex < parts.length; partIndex++) {
+    const p = parts[partIndex]!;
+    for (let dayIndexInPart = 0; dayIndexInPart < p.days.length; dayIndexInPart++) {
+      const d = p.days[dayIndexInPart]!;
       if (!d.items?.length) continue;
-      const key = dayMergeKey(d);
+      const key = dayMergeKey(d, partIndex, dayIndexInPart);
       const prev = dayByKey.get(key);
       if (!prev) {
         dayByKey.set(key, { ...d, items: [...d.items] });
@@ -612,6 +647,7 @@ export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): E
         }
       }
       if (!prev.date && d.date) prev.date = d.date;
+    }
     }
   }
 

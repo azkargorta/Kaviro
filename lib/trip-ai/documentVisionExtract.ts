@@ -3,14 +3,13 @@ import type { TripAiUsage } from "@/lib/trip-ai/providers";
 
 const VISION_PROMPT = [
   "Transcribe este documento de viaje (dossier de agencia, calendario, PDF escaneado o captura).",
-  "Devuelve SOLO texto plano en español o idioma original, conservando:",
-  "- Encabezados de día (VIERNES 27, DÍA 1, etc.)",
-  "- Todas las horas y actividades en orden",
-  "- Vuelos (origen, destino, hora, aerolínea)",
-  "- Hoteles (nombre, check-in/out)",
-  "- Excursiones, traslados, comidas, notas de entradas",
-  "- Códigos de reserva o localizador si aparecen",
-  "No añadas comentarios ni markdown. Una actividad por línea cuando sea posible.",
+  "Devuelve SOLO texto plano en español o idioma original.",
+  "Formato obligatorio:",
+  "- Cada día del calendario en su propia línea de encabezado: «VIERNES 27», «SÁBADO 28», «DÍA 3», etc.",
+  "- Debajo de cada encabezado, una actividad por línea con su hora (07.30h, 19:05h, - 16.00h …).",
+  "- Conserva TODOS los días visibles; no fusiones varios días en uno.",
+  "- Vuelos, hoteles, excursiones, traslados, comidas, códigos PNR/localizador.",
+  "No añadas comentarios ni markdown.",
 ].join("\n");
 
 export async function extractItineraryTextWithVision(params: {

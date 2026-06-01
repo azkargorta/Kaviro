@@ -143,6 +143,22 @@ describe("splitSourceByTimeSlots", () => {
 });
 
 describe("mergeImportedItineraries", () => {
+  it("mantiene tramos separados cuando no hay fecha (importación por chunks)", () => {
+    const merged = mergeImportedItineraries([
+      {
+        version: 1,
+        days: [{ day: 1, date: null, items: [{ title: "Viernes actividad", start_time: "16:00" }] }],
+      },
+      {
+        version: 1,
+        days: [{ day: 1, date: null, items: [{ title: "Sábado actividad", start_time: "07:30" }] }],
+      },
+    ]);
+    expect(merged.days).toHaveLength(2);
+    expect(merged.days[0]?.items?.[0]?.title).toMatch(/Viernes/i);
+    expect(merged.days[1]?.items?.[0]?.title).toMatch(/Sábado/i);
+  });
+
   it("fusiona días duplicados con la misma fecha", () => {
     const merged = mergeImportedItineraries([
       {

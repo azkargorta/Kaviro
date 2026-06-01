@@ -1,6 +1,11 @@
 import { extractFirstJsonObject } from "@/lib/ai/llmJson";
-import { askTripAIWithUsage, type TripAiUsage } from "@/lib/trip-ai/providers";
 import type { DetectedDocumentData } from "@/lib/document-analyzer";
+import {
+  normalizeAgencyCalendarSourceText,
+  splitSourceByDayMarkers,
+} from "@/lib/trip-ai/agencyCalendarParse";
+import { countDaySectionsInSource } from "@/lib/trip-ai/itineraryDraftUtils";
+import { askTripAIWithUsage, type TripAiUsage } from "@/lib/trip-ai/providers";
 
 export type DocumentImportInsights = {
   documentType?: string | null;
@@ -11,11 +16,33 @@ export type DocumentImportInsights = {
   summary?: string | null;
 };
 
-function formatInsightsForHint(insights: DocumentImportInsights, detected: DetectedDocumentData): string {
+function appendDetectedDayHeaders(lines: string[], sourceText: string) {
+  const normalized = normalizeAgencyCalendarSourceText(sourceText);
+  const sectionCount = countDaySectionsInSource(normalized);
+  const markers = splitSourceByDayMarkers(normalized);
+  if (sectionCount >= 2) {
+    lines.push(`Días detectados en dossier: ${sectionCount}`);
+    if (markers.length >= 2) {
+      lines.push(
+        `Encabezados de día (orden): ${markers
+          .slice(0, 20)
+          .map((m) => m.header)
+          .join(" · ")}`
+      );
+    }
+  }
+}
+
+function formatInsightsForHint(
+  insights: DocumentImportInsights,
+  detected: DetectedDocumentData,
+  sourceText?: string
+): string {
   const lines: string[] = [];
   if (insights.documentType) lines.push(`Tipo: ${insights.documentType}`);
   if (insights.tripTitle) lines.push(`Título viaje: ${insights.tripTitle}`);
   if (insights.dayCount) lines.push(`Días detectados en dossier: ${insights.dayCount}`);
+  if (sourceText) appendDetectedDayHeaders(lines, sourceText);
   if (insights.summary) lines.push(`Resumen: ${insights.summary}`);
   if (insights.hotels?.length) {
     lines.push(
@@ -53,7 +80,7 @@ export async function enhanceDocumentForItineraryImport(params: {
 }): Promise<{ hint: string; insights: DocumentImportInsights | null; usage: TripAiUsage | null }> {
   const text = params.extractedText.trim();
   if (text.length < 80) {
-    return { hint: formatInsightsForHint({}, params.detected), insights: null, usage: null };
+    return { hint: formatInsightsForHint({}, params.detected, text), insights: null, usage: null };
   }
 
   const prompt = [
@@ -82,12 +109,12 @@ export async function enhanceDocumentForItineraryImport(params: {
     });
     const parsed = extractFirstJsonObject(answer) as DocumentImportInsights | null;
     const hint = parsed
-      ? formatInsightsForHint(parsed, params.detected)
-      : formatInsightsForHint({}, params.detected);
+      ? formatInsightsForHint(parsed, params.detected, text)
+      : formatInsightsForHint({}, params.detected, text);
     return { hint, insights: parsed, usage };
   } catch {
     return {
-      hint: formatInsightsForHint({}, params.detected),
+      hint: formatInsightsForHint({}, params.detected, text),
       insights: null,
       usage: null,
     };

@@ -166,6 +166,16 @@ export function splitSourceByDaySections(sourceText: string): Array<{ header: st
   return [{ header: "Todo", body: sourceText }];
 }
 
+/** Normaliza texto de OCR/visión para que los troceadores detecten cada día. */
+export function prepareDocumentTextForItineraryImport(sourceText: string): string {
+  let t = normalizeAgencyCalendarSourceText(sourceText);
+  t = t.replace(
+    /([^\n])(\b(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|VIERNES|S[AÁ]BADO|DOMINGO|LUNES|MARTES|MI[EÉ]RCOLES|JUEVES)\s+\d{1,2}(?![.:]\d)\b)/gi,
+    "$1\n$2"
+  );
+  return t;
+}
+
 export function normalizeAgencyCalendarSourceText(sourceText: string): string {
   let t = sourceText.replace(/\r\n/g, "\n").replace(/\u00a0/g, " ");
 
@@ -301,7 +311,7 @@ function resolveDateFromDiaDeMesHeader(header: string, tripSummary: string): str
   return resolveDayOfMonthInTripRange(dom, range.start, range.end);
 }
 
-function resolveSectionDate(header: string, tripSummary: string): string | null {
+export function resolveSectionDate(header: string, tripSummary: string): string | null {
   const fromDiaDeMes = resolveDateFromDiaDeMesHeader(header, tripSummary);
   if (fromDiaDeMes) return fromDiaDeMes;
 

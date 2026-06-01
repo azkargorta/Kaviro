@@ -9,7 +9,7 @@ import {
   shouldTryVisionExtract,
 } from "@/lib/trip-ai/documentVisionExtract";
 import { enhanceDocumentForItineraryImport } from "@/lib/trip-ai/enhanceDocumentForImport";
-import { normalizeAgencyCalendarSourceText } from "@/lib/trip-ai/agencyCalendarParse";
+import { prepareDocumentTextForItineraryImport } from "@/lib/trip-ai/agencyCalendarParse";
 import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import {
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      extractedText: normalizeAgencyCalendarSourceText(ocrText),
+      extractedText: prepareDocumentTextForItineraryImport(ocrText),
       fileName,
       charCount: ocrText.length,
       resourceId,
