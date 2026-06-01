@@ -416,7 +416,10 @@ function dedupeItineraryItems(
   return out;
 }
 
-import { alignItemsToSectionSchedule } from "@/lib/trip-ai/parseScheduleSlots";
+import {
+  alignItemsToSectionSchedule,
+  parseScheduleSlotsFromSection,
+} from "@/lib/trip-ai/parseScheduleSlots";
 
 function sectionBodyByDate(sourceText: string, tripSummary: string): Map<string, string> {
   const map = new Map<string, string>();
