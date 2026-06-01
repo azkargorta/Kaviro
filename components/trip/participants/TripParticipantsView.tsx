@@ -5,6 +5,7 @@ import ParticipantForm from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
 import TravelMatesInvitePanel from "./TravelMatesInvitePanel";
 import UsernameInvitePanel from "./UsernameInvitePanel";
+import BulkImportParticipantsPanel from "./BulkImportParticipantsPanel";
 import UserAvatar from "@/components/profile/UserAvatar";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripTabActions from "@/components/trip/common/TripTabActions";
@@ -37,6 +38,7 @@ import {
   UserPlus,
   Users,
   UserCheck,
+  FileSpreadsheet,
 } from "lucide-react";
 
 type TripParticipantsViewProps = {
@@ -197,6 +199,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [linkFilter, setLinkFilter] = useState<"all" | "linked" | "unlinked">("all");
   const [roleFilter, setRoleFilter] = useState<"all" | TripRole>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const participantFormRef = useRef<HTMLDivElement | null>(null);
 
   const showParticipantForm = Boolean(isCreating || editingParticipant);
@@ -301,6 +304,24 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     const unlinked = total - linked;
     return { total, linked, unlinked };
   }, [participants]);
+
+  const existingEmailsForImport = useMemo(
+    () =>
+      new Set(
+        participants
+          .map((p) => (p.email ? String(p.email).toLowerCase() : ""))
+          .filter(Boolean)
+      ),
+    [participants]
+  );
+
+  const existingNamesForImport = useMemo(
+    () =>
+      new Set(
+        participants.map((p) => String(p.display_name || "").trim().toLowerCase()).filter(Boolean)
+      ),
+    [participants]
+  );
 
   const filteredParticipants = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -771,11 +792,40 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   <MessageCircle className="h-4 w-4 text-emerald-600" aria-hidden />
                   {isInviting && !inviteParticipant ? "Cerrar invitación" : "Invitar por WhatsApp"}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkImportOpen((v) => !v);
+                    if (!bulkImportOpen) {
+                      closeCreateParticipant();
+                      setIsInviting(false);
+                      setLinkingParticipant(null);
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-950 shadow-sm transition hover:bg-violet-100 sm:col-span-2"
+                >
+                  <FileSpreadsheet className="h-4 w-4" aria-hidden />
+                  {bulkImportOpen ? "Cerrar importación" : "Importar desde Excel o lista"}
+                </button>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
                 Envía un enlace único por WhatsApp. La persona inicia sesión y Kaviro crea o vincula su pasajero automáticamente.
               </p>
+
+              {bulkImportOpen ? (
+                <div className="mt-4">
+                  <BulkImportParticipantsPanel
+                    tripId={tripId}
+                    existingEmails={existingEmailsForImport}
+                    existingNames={existingNamesForImport}
+                    onImported={async () => {
+                      await refetch();
+                    }}
+                    onClose={() => setBulkImportOpen(false)}
+                  />
+                </div>
+              ) : null}
 
               <div className="mt-4">
                 <UsernameInvitePanel tripId={tripId} />

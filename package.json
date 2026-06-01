@@ -39,7 +39,8 @@
     "stripe": "^22.0.1",
     "tesseract.js": "^7.0.0",
     "unpdf": "^1.4.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0",
