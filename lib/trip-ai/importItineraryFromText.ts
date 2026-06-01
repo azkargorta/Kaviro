@@ -648,7 +648,6 @@ export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): E
       }
       if (!prev.date && d.date) prev.date = d.date;
     }
-    }
   }
 
   const days = keyOrder
