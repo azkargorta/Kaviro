@@ -650,9 +650,8 @@ export function mergeImportedItineraries(parts: ExecutableItineraryPayload[]): E
     }
   }
 
-  const days = keyOrder
-    .map((k) => dayByKey.get(k)!)
-    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  // Mantener orden del dossier (índice de tramo), no ordenar por fecha aquí.
+  const days = keyOrder.map((k) => dayByKey.get(k)!);
   return dedupeItineraryDays({
     version: 1,
     title: parts.find((p) => p.title)?.title || "Itinerario importado",
@@ -701,12 +700,71 @@ export function dedupeItineraryDays(
     uniqueNoDate.push({ ...d, items: dedupeItineraryItems(d.items ?? []) });
   }
 
+  dateOrder.sort();
   const days = [...dateOrder.map((iso) => byDate.get(iso)!), ...uniqueNoDate].map((d, idx) => ({
     ...d,
     day: idx + 1,
   }));
 
   return { ...itinerary, days };
+}
+
+/** Orden cronológico cuando todos los días tienen fecha ISO. */
+export function sortItineraryDaysChronologically(
+  itinerary: ExecutableItineraryPayload
+): ExecutableItineraryPayload {
+  const allDated = itinerary.days.every(
+    (d) => typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)
+  );
+  if (!allDated || itinerary.days.length < 2) return itinerary;
+
+  const sorted = [...itinerary.days].sort((a, b) => a.date!.localeCompare(b.date!));
+  return {
+    ...itinerary,
+    days: sorted.map((d, idx) => ({ ...d, day: idx + 1 })),
+  };
+}
+
+/** Reordena según encabezados del dossier (VIERNES 27, SÁBADO 28…). */
+export function orderItineraryDaysBySourceSections(
+  itinerary: ExecutableItineraryPayload,
+  sourceText: string,
+  tripSummary: string
+): ExecutableItineraryPayload {
+  const sections = splitSourceForImport(sourceText).filter((s) => s.header !== "Todo");
+  if (sections.length < 2 || itinerary.days.length < 2) {
+    return sortItineraryDaysChronologically(itinerary);
+  }
+
+  const byDate = new Map<string, ItineraryDayPayload>();
+  const withoutDate: ItineraryDayPayload[] = [];
+  for (const d of itinerary.days) {
+    if (typeof d.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) {
+      byDate.set(d.date, d);
+    } else if (d.items?.length) {
+      withoutDate.push(d);
+    }
+  }
+
+  const ordered: ItineraryDayPayload[] = [];
+  const usedDates = new Set<string>();
+
+  for (const section of sections) {
+    const iso = resolveSectionDate(section.header, tripSummary);
+    if (iso && byDate.has(iso) && !usedDates.has(iso)) {
+      ordered.push(byDate.get(iso)!);
+      usedDates.add(iso);
+    }
+  }
+
+  const remaining = itinerary.days.filter((d) => {
+    if (!d.items?.length) return false;
+    const date = d.date;
+    return !date || !usedDates.has(date);
+  });
+
+  const days = [...ordered, ...remaining].map((d, idx) => ({ ...d, day: idx + 1 }));
+  return sortItineraryDaysChronologically({ ...itinerary, days });
 }
 
 /** Tras import por tramos, evita sustituir por un dossier entero que duplica días. */
@@ -844,7 +902,11 @@ export async function importItineraryFromText(params: {
 
   const finish = (itinerary: ExecutableItineraryPayload, answer: string) => ({
     itinerary: sanitizeItineraryBySourceSections(
-      alignItineraryDatesForImport(itinerary, tripSummary, sourceText),
+      orderItineraryDaysBySourceSections(
+        alignItineraryDatesForImport(itinerary, tripSummary, sourceText),
+        sourceText,
+        tripSummary
+      ),
       sourceText,
       tripSummary
     ),

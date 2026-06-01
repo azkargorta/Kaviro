@@ -8,6 +8,7 @@ import {
   dedupeItineraryDays,
   mergeImportedItineraries,
   normalizeChunkImportResult,
+  orderItineraryDaysBySourceSections,
   pickChunkedOrFullItinerary,
   parseAgencyCalendarItinerary,
   parseDayOfMonthFromCalendarHeader,
@@ -156,6 +157,35 @@ describe("dedupeItineraryDays", () => {
     });
     expect(out.days).toHaveLength(2);
     expect(out.days[0]?.items).toHaveLength(2);
+  });
+});
+
+describe("orderItineraryDaysBySourceSections", () => {
+  it("reordena días fuera de orden según el calendario del dossier", () => {
+    const scrambled = {
+      version: 1 as const,
+      days: [
+        { day: 1, date: "2026-11-27", items: [{ title: "A" }] },
+        { day: 2, date: "2026-11-28", items: [{ title: "B" }] },
+        { day: 3, date: "2026-11-29", items: [{ title: "C" }] },
+        { day: 4, date: "2026-12-03", items: [{ title: "D" }] },
+        { day: 5, date: "2026-12-04", items: [{ title: "E" }] },
+        { day: 6, date: "2026-11-30", items: [{ title: "F" }] },
+        { day: 7, date: "2026-12-01", items: [{ title: "G" }] },
+        { day: 8, date: "2026-12-02", items: [{ title: "H" }] },
+      ],
+    };
+    const ordered = orderItineraryDaysBySourceSections(
+      scrambled,
+      ARGENTINA_SAMPLE,
+      ARGENTINA_TRIP_SUMMARY
+    );
+    const dates = ordered.days.map((d) => d.date);
+    for (let i = 1; i < dates.length; i++) {
+      expect(dates[i]! >= dates[i - 1]!).toBe(true);
+    }
+    expect(dates[0]).toBe("2026-11-27");
+    expect(dates[dates.length - 1]).toBe("2026-12-08");
   });
 });
 

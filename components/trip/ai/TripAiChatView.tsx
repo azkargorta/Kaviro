@@ -64,6 +64,7 @@ import {
   dedupeItineraryDays,
   mergeImportedItineraries,
   normalizeAgencyCalendarSourceText,
+  orderItineraryDaysBySourceSections,
   pickChunkedOrFullItinerary,
   prepareDocumentTextForItineraryImport,
   parseAgencyCalendarItinerary,
@@ -842,7 +843,6 @@ export default function TripAiChatView({
           ? `IMPORTANTE: el dossier tiene ${detectedDays} días de calendario. Genera exactamente ${detectedDays} tarjetas/días en el mismo orden.\n\n`
           : "";
       const hint = `${dayCountPrefix}${assistantHint?.slice(0, 6000) ?? ""}`;
-      const mergedParts: ItineraryPayload[] = [];
       const tripSummaryForImport =
         trip?.start_date && trip?.end_date
           ? `Viaje: ${trip?.name || "Viaje"} | Fechas: ${trip.start_date} → ${trip.end_date}`
@@ -856,12 +856,12 @@ export default function TripAiChatView({
       const finalizeImportDraft = (draft: ItineraryPayload): ItineraryPayload => {
         const deduped = dedupeItineraryDays(draft);
         if (!tripSummaryForImport) return deduped;
-        return sanitizeItineraryBySourceSections(
-          alignItineraryDatesForImport(deduped, tripSummaryForImport, text),
-          text,
-          tripSummaryForImport
-        );
+        const aligned = alignItineraryDatesForImport(deduped, tripSummaryForImport, text);
+        const ordered = orderItineraryDaysBySourceSections(aligned, text, tripSummaryForImport);
+        return sanitizeItineraryBySourceSections(ordered, text, tripSummaryForImport);
       };
+
+      let sectionResults: Array<ItineraryPayload | null> = [];
 
       try {
         if (tripSummaryForImport && isAgencyCalendar) {
@@ -926,11 +926,15 @@ export default function TripAiChatView({
             return payload.itinerary as ItineraryPayload;
           };
 
+          const orderedPartsFromSections = () =>
+            sectionResults.filter((p): p is ItineraryPayload => p != null);
+
           const flushPartial = () => {
-            if (!mergedParts.length) return;
+            const parts = orderedPartsFromSections();
+            if (!parts.length) return;
             const partial = tripSummaryForImport
-              ? finalizeImportDraft(mergeImportedItineraries(mergedParts))
-              : mergeImportedItineraries(mergedParts);
+              ? finalizeImportDraft(mergeImportedItineraries(parts))
+              : mergeImportedItineraries(parts);
             setItineraryDraft(partial);
             setItinerarySelected(collectItineraryItemKeys(partial));
             if (expandedDay == null && partial.days[0]) {
@@ -938,7 +942,7 @@ export default function TripAiChatView({
             }
           };
 
-          const sectionResults: Array<ItineraryPayload | null> = new Array(total).fill(null);
+          sectionResults = new Array(total).fill(null);
 
           for (let i = 0; i < activeSections.length; i += IMPORT_CHUNK_CONCURRENCY) {
             const batch = activeSections.slice(i, i + IMPORT_CHUNK_CONCURRENCY);
@@ -950,24 +954,25 @@ export default function TripAiChatView({
             chunkResults.forEach((part, batchIdx) => {
               const globalIdx = i + batchIdx;
               sectionResults[globalIdx] = part;
-              if (part) mergedParts.push(part);
             });
             completed += batch.length;
             setImportProgress({ current: completed, total, label: batch[batch.length - 1]!.header });
             flushPartial();
           }
 
-          const failedSections = activeSections.filter((_, idx) => !sectionResults[idx]);
-          if (failedSections.length) {
-            setInfo(`Reintentando ${failedSections.length} tramo(s) que no se generaron…`);
-            for (const section of failedSections) {
-              const part = await importOneSection(section);
-              if (part) mergedParts.push(part);
+          const missingCount = sectionResults.filter((p) => !p).length;
+          if (missingCount > 0) {
+            setInfo(`Reintentando ${missingCount} tramo(s) que no se generaron…`);
+            for (let idx = 0; idx < activeSections.length; idx++) {
+              if (sectionResults[idx]) continue;
+              const part = await importOneSection(activeSections[idx]!);
+              if (part) sectionResults[idx] = part;
             }
             flushPartial();
           }
 
-          let mergedDraft = mergedParts.length ? mergeImportedItineraries(mergedParts) : null;
+          const orderedParts = orderedPartsFromSections();
+          let mergedDraft = orderedParts.length ? mergeImportedItineraries(orderedParts) : null;
           if (mergedDraft && tripSummaryForImport) {
             mergedDraft = finalizeImportDraft(mergedDraft);
           }
@@ -1066,10 +1071,16 @@ export default function TripAiChatView({
         setImportCardsFailed(true);
         setInfo(null);
         const isAbort = e instanceof Error && e.name === "AbortError";
-        const partialDraft = mergedParts.length
+        const partialDraft = sectionResults.some((p) => p != null)
           ? tripSummaryForImport
-            ? finalizeImportDraft(mergeImportedItineraries(mergedParts))
-            : mergeImportedItineraries(mergedParts)
+            ? finalizeImportDraft(
+                mergeImportedItineraries(
+                  sectionResults.filter((p): p is ItineraryPayload => p != null)
+                )
+              )
+            : mergeImportedItineraries(
+                sectionResults.filter((p): p is ItineraryPayload => p != null)
+              )
           : null;
         const partialCount = partialDraft ? countItineraryItems(partialDraft) : 0;
         const partialHint =
