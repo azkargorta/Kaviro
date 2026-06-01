@@ -519,7 +519,28 @@ export function normalizeChunkImportResult(
     );
   }
 
-  const allItems = dedupeItineraryItems(parsed.days.flatMap((d) => d.items ?? []));
+  // Solo usar items del primer día si la IA devolvió varios días en el mismo chunk
+  // (el último tramo suele devolver todos los días anteriores también)
+  const slotsInBody = parseScheduleSlotsFromSection(chunkBody).length;
+  const maxAllowedItems = Math.max(slotsInBody + 2, 4);
+
+  let allItems: ItineraryDayPayload["items"];
+  if (parsed.days.length === 1) {
+    // Caso normal: la IA devolvió exactamente 1 día → usar sus items
+    allItems = dedupeItineraryItems(parsed.days[0]?.items ?? []);
+  } else if (parsed.days.length > 1) {
+    // La IA devolvió varios días en este chunk (bug del último tramo)
+    // Usar solo los items del primer día y capear por el número de slots del body
+    const firstDayItems = parsed.days[0]?.items ?? [];
+    const allDayItems = dedupeItineraryItems(parsed.days.flatMap((d) => d.items ?? []));
+    // Si el primer día tiene suficientes items, usarlo solo
+    allItems = firstDayItems.length >= slotsInBody && firstDayItems.length <= maxAllowedItems * 2
+      ? dedupeItineraryItems(firstDayItems)
+      : allDayItems.slice(0, maxAllowedItems);
+  } else {
+    allItems = [];
+  }
+
   const items = alignItemsToSectionSchedule(allItems, chunkBody);
 
   if (!items.length) return { version: 1, title: parsed.title, days: [] };
@@ -779,7 +800,15 @@ async function importChunk(
     tripSummary,
     chunkBody.slice(0, 12000),
     "",
-    `Fragmento «${chunkLabel}»: devuelve days[] con UN SOLO día y como máximo ${scheduleLines || "?"} actividades de ESTE trozo; cada actividad con start_time HH:MM si el texto trae hora y place_name si nombra sitio/ciudad/hotel; no incluyas otros días del viaje.`
+    [
+      `Fragmento «${chunkLabel}»: devuelve days[] con EXACTAMENTE UN SOLO día (un único objeto en el array days[]).`,
+      `Como máximo ${scheduleLines || "5"} actividades — SOLO las que aparecen explícitamente en ESTE fragmento de texto.`,
+      `Cada actividad: start_time HH:MM si aparece en el texto (00:00 si no hay hora), place_name si nombra sitio/ciudad/hotel, si no hay lugar place_name=null.`,
+      `PROHIBIDO: no incluyas actividades de días anteriores, no inventes actividades que no estén en este fragmento.`,
+      sectionContext && typeof sectionContext.sectionIndex === "number" && sectionContext.totalSections && sectionContext.sectionIndex === sectionContext.totalSections - 1
+        ? `ÚLTIMO DÍA: este es el último fragmento del itinerario. Incluye ÚNICAMENTE las ${scheduleLines || "pocas"} actividades de este fragmento final. Si el fragmento tiene solo 1 actividad, devuelve solo 1 item.`
+        : ``,
+    ].filter(Boolean).join(" ")
   );
   const answer = await callImportModel(prompt, true, usageAgg);
   const parsed = parseFromRawAnswer(answer);
