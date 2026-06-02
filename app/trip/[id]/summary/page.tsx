@@ -149,7 +149,11 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     { data: firstRouteRow },
     { data: expenseAmountRows },
   ] = await Promise.all([
-    supabase.from("trips").select("id, name, destination, start_date, end_date, base_currency, is_demo").eq("id", tripId).maybeSingle(),
+    supabase
+      .from("trips")
+      .select("id, name, destination, start_date, end_date, base_currency, budget_target, is_demo")
+      .eq("id", tripId)
+      .maybeSingle(),
     supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
     supabase.from("trip_participants").select("id", { count: "exact", head: true }).eq("trip_id", tripId).neq("status", "removed"),
     supabase
@@ -246,10 +250,18 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       : "";
 
   const firstRoute = firstRouteRow as { title?: string | null; route_day?: string | null } | null;
+  const baseCurrency = currentTrip.base_currency || "EUR";
   const expenseSums = sumExpensesByCurrency(
     (expenseAmountRows ?? []) as Array<{ amount: unknown; currency: string | null }>,
-    currentTrip.base_currency || "EUR"
+    baseCurrency
   );
+  const budgetTarget =
+    typeof (currentTrip as { budget_target?: unknown }).budget_target === "number" &&
+    (currentTrip as { budget_target: number }).budget_target > 0
+      ? (currentTrip as { budget_target: number }).budget_target
+      : null;
+  const totalSpentInBase = expenseSums.get(baseCurrency.toUpperCase()) ?? 0;
+  const expenseMultiCurrency = expenseSums.size > 1;
 
   const alerts = [
     !currentTrip.destination ? "Añade el destino para activar clima y contexto." : null,
@@ -376,6 +388,10 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         tripDestination={currentTrip.destination}
         activitiesCount={activitiesCount ?? 0}
         participantsCount={participantsCount ?? 1}
+        budgetTarget={budgetTarget}
+        totalSpent={totalSpentInBase}
+        currency={baseCurrency}
+        expenseMultiCurrency={expenseMultiCurrency}
       />
 
       {alerts.length ? (

@@ -122,7 +122,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
         <div>
           <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">Presupuesto objetivo</h3>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-            Define cuánto quieres gastar en total. Aparecerá como barra de progreso en Gastos.
+            Define cuánto quieres gastar en total. Verás la barra en el Resumen del viaje y en Gastos.
           </p>
         </div>
         <div className="flex items-center gap-3">

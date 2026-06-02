@@ -5,6 +5,7 @@ import {
   forbidUnlessCanManageExpenses,
   requireTripAccessApi,
 } from "@/lib/trip-access-api";
+import { notifyTripMembers } from "@/lib/server/notify-trip-members";
  
  async function extractNamesFromRows(rows: Record<string, unknown>[]) {
    const names = new Set<string>();
@@ -161,6 +162,20 @@ import {
       actor_user_id: actor?.user?.id ?? null,
       actor_email: actor?.user?.email ?? null,
     });
+
+    const actorId = actor?.user?.id ?? access.userId;
+    if (actorId) {
+      const amount = Number(data.amount);
+      const cur = typeof data.currency === "string" ? data.currency : "EUR";
+      const detail = `${Number.isFinite(amount) ? amount : 0} ${cur} · ${String(data.title || "").trim() || "gasto"}`;
+      void notifyTripMembers({
+        tripId,
+        actorUserId: actorId,
+        event: "expense_added",
+        detail,
+        url: `/trip/${tripId}/expenses`,
+      });
+    }
 
      return NextResponse.json({ expense: data }, { status: 201 });
    } catch (error) {

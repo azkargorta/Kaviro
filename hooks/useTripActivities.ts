@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { notifyTripParticipants } from "@/lib/pushNotify";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import {
   KAVIRO_TRIP_PLAN_REFRESH_EVENT,
@@ -280,16 +279,6 @@ export function useTripActivities(
 
         await load({ silent: true });
         dispatchTripOnboardingRefresh(tripId);
-        // Notify other participants (best-effort)
-        if (tripId) {
-          void notifyTripParticipants({
-            tripId,
-            event: "activity_added",
-            actorName,
-            detail: input.title?.trim() || "nueva actividad",
-            url: `/trip/${tripId}/plan`,
-          });
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo crear la actividad.");
         throw err;

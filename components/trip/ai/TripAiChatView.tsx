@@ -15,6 +15,9 @@ import {
   Route,
   Search,
   Settings,
+  Sparkles,
+  Wallet,
+  Wand2,
 } from "lucide-react";
 import type { TripAiMode } from "@/lib/trip-ai/buildPrompt";
 import { useTripData } from "@/hooks/useTripData";
@@ -285,22 +288,22 @@ const ASSISTANT_FOCUS_PRESETS: Array<{
   Icon: LucideIcon;
 }> = [
   {
+    id: "general",
+    label: "General",
+    description: "Resúmenes, dudas amplias y recomendaciones.",
+    Icon: MessageCircle,
+  },
+  {
     id: "planning",
-    label: "Planificador",
-    description: "Todos los días del viaje. Itinerario + «Ejecutar plan».",
+    label: "Planificación",
+    description: "Varios días, itinerario completo + «Ejecutar plan».",
     Icon: CalendarDays,
   },
   {
     id: "day_planner",
-    label: "Desplazamientos",
-    description: "Un día con horarios y cómo moveros.",
+    label: "Organizar día",
+    description: "Un solo día: horarios, comidas y desplazamientos.",
     Icon: Route,
-  },
-  {
-    id: "general",
-    label: "Chat general",
-    description: "Resúmenes, dudas amplias y recomendaciones.",
-    Icon: MessageCircle,
   },
   {
     id: "search",
@@ -311,8 +314,26 @@ const ASSISTANT_FOCUS_PRESETS: Array<{
   {
     id: "travel_docs",
     label: "Documentos",
-    description: "Visados, seguros, tasas según nacionalidad y países.",
+    description: "Visados, seguros y requisitos por nacionalidad.",
     Icon: FileText,
+  },
+  {
+    id: "expenses",
+    label: "Gastos",
+    description: "Totales, quién debe a quién e ideas para pagar.",
+    Icon: Wallet,
+  },
+  {
+    id: "optimizer",
+    label: "Optimizador",
+    description: "Huecos, solapes y mejoras en el plan.",
+    Icon: Sparkles,
+  },
+  {
+    id: "actions",
+    label: "Acciones",
+    description: "Crear o modificar actividades y rutas (diff revisable).",
+    Icon: Wand2,
   },
 ];
 
@@ -3105,8 +3126,8 @@ export default function TripAiChatView({
                   data-tour="ai-suggestions"
                   className={
                     layout === "drawer"
-                      ? "grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-3"
-                      : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                      ? "grid grid-cols-2 gap-1.5 sm:gap-2"
+                      : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
                   }
                 >
                   {ASSISTANT_FOCUS_PRESETS.map((preset) => {
@@ -3160,38 +3181,6 @@ export default function TripAiChatView({
                 >
                   Automático (detectar intención del mensaje)
                 </button>
-
-                <details className="mt-3 rounded-xl border border-slate-100 bg-slate-50/90 px-3 py-2">
-                  <summary className="cursor-pointer text-xs font-semibold text-slate-700">
-                    Lista completa de modos (incl. gastos, optimizador, acciones)
-                  </summary>
-                  <label className="mt-2 flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
-                    Selector avanzado
-                    <select
-                      value={modeSource === "manual" ? mode : "auto"}
-                      onChange={(e) => {
-                        const v = e.target.value as "auto" | TripAiMode;
-                        if (v === "auto") {
-                          beginNewChatForMode("auto", { onlyIfChanged: true });
-                        } else {
-                          beginNewChatForMode(v, { onlyIfChanged: true });
-                        }
-                        collapseModePickerIfDrawer();
-                      }}
-                      disabled={loading || aiBudgetExceeded}
-                      className="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 shadow-sm"
-                    >
-                      <option value="auto">Automático</option>
-                      <option value="general">General</option>
-                      <option value="planning">Planificación (planificador)</option>
-                      <option value="day_planner">Organizar día (desplazamientos)</option>
-                      <option value="travel_docs">Documentos del viaje</option>
-                      <option value="expenses">Gastos</option>
-                      <option value="optimizer">Optimizador</option>
-                      <option value="actions">Acciones</option>
-                    </select>
-                  </label>
-                </details>
               </div>
             )}
           </div>

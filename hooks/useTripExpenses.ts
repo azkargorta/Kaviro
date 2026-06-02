@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
-import { notifyTripParticipants } from "@/lib/pushNotify";
 import {
   buildBalances,
   buildSettlementSuggestions,
@@ -551,16 +550,6 @@ export function useTripExpenses(tripId: string) {
         "crear gasto"
       );
       dispatchTripOnboardingRefresh(tripId);
-      if (tripId) {
-        const detail = `${input.amount} ${input.currency} · ${input.title.trim()}`;
-        void notifyTripParticipants({
-          tripId,
-          event: "expense_added",
-          actorName: input.payerName?.trim() || "Un participante",
-          detail,
-          url: `/trip/${tripId}/expenses`,
-        });
-      }
       void load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar el gasto.");

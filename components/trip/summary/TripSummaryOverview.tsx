@@ -12,6 +12,7 @@ import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 import { Share2 } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import type { RevealDelay } from "@/components/ui/Reveal";
+import TripBudgetSummaryCard from "@/components/trip/summary/TripBudgetSummaryCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,10 @@ export default function TripSummaryOverview({
   tripDestination,
   activitiesCount,
   participantsCount,
+  budgetTarget,
+  totalSpent,
+  currency,
+  expenseMultiCurrency,
 }: {
   tripId: string;
   tripName?: string | null;
@@ -154,6 +159,10 @@ export default function TripSummaryOverview({
   tripDestination?: string | null;
   activitiesCount?: number;
   participantsCount?: number;
+  budgetTarget?: number | null;
+  totalSpent?: number;
+  currency?: string;
+  expenseMultiCurrency?: boolean;
 }) {
   const isDark = useIsDarkMode();
   const planHref = `/trip/${tripId}/plan`;
@@ -323,10 +332,23 @@ export default function TripSummaryOverview({
           </div>
         </Reveal>
 
+        <div className="flex min-w-0 flex-col gap-4 md:gap-5">
+        {budgetTarget != null && budgetTarget > 0 ? (
+          <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
+            <TripBudgetSummaryCard
+              tripId={tripId}
+              budgetTarget={budgetTarget}
+              totalSpent={totalSpent ?? 0}
+              currency={currency || "EUR"}
+              multiCurrency={expenseMultiCurrency}
+            />
+          </Reveal>
+        ) : null}
+
         {/* R2 — Weather integrado como columna derecha */}
         <Reveal
           variant="slide"
-          delay={1}
+          delay={budgetTarget != null && budgetTarget > 0 ? 2 : 1}
           as="section"
           data-tour="summary-weather"
           className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
@@ -441,6 +463,7 @@ export default function TripSummaryOverview({
             <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>
           )}
         </Reveal>
+        </div>
       </div>
 
       {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}

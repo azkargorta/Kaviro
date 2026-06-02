@@ -14,6 +14,7 @@ import {
   forbidUnlessCanManagePlan,
   requireTripAccessApi,
 } from "@/lib/trip-access-api";
+import { notifyTripMembers } from "@/lib/server/notify-trip-members";
 
 export async function GET(request: Request) {
   try {
@@ -147,6 +148,17 @@ export async function POST(request: Request) {
       actor_user_id: actor?.user?.id ?? null,
       actor_email: actor?.user?.email ?? null,
     });
+
+    const actorId = actor?.user?.id ?? access.userId;
+    if (actorId) {
+      void notifyTripMembers({
+        tripId,
+        actorUserId: actorId,
+        event: "activity_added",
+        detail: String(data.title || "").trim() || "una actividad",
+        url: `/trip/${tripId}/plan`,
+      });
+    }
 
     return NextResponse.json({
       activity: {
