@@ -8,13 +8,23 @@ type Props = { params: { token: string } };
 
 const TABLE = "trip_shares";
 
+type ShareRow = {
+  trip_id: string;
+  revoked_at: string | null;
+  expires_at: string | null;
+  share_kind?: string | null;
+};
+
 async function loadRecapShare(token: string) {
   const supabase = getServiceRoleClient();
-  let { data: share, error } = await supabase
+  const primary = await supabase
     .from(TABLE)
     .select("token, trip_id, revoked_at, expires_at, share_kind")
     .eq("token", token)
     .maybeSingle();
+
+  let share: ShareRow | null = primary.data;
+  let error = primary.error;
 
   if (error?.message?.includes("share_kind")) {
     const fb = await supabase
@@ -28,7 +38,7 @@ async function loadRecapShare(token: string) {
 
   if (error || !share || share.revoked_at) return null;
   if (share.expires_at && new Date(String(share.expires_at)).getTime() < Date.now()) return null;
-  const kind = (share as { share_kind?: string }).share_kind;
+  const kind = share.share_kind;
   if (kind && kind !== "recap") return null;
 
   const tripId = String(share.trip_id);

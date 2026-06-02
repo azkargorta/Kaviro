@@ -14,21 +14,29 @@ export async function GET(_request: Request, context: { params: { token: string 
 
     const supabase = getServiceRoleClient();
 
-    let shareQuery = supabase
+    type ShareRow = {
+      trip_id: string;
+      revoked_at: string | null;
+      expires_at: string | null;
+      share_kind?: string | null;
+    };
+
+    const primary = await supabase
       .from(TABLE)
       .select("token, trip_id, revoked_at, expires_at, created_at, share_kind")
       .eq("token", token)
       .maybeSingle();
 
-    let { data: share, error: shareErr } = await shareQuery;
+    let share: ShareRow | null = primary.data;
+    let shareErr = primary.error;
 
-    if (shareErr && shareErr.message?.includes("share_kind")) {
+    if (shareErr?.message?.includes("share_kind")) {
       const fallback = await supabase
         .from(TABLE)
         .select("token, trip_id, revoked_at, expires_at, created_at")
         .eq("token", token)
         .maybeSingle();
-      share = fallback.data ? { ...fallback.data, share_kind: "itinerary" } : null;
+      share = fallback.data;
       shareErr = fallback.error;
     }
 
@@ -39,7 +47,7 @@ export async function GET(_request: Request, context: { params: { token: string 
       return NextResponse.json({ error: "Enlace caducado" }, { status: 410 });
     }
 
-    const kind = (share as { share_kind?: string }).share_kind;
+    const kind = share.share_kind;
     if (kind && kind !== "recap") {
       return NextResponse.json({ error: "Este enlace no es de recap." }, { status: 400 });
     }
