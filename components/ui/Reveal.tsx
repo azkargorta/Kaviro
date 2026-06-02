@@ -26,6 +26,8 @@ type RevealProps = {
   className?: string;
   as?: ElementType;
   id?: string;
+  /** Atributo `data-tour` para guías spotlight */
+  "data-tour"?: string;
 };
 
 export default function Reveal({
@@ -35,6 +37,7 @@ export default function Reveal({
   className = "",
   as: Tag = "div",
   id,
+  "data-tour": dataTour,
 }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -73,7 +76,7 @@ export default function Reveal({
     .join(" ");
 
   return (
-    <Tag ref={ref as never} id={id} className={classes}>
+    <Tag ref={ref as never} id={id} data-tour={dataTour} className={classes}>
       {children}
     </Tag>
   );

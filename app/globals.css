@@ -344,6 +344,10 @@ textarea.input { resize: vertical; min-height: 120px; }
   from { opacity: 0; transform: translateX(20px); }
   to { opacity: 1; transform: translateX(0); }
 }
+@keyframes motion-stagger-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Ocultos hasta entrar en viewport; .motion-visible dispara la animación */
 .motion-reveal:not(.motion-visible) {
@@ -380,6 +384,29 @@ textarea.input { resize: vertical; min-height: 120px; }
 .plan-featured-pulse { animation: motion-pulse-border 3s ease-in-out infinite; }
 .empty-icon-bounce { animation: motion-bounce-soft 2.5s ease-in-out infinite; }
 .step-enter { animation: motion-step-enter 0.25s ease-out both; }
+
+.motion-stagger-list .motion-stagger-item {
+  opacity: 0;
+  animation: motion-stagger-in 0.42s ease-out forwards;
+}
+.motion-stagger-list .motion-stagger-item:nth-child(1) { animation-delay: 0.03s; }
+.motion-stagger-list .motion-stagger-item:nth-child(2) { animation-delay: 0.07s; }
+.motion-stagger-list .motion-stagger-item:nth-child(3) { animation-delay: 0.11s; }
+.motion-stagger-list .motion-stagger-item:nth-child(4) { animation-delay: 0.15s; }
+.motion-stagger-list .motion-stagger-item:nth-child(5) { animation-delay: 0.19s; }
+.motion-stagger-list .motion-stagger-item:nth-child(6) { animation-delay: 0.23s; }
+.motion-stagger-list .motion-stagger-item:nth-child(7) { animation-delay: 0.27s; }
+.motion-stagger-list .motion-stagger-item:nth-child(8) { animation-delay: 0.31s; }
+.motion-stagger-list .motion-stagger-item:nth-child(9) { animation-delay: 0.35s; }
+.motion-stagger-list .motion-stagger-item:nth-child(10) { animation-delay: 0.39s; }
+.motion-stagger-list .motion-stagger-item:nth-child(n+11) { animation-delay: 0.43s; }
+
+.trip-tile-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.trip-tile-hover:hover {
+  transform: translateY(-2px);
+}
 
 .btn-press {
   position: relative;
@@ -431,8 +458,11 @@ textarea.input { resize: vertical; min-height: 120px; }
   .plan-featured-pulse,
   .empty-icon-bounce,
   .step-enter,
-  .animate-fade-up {
+  .animate-fade-up,
+  .motion-stagger-list .motion-stagger-item {
     animation: none !important;
+    opacity: 1;
+    transform: none;
   }
   .btn-press:active { transform: none; }
 }

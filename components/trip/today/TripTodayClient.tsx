@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import Reveal from "@/components/ui/Reveal";
 import { MapPin, Clock, ChevronRight, Navigation, Phone, ExternalLink, Calendar } from "lucide-react";
 
 type Activity = {
@@ -135,7 +136,7 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
 
       {/* Current activity spotlight */}
       {currentActivity && (
-        <div className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5">
+        <Reveal variant="scale" className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5">
           <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2">Ahora mismo</p>
           <div className="flex items-start gap-3">
             <span className="text-3xl shrink-0">{kindMeta(currentActivity.activity_kind).icon}</span>
@@ -157,12 +158,12 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
               Cómo llegar
             </a>
           )}
-        </div>
+        </Reveal>
       )}
 
       {/* Next activity */}
       {nextActivity && (
-        <div className="mx-4 mt-3 rounded-3xl bg-slate-800 p-4 flex items-center gap-3">
+        <Reveal variant="slide" delay={1} className="mx-4 mt-3 rounded-3xl bg-slate-800 p-4 flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${kindMeta(nextActivity.activity_kind).bg}`}>
             {kindMeta(nextActivity.activity_kind).icon}
           </div>
@@ -180,23 +181,23 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
               <Navigation className="w-4 h-4 text-slate-300" />
             </a>
           )}
-        </div>
+        </Reveal>
       )}
 
       {/* Today's full schedule */}
       {todayActivities.length > 0 && (
-        <div className="mx-4 mt-4 rounded-3xl bg-slate-800 overflow-hidden">
+        <Reveal variant="fade" delay={2} className="mx-4 mt-4 rounded-3xl bg-slate-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-700">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Plan de hoy — {todayActivities.length} actividades</p>
           </div>
-          <div className="divide-y divide-slate-700">
-            {todayActivities.map((a, i) => {
+          <div className="motion-stagger-list divide-y divide-slate-700">
+            {todayActivities.map((a) => {
               const meta = kindMeta(a.activity_kind);
               const isCurrent = a.id === currentActivity?.id;
               const isPast = formatTime(a.activity_time) ? formatTime(a.activity_time)! < nowHHMM : false;
               const mapsUrl = buildGmapsUrl(a);
               return (
-                <div key={a.id} className={`px-4 py-3 flex items-center gap-3 ${isCurrent ? "bg-violet-900/30" : ""} ${isPast && !isCurrent ? "opacity-50" : ""}`}>
+                <div key={a.id} className={`motion-stagger-item px-4 py-3 flex items-center gap-3 ${isCurrent ? "bg-violet-900/30" : ""} ${isPast && !isCurrent ? "opacity-50" : ""}`}>
                   <span className={`text-xl shrink-0 ${isPast && !isCurrent ? "grayscale" : ""}`}>{meta.icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold ${isCurrent ? "text-violet-200" : ""} truncate`}>{a.title}</p>
@@ -211,7 +212,7 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
               );
             })}
           </div>
-        </div>
+        </Reveal>
       )}
 
       {todayActivities.length === 0 && (

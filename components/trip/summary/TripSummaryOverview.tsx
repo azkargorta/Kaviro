@@ -10,6 +10,8 @@ import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 import { Share2 } from "lucide-react";
+import Reveal from "@/components/ui/Reveal";
+import type { RevealDelay } from "@/components/ui/Reveal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -176,7 +178,7 @@ export default function TripSummaryOverview({
       <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
 
         {/* Hero card — countdown + today's plan + next activity */}
-        <section data-tour="summary-countdown" className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
+        <Reveal variant="fade" as="section" data-tour="summary-countdown" className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
           {/* Subtle glow */}
           <div
             className="pointer-events-none absolute -right-20 -top-10 h-52 w-52 rounded-full bg-violet-500/15 blur-3xl dark:bg-[var(--brand-light)]"
@@ -319,10 +321,13 @@ export default function TripSummaryOverview({
               </p>
             )}
           </div>
-        </section>
+        </Reveal>
 
         {/* R2 — Weather integrado como columna derecha */}
-        <section
+        <Reveal
+          variant="slide"
+          delay={1}
+          as="section"
           data-tour="summary-weather"
           className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
           dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
@@ -435,11 +440,12 @@ export default function TripSummaryOverview({
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>
           )}
-        </section>
+        </Reveal>
       </div>
 
       {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}
             {/* ── Search card ──────────────────────────────────────────── */}
+      <Reveal variant="fade">
       <TripSearchCard
         destination={tripDestination ?? null}
         startDate={tripStartDate ?? null}
@@ -447,27 +453,35 @@ export default function TripSummaryOverview({
         participants={Math.max(1, participantsCount ?? 1)}
         tripId={tripId}
       />
+      </Reveal>
 
       <section className="min-w-0 space-y-3">
+        <Reveal variant="fade">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Navegación rápida</p>
             <h2 className="mt-0.5 text-xl font-extrabold text-slate-950 dark:text-slate-50">Módulos del viaje</h2>
           </div>
         </div>
+        </Reveal>
 
         <div data-tour="summary-stats" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {tabs.map((tab) => {
+          {tabs.map((tab, tabIdx) => {
             const ac = TILE_ACCENT[tab.tone];
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
             const tileBorder = isDark ? "border-[color:var(--brand-border)] hover:border-[var(--accent)]" : ac.border;
             const tileBg = isDark ? "bg-[var(--surface-card)]/80 hover:bg-[var(--surface-card)]" : "bg-white";
             const tileShadow = isDark ? "shadow-[0_10px_30px_rgba(0,0,0,0.40)]" : "shadow-sm";
             return (
-              <Link
+              <Reveal
                 key={tab.href}
+                variant="scale"
+                delay={(tabIdx % 4) as RevealDelay}
+                className="h-full"
+              >
+              <Link
                 href={tab.href}
-                className={`group flex flex-col rounded-2xl border p-4 transition hover:-translate-y-0.5 ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
+                className={`trip-tile-hover group flex h-full flex-col rounded-2xl border p-4 ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
               >
                 {/* Top row: icon + metric */}
                 <div className="flex items-start justify-between gap-3">
@@ -523,12 +537,14 @@ export default function TripSummaryOverview({
                   <span aria-hidden>→</span>
                 </div>
               </Link>
+              </Reveal>
             );
           })}
         </div>
       </section>
 
       {/* ── Recap CTA ────────────────────────────────────────────── */}
+      <Reveal variant="slide" delay={2}>
       <SummaryRecapCta
         tripId={tripId}
         tripName={tripName ?? ""}
@@ -536,6 +552,7 @@ export default function TripSummaryOverview({
         startDate={tripStartDate ?? null}
         endDate={tripEndDate ?? null}
       />
+      </Reveal>
     </div>
   );
 }
@@ -600,7 +617,7 @@ function SummaryRecapCta({
           </button>
           <Link
             href={`/trip/${tripId}/recap`}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
+            className="btn-press inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
           >
             Crear Recap
             <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>

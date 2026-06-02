@@ -39,6 +39,7 @@ import TripPlanExploreDrawer, { type ExploreCreatePlanPayload } from "@/componen
 import TripPlanNotesPanel from "@/components/trip/plan/TripPlanNotesPanel";
 import PlanAttendanceSummary from "@/components/trip/plan/PlanAttendanceSummary";
 import { SortableRow } from "@/components/trip/plan/SortableRow";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { activityLikelyNeedsTicket } from "@/lib/trip-plan-ticket-hints";
 import {
   btnPrimary,
@@ -632,36 +633,9 @@ export default function TripPlanView({
   if (loading) {
     return (
       <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden p-1" aria-busy="true" aria-label="Cargando plan">
-        {/* Toolbar skeleton */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="animate-pulse h-9 w-28 rounded-xl bg-slate-200 dark:bg-slate-700" />
-          <div className="animate-pulse h-9 w-36 rounded-xl bg-slate-200 dark:bg-slate-700" />
-          <div className="ml-auto animate-pulse h-9 w-24 rounded-xl bg-slate-200 dark:bg-slate-700" />
-        </div>
-        {/* Stat chips */}
-        <div className="flex gap-3">
-          <div className="animate-pulse h-16 rounded-2xl bg-slate-200 dark:bg-slate-700" style={{ width: 104 }} />
-          <div className="animate-pulse h-16 rounded-2xl bg-slate-200 dark:bg-slate-700" style={{ width: 120 }} />
-          <div className="animate-pulse h-16 rounded-2xl bg-slate-200 dark:bg-slate-700" style={{ width: 96 }} />
-        </div>
-        {/* Day sections */}
-        {[1, 2, 3].map((day) => (
-          <div key={day} className="space-y-3">
-            <div className="animate-pulse h-7 w-44 rounded-lg bg-slate-200 dark:bg-slate-700" />
-            {[1, 2].map((card) => (
-              <div key={card} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-700" />
-                    <div className="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
-                  </div>
-                  <div className="h-6 w-16 rounded-full bg-slate-200 dark:bg-slate-700" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
+        <SkeletonCard rows={2} className="max-w-2xl" />
+        <SkeletonCard rows={4} />
+        <SkeletonCard rows={3} />
       </div>
     );
   }
@@ -726,25 +700,29 @@ export default function TripPlanView({
       </div>
 
       {workspaceTab === "notes" ? (
-        <TripPlanNotesPanel tripId={tripId} initialDescription={initialTripDescription} readOnly={!canEditTripNotes} />
+        <div key="notes" className="step-enter">
+          <TripPlanNotesPanel tripId={tripId} initialDescription={initialTripDescription} readOnly={!canEditTripNotes} />
+        </div>
       ) : null}
 
       {workspaceTab === "attendance" ? (
-        <PlanAttendanceSummary
-          tripId={tripId}
-          activities={activities}
-          enabled={workspaceTab === "attendance"}
-          currentUserId={currentUserId}
-          currentDisplayName={currentDisplayName}
-          onActivityClick={(activity) => setDetailActivity(activity)}
-        />
+        <div key="attendance" className="step-enter">
+          <PlanAttendanceSummary
+            tripId={tripId}
+            activities={activities}
+            enabled={workspaceTab === "attendance"}
+            currentUserId={currentUserId}
+            currentDisplayName={currentDisplayName}
+            onActivityClick={(activity) => setDetailActivity(activity)}
+          />
+        </div>
       ) : null}
 
       {workspaceTab === "itinerary" && canManagePlan && !showForm && !bulkDeleteMode ? (
         <button
           type="button"
           onClick={() => handleStartCreate()}
-          data-tour="plan-add-btn" className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
+          data-tour="plan-add-btn" className="btn-press fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
           aria-label="Añadir plan"
           title="Añadir plan"
         >
@@ -753,7 +731,7 @@ export default function TripPlanView({
       ) : null}
 
       {workspaceTab === "itinerary" ? (
-        <>
+        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-6">
           {premiumEnabled && ticketHintCount > 0 && !isEmpty ? (
             <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 px-4 py-3 text-sm text-amber-950 shadow-sm">
               <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-amber-800">Entradas · Premium</p>
@@ -817,7 +795,7 @@ export default function TripPlanView({
             data-tour="plan-add-btn"
             type="button"
             onClick={() => handleStartCreate()}
-            className={`hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`}
+            className={`btn-press hidden sm:inline-flex ${btnPrimary} w-full gap-2 sm:w-auto`}
             title="Crear un plan manual"
           >
             <Plus className="h-4 w-4" />
@@ -1568,23 +1546,24 @@ export default function TripPlanView({
                   const bulkSelected = selectedActivityIds.has(activity.id);
 
                   const row = (
-                    <PlanActivityRow
-                      key={activity.id}
-                      dataTour={sectionIndex === 0 && rowIndex === 0 ? "plan-activity-card" : undefined}
-                      title={activity.title || activity.place_name || "Actividad"}
-                      place={activity.place_name || activity.address}
-                      time={activity.activity_time}
-                      activityKind={isLodging ? "lodging" : activity.activity_kind}
-                      isLodging={isLodging}
-                      customByKey={customByKey}
-                      selectable={bulkSelectable}
-                      selected={bulkSelected}
-                      onClick={
-                        bulkSelectable
-                          ? () => toggleActivitySelection(activity.id)
-                          : () => setDetailActivity(activity)
-                      }
-                    />
+                    <div key={activity.id} className="motion-stagger-item">
+                      <PlanActivityRow
+                        dataTour={sectionIndex === 0 && rowIndex === 0 ? "plan-activity-card" : undefined}
+                        title={activity.title || activity.place_name || "Actividad"}
+                        place={activity.place_name || activity.address}
+                        time={activity.activity_time}
+                        activityKind={isLodging ? "lodging" : activity.activity_kind}
+                        isLodging={isLodging}
+                        customByKey={customByKey}
+                        selectable={bulkSelectable}
+                        selected={bulkSelected}
+                        onClick={
+                          bulkSelectable
+                            ? () => toggleActivitySelection(activity.id)
+                            : () => setDetailActivity(activity)
+                        }
+                      />
+                    </div>
                   );
 
                   if (enableDrag) {
@@ -1599,7 +1578,12 @@ export default function TripPlanView({
                 });
 
                 const listBody = (
-                  <div className="space-y-2 overflow-x-hidden pl-7 pr-0.5">{rows}</div>
+                  <div
+                    key={`${date}-${selectedDate ?? "all"}`}
+                    className="motion-stagger-list space-y-2 overflow-x-hidden pl-7 pr-0.5"
+                  >
+                    {rows}
+                  </div>
                 );
 
                 return (
@@ -1704,7 +1688,7 @@ export default function TripPlanView({
           </div>
         </div>
       ) : null}
-        </>
+        </div>
       ) : null}
     </div>
   );
