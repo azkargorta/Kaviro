@@ -11,9 +11,9 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 | # | Bloque | Estado en repo |
 |---|--------|----------------|
 | 1 | BD: `agencies`, `agency_members`, `trips.agency_id`, portales | SQL: [`kaviro_agency_mode.sql`](./kaviro_agency_mode.sql) |
-| 2 | Panel `/agency` | Pendiente |
+| 2 | Panel `/agency` | En repo |
 | 3 | Plantillas (`agency_templates` + duplicar viaje) | Tabla en SQL; UI pendiente |
-| 4 | Portal `/client/[agency]/[trip]` | Pendiente (base: `trip_shares`, `/share/[token]`) |
+| 4 | Portal `/client/[agency]/[trip]` | En repo (`lib/load-agency-client-portal.ts`) |
 | 5 | Branding (logo, color) | Pendiente (`lib/brand.ts` + Storage) |
 | 6 | Stripe Agencia Pro | Pendiente (`AGENCY_PRO_PRICE_ID`) |
 
@@ -53,9 +53,17 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 - `app/api/agencies/trips` — crear viaje con `agency_id`
 - `lib/require-agency.ts`, `lib/workspace-mode.ts`
 
+## Portal cliente (Bloque 4)
+
+- URL: `/client/{slug-agencia}/{slug-viaje}` (ej. `/client/stripes/chicago-2026`)
+- Requiere `trips.client_portal_slug` y fila activa en `agency_client_portals` (o solo slug en viaje)
+- Enlace desde tarjeta del viaje en `/agency` → «Portal cliente»
+
 ## Próximo código
 
-- `app/client/[agency]/[trip]/page.tsx` — portal con branding (Bloque 4)
+- Bloque 3: UI plantillas + duplicar desde plantilla
+- Bloque 5: subir logo y color en `/agency/branding`
+- Bloque 6: checkout Stripe Agencia Pro
 
 ## Precio orientativo
 

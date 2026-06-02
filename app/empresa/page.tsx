@@ -34,7 +34,7 @@ export default function EmpresaLandingPage({ searchParams }: Props) {
             "Panel centralizado con todos los grupos",
             "Equipo con roles (admin / editor)",
             "Importación de dossier con IA",
-            "Portal cliente con tu logo (próximamente)",
+            "Portal cliente con tu logo y colores",
           ].map((line) => (
             <li key={line} className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden />

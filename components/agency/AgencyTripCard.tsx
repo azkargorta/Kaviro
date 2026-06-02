@@ -62,13 +62,15 @@ export default function AgencyTripCard({
           Abrir viaje
         </Link>
         {portalHref ? (
-          <span
-            className="inline-flex min-h-9 cursor-not-allowed items-center gap-1.5 rounded-xl border border-dashed border-slate-200 px-4 py-2 text-xs font-semibold text-slate-400 dark:border-[#334155]"
-            title="Portal con branding: Bloque 4 (próximo deploy)"
+          <Link
+            href={portalHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0B1220] dark:text-slate-200"
           >
-            Portal cliente (pronto)
-            <ExternalLink className="h-3.5 w-3.5 opacity-50" aria-hidden />
-          </span>
+            Portal cliente
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          </Link>
         ) : null}
       </div>
     </article>

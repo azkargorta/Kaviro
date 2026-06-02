@@ -58,7 +58,10 @@ export default function RootTopBar() {
   }, [pathname]);
 
   const isAgencyShell =
-    pathname === "/empresa" || pathname?.startsWith("/empresa/") || pathname?.startsWith("/agency");
+    pathname === "/empresa" ||
+    pathname?.startsWith("/empresa/") ||
+    pathname?.startsWith("/agency") ||
+    pathname?.startsWith("/client/");
 
   const showOnPath =
     !isAgencyShell &&
