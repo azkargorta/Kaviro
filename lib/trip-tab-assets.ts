@@ -23,7 +23,7 @@ const tabToBaseName: Record<TripTabKey, string> = {
   chat: "ai",
   recap: "recap",
   messages: "participants",
-  settings: "summary",
+  settings: "settings",
 };
 
 export function getTripTabIconSrc(key: TripTabKey, isDark: boolean) {

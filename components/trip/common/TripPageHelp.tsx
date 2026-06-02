@@ -382,7 +382,7 @@ function PageHelpVisualHeader({ pageId }: { pageId: string }) {
   if (pageId === "settings") {
     return (
       <div className="mb-5 flex flex-col items-center text-center">
-        <HelpVisualBadge visual={{ type: "emoji", value: "⚙️" }} />
+        <HelpVisualBadge visual={{ type: "image", tabKey: "settings", alt: "Ajustes" }} />
         <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)] dark:text-[var(--brand)]">
           Estás en
         </p>
