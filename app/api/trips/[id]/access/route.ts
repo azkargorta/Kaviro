@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireTripAccessApi } from "@/lib/trip-access-api";
+import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
 import { normalizeWeatherStays } from "@/lib/trip-weather-stays";
 
 export const runtime = "nodejs";
-
-const TRIP_COLS =
-  "id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -15,30 +13,14 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const gate = await requireTripAccessApi(tripId);
     if (!gate.ok) return gate.response;
 
-    let trip: Record<string, unknown> | null = null;
-    let tripError: { message?: string } | null = null;
-
-    const primary = await gate.supabase.from("trips").select(TRIP_COLS).eq("id", tripId).maybeSingle();
-    trip = primary.data as Record<string, unknown> | null;
-    tripError = primary.error;
-
-    if (tripError?.message?.includes("weather_stays")) {
-      const fb = await gate.supabase
-        .from("trips")
-        .select("id, name, destination, start_date, end_date, base_currency, budget_target")
-        .eq("id", tripId)
-        .maybeSingle();
-      trip = fb.data as Record<string, unknown> | null;
-      tripError = fb.error;
-      if (trip) trip.weather_stays = [];
-    }
-
-    if (tripError) throw new Error(tripError.message);
+    const loaded = await loadTripSettingsRow(gate.supabase, tripId);
+    const trip = loaded.data as Record<string, unknown> | null;
 
     const { access } = gate;
     const weather_stays = normalizeWeatherStays(trip?.weather_stays);
 
     return NextResponse.json({
+      missingColumns: loaded.missingColumns,
       access: {
         role: access.role,
         can_manage_trip: access.can_manage_trip,

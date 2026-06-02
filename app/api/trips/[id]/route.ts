@@ -1,6 +1,8 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePermissions, normalizeRole } from "@/lib/permissions";
+import { joinTripPlaces } from "@/lib/trip-places";
 import { normalizeWeatherStays, validateWeatherStays } from "@/lib/trip-weather-stays";
 
 export const runtime = "nodejs";
@@ -151,7 +153,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const patch: Record<string, unknown> = {};
 
     if (wantsMeta) {
-      const destination = typeof body?.destination === "string" ? body.destination.trim() : null;
+      const destinationInput = typeof body?.destination === "string" ? body.destination.trim() : "";
       const start_date = typeof body?.start_date === "string" ? body.start_date : null;
       const end_date = typeof body?.end_date === "string" ? body.end_date : null;
       const base_currency =
@@ -164,25 +166,30 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         );
       }
 
-      patch.destination = destination || null;
+      let normalizedStays: ReturnType<typeof normalizeWeatherStays> = [];
+      if ("weather_stays" in body) {
+        normalizedStays = normalizeWeatherStays(body.weather_stays);
+        const stayErr = validateWeatherStays(normalizedStays, start_date, end_date);
+        if (stayErr) return NextResponse.json({ error: stayErr }, { status: 400 });
+        patch.weather_stays = normalizedStays;
+      }
+
+      const destinationFromStays = joinTripPlaces(normalizedStays.map((s) => s.city));
+      patch.destination = destinationInput || destinationFromStays || null;
       patch.start_date = start_date || null;
       patch.end_date = end_date || null;
       patch.base_currency = base_currency && /^[A-Z]{3}$/.test(base_currency) ? base_currency : null;
       if (typeof body?.name === "string" && body.name.trim()) patch.name = body.name.trim();
-      if ("budget_target" in body) {
-        patch.budget_target = typeof body.budget_target === "number" && body.budget_target > 0
-          ? body.budget_target : null;
-      }
 
-      if ("weather_stays" in body) {
-        const stays = normalizeWeatherStays(body.weather_stays);
-        const stayErr = validateWeatherStays(
-          stays,
-          (patch.start_date as string | null | undefined) ?? start_date,
-          (patch.end_date as string | null | undefined) ?? end_date
-        );
-        if (stayErr) return NextResponse.json({ error: stayErr }, { status: 400 });
-        patch.weather_stays = stays;
+      if ("budget_target" in body) {
+        let budget: number | null = null;
+        if (typeof body.budget_target === "number" && Number.isFinite(body.budget_target)) {
+          budget = body.budget_target;
+        } else if (typeof body.budget_target === "string") {
+          const n = parseFloat(String(body.budget_target).replace(",", ".").trim());
+          if (Number.isFinite(n)) budget = n;
+        }
+        patch.budget_target = budget != null && budget > 0 ? budget : null;
       }
     }
 
@@ -195,31 +202,64 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       patch.description = trimmed.length ? trimmed : null;
     }
 
-    const selectCols = wantsDescription
-      ? "id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays, description"
-      : "id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays";
+    const warnings: string[] = [];
+    let workingPatch = { ...patch };
 
-    let { data, error } = await supabase.from("trips").update(patch).eq("id", tripId).select(selectCols).single();
+    const buildSelect = (p: Record<string, unknown>) => {
+      const cols = ["id", "name", "destination", "start_date", "end_date", "base_currency"];
+      if ("budget_target" in p) cols.push("budget_target");
+      if ("weather_stays" in p) cols.push("weather_stays");
+      if (wantsDescription) cols.push("description");
+      return cols.join(", ");
+    };
 
-    if (error?.message?.includes("weather_stays") && "weather_stays" in patch) {
-      const { weather_stays: _ws, ...patchWithoutStays } = patch;
-      const fbCols = wantsDescription
-        ? "id, name, destination, start_date, end_date, base_currency, budget_target, description"
-        : "id, name, destination, start_date, end_date, base_currency, budget_target";
-      const fb = await supabase.from("trips").update(patchWithoutStays).eq("id", tripId).select(fbCols).single();
-      data = fb.data;
-      error = fb.error;
-      if (!error && data) {
-        return NextResponse.json({
-          trip: data,
-          warning: "Ejecuta docs/kaviro_trips_weather_stays.sql en Supabase para guardar ciudades por fecha.",
-        });
-      }
+    let { data, error } = await supabase
+      .from("trips")
+      .update(workingPatch)
+      .eq("id", tripId)
+      .select(buildSelect(workingPatch))
+      .single();
+
+    if (error && (error.message ?? "").includes("weather_stays") && "weather_stays" in workingPatch) {
+      const { weather_stays: _ws, ...rest } = workingPatch;
+      workingPatch = rest;
+      warnings.push(
+        "Las ciudades por fecha no se guardaron en JSON: ejecuta docs/kaviro_trips_weather_stays.sql. El destino general sí se actualizó."
+      );
+      const retry = await supabase
+        .from("trips")
+        .update(workingPatch)
+        .eq("id", tripId)
+        .select(buildSelect(workingPatch))
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error && (error.message ?? "").includes("budget_target") && "budget_target" in workingPatch) {
+      const { budget_target: _bt, ...rest } = workingPatch;
+      workingPatch = rest;
+      warnings.push("El presupuesto no se guardó: ejecuta docs/kaviro_trips_budget_target.sql en Supabase.");
+      const retry = await supabase
+        .from("trips")
+        .update(workingPatch)
+        .eq("id", tripId)
+        .select(buildSelect(workingPatch))
+        .single();
+      data = retry.data;
+      error = retry.error;
     }
 
     if (error) throw new Error(error.message);
 
-    return NextResponse.json({ trip: data });
+    revalidatePath(`/trip/${tripId}/summary`);
+    revalidatePath(`/trip/${tripId}/settings`);
+    revalidatePath(`/trip/${tripId}/expenses`);
+
+    return NextResponse.json({
+      trip: data,
+      warning: warnings.length ? warnings.join(" ") : undefined,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo actualizar el viaje." },

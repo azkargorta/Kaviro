@@ -12,6 +12,9 @@ import { getTripWeatherBundle } from "@/lib/trip-weather";
 import { normalizeWeatherStays } from "@/lib/trip-weather-stays";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
 import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
+import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
+
+export const dynamic = "force-dynamic";
 
 type TripPageProps = {
   params: { id: string };
@@ -127,7 +130,6 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   const [
-    { data: trip, error: tripError },
     { data: profileRow },
     { count: participantsCount },
     { count: activitiesCount, data: activitiesData },
@@ -139,11 +141,6 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     { data: firstRouteRow },
     { data: expenseAmountRows },
   ] = await Promise.all([
-    supabase
-      .from("trips")
-      .select("id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays, is_demo")
-      .eq("id", tripId)
-      .maybeSingle(),
     supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
     supabase.from("trip_participants").select("id", { count: "exact", head: true }).eq("trip_id", tripId).neq("status", "removed"),
     supabase
@@ -173,12 +170,17 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       .limit(1200),
   ]);
 
-  if (tripError || !trip) {
-    console.error("Error cargando viaje:", tripError);
+  let tripRow: TripRow & { is_demo?: boolean; weather_stays?: unknown };
+  try {
+    const loaded = await loadTripSettingsRow(supabase, tripId);
+    if (!loaded.data) redirect("/dashboard");
+    tripRow = loaded.data as TripRow & { is_demo?: boolean; weather_stays?: unknown };
+  } catch (e) {
+    console.error("Error cargando viaje:", e);
     redirect("/dashboard");
   }
 
-  const currentTrip = trip as TripRow & { is_demo?: boolean };
+  const currentTrip = tripRow;
   const isDemoTrip =
     Boolean(currentTrip.is_demo) ||
     String((profileRow as { demo_trip_id?: string } | null)?.demo_trip_id || "") === tripId;
@@ -260,8 +262,14 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     baseCurrency
   );
   const rawBudget = currentTrip.budget_target;
-  const budgetTarget =
-    typeof rawBudget === "number" && Number.isFinite(rawBudget) && rawBudget > 0 ? rawBudget : null;
+  const budgetTarget = (() => {
+    if (typeof rawBudget === "number" && Number.isFinite(rawBudget) && rawBudget > 0) return rawBudget;
+    if (typeof rawBudget === "string") {
+      const n = parseFloat(rawBudget.replace(",", "."));
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return null;
+  })();
   const totalSpentInBase = expenseTotals.totalInBase;
   const expenseMultiCurrency =
     expenseTotals.hasUnconvertedForeign || expenseTotals.byCurrency.size > 1;

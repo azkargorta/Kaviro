@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { joinTripPlaces } from "@/lib/trip-places";
+import { buildTravelCurrencySelectOptions, coerceTravelCurrencyCode } from "@/lib/travel-currencies";
 import { Plus, Trash2 } from "lucide-react";
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
 import {
@@ -32,6 +35,7 @@ function newStayId() {
 }
 
 export default function TripSettingsView({ tripId, readOnly = false }: TripSettingsViewProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -47,6 +51,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const [dbHint, setDbHint] = useState<string | null>(null);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -59,6 +64,16 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       const json = await res.json().catch(() => null);
       if (!res.ok) throw new Error(json?.error || "No se pudieron cargar los ajustes");
 
+      const missing = Array.isArray(json?.missingColumns) ? (json.missingColumns as string[]) : [];
+      if (missing.includes("budget_target") || missing.includes("weather_stays")) {
+        const parts: string[] = [];
+        if (missing.includes("budget_target")) parts.push("docs/kaviro_trips_budget_target.sql");
+        if (missing.includes("weather_stays")) parts.push("docs/kaviro_trips_weather_stays.sql");
+        setDbHint(`Faltan columnas en Supabase. Ejecuta: ${parts.join(" y ")}`);
+      } else {
+        setDbHint(null);
+      }
+
       const trip = json?.trip as SettingsTrip | null;
       if (!trip) throw new Error("Viaje no encontrado");
 
@@ -66,7 +81,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       setDestination(trip.destination ?? "");
       setStartDate(trip.start_date?.slice(0, 10) ?? "");
       setEndDate(trip.end_date?.slice(0, 10) ?? "");
-      setCurrency((trip.base_currency || "EUR").toUpperCase());
+      setCurrency(coerceTravelCurrencyCode(trip.base_currency, "EUR"));
       setBudgetTarget(
         typeof trip.budget_target === "number" && trip.budget_target > 0 ? String(trip.budget_target) : ""
       );
@@ -95,6 +110,23 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
   }, [loadSettings]);
 
   const tripDays = useMemo(() => listTripDateRange(startDate, endDate), [startDate, endDate]);
+
+  const destinationHint = useMemo(() => {
+    const parts = [destination, ...weatherStays.map((s) => s.city)];
+    return joinTripPlaces(parts);
+  }, [destination, weatherStays]);
+
+  const currencyOptions = useMemo(
+    () => buildTravelCurrencySelectOptions(destinationHint),
+    [destinationHint]
+  );
+
+  useEffect(() => {
+    const valid = new Set(currencyOptions.map((o) => o.code));
+    if (!valid.has(currency)) {
+      setCurrency(coerceTravelCurrencyCode(currency, currencyOptions[0]?.code ?? "EUR"));
+    }
+  }, [currencyOptions, currency]);
 
   function addWeatherStay() {
     const firstDay = tripDays[0] || startDate || "";
@@ -127,6 +159,25 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       return;
     }
 
+    const destFromStays = joinTripPlaces(stays.map((s) => s.city));
+    const finalDestination = destination.trim() || destFromStays;
+    if (!finalDestination && stays.length === 0) {
+      setSaveError("Indica al menos un destino o una ciudad de alojamiento para el clima.");
+      setSaving(false);
+      return;
+    }
+
+    let budgetNum: number | null = null;
+    if (budgetTarget.trim()) {
+      const n = parseFloat(budgetTarget.replace(",", ".").trim());
+      if (!Number.isFinite(n) || n <= 0) {
+        setSaveError("El presupuesto debe ser un número mayor que 0.");
+        setSaving(false);
+        return;
+      }
+      budgetNum = n;
+    }
+
     if (startDate && endDate && startDate > endDate) {
       setSaveError("La fecha de inicio no puede ser posterior a la fecha de fin.");
       setSaving(false);
@@ -139,20 +190,25 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          destination: destination.trim() || null,
+          destination: finalDestination || null,
           start_date: startDate || null,
           end_date: endDate || null,
           base_currency: currency,
-          budget_target: budgetTarget ? parseFloat(budgetTarget) : null,
+          budget_target: budgetNum,
           weather_stays: stays,
         }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) throw new Error(json?.error || "No se pudo guardar");
-      if (typeof json?.warning === "string") setSaveWarning(json.warning);
+      if (typeof json?.warning === "string" && json.warning.trim()) {
+        setSaveWarning(json.warning);
+      } else {
+        setSaveWarning(null);
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       await loadSettings();
+      router.refresh();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Error al guardar");
     } finally {
@@ -193,6 +249,11 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
 
   return (
     <div className="space-y-5">
+      {dbHint ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+          {dbHint}
+        </div>
+      ) : null}
       {readOnly && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
           Modo lectura: no puedes cambiar los ajustes de este viaje.
@@ -258,17 +319,6 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           </p>
         </div>
 
-        <div>
-          <label className={labelClass}>Moneda base</label>
-          <input
-            className={inputClass}
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            disabled={readOnly}
-            placeholder="EUR"
-            maxLength={3}
-          />
-        </div>
       </div>
 
       <div
@@ -387,22 +437,43 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
             Presupuesto objetivo
           </h3>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-            Cuánto queréis gastar en total. Verás la barra en Resumen y en Gastos.
+            Cuánto queréis gastar en total y en qué moneda. Verás la barra en Resumen y en Gastos.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <input
-            type="number"
-            className={inputClass}
-            value={budgetTarget}
-            onChange={(e) => setBudgetTarget(e.target.value)}
-            disabled={readOnly}
-            placeholder={`Ej: 1500 ${currency}`}
-            min="0"
-            step="10"
-          />
-          <span className="shrink-0 text-sm font-semibold text-[var(--text-secondary)]">{currency}</span>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,220px)]">
+          <div>
+            <label className={labelClass}>Importe objetivo</label>
+            <input
+              type="number"
+              className={inputClass}
+              value={budgetTarget}
+              onChange={(e) => setBudgetTarget(e.target.value)}
+              disabled={readOnly}
+              placeholder="Ej: 1500"
+              min="0"
+              step="10"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Moneda del presupuesto</label>
+            <select
+              className={inputClass}
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              disabled={readOnly}
+            >
+              {currencyOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+        <p className="text-[11px] text-[var(--text-tertiary)]">
+          La moneda del presupuesto es también la <span className="font-semibold">moneda base</span> del viaje
+          (gastos y balances). Las opciones con ★ encajan con tu destino.
+        </p>
       </div>
 
       {!readOnly && (
