@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
+import { loadTripExpenseAmountRows } from "@/lib/load-trip-expense-amounts";
 
 export type PublicRecapStats = {
   activitiesCount: number;
@@ -39,7 +40,6 @@ export async function loadPublicRecapStats(
     { count: participantsCount },
     { count: expensesCount },
     { count: routesCount },
-    { data: expenseRows },
     { data: routeRows },
   ] = await Promise.all([
     client.from("trip_activities").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
@@ -50,18 +50,11 @@ export async function loadPublicRecapStats(
       .neq("status", "removed"),
     client.from("trip_expenses").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
     client.from("trip_routes").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
-    client
-      .from("trip_expenses")
-      .select("amount, currency, exchange_rate_to_base")
-      .eq("trip_id", tripId)
-      .limit(2000),
     client.from("trip_routes").select("distance_text").eq("trip_id", tripId).limit(500),
   ]);
 
-  const { totalInBase } = computeExpenseTotalsInBase(
-    (expenseRows ?? []) as Array<{ amount: unknown; currency: string | null; exchange_rate_to_base?: number | null }>,
-    currency
-  );
+  const expenseRows = await loadTripExpenseAmountRows(client, tripId, 2000);
+  const { totalInBase } = computeExpenseTotalsInBase(expenseRows, currency);
 
   let routesDistanceKm: number | null = null;
   let kmSum = 0;

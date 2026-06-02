@@ -13,6 +13,8 @@ import { normalizeWeatherStays } from "@/lib/trip-weather-stays";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
 import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
 import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
+import { loadTripExpenseAmountRows } from "@/lib/load-trip-expense-amounts";
+import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
 
 export const dynamic = "force-dynamic";
 
@@ -140,7 +142,6 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     { data: lastExpenseRow },
     { data: lastResourceRow },
     { data: firstRouteRow },
-    { data: expenseAmountRows },
   ] = await Promise.all([
     supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
     supabase.from("trip_participants").select("id", { count: "exact", head: true }).eq("trip_id", tripId).neq("status", "removed"),
@@ -164,12 +165,9 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    supabase
-      .from("trip_expenses")
-      .select("amount, currency, exchange_rate_to_base")
-      .eq("trip_id", tripId)
-      .limit(1200),
   ]);
+
+  const expenseAmountRows = await loadTripExpenseAmountRows(supabase, tripId);
 
   let tripRow: TripRow & { is_demo?: boolean; weather_stays?: unknown };
   try {
@@ -262,15 +260,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     }>,
     baseCurrency
   );
-  const rawBudget = currentTrip.budget_target;
-  const budgetTarget = (() => {
-    if (typeof rawBudget === "number" && Number.isFinite(rawBudget) && rawBudget > 0) return rawBudget;
-    if (typeof rawBudget === "string") {
-      const n = parseFloat(rawBudget.replace(",", "."));
-      if (Number.isFinite(n) && n > 0) return n;
-    }
-    return null;
-  })();
+  const budgetTarget = parseTripBudgetTarget(currentTrip.budget_target);
   const totalSpentInBase = expenseTotals.totalInBase;
   const expenseMultiCurrency =
     expenseTotals.hasUnconvertedForeign || expenseTotals.byCurrency.size > 1;

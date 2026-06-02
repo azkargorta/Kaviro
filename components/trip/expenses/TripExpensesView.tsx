@@ -10,6 +10,7 @@ import ExpenseCharts from "@/components/trip/expenses/ExpenseCharts";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useTripExpenses } from "@/hooks/useTripExpenses";
 import { useTripData } from "@/hooks/useTripData";
+import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
 import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
@@ -20,10 +21,13 @@ export default function TripExpensesView({
   tripId,
   isPremium = true,
   canManageExpenses = true,
+  budgetTarget: budgetTargetFromServer = null,
 }: {
   tripId: string;
   isPremium?: boolean;
   canManageExpenses?: boolean;
+  /** Presupuesto cargado en servidor (Ajustes); evita depender solo del cliente. */
+  budgetTarget?: number | null;
 }) {
   const {
     expenses,
@@ -56,6 +60,11 @@ export default function TripExpensesView({
   } = useTripExpenses(tripId);
 
   const { trip: tripMeta } = useTripData(tripId);
+
+  const budgetTarget = useMemo(() => {
+    const fromClient = parseTripBudgetTarget(tripMeta?.budget_target);
+    return fromClient ?? budgetTargetFromServer;
+  }, [tripMeta?.budget_target, budgetTargetFromServer]);
 
   const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [detectedData, setDetectedData] = useState<ExpenseDetectedData | null>(null);
@@ -612,7 +621,7 @@ export default function TripExpensesView({
                 paymentPairRules={paymentPairRules}
                 onSavePaymentPairRule={savePaymentPairRule}
                 onResetPaymentPairRules={resetPaymentPairRules}
-                budgetTarget={(tripMeta as any)?.budget_target ?? null}
+                budgetTarget={budgetTarget}
                 onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
                 strictPaymentMethods={strictPaymentMethods}
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}

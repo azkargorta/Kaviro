@@ -11,6 +11,7 @@ export type Trip = {
   end_date: string | null;
   description?: string | null;
   base_currency?: string | null;
+  budget_target?: number | string | null;
 };
 
 export type Activity = {
@@ -99,7 +100,7 @@ export function useTripData(tripId: string): UseTripDataResult {
       ] = await Promise.all([
         supabase.from("trips").select("*").eq("id", tripId).single(),
         supabase
-          .from("activities")
+          .from("trip_activities")
           .select("*")
           .eq("trip_id", tripId)
           .order("activity_date", { ascending: true })
@@ -123,7 +124,9 @@ export function useTripData(tripId: string): UseTripDataResult {
       ]);
 
       if (tripError) throw tripError;
-      if (activitiesError) throw activitiesError;
+      if (activitiesError) {
+        console.warn("No se pudieron cargar actividades del viaje:", activitiesError.message);
+      }
       if (expensesError) throw expensesError;
       if (participantsError) throw participantsError;
       if (resourcesError) {

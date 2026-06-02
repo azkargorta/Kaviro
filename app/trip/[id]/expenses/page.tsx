@@ -4,6 +4,8 @@ import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import { createClient } from "@/lib/supabase/server";
 import { getCachedTripPremium } from "@/lib/entitlements";
+import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
+import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
 
 export default async function TripExpensesPage({
   params,
@@ -26,6 +28,14 @@ export default async function TripExpensesPage({
   const supabase = await createClient();
   const isPremium = await getCachedTripPremium(tripId, access.userId);
 
+  let budgetTarget: number | null = null;
+  try {
+    const loaded = await loadTripSettingsRow(supabase, tripId);
+    budgetTarget = parseTripBudgetTarget(loaded.data?.budget_target);
+  } catch {
+    budgetTarget = null;
+  }
+
   return (
     <main className="space-y-6">
       <TripBoardPageHeader
@@ -37,7 +47,12 @@ export default async function TripExpensesPage({
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripExpensesView tripId={tripId} isPremium={isPremium} canManageExpenses={access.can_manage_expenses} />
+      <TripExpensesView
+        tripId={tripId}
+        isPremium={isPremium}
+        canManageExpenses={access.can_manage_expenses}
+        budgetTarget={budgetTarget}
+      />
     </main>
   );
 }
