@@ -26,6 +26,11 @@ export async function GET(_request: Request, context: { params: { token: string 
       return NextResponse.json({ error: "Enlace caducado" }, { status: 410 });
     }
 
+    const kind = (share as { share_kind?: string }).share_kind;
+    if (kind === "recap") {
+      return NextResponse.json({ error: "Usa el enlace de recap público." }, { status: 400 });
+    }
+
     const tripId = String(share.trip_id);
     const [{ data: trip }, { data: activities }] = await Promise.all([
       supabase.from("trips").select("id, name, destination, start_date, end_date").eq("id", tripId).maybeSingle(),

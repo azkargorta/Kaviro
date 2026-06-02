@@ -38,9 +38,9 @@ export default function PricingComparisonTable() {
           <span className="text-center">Gratis</span>
           <span className="text-center text-[var(--brand)]">Premium</span>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-[#1E293B]">
-          {PRICING_COMPARISON_ROWS.map((row, idx) => (
-            <Reveal key={row.feature} variant="fade" delay={(idx % 4) as 0 | 1 | 2 | 3}>
+        <div className="divide-y divide-slate-100 motion-stagger-list dark:divide-[#1E293B]">
+          {PRICING_COMPARISON_ROWS.map((row) => (
+            <Reveal key={row.feature} variant="slide" className="motion-stagger-item">
               <div className="grid grid-cols-[1fr_88px_88px] items-center px-6 py-3">
                 <span className="text-sm text-slate-700 dark:text-slate-300">{row.feature}</span>
                 <Cell value={row.free} />

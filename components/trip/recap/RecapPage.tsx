@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Download, ImagePlus, X, Loader2, MapPin } from "lucide-react";
 import html2canvas from "html2canvas";
+import RecapShareButton from "@/components/trip/recap/RecapShareButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -605,6 +606,14 @@ export default function RecapPage(props: RecapData) {
                   💡 Este estilo luce mejor con una foto de fondo.
                 </p>
               )}
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Compartir enlace</h2>
+              <RecapShareButton tripId={tripId} />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Cualquiera con el enlace verá las estadísticas del viaje (actividades, gastos, participantes).
+              </p>
             </div>
 
             {/* Download */}

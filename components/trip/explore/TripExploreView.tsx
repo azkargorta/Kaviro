@@ -4,8 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
-import { MapPin, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { FolderPlus, MapPin, Plus, RefreshCcw } from "lucide-react";
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
+
+type PlaceFolder = {
+  id: string;
+  trip_id: string;
+  name: string;
+  color: string | null;
+};
 
 type PlaceRow = {
   id: string;
@@ -168,6 +175,11 @@ export default function TripExploreView({
 }) {
 
   const [places, setPlaces] = useState<PlaceRow[]>([]);
+  const [folders, setFolders] = useState<PlaceFolder[]>([]);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [savingFolder, setSavingFolder] = useState(false);
+  const [savingPlace, setSavingPlace] = useState(false);
 
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [visiblePlanKinds, setVisiblePlanKinds] = useState<Record<string, boolean>>({});
@@ -194,13 +206,18 @@ export default function TripExploreView({
 
   async function loadAll() {
     setError(null);
-    const pRes = await fetch(`/api/trip-places?tripId=${encodeURIComponent(tripId)}`);
-    const aRes = await fetch(`/api/trip-activities?tripId=${encodeURIComponent(tripId)}`);
+    const [pRes, fRes, aRes] = await Promise.all([
+      fetch(`/api/trip-places?tripId=${encodeURIComponent(tripId)}`),
+      fetch(`/api/trip-place-folders?tripId=${encodeURIComponent(tripId)}`),
+      fetch(`/api/trip-activities?tripId=${encodeURIComponent(tripId)}`),
+    ]);
     const pJson = await pRes.json().catch(() => null);
+    const fJson = await fRes.json().catch(() => null);
     const aJson = await aRes.json().catch(() => null);
     if (!pRes.ok) throw new Error(pJson?.error || "No se pudieron cargar lugares.");
     if (!aRes.ok) throw new Error(aJson?.error || "No se pudieron cargar los planes.");
     setPlaces(Array.isArray(pJson?.places) ? pJson.places : []);
+    setFolders(Array.isArray(fJson?.folders) ? fJson.folders : []);
     const activities = Array.isArray(aJson?.activities) ? (aJson.activities as any[]) : [];
     const normalizedPlans: PlanRow[] = activities.map((a: any) => ({
       id: String(a.id),
@@ -221,7 +238,64 @@ export default function TripExploreView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
-  const visiblePlaces = useMemo(() => places, [places]);
+  const visiblePlaces = useMemo(() => {
+    if (!activeFolderId) return places;
+    return places.filter((p) => p.folder_id === activeFolderId);
+  }, [places, activeFolderId]);
+
+  async function createFolder() {
+    const name = newFolderName.trim();
+    if (!name || savingFolder) return;
+    setSavingFolder(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/trip-place-folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId, name }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || "No se pudo crear la carpeta.");
+      setNewFolderName("");
+      await loadAll();
+      const id = json?.folder?.id;
+      if (typeof id === "string") setActiveFolderId(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al crear carpeta");
+    } finally {
+      setSavingFolder(false);
+    }
+  }
+
+  async function savePendingPlace() {
+    if (!pending || savingPlace) return;
+    setSavingPlace(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/trip-places", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tripId,
+          folderId: activeFolderId,
+          name: pending.name || pending.address || "Lugar",
+          address: pending.address,
+          latitude: pending.latitude,
+          longitude: pending.longitude,
+          category: pending.category,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || "No se pudo guardar.");
+      setPending(null);
+      setQuery("");
+      await loadAll();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al guardar");
+    } finally {
+      setSavingPlace(false);
+    }
+  }
 
   const planKinds = useMemo(() => {
     // Mezcla: tipos que existen en planes + tipos creados manualmente (para que se vean renombres/catálogos).
@@ -488,6 +562,15 @@ export default function TripExploreView({
               </div>
 
               <div className="mt-3 grid gap-3">
+                <button
+                  type="button"
+                  disabled={savingPlace}
+                  onClick={() => void savePendingPlace()}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  {savingPlace ? "Guardando…" : activeFolderId ? "Guardar en carpeta" : "Guardar lugar"}
+                </button>
                 {onCreatePlan ? (
                   <button
                     type="button"
@@ -501,7 +584,7 @@ export default function TripExploreView({
                         longitude: pending.longitude ?? null,
                       });
                     }}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
                     title="Crear un plan con este lugar (se abrirá el formulario)"
                   >
                     Crear plan con este lugar
@@ -510,6 +593,56 @@ export default function TripExploreView({
               </div>
             </div>
           ) : null}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <div className="text-sm font-extrabold text-slate-950">Carpetas</div>
+          <p className="mt-1 text-xs text-slate-500">Agrupa restaurantes, hoteles candidatos, etc.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveFolderId(null)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                activeFolderId === null
+                  ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Todos ({places.length})
+            </button>
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setActiveFolderId(f.id)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                  activeFolderId === f.id
+                    ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {f.name} ({places.filter((p) => p.folder_id === f.id).length})
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Nueva carpeta…"
+              className="min-h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm dark:border-[#334155] dark:bg-[#080C14]"
+            />
+            <button
+              type="button"
+              disabled={savingFolder || !newFolderName.trim()}
+              onClick={() => void createFolder()}
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <FolderPlus className="h-4 w-4" aria-hidden />
+              Crear
+            </button>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
