@@ -11,12 +11,17 @@ import {
 } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
 
-const NAV = [
+const NAV: Array<{
+  href: string;
+  label: string;
+  icon: typeof LayoutGrid;
+  exact?: boolean;
+}> = [
   { href: "/agency", label: "Mis viajes", icon: LayoutGrid, exact: true },
   { href: "/agency/templates", label: "Plantillas", icon: Layers },
   { href: "/agency/team", label: "Equipo", icon: Users },
   { href: "/agency/branding", label: "Branding", icon: Palette },
-] as const;
+];
 
 export default function AgencySidebar({ agency }: { agency: AgencyRow }) {
   const pathname = usePathname();
@@ -39,7 +44,8 @@ export default function AgencySidebar({ agency }: { agency: AgencyRow }) {
 
       <nav className="flex gap-1 overflow-x-auto px-2 py-3 md:flex-col md:overflow-visible md:px-3">
         {NAV.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
+          const active =
+            item.exact === true ? pathname === item.href : Boolean(pathname?.startsWith(item.href));
           const Icon = item.icon;
           return (
             <Link
