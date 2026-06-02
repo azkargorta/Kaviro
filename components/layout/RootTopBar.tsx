@@ -57,7 +57,11 @@ export default function RootTopBar() {
     };
   }, [pathname]);
 
+  const isAgencyShell =
+    pathname === "/empresa" || pathname?.startsWith("/empresa/") || pathname?.startsWith("/agency");
+
   const showOnPath =
+    !isAgencyShell &&
     LOGGED_IN_SHELL_PREFIXES.some((prefix) => pathname?.startsWith(prefix)) &&
     !pathname?.startsWith("/trip/");
 

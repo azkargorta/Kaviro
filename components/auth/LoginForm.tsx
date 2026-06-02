@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signInWithEmail } from "@/lib/auth";
 import KaviroLoadingScreen from "@/components/brand/KaviroLoadingScreen";
+import { defaultLoginNext, parseWorkspaceModeParam, WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 
 function welcomeLabel(username: string | null, email: string) {
   if (username) return `@${username}`;
@@ -15,7 +16,9 @@ function welcomeLabel(username: string | null, email: string) {
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const mode = parseWorkspaceModeParam(searchParams.get("mode"));
+  const next = searchParams.get("next") || defaultLoginNext(mode);
+  const isAgencyLogin = mode === "agency";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,7 +69,13 @@ export default function LoginForm() {
       const label = welcomeLabel(me?.username ?? null, me?.email || email);
       setWelcomeName(label);
 
-      const dest = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+      try {
+        localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, isAgencyLogin ? "agency" : "personal");
+      } catch {
+        /* */
+      }
+      const dest =
+        next.startsWith("/") && !next.startsWith("//") ? next : defaultLoginNext(mode);
       window.setTimeout(() => {
         window.location.assign(dest);
       }, 1800);
@@ -152,12 +161,24 @@ export default function LoginForm() {
           disabled={loading}
           className="btn-press w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
-          {loading ? "Entrando..." : "Iniciar sesión"}
+          {loading ? "Entrando..." : isAgencyLogin ? "Entrar al panel" : "Iniciar sesión"}
         </button>
       </form>
 
       {/* LINKS */}
       <div className="flex flex-col gap-2 text-sm text-slate-600">
+        {isAgencyLogin ? (
+          <Link href="/auth/login" className="text-center text-slate-500 hover:text-slate-700 dark:text-slate-300">
+            Acceso como viajero (modo personal)
+          </Link>
+        ) : (
+          <Link
+            href="/empresa"
+            className="text-center font-semibold text-[#1e3a5f] hover:underline dark:text-sky-300"
+          >
+            ¿Eres agencia u organizador? Entra aquí
+          </Link>
+        )}
         <Link
           href="/auth/forgot-password"
           className="text-center text-slate-500 hover:text-slate-700 dark:text-slate-300"
@@ -165,12 +186,14 @@ export default function LoginForm() {
           ¿Olvidaste tu contraseña?
         </Link>
 
-        <Link
-          href="/auth/register"
-          className="text-center font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]"
-        >
-          Crear cuenta
-        </Link>
+        {!isAgencyLogin ? (
+          <Link
+            href="/auth/register"
+            className="text-center font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]"
+          >
+            Crear cuenta
+          </Link>
+        ) : null}
       </div>
     </div>
   );

@@ -31,11 +31,31 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 - Import dossier IA (`agencyCalendarParse`)
 - Premium por viaje / usuario (`lib/entitlements.ts`)
 
+## Entrada: modo personal vs modo empresa
+
+| Acceso | URL | Destino tras login |
+|--------|-----|-------------------|
+| **Viajero (B2C)** | `kaviro.app/auth/login` | `/dashboard` |
+| **Agencia (B2B)** | `kaviro.app/empresa` → «Entrar al panel» | `/auth/login?mode=agency&next=/agency` → `/agency` |
+
+- **`/empresa`**: landing pública solo para agencias (sin mezclar con el home de viajeros).
+- **`/agency/*`**: shell propio (sidebar azul marino, sin barra coral del dashboard).
+- **Conmutador**: en el panel agencia → «Modo personal»; en el menú cuenta del dashboard → «Panel de agencia» (si eres miembro).
+- **`localStorage` `kaviro_workspace_mode`**: recuerda el último contexto (`personal` | `agency`).
+
+Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso** (`agency_members` + `trips.agency_id`).
+
+## Código del Bloque 2 (en repo)
+
+- `app/agency/` — panel (viajes, equipo, branding, plantillas stub)
+- `app/empresa/` — landing de acceso
+- `app/api/agencies/me` — ¿tengo agencia?
+- `app/api/agencies/trips` — crear viaje con `agency_id`
+- `lib/require-agency.ts`, `lib/workspace-mode.ts`
+
 ## Próximo código
 
-- `lib/agency.ts` — helpers servidor
-- `app/agency/page.tsx` — lista de viajes por `agency_id`
-- `app/client/[agency]/[trip]/page.tsx` — portal con branding
+- `app/client/[agency]/[trip]/page.tsx` — portal con branding (Bloque 4)
 
 ## Precio orientativo
 

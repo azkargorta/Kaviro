@@ -11,6 +11,7 @@ import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSe
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
+import DashboardAgencyBanner from "@/components/dashboard/DashboardAgencyBanner";
 import PushNotificationPrompt from "@/components/pwa/PushNotificationPrompt";
 import DashboardOfflineRegistry, {
   DashboardOfflinePanel,
@@ -255,6 +256,10 @@ export default async function DashboardPage() {
         }))}
       />
       <DashboardOfflinePanel />
+
+      <div className="mx-auto max-w-2xl px-4">
+        <DashboardAgencyBanner />
+      </div>
 
       <DashboardTripInvitesInbox />
 

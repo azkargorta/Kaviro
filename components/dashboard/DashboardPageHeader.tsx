@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle, Menu, Shield, Tag, User } from "lucide-react";
+import { Briefcase, HelpCircle, Menu, Shield, Tag, User } from "lucide-react";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { iconInline16 } from "@/components/ui/iconTokens";
 
@@ -17,6 +17,7 @@ type MenuAnchor = { top: number; right: number };
 export default function DashboardPageHeader({ isAdmin: isAdminProp, heroMode = false }: Props) {
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(Boolean(isAdminProp));
+  const [hasAgency, setHasAgency] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -39,6 +40,21 @@ export default function DashboardPageHeader({ isAdmin: isAdminProp, heroMode = f
       cancelled = true;
     };
   }, [isAdminProp]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/agencies/me", { credentials: "include", cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: { ok?: boolean; agency?: unknown }) => {
+        if (!cancelled) setHasAgency(Boolean(data.ok && data.agency));
+      })
+      .catch(() => {
+        if (!cancelled) setHasAgency(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +121,14 @@ export default function DashboardPageHeader({ isAdmin: isAdminProp, heroMode = f
       className="w-max min-w-[13.5rem] max-w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-slate-200/90 bg-white py-1.5 shadow-xl ring-1 ring-slate-900/[0.06] dark:border-[#1E293B] dark:bg-[#0F1623]"
     >
       <div className="px-1.5" onClick={() => setOpen(false)}>
+        {hasAgency ? (
+          <Link href="/agency" role="menuitem" className={`${dropItem} text-[#1e3a5f] dark:text-sky-200`}>
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] text-white shadow-sm">
+              <Briefcase className={iconInline16} aria-hidden />
+            </span>
+            Panel de agencia
+          </Link>
+        ) : null}
         {isAdmin ? (
           <Link href="/dashboard/admin" role="menuitem" className={`${dropItem} text-amber-950 dark:text-amber-200`}>
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-700 text-white shadow-sm">
