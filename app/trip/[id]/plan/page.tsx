@@ -47,7 +47,7 @@ export default async function TripPlanPage({
   const initialSelectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
 
   const [{ data: tripRow }, { data: profileRow }, { data: activityRows }, { data: participantRows }] = await Promise.all([
-    supabase.from("trips").select("id, name, destination, start_date, end_date").eq("id", params.id).maybeSingle(),
+    supabase.from("trips").select("id, name, destination, description, start_date, end_date").eq("id", params.id).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("id", access.userId).maybeSingle(),
     supabase
       .from("trip_activities")
