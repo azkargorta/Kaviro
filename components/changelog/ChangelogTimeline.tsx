@@ -3,16 +3,7 @@
 import { Calendar } from "lucide-react";
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
-
-type ReleaseItem = { icon: React.ElementType; text: string };
-
-export type ChangelogRelease = {
-  version: string;
-  date: string;
-  tag: "nuevo" | "mejora" | "fix" | "premium";
-  title: string;
-  items: ReleaseItem[];
-};
+import type { ChangelogRelease } from "@/components/changelog/changelog-data";
 
 type ChangelogTimelineProps = {
   releases: ChangelogRelease[];
