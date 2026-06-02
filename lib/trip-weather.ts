@@ -1,3 +1,7 @@
+import type { TripWeatherStay } from "@/lib/trip-weather-stays";
+import { resolveWeatherCityForDate } from "@/lib/trip-weather-stays";
+import { primaryTripPlace } from "@/lib/trip-places";
+
 export type TripWeatherDay = {
   date: string;
   tempMax: number | null;
@@ -12,6 +16,20 @@ export type TripWeatherDay = {
 export type TripWeatherResult = {
   locationLabel: string;
   days: TripWeatherDay[];
+};
+
+export type TripWeatherCityForecast = {
+  city: string;
+  weather: TripWeatherResult;
+};
+
+export type TripWeatherBundle = {
+  /** Previsión principal (ciudad de hoy o primera del viaje) */
+  primary: TripWeatherResult | null;
+  /** Una previsión por ciudad configurada */
+  byCity: TripWeatherCityForecast[];
+  /** Ciudad activa hoy según tramos de alojamiento */
+  activeCityToday: string | null;
 };
 
 /**
@@ -63,4 +81,36 @@ export async function getTripWeatherByDestination(
   } catch {
     return null;
   }
+}
+
+/** Previsión por ciudades de alojamiento; si no hay tramos, usa el destino del viaje. */
+export async function getTripWeatherBundle(opts: {
+  destination: string | null | undefined;
+  weatherStays?: TripWeatherStay[];
+  todayIso?: string;
+}): Promise<TripWeatherBundle> {
+  const today = opts.todayIso ?? new Date().toISOString().slice(0, 10);
+  const stays = opts.weatherStays ?? [];
+  const cities = new Set<string>();
+
+  if (stays.length) {
+    for (const s of stays) cities.add(s.city.trim());
+  } else {
+    const primary = primaryTripPlace(opts.destination);
+    if (primary) cities.add(primary);
+  }
+
+  const byCity: TripWeatherCityForecast[] = [];
+  for (const city of cities) {
+    const weather = await getTripWeatherByDestination(city);
+    if (weather) byCity.push({ city, weather });
+  }
+
+  const activeCityToday = stays.length ? resolveWeatherCityForDate(stays, today) : primaryTripPlace(opts.destination) || null;
+  const primary =
+    (activeCityToday && byCity.find((c) => c.city === activeCityToday)?.weather) ||
+    byCity[0]?.weather ||
+    null;
+
+  return { primary, byCity, activeCityToday };
 }

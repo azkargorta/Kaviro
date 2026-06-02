@@ -8,7 +8,8 @@ import TripSummaryOverview, {
   type TripSummaryTabDef,
 } from "@/components/trip/summary/TripSummaryOverview";
 import { getCachedTripPremium } from "@/lib/entitlements";
-import { getTripWeatherByDestination } from "@/lib/trip-weather";
+import { getTripWeatherBundle } from "@/lib/trip-weather";
+import { normalizeWeatherStays } from "@/lib/trip-weather-stays";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
 import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
 
@@ -140,7 +141,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   ] = await Promise.all([
     supabase
       .from("trips")
-      .select("id, name, destination, start_date, end_date, base_currency, budget_target, is_demo")
+      .select("id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays, is_demo")
       .eq("id", tripId)
       .maybeSingle(),
     supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
@@ -229,9 +230,15 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       }
     : null;
 
-  const weather = await getTripWeatherByDestination(currentTrip.destination);
-  const destTrim = (currentTrip.destination ?? "").trim();
-  const weatherHint = !destTrim ? "no-destination" : !weather ? "unavailable" : "ok";
+  const weatherStays = normalizeWeatherStays((currentTrip as { weather_stays?: unknown }).weather_stays);
+  const weatherBundle = await getTripWeatherBundle({
+    destination: currentTrip.destination,
+    weatherStays,
+  });
+  const weather = weatherBundle.primary;
+  const hasPlace =
+    weatherStays.length > 0 || Boolean((currentTrip.destination ?? "").trim());
+  const weatherHint = !hasPlace ? "no-destination" : !weather ? "unavailable" : "ok";
 
   const lastExpenseTitle =
     typeof (lastExpenseRow as { title?: string } | null)?.title === "string"
@@ -374,6 +381,8 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         tripId={tripId}
         tripName={currentTrip.name}
         weather={weather}
+        weatherByCity={weatherBundle.byCity}
+        activeWeatherCity={weatherBundle.activeCityToday}
         weatherHint={weatherHint}
         todayLabel={todayLabel}
         plansToday={plansToday}

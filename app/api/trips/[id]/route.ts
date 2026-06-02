@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePermissions, normalizeRole } from "@/lib/permissions";
+import { normalizeWeatherStays, validateWeatherStays } from "@/lib/trip-weather-stays";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -122,7 +123,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const body = await request.json().catch(() => null);
     const wantsMeta =
       body &&
-      ("destination" in body || "start_date" in body || "end_date" in body || "base_currency" in body || "budget_target" in body || "name" in body);
+      ("destination" in body ||
+        "start_date" in body ||
+        "end_date" in body ||
+        "base_currency" in body ||
+        "budget_target" in body ||
+        "name" in body ||
+        "weather_stays" in body);
     const wantsDescription = body && "description" in body;
 
     if (!wantsMeta && !wantsDescription) {
@@ -166,6 +173,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         patch.budget_target = typeof body.budget_target === "number" && body.budget_target > 0
           ? body.budget_target : null;
       }
+
+      if ("weather_stays" in body) {
+        const stays = normalizeWeatherStays(body.weather_stays);
+        const stayErr = validateWeatherStays(
+          stays,
+          (patch.start_date as string | null | undefined) ?? start_date,
+          (patch.end_date as string | null | undefined) ?? end_date
+        );
+        if (stayErr) return NextResponse.json({ error: stayErr }, { status: 400 });
+        patch.weather_stays = stays;
+      }
     }
 
     if (wantsDescription) {
@@ -178,15 +196,27 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     }
 
     const selectCols = wantsDescription
-      ? "id, name, destination, start_date, end_date, base_currency, description"
-      : "id, name, destination, start_date, end_date, base_currency";
+      ? "id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays, description"
+      : "id, name, destination, start_date, end_date, base_currency, budget_target, weather_stays";
 
-    const { data, error } = await supabase
-      .from("trips")
-      .update(patch)
-      .eq("id", tripId)
-      .select(selectCols)
-      .single();
+    let { data, error } = await supabase.from("trips").update(patch).eq("id", tripId).select(selectCols).single();
+
+    if (error?.message?.includes("weather_stays") && "weather_stays" in patch) {
+      const { weather_stays: _ws, ...patchWithoutStays } = patch;
+      const fbCols = wantsDescription
+        ? "id, name, destination, start_date, end_date, base_currency, budget_target, description"
+        : "id, name, destination, start_date, end_date, base_currency, budget_target";
+      const fb = await supabase.from("trips").update(patchWithoutStays).eq("id", tripId).select(fbCols).single();
+      data = fb.data;
+      error = fb.error;
+      if (!error && data) {
+        return NextResponse.json({
+          trip: data,
+          warning: "Ejecuta docs/kaviro_trips_weather_stays.sql en Supabase para guardar ciudades por fecha.",
+        });
+      }
+    }
+
     if (error) throw new Error(error.message);
 
     return NextResponse.json({ trip: data });

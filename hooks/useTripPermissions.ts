@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useMemo, useState } from "react";
 import {
   normalizePermissions,
   normalizeRole,
@@ -20,61 +19,68 @@ export function useTripPermissions(tripId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [participant, setParticipant] = useState<TripPermissionParticipant | null>(null);
-  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    let isMounted = true;
-    requestIdRef.current += 1;
-    const requestId = requestIdRef.current;
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12_000);
 
     async function load() {
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       try {
         setLoading(true);
         setError(null);
 
-        timeoutId = setTimeout(() => {
-          if (!isMounted) return;
-          if (requestIdRef.current !== requestId) return;
-          setError("Tiempo de espera cargando permisos. Reintenta o recarga la página.");
-          setLoading(false);
-        }, 8000);
+        const res = await fetch(`/api/trips/${encodeURIComponent(tripId)}/access`, {
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(json?.error || "No se pudieron cargar los permisos");
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        const userId = session?.user?.id ?? null;
-
-        if (!userId) {
-          if (isMounted) setParticipant(null);
+        const access = json?.access as Record<string, unknown> | undefined;
+        if (!access) {
+          if (!cancelled) setParticipant(null);
           return;
         }
 
-        const { data, error } = await supabase
-          .from("trip_participants")
-          .select(
-            "id, trip_id, user_id, role, can_manage_trip, can_manage_participants, can_manage_expenses, can_manage_plan, can_manage_map, can_manage_resources"
-          )
-          .eq("trip_id", tripId)
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (error) throw error;
-        if (isMounted) setParticipant((data as TripPermissionParticipant | null) ?? null);
+        const role = normalizeRole(typeof access.role === "string" ? access.role : null);
+        if (!cancelled) {
+          setParticipant({
+            id: "api",
+            trip_id: tripId,
+            user_id: null,
+            role,
+            can_manage_trip: Boolean(access.can_manage_trip),
+            can_manage_participants: Boolean(access.can_manage_participants),
+            can_manage_expenses: Boolean(access.can_manage_expenses),
+            can_manage_plan: Boolean(access.can_manage_plan),
+            can_manage_map: Boolean(access.can_manage_map),
+            can_manage_resources: Boolean(access.can_manage_resources),
+          });
+        }
       } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "No se pudieron cargar los permisos");
+        if (!cancelled) {
+          const msg =
+            err instanceof Error && err.name === "AbortError"
+              ? "Tiempo de espera cargando permisos. Reintenta o recarga la página."
+              : err instanceof Error
+                ? err.message
+                : "No se pudieron cargar los permisos";
+          setError(msg);
+          setParticipant(null);
         }
       } finally {
-        if (timeoutId) clearTimeout(timeoutId);
-        if (isMounted && requestIdRef.current === requestId) setLoading(false);
+        window.clearTimeout(timeoutId);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    load();
+    void load();
     return () => {
-      isMounted = false;
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
     };
   }, [tripId]);
 

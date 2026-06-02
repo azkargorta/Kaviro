@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import KaviroMark from "@/components/brand/KaviroMark";
 import { useState } from "react";
-import type { TripWeatherResult } from "@/lib/trip-weather";
+import type { TripWeatherCityForecast, TripWeatherResult } from "@/lib/trip-weather";
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
@@ -129,6 +129,8 @@ export default function TripSummaryOverview({
   tripId,
   tripName,
   weather,
+  weatherByCity = [],
+  activeWeatherCity = null,
   weatherHint,
   todayLabel,
   plansToday,
@@ -148,6 +150,8 @@ export default function TripSummaryOverview({
   tripId: string;
   tripName?: string | null;
   weather: TripWeatherResult | null;
+  weatherByCity?: TripWeatherCityForecast[];
+  activeWeatherCity?: string | null;
   weatherHint: "ok" | "no-destination" | "unavailable";
   todayLabel: string;
   plansToday: Array<TripSummaryActivityPreview & { isPast: boolean }>;
@@ -168,6 +172,14 @@ export default function TripSummaryOverview({
   const planHref = `/trip/${tripId}/plan`;
   const phase = tripPhase(tripStartDate, tripEndDate);
   const today = todayYMD();
+
+  const [selectedWeatherCity, setSelectedWeatherCity] = useState<string | null>(
+    activeWeatherCity || weatherByCity[0]?.city || null
+  );
+
+  const displayedWeather =
+    weatherByCity.find((c) => c.city === selectedWeatherCity)?.weather ??
+    weather;
 
   // Countdown / progress data
   const daysUntilStart = tripStartDate && phase === "before"
@@ -381,17 +393,40 @@ export default function TripSummaryOverview({
 
           {weatherHint === "no-destination" ? (
             <p className="text-sm text-slate-500 dark:text-slate-300">
-              Añade un <span className="font-semibold text-slate-800 dark:text-slate-100">destino</span> al viaje para ver el clima.
+              Configura las{" "}
+              <Link href={`/trip/${tripId}/settings#clima`} className="font-semibold text-sky-700 underline dark:text-sky-300">
+                ciudades y fechas en Ajustes
+              </Link>{" "}
+              para ver el clima.
             </p>
           ) : weatherHint === "unavailable" ? (
             <p className="text-sm text-slate-500 dark:text-slate-300">No se pudo obtener la previsión. Revisa que el destino sea reconocible.</p>
-          ) : weather && weather.days.length ? (
+          ) : displayedWeather && displayedWeather.days.length ? (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{weather.locationLabel}</p>
+              {weatherByCity.length > 1 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {weatherByCity.map((entry) => (
+                    <button
+                      key={entry.city}
+                      type="button"
+                      onClick={() => setSelectedWeatherCity(entry.city)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                        selectedWeatherCity === entry.city
+                          ? "border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/50 dark:text-sky-100"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300"
+                      }`}
+                    >
+                      {entry.city}
+                      {entry.city === activeWeatherCity ? " · hoy" : ""}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{displayedWeather.locationLabel}</p>
 
               {/* Today highlight */}
               {(() => {
-                const todayW = weather.days.find((d) => d.date === today);
+                const todayW = displayedWeather.days.find((d) => d.date === today);
                 const vis = todayW ? wmoWeatherVisual(todayW.code) : null;
                 if (!todayW || !vis) return null;
                 return (
@@ -427,7 +462,7 @@ export default function TripSummaryOverview({
               {/* All days — horizontal scroll with precipitation */}
               <div className="overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollSnapType: "x mandatory" }}>
                 <div className="flex gap-2" style={{ width: "max-content" }}>
-                  {weather.days.map((day) => {
+                  {displayedWeather.days.map((day) => {
                     const vis = wmoWeatherVisual(day.code);
                     const isToday = day.date === today;
                     const prob = (day as any).precipProb as number | null;
