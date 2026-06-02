@@ -22,6 +22,7 @@ type TripRow = {
   start_date: string | null;
   end_date: string | null;
   base_currency: string | null;
+  budget_target?: number | null;
 };
 
 type ActivityRow = {
@@ -255,11 +256,9 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     (expenseAmountRows ?? []) as Array<{ amount: unknown; currency: string | null }>,
     baseCurrency
   );
+  const rawBudget = currentTrip.budget_target;
   const budgetTarget =
-    typeof (currentTrip as { budget_target?: unknown }).budget_target === "number" &&
-    (currentTrip as { budget_target: number }).budget_target > 0
-      ? (currentTrip as { budget_target: number }).budget_target
-      : null;
+    typeof rawBudget === "number" && Number.isFinite(rawBudget) && rawBudget > 0 ? rawBudget : null;
   const totalSpentInBase = expenseSums.get(baseCurrency.toUpperCase()) ?? 0;
   const expenseMultiCurrency = expenseSums.size > 1;
 
