@@ -7,6 +7,14 @@ import { ImagePlus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import type { AgencyBranding } from "@/lib/agency";
 import { clientPortalPath } from "@/lib/agency";
+import {
+  AGENCY_NAVY_DARK,
+  agencyBtnPrimaryClass,
+  agencyCardClass,
+  agencyInputClass,
+  agencyPageSubtitleClass,
+  agencyPageTitleClass,
+} from "@/lib/agency-theme";
 
 const PRESET_COLORS = ["#1e3a5f", "#0f2744", "#1d4ed8", "#047857", "#b45309", "#be123c", "#6d28d9"];
 
@@ -106,8 +114,8 @@ export default function AgencyBrandingForm({ agencySlug, initial, canEdit }: Pro
   return (
     <div className="space-y-8 max-w-xl">
       <div>
-        <h1 className="text-2xl font-black text-slate-950 dark:text-white">Branding</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <h1 className={agencyPageTitleClass}>Branding</h1>
+        <p className={agencyPageSubtitleClass}>
           Logo, color y contacto que verán tus clientes en el{" "}
           <span className="font-semibold">portal cliente</span>.
         </p>
@@ -121,7 +129,7 @@ export default function AgencyBrandingForm({ agencySlug, initial, canEdit }: Pro
       <div
         className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-[#334155]"
         style={{
-          background: `linear-gradient(90deg, ${brandColor} 0%, #0f2744 100%)`,
+          background: `linear-gradient(90deg, ${brandColor} 0%, ${AGENCY_NAVY_DARK} 100%)`,
         }}
       >
         <div className="flex items-start gap-3 p-4 text-white">
@@ -146,7 +154,7 @@ export default function AgencyBrandingForm({ agencySlug, initial, canEdit }: Pro
 
       {canEdit ? (
         <form onSubmit={handleSave} className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-[#334155] dark:bg-[#0B1220]">
+          <section className={`${agencyCardClass} p-5`}>
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">Logo</h2>
             <p className="mt-1 text-xs text-slate-500">PNG, JPG, WebP o SVG · máx. 2 MB</p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -164,7 +172,7 @@ export default function AgencyBrandingForm({ agencySlug, initial, canEdit }: Pro
                   type="button"
                   disabled={uploading}
                   onClick={() => fileRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a5f] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                  className={`${agencyBtnPrimaryClass} gap-2 px-4 py-2 text-xs disabled:opacity-50`}
                 >
                   <ImagePlus className="h-4 w-4" aria-hidden />
                   {uploading ? "Subiendo…" : "Subir logo"}
@@ -191,7 +199,7 @@ export default function AgencyBrandingForm({ agencySlug, initial, canEdit }: Pro
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 dark:border-[#334155] dark:bg-[#0B1220]">
+          <section className={`${agencyCardClass} space-y-4 p-5`}>
             <div>
               <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                 Nombre de la agencia
@@ -254,7 +262,7 @@ export default function AgencyBrandingForm({ agencySlug, initial, canEdit }: Pro
           <button
             type="submit"
             disabled={saving || uploading}
-            className="rounded-xl bg-[#1e3a5f] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            className={`${agencyBtnPrimaryClass} disabled:opacity-50`}
           >
             {saving ? "Guardando…" : "Guardar cambios"}
           </button>

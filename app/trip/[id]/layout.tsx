@@ -16,6 +16,7 @@ import TripAgencyRouteGuard from "@/components/trip/TripAgencyRouteGuard";
 import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
 import { clientPortalPath } from "@/lib/agency";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
+import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -80,7 +81,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
           <TripOfflineSync tripId={params.id} />
           <div
             className={`pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
-              workspace.isAgencyTrip ? "trip-workspace-agency" : ""
+              workspace.isAgencyTrip ? KAVIRO_TRIPS_WORKSPACE_CLASS : ""
             }`}
           >
             <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">

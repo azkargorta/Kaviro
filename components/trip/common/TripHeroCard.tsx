@@ -3,6 +3,7 @@ import KaviroTripHeroLockup from "@/components/brand/KaviroTripHeroLockup";
 import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
+import { agencyHeroGradient } from "@/lib/agency-theme";
 import { ExternalLink } from "lucide-react";
 
 function initials(name: string) {
@@ -45,7 +46,7 @@ export default function TripHeroCard({
       className={`relative shadow-sm ${isAgencyTrip ? "rounded-lg" : "rounded-2xl"}`}
       style={{
         background: isAgencyTrip
-          ? "linear-gradient(90deg, #1e3a5f 0%, #0f2744 100%)"
+          ? agencyHeroGradient
           : "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)",
       }}
     >

@@ -33,6 +33,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
   return (
     <AuthShell
+      variant={isAgency ? "agency" : "personal"}
       title={isAgency ? KAVIRO_TRIPS_PRODUCT_NAME : "Iniciar sesión"}
       subtitle={
         isAgency

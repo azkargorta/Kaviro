@@ -39,7 +39,8 @@ Capa B2B encima de Kaviro (B2C): la agencia gestiona viajes en `/agency`, el cli
 | **Kaviro Trips (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | `/auth/login?mode=agency` → `/agency` solo con `agency_members` |
 
 - **`/empresa`**: landing pública de Kaviro Trips (sin mezclar con el home de viajeros).
-- **`/agency/*`**: panel Kaviro Trips (sidebar azul marino, sin barra coral del dashboard).
+- **`/agency/*`**: panel Kaviro Trips (clase CSS `kaviro-trips-workspace`: tokens navy en botones y acentos).
+- **Login B2B**: `/auth/login?mode=agency` — panel izquierdo navy (no coral).
 - **Conmutador**: en el panel → «Modo personal»; en el dashboard → «Kaviro Trips» (si eres miembro).
 - **`localStorage` `kaviro_workspace_mode`**: recuerda el último contexto (`personal` | `agency`).
 

@@ -9,6 +9,7 @@ import {
   loadAgencyClientPortal,
 } from "@/lib/load-agency-client-portal";
 import { APP_NAME } from "@/lib/brand";
+import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 
 type Props = {
   params: { agency: string; trip: string };
@@ -41,7 +42,9 @@ export default async function ClientPortalPage({ params }: Props) {
     : null;
 
   return (
-    <main className="min-h-[100svh] bg-slate-50 dark:bg-[#080C14]">
+    <main
+      className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} min-h-[100svh] bg-slate-50 dark:bg-[#080C14]`}
+    >
       <ClientPortalHeader
         branding={branding}
         tripName={data.trip.name || "Viaje"}

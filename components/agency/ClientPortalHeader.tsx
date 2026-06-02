@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { AgencyBranding } from "@/lib/agency";
+import { AGENCY_NAVY_DARK } from "@/lib/agency-theme";
 
 type Props = {
   branding: AgencyBranding;
@@ -20,7 +21,7 @@ export default function ClientPortalHeader({
     <header
       className="sticky top-0 z-40 border-b border-white/10 shadow-md"
       style={{
-        background: `linear-gradient(90deg, ${branding.brandColor} 0%, #0f2744 100%)`,
+        background: `linear-gradient(90deg, ${branding.brandColor} 0%, ${AGENCY_NAVY_DARK} 100%)`,
       }}
     >
       <div className="mx-auto max-w-[980px] px-safe-inline py-4 sm:px-6">

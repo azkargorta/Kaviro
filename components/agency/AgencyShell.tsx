@@ -9,7 +9,7 @@ import SignOutButton from "@/components/auth/SignOutButton";
 import { WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 import type { AgencyRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
-import { agencyPanelBgClass } from "@/lib/agency-theme";
+import { agencyPanelBgClass, KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 import { ArrowLeftRight } from "lucide-react";
 
 export default function AgencyShell({
@@ -30,7 +30,9 @@ export default function AgencyShell({
   }, [pathname]);
 
   return (
-    <div className={`flex min-h-[100dvh] flex-col md:flex-row ${agencyPanelBgClass}`}>
+    <div
+      className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} flex min-h-[100dvh] flex-col md:flex-row ${agencyPanelBgClass}`}
+    >
       <AgencySidebar agency={agency} />
 
       <div className="flex min-w-0 flex-1 flex-col">

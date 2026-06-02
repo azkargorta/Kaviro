@@ -8,6 +8,7 @@ import {
   KAVIRO_TRIPS_TAGLINE,
 } from "@/lib/brand";
 import { Mail } from "lucide-react";
+import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 
 type Props = {
   hasAgency: boolean;
@@ -20,7 +21,7 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
   const mailto = agencyPartnershipMailto();
 
   return (
-    <div className="min-h-screen bg-[#0f2744] text-white">
+    <div className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} min-h-screen bg-[#0f2744] text-white`}>
       <div className="border-b border-white/10 bg-[#1e3a5f]">
         <div className="mx-auto max-w-3xl px-safe-inline py-4 sm:px-6">
           <KaviroLogo variant="light" size="md" withWordmark />

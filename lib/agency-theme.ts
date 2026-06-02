@@ -2,6 +2,12 @@
 export const AGENCY_NAVY = "#1e3a5f" as const;
 export const AGENCY_NAVY_DARK = "#0f2744" as const;
 
+/** Aplica tokens --brand navy en panel, viajes de agencia, login B2B y portal. */
+export const KAVIRO_TRIPS_WORKSPACE_CLASS = "kaviro-trips-workspace";
+
+export const agencyHeroGradient = `linear-gradient(90deg, ${AGENCY_NAVY} 0%, ${AGENCY_NAVY_DARK} 100%)`;
+export const agencyHeroGradientDiagonal = `linear-gradient(135deg, ${AGENCY_NAVY} 0%, ${AGENCY_NAVY_DARK} 100%)`;
+
 export const agencyInputClass =
   "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100";
 
@@ -18,3 +24,8 @@ export const agencyCardClass =
   "rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900";
 
 export const agencyPanelBgClass = "min-h-screen bg-slate-100 dark:bg-[#060a12]";
+
+export const agencyPageTitleClass =
+  "text-xl font-semibold tracking-tight text-slate-900 dark:text-white";
+
+export const agencyPageSubtitleClass = "mt-1 text-sm text-slate-600 dark:text-slate-400";

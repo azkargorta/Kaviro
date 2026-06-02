@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import { AGENCY_PARTNERSHIP_EMAIL, agencyPartnershipMailto, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
+import { agencyCardClass, agencyPageSubtitleClass, agencyPageTitleClass } from "@/lib/agency-theme";
 
 type Member = {
   userId: string;
@@ -43,14 +44,14 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
   return (
     <div className="max-w-xl space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-slate-950 dark:text-white">Equipo</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <h1 className={agencyPageTitleClass}>Equipo</h1>
+        <p className={agencyPageSubtitleClass}>
           Personas con acceso al panel de <strong>{agencyName}</strong>. Tu rol:{" "}
           <span className="font-semibold">{yourRole}</span>.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-[#334155] dark:bg-[#0B1220]">
+      <div className={`${agencyCardClass} p-5`}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
             <Users className="h-4 w-4" aria-hidden />

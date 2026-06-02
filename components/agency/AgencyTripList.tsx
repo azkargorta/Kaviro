@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import AgencyTripCard, { type AgencyTripRow } from "@/components/agency/AgencyTripCard";
 import AgencyCreateTripForm from "@/components/agency/AgencyCreateTripForm";
-import { agencyBtnPrimaryClass, agencyBtnSecondaryClass } from "@/lib/agency-theme";
+import {
+  agencyBtnPrimaryClass,
+  agencyBtnSecondaryClass,
+  agencyPageSubtitleClass,
+  agencyPageTitleClass,
+} from "@/lib/agency-theme";
 
 type Filter = "all" | "active" | "upcoming" | "past";
 
@@ -54,8 +59,8 @@ export default function AgencyTripList({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-700">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Viajes</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <h1 className={agencyPageTitleClass}>Viajes</h1>
+          <p className={agencyPageSubtitleClass}>
             Programas y grupos que gestiona tu organización.
           </p>
         </div>
