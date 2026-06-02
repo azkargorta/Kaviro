@@ -75,7 +75,6 @@ export async function POST(
         end_date: null,
         base_currency: trip.base_currency,
         budget_target: trip.budget_target ?? null,
-        description: trip.description ?? null,
       })
       .select("id")
       .single();

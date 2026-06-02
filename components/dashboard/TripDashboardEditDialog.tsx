@@ -171,6 +171,8 @@ export default function TripDashboardEditDialog({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
@@ -181,6 +183,8 @@ export default function TripDashboardEditDialog({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate || undefined}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-slate-200 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>

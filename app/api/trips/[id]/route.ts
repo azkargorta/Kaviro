@@ -177,11 +177,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       patch.description = trimmed.length ? trimmed : null;
     }
 
+    const selectCols = wantsDescription
+      ? "id, name, destination, start_date, end_date, base_currency, description"
+      : "id, name, destination, start_date, end_date, base_currency";
+
     const { data, error } = await supabase
       .from("trips")
       .update(patch)
       .eq("id", tripId)
-      .select("id, name, destination, start_date, end_date, base_currency, description")
+      .select(selectCols)
       .single();
     if (error) throw new Error(error.message);
 

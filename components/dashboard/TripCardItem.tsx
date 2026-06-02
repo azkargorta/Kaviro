@@ -115,13 +115,11 @@ export default function TripCardItem({
   const timelineProgress = tripTimelineProgress(trip.start_date, trip.end_date);
 
   return (
+    <>
     <div
       role={locked ? undefined : "link"}
       tabIndex={locked ? -1 : 0}
-      onClick={(e) => {
-        e.stopPropagation();
-        openTrip();
-      }}
+      onClick={openTrip}
       onKeyDown={(e) => {
         if (locked || editOpen || duplicateOpen) return;
         if (e.key === "Enter" || e.key === " ") {
@@ -275,18 +273,19 @@ export default function TripCardItem({
           <span className="text-xs font-medium text-[var(--brand-text)] dark:text-[#FCA5A5]">Viaje de práctica · no se elimina</span>
         )}
       </div>
-
-      <TripDashboardEditDialog
-        trip={editOpen ? trip : null}
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        onSaved={() => router.refresh()}
-      />
-      <DuplicateTripDialog
-        trip={duplicateOpen ? trip : null}
-        open={duplicateOpen}
-        onClose={() => setDuplicateOpen(false)}
-      />
     </div>
+
+    <TripDashboardEditDialog
+      trip={editOpen ? trip : null}
+      open={editOpen}
+      onClose={() => setEditOpen(false)}
+      onSaved={() => router.refresh()}
+    />
+    <DuplicateTripDialog
+      trip={duplicateOpen ? trip : null}
+      open={duplicateOpen}
+      onClose={() => setDuplicateOpen(false)}
+    />
+    </>
   );
 }
