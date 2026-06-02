@@ -38,6 +38,7 @@ import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
 import TripPlanExploreDrawer, { type ExploreCreatePlanPayload } from "@/components/trip/plan/TripPlanExploreDrawer";
 import TripPlanNotesPanel from "@/components/trip/plan/TripPlanNotesPanel";
 import PlanAttendanceSummary from "@/components/trip/plan/PlanAttendanceSummary";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import { SortableRow } from "@/components/trip/plan/SortableRow";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { activityLikelyNeedsTicket } from "@/lib/trip-plan-ticket-hints";
@@ -291,7 +292,10 @@ export default function TripPlanView({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [exploreOpen, setExploreOpen] = useState(initialExploreOpen);
-  const [workspaceTab, setWorkspaceTab] = useState<"itinerary" | "notes" | "attendance">(initialWorkspaceTab);
+  const { hideSocialFeatures } = useTripWorkspace();
+  const [workspaceTab, setWorkspaceTab] = useState<"itinerary" | "notes" | "attendance">(() =>
+    hideSocialFeatures && initialWorkspaceTab === "attendance" ? "itinerary" : initialWorkspaceTab
+  );
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<Set<string>>(new Set());
   // For demo trips (detected via URL), expand all days by default
@@ -678,16 +682,18 @@ export default function TripPlanView({
         >
           Itinerario
         </button>
-        <button
-          type="button"
-          role="tab"
-          data-tour="plan-attendance-tab"
-          aria-selected={workspaceTab === "attendance"}
-          onClick={() => setWorkspaceTab("attendance")}
-          className={`${chipItemBase} sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
-        >
-          Asistencia
-        </button>
+        {!hideSocialFeatures ? (
+          <button
+            type="button"
+            role="tab"
+            data-tour="plan-attendance-tab"
+            aria-selected={workspaceTab === "attendance"}
+            onClick={() => setWorkspaceTab("attendance")}
+            className={`${chipItemBase} sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
+          >
+            Asistencia
+          </button>
+        ) : null}
         <button
           type="button"
           role="tab"
@@ -705,7 +711,7 @@ export default function TripPlanView({
         </div>
       ) : null}
 
-      {workspaceTab === "attendance" ? (
+      {!hideSocialFeatures && workspaceTab === "attendance" ? (
         <div key="attendance" className="step-enter">
           <PlanAttendanceSummary
             tripId={tripId}

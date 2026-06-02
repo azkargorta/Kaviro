@@ -60,6 +60,29 @@
   --shadow-raised:   0 4px 16px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.4);
 }
 
+/* Kaviro Trips — viaje gestionado por agencia (paleta navy B2B) */
+.trip-workspace-agency {
+  --brand:           #1e3a5f;
+  --brand-hover:     #162d4d;
+  --brand-light:     rgba(30,58,95,0.10);
+  --brand-border:    rgba(30,58,95,0.28);
+  --brand-text:      #1e3a5f;
+  --accent:          #1e3a5f;
+  --accent-hover:    #162d4d;
+  --accent-light:    rgba(30,58,95,0.08);
+}
+
+.dark .trip-workspace-agency {
+  --brand:           #3d6a9e;
+  --brand-hover:     #4a7ab0;
+  --brand-light:     rgba(61,106,158,0.14);
+  --brand-border:    rgba(61,106,158,0.32);
+  --brand-text:      #93c5fd;
+  --accent:          #3d6a9e;
+  --accent-hover:    #4a7ab0;
+  --accent-light:    rgba(61,106,158,0.12);
+}
+
 /* ─── Base ──────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;

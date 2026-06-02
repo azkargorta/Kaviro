@@ -146,9 +146,11 @@ export default function TripSummaryOverview({
   totalSpent,
   currency,
   expenseMultiCurrency,
+  hideWeather = false,
 }: {
   tripId: string;
   tripName?: string | null;
+  hideWeather?: boolean;
   weather: TripWeatherResult | null;
   weatherByCity?: TripWeatherCityForecast[];
   activeWeatherCity?: string | null;
@@ -196,7 +198,11 @@ export default function TripSummaryOverview({
     <div className="w-full min-w-0 space-y-5 md:space-y-6">
 
       {/* ── R1+R2+R4+R5+R6 — Hero rediseñado ─────────────────────────────── */}
-      <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
+      <div
+        className={`grid gap-4 md:gap-5 lg:items-start ${
+          hideWeather ? "" : "lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
+        }`}
+      >
 
         {/* Hero card — countdown + today's plan + next activity */}
         <Reveal variant="fade" as="section" data-tour="summary-countdown" className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
@@ -374,7 +380,7 @@ export default function TripSummaryOverview({
           </Reveal>
         )}
 
-        {/* R2 — Weather integrado como columna derecha */}
+        {!hideWeather ? (
         <Reveal
           variant="slide"
           delay={budgetTarget != null && budgetTarget > 0 ? 2 : 1}
@@ -515,6 +521,7 @@ export default function TripSummaryOverview({
             <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>
           )}
         </Reveal>
+        ) : null}
         </div>
       </div>
 

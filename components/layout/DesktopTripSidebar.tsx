@@ -3,8 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
+import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
+import { getTripNavItems, type TripNavItem } from "@/lib/kaviro-trips-trip-nav";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 type Props = {
   tripId: string;
@@ -13,188 +16,70 @@ type Props = {
   endDate?: string | null;
 };
 
-type NavItem = {
-  key: TripTabKey;
-  label: string;
-  sublabel?: string;
-  iconClass?: string;
-  href: (id: string) => string;
-  isPremiumGated?: boolean;
-};
-
-const items: NavItem[] = [
-  {
-    key: "summary",
-    label: "Resumen",
-    sublabel: "Vista general",
-    href: (id) => `/trip/${id}/summary`,
-  },
-  {
-    key: "plan",
-    label: "Plan",
-    sublabel: "Itinerario",
-    href: (id) => `/trip/${id}/plan`,
-  },
-  {
-    key: "map",
-    label: "Rutas",
-    sublabel: "Mapa y navegación",
-    href: (id) => `/trip/${id}/map`,
-  },
-  {
-    key: "expenses",
-    label: "Gastos",
-    sublabel: "Finanzas del grupo",
-    href: (id) => `/trip/${id}/expenses`,
-  },
-  {
-    key: "participants",
-    label: "Gente",
-    sublabel: "Participantes",
-    href: (id) => `/trip/${id}/participants`,
-  },
-  {
-    key: "resources",
-    label: "Docs",
-    sublabel: "Documentos",
-    iconClass: tripTabDocsImageClass,
-    href: (id) => `/trip/${id}/resources`,
-  },
-
-  {
-    key: "chat",
-    label: "Asistente IA",
-    sublabel: "Premium",
-    href: (id) => `/trip/${id}/ai-chat`,
-    isPremiumGated: true,
-  },
-  {
-    key: "settings",
-    label: "Ajustes",
-    sublabel: "Presupuesto y datos",
-    href: (id) => `/trip/${id}/settings`,
-  },
-];
-
 function isActivePath(pathname: string, href: string, key: string) {
   if (pathname === href) return true;
   if (key === "map" && pathname.startsWith(`${href}/`)) return true;
-  if (key === "settings" && pathname.startsWith(`${href}`)) return true;
+  if (key === "settings" && pathname.startsWith(href)) return true;
   return false;
 }
 
 export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
+  const { isAgencyTrip } = useTripWorkspace();
 
-  // Badge "Hoy" — show on Plan item when trip is active today
+  const visibleItems = getTripNavItems(isAgencyTrip).filter(
+    (item) => !item.isPremiumGated || isPremium
+  );
+
   const isTripActiveToday = (() => {
-    if (!startDate || !endDate) return false;
+    if (!startDate || !endDate || isAgencyTrip) return false;
     const today = new Date().toISOString().slice(0, 10);
     return today >= startDate && today <= endDate;
   })();
-  const visibleItems = items;
 
   return (
     <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">
       <div className="sticky top-24 space-y-2">
-        {/* Nav card */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#1E293B] bg-[var(--surface-card)] shadow-[var(--shadow-card)]">
-
-          {/* Header strip */}
-          <div className="border-b border-[var(--border-default)] px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Tu viaje</p>
+        <div
+          className={`overflow-hidden shadow-sm ${
+            isAgencyTrip
+              ? "rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+              : "rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)] dark:border-[#1E293B]"
+          }`}
+        >
+          <div
+            className={`border-b px-4 py-3 ${
+              isAgencyTrip
+                ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
+                : "border-[var(--border-default)]"
+            }`}
+          >
+            <p
+              className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+                isAgencyTrip ? "text-slate-300" : "text-[var(--text-tertiary)]"
+              }`}
+            >
+              {isAgencyTrip ? KAVIRO_TRIPS_PRODUCT_NAME : "Tu viaje"}
+            </p>
           </div>
 
-          {/* Nav items */}
           <nav aria-label="Navegación del viaje" data-tour="sidebar-nav" className="p-1.5 space-y-0.5">
-            {visibleItems.map((item) => {
-              const href = item.href(tripId);
-              const active = isActivePath(pathname, href, item.key);
-              const isAI = item.key === "chat";
-
-              return (
-                <Link
-                  key={item.key}
-                  href={href}
-                  prefetch
-                  title={item.label}
-                  className={`
-                    group relative flex min-h-[48px] items-center gap-3 rounded-xl px-2.5 py-2
-                    transition-all duration-150 ease-out
-                    ${active
-                      ? isAI
-                        ? "bg-[var(--brand)] shadow-md shadow-[var(--brand-light)]"
-                        : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md shadow-slate-300/40 dark:from-[#F87171] dark:to-[#EF4444] dark:shadow-[0_2px_12px_rgba(248,113,113,0.25)]"
-                      : "hover:bg-[var(--brand-light)] active:bg-[var(--brand-light)] dark:hover:bg-[#1E293B]"
-                    }
-                  `}
-                >
-                  {/* Active left bar */}
-                  {active && (
-                    <span
-                      className="absolute -left-[1px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-white/50"
-                      aria-hidden
-                    />
-                  )}
-
-                  {/* Icon container */}
-                  <span
-                    className={`
-                      relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl
-                      transition-transform duration-150 group-hover:scale-105
-                      ${active
-                        ? "bg-white/15 ring-1 ring-white/20"
-                        : isAI
-                          ? "bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]"
-                          : "bg-[var(--surface-page)] ring-1 ring-[var(--border-default)] group-hover:bg-[var(--surface-card)] group-hover:shadow-sm dark:bg-[#1E293B] dark:ring-[#475569]/50"
-                      }
-                    `}
-                    aria-hidden
-                  >
-                    <Image
-                      src={getTripTabIconSrc(item.key, isDark)}
-                      alt=""
-                      width={28}
-                      height={28}
-                      sizes="28px"
-                      className={`h-7 w-7 object-contain ${item.iconClass || ""} ${active ? "brightness-[2] saturate-0" : tripTabIconCoralFilterDark}`}
-                    />
-                  </span>
-
-                  {/* Label */}
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-[13px] font-semibold leading-tight truncate ${active ? "text-white" : "text-[var(--text-primary)]"}`}>
-                      {item.label}
-                    </p>
-                    {item.sublabel && !active && (
-                      <p className={`text-[10px] leading-none mt-0.5 truncate ${isAI ? "text-[var(--brand)] font-semibold" : "text-slate-400 dark:text-[#475569]"}`}>
-                        {item.sublabel}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* HOY badge — shown on Plan item during active trip */}
-                  {item.key === "plan" && isTripActiveToday && !active && (
-                    <span className="shrink-0 rounded-full bg-[#F87171]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#F87171] ring-1 ring-[#F87171]/30 leading-none">
-                      HOY
-                    </span>
-                  )}
-
-                  {/* AI sparkle badge */}
-                  {isAI && !active && !isPremium && (
-                    <span className="shrink-0 rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
-                      PRO
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+            {visibleItems.map((item) => (
+              <SidebarLink
+                key={item.key}
+                item={item}
+                tripId={tripId}
+                active={isActivePath(pathname, item.href(tripId), item.key)}
+                isDark={isDark}
+                isAgencyTrip={isAgencyTrip}
+                showHoyBadge={item.key === "plan" && isTripActiveToday}
+              />
+            ))}
           </nav>
         </div>
 
-        {/* Premium upsell if not premium */}
-        {!isPremium && (
+        {!isPremium && !isAgencyTrip ? (
           <Link
             href="/pricing"
             className="group flex items-center gap-2.5 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3.5 py-3 transition hover:border-[var(--brand)] hover:shadow-sm"
@@ -207,8 +92,82 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
               <p className="text-[10px] text-[var(--brand)] truncate">IA + funciones extra</p>
             </div>
           </Link>
-        )}
+        ) : null}
       </div>
     </aside>
+  );
+}
+
+function SidebarLink({
+  item,
+  tripId,
+  active,
+  isDark,
+  isAgencyTrip,
+  showHoyBadge,
+}: {
+  item: TripNavItem;
+  tripId: string;
+  active: boolean;
+  isDark: boolean;
+  isAgencyTrip: boolean;
+  showHoyBadge: boolean;
+}) {
+  const href = item.href(tripId);
+  const isAI = item.key === "chat";
+
+  return (
+    <Link
+      href={href}
+      prefetch
+      title={item.label}
+      className={`
+        group relative flex min-h-[48px] items-center gap-3 rounded-md px-2.5 py-2
+        transition-all duration-150
+        ${
+          active
+            ? isAgencyTrip
+              ? "bg-[#1e3a5f] text-white shadow-sm"
+              : isAI
+                ? "bg-[var(--brand)] shadow-md"
+                : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md dark:from-[#F87171] dark:to-[#EF4444]"
+            : "hover:bg-slate-50 dark:hover:bg-slate-800"
+        }
+      `}
+    >
+      <span
+        className={`
+          relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md
+          ${active ? "bg-white/15 ring-1 ring-white/20" : "bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-600"}
+        `}
+        aria-hidden
+      >
+        <Image
+          src={getTripTabIconSrc(item.key, isDark)}
+          alt=""
+          width={28}
+          height={28}
+          sizes="28px"
+          className={`h-7 w-7 object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""} ${
+            active ? "brightness-[2] saturate-0" : isAgencyTrip ? "opacity-80" : ""
+          }`}
+        />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className={`text-[13px] font-semibold leading-tight truncate ${active ? "text-white" : ""}`}>
+          {item.label}
+        </p>
+        {item.sublabel && !active ? (
+          <p className="text-[10px] leading-none mt-0.5 truncate text-slate-500">{item.sublabel}</p>
+        ) : null}
+      </div>
+
+      {showHoyBadge && !active ? (
+        <span className="shrink-0 rounded-full bg-[#F87171]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#F87171]">
+          HOY
+        </span>
+      ) : null}
+    </Link>
   );
 }

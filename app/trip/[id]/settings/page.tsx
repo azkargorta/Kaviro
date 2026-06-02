@@ -25,7 +25,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
         tripId={tripId}
         eyebrow="Configuración"
         title="Ajustes del viaje"
-        description="Nombre, fechas, ciudades para el clima, presupuesto y más."
+        description="Nombre, fechas, presupuesto y configuración del programa."
       />
 
       {error && (

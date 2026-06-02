@@ -5,6 +5,7 @@ import PlanCardActions from "@/components/trip/plan/PlanCardActions";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import { activityLikelyNeedsTicket, buildTicketOfficialSearchUrl } from "@/lib/trip-plan-ticket-hints";
 import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 
 type PlanActivity = {
   trip_id?: string;
@@ -131,6 +132,7 @@ export default function PlanActivityCard({
   currentUserId,
   displayName = "Yo",
 }: Props) {
+  const { hideSocialFeatures } = useTripWorkspace();
   const meta = getActivityMeta(activity.activity_kind);
   const googleMapsUrl = buildGoogleMapsUrl(activity);
   const rating = typeof activity.rating === "number" ? Math.max(1, Math.min(5, Math.round(activity.rating))) : null;
@@ -292,8 +294,8 @@ export default function PlanActivityCard({
         </div>
       </div>
 
-      {/* ¿Te apuntas? — RSVP inline dentro de la tarjeta */}
-      {tripId && (
+      {/* RSVP — solo en viajes personales (Kaviro), no en Kaviro Trips */}
+      {tripId && !hideSocialFeatures ? (
         <div
           className="border-t border-slate-100 px-3.5 pb-3 pt-2.5 dark:border-[#1E293B]"
           onClick={selectable ? (e) => e.stopPropagation() : undefined}
@@ -305,7 +307,7 @@ export default function PlanActivityCard({
             displayName={displayName}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

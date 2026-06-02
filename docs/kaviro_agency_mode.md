@@ -59,6 +59,17 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 - Requiere `trips.client_portal_slug` y fila activa en `agency_client_portals` (o solo slug en viaje)
 - Enlace desde tarjeta del viaje en `/agency` → «Portal cliente»
 
+## Experiencia dentro del viaje (Kaviro Trips)
+
+Si `trips.agency_id` está definido:
+
+- **Menú:** Plan · Rutas · Docs · Equipo · Herramientas IA · Ajustes (sin Resumen, Gastos, Mensajes).
+- **Entrada por defecto:** `/trip/{id}/plan` (el Resumen redirige).
+- **Oculto:** clima, RSVP/reacciones, onboarding, viaje demo, botón flotante IA (usar pestaña).
+- **Cabecera:** azul marino corporativo + enlace al panel y portal cliente.
+
+Código: `lib/kaviro-trips-trip-nav.ts`, `TripWorkspaceContext`, `TripAgencyRouteGuard`.
+
 ## Branding (Bloque 5)
 
 1. Ejecutar `kaviro_agency_logos_storage.sql` en Supabase.

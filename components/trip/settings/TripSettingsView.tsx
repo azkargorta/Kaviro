@@ -13,6 +13,8 @@ import {
   type TripWeatherStay,
   validateWeatherStays,
 } from "@/lib/trip-weather-stays";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
+import { agencyCardClass } from "@/lib/agency-theme";
 
 type TripSettingsViewProps = {
   tripId: string;
@@ -36,6 +38,7 @@ function newStayId() {
 
 export default function TripSettingsView({ tripId, readOnly = false }: TripSettingsViewProps) {
   const router = useRouter();
+  const { hideWeather, isAgencyTrip, clientPortalHref } = useTripWorkspace();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -151,17 +154,19 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
     setSaveWarning(null);
     setSaved(false);
 
-    const stays = normalizeWeatherStays(weatherStays);
-    const stayErr = validateWeatherStays(stays, startDate || null, endDate || null);
-    if (stayErr) {
-      setSaveError(stayErr);
-      setSaving(false);
-      return;
+    const stays = hideWeather ? [] : normalizeWeatherStays(weatherStays);
+    if (!hideWeather) {
+      const stayErr = validateWeatherStays(stays, startDate || null, endDate || null);
+      if (stayErr) {
+        setSaveError(stayErr);
+        setSaving(false);
+        return;
+      }
     }
 
-    const destFromStays = joinTripPlaces(stays.map((s) => s.city));
+    const destFromStays = hideWeather ? "" : joinTripPlaces(stays.map((s) => s.city));
     const finalDestination = destination.trim() || destFromStays;
-    if (!finalDestination && stays.length === 0) {
+    if (!hideWeather && !finalDestination && stays.length === 0) {
       setSaveError("Indica al menos un destino o una ciudad de alojamiento para el clima.");
       setSaving(false);
       return;
@@ -190,12 +195,12 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          destination: finalDestination || null,
+          destination: (hideWeather ? destination.trim() : finalDestination) || null,
           start_date: startDate || null,
           end_date: endDate || null,
           base_currency: currency,
           budget_target: budgetNum,
-          weather_stays: stays,
+          ...(hideWeather ? {} : { weather_stays: stays }),
         }),
       });
       const json = await res.json().catch(() => null);
@@ -315,12 +320,22 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
             placeholder="Ciudad o región principal"
           />
           <p className="mt-1 text-[11px] text-[var(--text-tertiary)]">
-            Opcional si configuras ciudades por fecha abajo. Sirve como referencia rápida del viaje.
+            {hideWeather
+              ? "Ciudad o región principal del programa."
+              : "Opcional si configuras ciudades por fecha abajo. Sirve como referencia rápida del viaje."}
           </p>
         </div>
 
+        {isAgencyTrip && clientPortalHref ? (
+          <div className={`${agencyCardClass} p-4 text-sm`}>
+            <p className="font-semibold text-slate-900 dark:text-white">Portal cliente</p>
+            <p className="mt-1 font-mono text-xs text-slate-600 break-all dark:text-slate-400">{clientPortalHref}</p>
+          </div>
+        ) : null}
+
       </div>
 
+      {!hideWeather ? (
       <div
         id="clima"
         className="rounded-2xl border border-sky-200/70 bg-gradient-to-b from-sky-50/80 to-white p-5 shadow-sm space-y-4 dark:border-sky-900/40 dark:from-[var(--surface-card)] dark:to-[var(--surface-card)] scroll-mt-24"
@@ -427,6 +442,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           </button>
         ) : null}
       </div>
+      ) : null}
 
       <div
         id="presupuesto"

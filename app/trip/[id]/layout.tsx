@@ -9,9 +9,13 @@ import DesktopTripSidebar from "@/components/layout/DesktopTripSidebar";
 import { TripDemoProvider } from "@/components/trip/TripDemoContext";
 import DemoTripBanner from "@/components/trip/DemoTripBanner";
 import TripHeroCard from "@/components/trip/common/TripHeroCard";
-import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
 import TripOfflineSync from "@/components/pwa/TripOfflineSync";
 import LoggedInRoutePrefetch from "@/components/layout/LoggedInRoutePrefetch";
+import { TripWorkspaceProvider } from "@/components/trip/TripWorkspaceContext";
+import TripAgencyRouteGuard from "@/components/trip/TripAgencyRouteGuard";
+import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
+import { clientPortalPath } from "@/lib/agency";
+import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -33,9 +37,13 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
   const access = await getCachedTripAccess(params.id);
 
   const supabase = await createClient();
-  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }, isPremium] =
+  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }, isPremium, workspace] =
     await Promise.all([
-      supabase.from("trips").select("name, start_date, end_date, is_demo, destination").eq("id", params.id).maybeSingle(),
+      supabase
+        .from("trips")
+        .select("name, start_date, end_date, is_demo, destination, agency_id")
+        .eq("id", params.id)
+        .maybeSingle(),
       supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
       supabase
         .from("trip_participants")
@@ -44,11 +52,13 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
         .neq("status", "removed")
         .limit(6),
       getCachedTripPremium(params.id, access.userId),
+      loadTripWorkspaceMeta(supabase, params.id),
     ]);
 
   const isDemo =
-    Boolean((tripMeta as { is_demo?: boolean } | null)?.is_demo) ||
-    String((profileRow as { demo_trip_id?: string } | null)?.demo_trip_id || "") === params.id;
+    !workspace.isAgencyTrip &&
+    (Boolean((tripMeta as { is_demo?: boolean } | null)?.is_demo) ||
+      String((profileRow as { demo_trip_id?: string } | null)?.demo_trip_id || "") === params.id);
   const tripName = (tripMeta?.name && String(tripMeta.name).trim()) || "Viaje";
   const destination = (tripMeta as { destination?: string } | null)?.destination ?? null;
   const participantNames = (participantRows ?? [])
@@ -57,47 +67,66 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
       return p?.display_name?.trim() || null;
     })
     .filter((n): n is string => Boolean(n));
+
+  const showOnboarding = !workspace.isAgencyTrip && !isDemo;
+  const showAssistantDock = !workspace.isAgencyTrip;
+
   return (
     <TripBoardHeaderProvider>
-      <TripDemoProvider isDemo={isDemo}>
-        <LoggedInRoutePrefetch />
-        <TripOfflineSync tripId={params.id} />
-        <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
-          <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
-            <div className="mb-4 md:mb-5">
-              <TripHeroCard
-                tripId={params.id}
-                tripName={tripName}
-                destination={destination}
-                participants={participantNames}
-              />
-            </div>
+      <TripWorkspaceProvider tripId={params.id} meta={workspace}>
+        <TripDemoProvider isDemo={isDemo}>
+          <LoggedInRoutePrefetch />
+          <TripAgencyRouteGuard />
+          <TripOfflineSync tripId={params.id} />
+          <div
+            className={`pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
+              workspace.isAgencyTrip ? "trip-workspace-agency" : ""
+            }`}
+          >
+            <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
+              <div className="mb-4 md:mb-5">
+                <TripHeroCard
+                  tripId={params.id}
+                  tripName={tripName}
+                  destination={destination}
+                  participants={participantNames}
+                  isAgencyTrip={workspace.isAgencyTrip}
+                  clientPortalHref={
+                    workspace.isAgencyTrip && workspace.agencySlug && workspace.clientPortalSlug
+                      ? clientPortalPath(workspace.agencySlug, workspace.clientPortalSlug)
+                      : null
+                  }
+                />
+              </div>
 
-            <div className="min-w-0 md:grid md:grid-cols-[200px_1fr] lg:grid-cols-[220px_1fr] md:gap-4">
-              <DesktopTripSidebar
-                tripId={params.id}
-                isPremium={isPremium}
-                startDate={tripMeta?.start_date ?? null}
-                endDate={tripMeta?.end_date ?? null}
-              />
-              <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:space-y-10">
-                {isDemo ? <DemoTripBanner /> : null}
-                {!isDemo ? (
-                  <TripOnboardingChecklistGate
-                    tripId={params.id}
-                    tripName={tripName}
-                    isPremium={isPremium}
-                  />
-                ) : null}
-                {children}
+              <div className="min-w-0 md:grid md:grid-cols-[200px_1fr] lg:grid-cols-[220px_1fr] md:gap-4">
+                <DesktopTripSidebar
+                  tripId={params.id}
+                  isPremium={isPremium}
+                  startDate={tripMeta?.start_date ?? null}
+                  endDate={tripMeta?.end_date ?? null}
+                />
+                <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:space-y-8">
+                  {isDemo ? <DemoTripBanner /> : null}
+                  {showOnboarding ? (
+                    <TripOnboardingChecklistGate
+                      tripId={params.id}
+                      tripName={tripName}
+                      isPremium={isPremium}
+                    />
+                  ) : null}
+                  {children}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <MobileBottomNav tripId={params.id} isPremium={isPremium} />
-        <TripPageAssistantDock tripId={params.id} isPremium={isPremium} />
-        <CommandPalette tripId={params.id} />
-      </TripDemoProvider>
+          <MobileBottomNav tripId={params.id} isPremium={isPremium} />
+          {showAssistantDock ? <TripPageAssistantDock tripId={params.id} isPremium={isPremium} /> : null}
+          <CommandPalette tripId={params.id} />
+        </TripDemoProvider>
+      </TripWorkspaceProvider>
     </TripBoardHeaderProvider>
   );
 }
+
+// dynamic import for onboarding to avoid breaking - I removed the import!

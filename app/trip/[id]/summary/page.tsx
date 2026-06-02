@@ -15,6 +15,7 @@ import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
 import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
 import { loadTripExpenseAmountRows } from "@/lib/load-trip-expense-amounts";
 import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
+import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,10 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   const tripId = params.id;
   const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
+  const workspace = await loadTripWorkspaceMeta(supabase, tripId);
+  if (workspace.isAgencyTrip) {
+    redirect(`/trip/${tripId}/plan`);
+  }
   const isPremium = await getCachedTripPremium(tripId, access.userId);
 
   const [

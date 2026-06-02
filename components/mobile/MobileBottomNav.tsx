@@ -9,6 +9,8 @@ import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
+import { getTripNavItems } from "@/lib/kaviro-trips-trip-nav";
 
 type Props = {
   tripId: string;
@@ -19,22 +21,22 @@ type Props = {
   newParticipantCount?: number;
 };
 
-// Primary items — always visible (5 max)
-const PRIMARY_ITEMS: Array<{ key: TripTabKey; label: string; href: (id: string) => string; isAI?: boolean }> = [
-  { key: "summary",  label: "Inicio", href: (id) => `/trip/${id}/summary` },
-  { key: "plan",     label: "Plan",   href: (id) => `/trip/${id}/plan` },
-  { key: "expenses", label: "Gastos", href: (id) => `/trip/${id}/expenses` },
-  { key: "chat",     label: "IA",     href: (id) => `/trip/${id}/ai-chat`, isAI: true },
-];
+const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "expenses", "chat"];
+const AGENCY_PRIMARY_KEYS: TripTabKey[] = ["plan", "map", "resources"];
 
-// Secondary items — in "Más" sheet
-const SECONDARY_ITEMS: Array<{ key: string; label: string; href: (id: string) => string; icon: React.ReactNode }> = [
-  { key: "map",          label: "Rutas",         href: (id) => `/trip/${id}/map`,          icon: <Map className="h-5 w-5" /> },
-  { key: "participants", label: "Participantes",  href: (id) => `/trip/${id}/participants`, icon: <Users className="h-5 w-5" /> },
-  { key: "messages",     label: "Mensajes",       href: (id) => `/trip/${id}/messages`,     icon: <MessageCircle className="h-5 w-5" /> },
-  { key: "resources",    label: "Documentos",     href: (id) => `/trip/${id}/resources`,    icon: <FileText className="h-5 w-5" /> },
-  { key: "settings",     label: "Ajustes",        href: (id) => `/trip/${id}/settings`,     icon: <Settings className="h-5 w-5" /> },
-];
+const SECONDARY_META: Record<
+  string,
+  { label: string; icon: React.ReactNode }
+> = {
+  map: { label: "Rutas", icon: <Map className="h-5 w-5" /> },
+  participants: { label: "Equipo", icon: <Users className="h-5 w-5" /> },
+  messages: { label: "Mensajes", icon: <MessageCircle className="h-5 w-5" /> },
+  resources: { label: "Documentos", icon: <FileText className="h-5 w-5" /> },
+  settings: { label: "Ajustes", icon: <Settings className="h-5 w-5" /> },
+  chat: { label: "Herramientas IA", icon: <Star className="h-5 w-5" /> },
+  expenses: { label: "Gastos", icon: <Star className="h-5 w-5" /> },
+  summary: { label: "Resumen", icon: <Star className="h-5 w-5" /> },
+};
 
 export default function MobileBottomNav({
   tripId,
@@ -46,15 +48,38 @@ export default function MobileBottomNav({
 }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
+  const { isAgencyTrip } = useTripWorkspace();
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  const navItems = getTripNavItems(isAgencyTrip).filter((item) => !item.isPremiumGated || isPremium);
+  const primaryKeys = isAgencyTrip ? AGENCY_PRIMARY_KEYS : PERSONAL_PRIMARY_KEYS;
+  const primaryItems = navItems
+    .filter((item) => primaryKeys.includes(item.key))
+    .map((item) => ({
+      key: item.key,
+      label: item.key === "chat" ? (isAgencyTrip ? "IA" : "IA") : item.label,
+      href: item.href,
+      isAI: item.key === "chat",
+    }));
+  const secondaryItems = navItems
+    .filter((item) => !primaryKeys.includes(item.key))
+    .map((item) => ({
+      key: item.key,
+      label: SECONDARY_META[item.key]?.label ?? item.label,
+      href: item.href,
+      icon: SECONDARY_META[item.key]?.icon ?? <Star className="h-5 w-5" />,
+    }));
+
   const isTripActiveToday = (() => {
-    if (!startDate || !endDate) return false;
+    if (isAgencyTrip || !startDate || !endDate) return false;
     const today = new Date().toISOString().slice(0, 10);
     return today >= startDate && today <= endDate;
   })();
 
-  const primaryItems = PRIMARY_ITEMS;
+  const activeSheetClass = isAgencyTrip
+    ? "border-[#1e3a5f]/30 bg-[#1e3a5f]/8 text-[#1e3a5f] dark:border-[#3d6a9e]/40 dark:bg-[#3d6a9e]/12 dark:text-[#93c5fd]"
+    : "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand)]";
+
 
   function isActivePath(href: string, key: string) {
     if (pathname === href) return true;
@@ -63,7 +88,7 @@ export default function MobileBottomNav({
   }
 
   // Check if current page is a secondary item
-  const isSecondaryActive = SECONDARY_ITEMS.some((i) =>
+  const isSecondaryActive = secondaryItems.some((i) =>
     isActivePath(i.href(tripId), i.key)
   );
 
@@ -96,7 +121,7 @@ export default function MobileBottomNav({
 
           {/* Sheet items */}
           <div className="grid grid-cols-2 gap-2 px-4 pb-6">
-            {SECONDARY_ITEMS.map((item) => {
+            {secondaryItems.map((item) => {
               const href = item.href(tripId);
               const active = isActivePath(href, item.key);
               return (
@@ -107,7 +132,7 @@ export default function MobileBottomNav({
                   onClick={() => setSheetOpen(false)}
                   className={`flex items-center gap-3 rounded-2xl border p-4 transition ${
                     active
-                      ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand)]"
+                      ? activeSheetClass
                       : "border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-secondary)] hover:bg-[var(--surface-card)]"
                   }`}
                 >
@@ -116,7 +141,11 @@ export default function MobileBottomNav({
                   </span>
                   <span className="text-sm font-semibold">{item.label}</span>
                   {item.key === "participants" && newParticipantCount > 0 && (
-                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[#F87171] text-[10px] font-bold text-white">
+                    <span
+                      className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+                        isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                      }`}
+                    >
                       {newParticipantCount}
                     </span>
                   )}
@@ -182,12 +211,22 @@ export default function MobileBottomNav({
 
                   {/* HOY dot */}
                   {item.key === "plan" && isTripActiveToday && !active && (
-                    <span className="absolute top-1.5 right-2.5 h-2 w-2 rounded-full bg-[#F87171] ring-1 ring-white dark:ring-[#080C14]" aria-hidden />
+                    <span
+                      className={`absolute top-1.5 right-2.5 h-2 w-2 rounded-full ring-1 ring-white dark:ring-[#080C14] ${
+                        isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                      }`}
+                      aria-hidden
+                    />
                   )}
 
                   {/* Unseen changes dot */}
                   {item.key === "plan" && unseenCount > 0 && !active && !isTripActiveToday && (
-                    <span className="absolute top-1.5 right-2.5 h-2 w-2 rounded-full bg-[#F87171] animate-pulse ring-1 ring-white dark:ring-[#080C14]" aria-hidden />
+                    <span
+                      className={`absolute top-1.5 right-2.5 h-2 w-2 rounded-full animate-pulse ring-1 ring-white dark:ring-[#080C14] ${
+                        isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                      }`}
+                      aria-hidden
+                    />
                   )}
 
                   {/* PRO badge — IA sin premium en el viaje */}
@@ -225,7 +264,12 @@ export default function MobileBottomNav({
               </span>
               {/* Badge for secondary items */}
               {newParticipantCount > 0 && (
-                <span className="absolute top-1.5 right-2.5 h-2 w-2 rounded-full bg-[#F87171] ring-1 ring-white dark:ring-[#080C14]" aria-hidden />
+                <span
+                  className={`absolute top-1.5 right-2.5 h-2 w-2 rounded-full ring-1 ring-white dark:ring-[#080C14] ${
+                    isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                  }`}
+                  aria-hidden
+                />
               )}
             </button>
           </div>
