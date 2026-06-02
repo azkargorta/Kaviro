@@ -43,6 +43,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "El nombre del viaje es obligatorio." }, { status: 400 });
     }
 
+    if (start_date && end_date && start_date > end_date) {
+      return NextResponse.json(
+        { error: "La fecha de fin debe ser igual o posterior a la fecha de inicio." },
+        { status: 400 }
+      );
+    }
+
     const client_portal_slug = slugifyForUrl(portalSlugRaw || name);
 
     const created = await createTripWithOwner(supabase, user, {

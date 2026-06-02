@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import AgencyTripCard, { type AgencyTripRow } from "@/components/agency/AgencyTripCard";
 import AgencyCreateTripForm from "@/components/agency/AgencyCreateTripForm";
+import { agencyBtnPrimaryClass, agencyBtnSecondaryClass } from "@/lib/agency-theme";
 
 type Filter = "all" | "active" | "upcoming" | "past";
 
@@ -46,28 +47,30 @@ export default function AgencyTripList({
     { id: "all", label: "Todos", count: trips.length },
     { id: "active", label: "En curso", count: buckets.active.length },
     { id: "upcoming", label: "Próximos", count: buckets.upcoming.length },
-    { id: "past", label: "Pasados", count: buckets.past.length },
+    { id: "past", label: "Finalizados", count: buckets.past.length },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-700">
         <div>
-          <h1 className="text-2xl font-black text-slate-950 dark:text-white">Viajes</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-            Todos los grupos que gestiona tu organización en un solo panel.
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Viajes</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Programas y grupos que gestiona tu organización.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowCreate((v) => !v)}
-          className="inline-flex min-h-10 items-center rounded-xl bg-[#1e3a5f] px-4 py-2 text-sm font-bold text-white"
+          className={showCreate ? agencyBtnSecondaryClass : agencyBtnPrimaryClass}
         >
-          {showCreate ? "Cerrar" : "Nuevo viaje"}
+          {showCreate ? "Cancelar" : "Nuevo viaje"}
         </button>
       </div>
 
-      {showCreate ? <AgencyCreateTripForm onCreated={() => setShowCreate(false)} /> : null}
+      {showCreate ? (
+        <AgencyCreateTripForm agencySlug={agencySlug} onCreated={() => setShowCreate(false)} />
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {chips.map((c) => (
@@ -75,10 +78,10 @@ export default function AgencyTripList({
             key={c.id}
             type="button"
             onClick={() => setFilter(c.id)}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
               filter === c.id
                 ? "bg-[#1e3a5f] text-white"
-                : "bg-slate-100 text-slate-600 dark:bg-[#1E293B] dark:text-slate-300"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
             }`}
           >
             {c.label} ({c.count})
@@ -87,8 +90,8 @@ export default function AgencyTripList({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500 dark:border-[#334155] dark:text-slate-400">
-          No hay viajes en esta categoría. Crea uno o asigna <code className="text-xs">agency_id</code> en Supabase.
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-12 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400">
+          No hay viajes en esta vista. Crea un programa con «Nuevo viaje».
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">

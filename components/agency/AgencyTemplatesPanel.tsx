@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Copy, Layers, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { clientPortalPath } from "@/lib/agency";
+import { agencyBtnPrimaryClass, agencyBtnSecondaryClass, agencyInputClass } from "@/lib/agency-theme";
+import { useSyncedTripDates } from "@/lib/use-synced-trip-dates";
 
 type AgencyTripOption = { id: string; name: string | null };
 
@@ -35,8 +37,14 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
   const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
   const [newTripName, setNewTripName] = useState("");
   const [newDestination, setNewDestination] = useState("");
-  const [newStart, setNewStart] = useState("");
-  const [newEnd, setNewEnd] = useState("");
+  const {
+    startDate: newStart,
+    endDate: newEnd,
+    setStartDate: setNewStart,
+    setEndDate: setNewEnd,
+    endDateMin: newEndMin,
+    validateDates,
+  } = useSyncedTripDates();
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -111,6 +119,11 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
   async function handleInstantiate(e: React.FormEvent) {
     e.preventDefault();
     if (!useTemplateId || !newTripName.trim()) return;
+    const dateErr = validateDates();
+    if (dateErr) {
+      toast.push({ kind: "error", title: dateErr });
+      return;
+    }
     setCreating(true);
     try {
       const res = await fetch(
@@ -251,6 +264,9 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
                         onClick={() => {
                           setUseTemplateId(tpl.id);
                           setNewTripName("");
+                          setNewDestination("");
+                          setNewStart("");
+                          setNewEnd("");
                         }}
                         className="inline-flex items-center gap-1 rounded-xl bg-[#1e3a5f] px-3 py-1.5 text-xs font-bold text-white"
                       >
@@ -300,13 +316,15 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
                   type="date"
                   value={newStart}
                   onChange={(e) => setNewStart(e.target.value)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0B1220]"
+                  className={agencyInputClass}
                 />
                 <input
                   type="date"
                   value={newEnd}
+                  min={newEndMin}
+                  disabled={!newStart}
                   onChange={(e) => setNewEnd(e.target.value)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0B1220]"
+                  className={agencyInputClass}
                 />
               </div>
             </div>

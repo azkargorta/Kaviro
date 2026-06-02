@@ -1,28 +1,61 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
+import { clientPortalPath } from "@/lib/agency";
+import { slugifyForUrl } from "@/lib/agency-slug";
+import {
+  agencyBtnPrimaryClass,
+  agencyCardClass,
+  agencyInputClass,
+  agencyLabelClass,
+} from "@/lib/agency-theme";
+import { useSyncedTripDates } from "@/lib/use-synced-trip-dates";
 
-export default function AgencyCreateTripForm({ onCreated }: { onCreated?: () => void }) {
+type Props = {
+  agencySlug: string;
+  onCreated?: () => void;
+};
+
+export default function AgencyCreateTripForm({ agencySlug, onCreated }: Props) {
   const router = useRouter();
   const toast = useToast();
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [portalSlug, setPortalSlug] = useState("");
+  const [portalTouched, setPortalTouched] = useState(false);
+  const { startDate, endDate, setStartDate, setEndDate, endDateMin, validateDates } =
+    useSyncedTripDates();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const effectiveSlug = useMemo(() => {
+    const raw = portalTouched ? portalSlug : portalSlug || name;
+    return slugifyForUrl(raw.trim() || name.trim() || "viaje");
+  }, [portalSlug, portalTouched, name]);
+
+  const portalPreview =
+    name.trim() && effectiveSlug
+      ? clientPortalPath(agencySlug, effectiveSlug)
+      : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
+
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("El nombre del viaje es obligatorio.");
+      setError("El nombre del grupo o cliente es obligatorio.");
       return;
     }
+
+    const dateErr = validateDates();
+    if (dateErr) {
+      setError(dateErr);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -34,14 +67,20 @@ export default function AgencyCreateTripForm({ onCreated }: { onCreated?: () => 
           destination: destination.trim() || null,
           start_date: startDate || null,
           end_date: endDate || null,
-          client_portal_slug: portalSlug.trim() || undefined,
+          client_portal_slug: effectiveSlug,
+          base_currency: "EUR",
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "No se pudo crear el viaje.");
-      toast.push({ kind: "success", title: "Viaje creado", description: trimmed });
+
+      toast.push({
+        kind: "success",
+        title: "Viaje creado",
+        description: "Puedes completar el itinerario en el plan.",
+      });
       onCreated?.();
-      router.push(`/trip/${data.tripId}/summary`);
+      router.push(`/trip/${data.tripId}/plan`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear.");
@@ -51,65 +90,98 @@ export default function AgencyCreateTripForm({ onCreated }: { onCreated?: () => 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-[#1E293B] dark:bg-[#0B1220]">
-      <p className="text-sm font-bold text-slate-900 dark:text-white">Nuevo viaje de cliente</p>
+    <form onSubmit={handleSubmit} className={`${agencyCardClass} p-5 sm:p-6`}>
+      <div className="border-b border-slate-200 pb-4 dark:border-slate-700">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Nuevo viaje de cliente</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Datos del grupo y fechas del programa. El portal público se genera automáticamente.
+        </p>
+      </div>
+
       {error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+          {error}
+        </p>
       ) : null}
-      <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-        Nombre del viaje
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623]"
-          placeholder="Chicago NFL 2026"
-        />
-      </label>
-      <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-        Destino
-        <input
-          value={destination}
-          onChange={(e) => setDestination(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623]"
-          placeholder="Chicago, EE. UU."
-        />
-      </label>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-          Inicio
+
+      <div className="mt-5 space-y-4">
+        <label className={agencyLabelClass}>
+          Nombre del grupo / cliente
           <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623]"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={agencyInputClass}
+            placeholder="Chicago NFL 2026 — Grupo A"
+            required
           />
         </label>
-        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-          Fin
+
+        <label className={agencyLabelClass}>
+          Destino principal
           <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623]"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            className={agencyInputClass}
+            placeholder="Chicago, Estados Unidos"
           />
+        </label>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className={agencyLabelClass}>
+            Fecha de inicio
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={agencyInputClass}
+            />
+          </label>
+          <label className={agencyLabelClass}>
+            Fecha de fin
+            <input
+              type="date"
+              value={endDate}
+              min={endDateMin}
+              disabled={!startDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className={agencyInputClass}
+            />
+          </label>
+        </div>
+        {!startDate ? (
+          <p className="-mt-2 text-xs text-slate-500">Indica la fecha de inicio para elegir la de fin.</p>
+        ) : null}
+
+        <label className={agencyLabelClass}>
+          Identificador del portal (URL)
+          <input
+            value={portalTouched ? portalSlug : portalSlug || slugifyForUrl(name)}
+            onChange={(e) => {
+              setPortalTouched(true);
+              setPortalSlug(e.target.value);
+            }}
+            onBlur={() => {
+              if (!portalTouched && name.trim()) {
+                setPortalSlug(slugifyForUrl(name));
+              }
+            }}
+            className={agencyInputClass}
+            placeholder="chicago-nfl-2026"
+          />
+          {portalPreview ? (
+            <p className="mt-1.5 font-mono text-xs text-slate-500 dark:text-slate-400">{portalPreview}</p>
+          ) : null}
         </label>
       </div>
-      <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-        Slug del portal (opcional)
-        <input
-          value={portalSlug}
-          onChange={(e) => setPortalSlug(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623]"
-          placeholder="chicago-2026"
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={loading}
-        className="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-[#1e3a5f] px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
-      >
-        {loading ? "Creando…" : "Crear viaje"}
-      </button>
+
+      <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+        <button type="submit" disabled={loading} className={`${agencyBtnPrimaryClass} min-w-[10rem]`}>
+          {loading ? "Creando…" : "Crear y abrir plan"}
+        </button>
+        <p className="text-xs text-slate-500 dark:text-slate-400 self-center">
+          Sin pasos de onboarding ni moneda: enfoque operativo para tu equipo.
+        </p>
+      </div>
     </form>
   );
 }
