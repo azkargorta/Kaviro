@@ -343,6 +343,7 @@ textarea.input { resize: vertical; min-height: 120px; }
 .motion-reveal-left,
 .motion-reveal-right {
   opacity: 0;
+  transform: none;
 }
 .motion-reveal.motion-visible { animation: motion-slide-up 0.5s ease-out forwards; }
 .motion-reveal-fade.motion-visible { animation: motion-fade-in 0.4s ease-out forwards; }

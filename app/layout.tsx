@@ -59,7 +59,9 @@ export default function RootLayout({
           <GlobalRouteLoading />
           <PwaServiceWorker />
         <OfflineBanner />
-          <div className="min-h-[100dvh] min-w-0 bg-[var(--surface-page)]">{children}</div>
+          <div className="min-h-[100dvh] min-w-0 overflow-x-clip overflow-y-visible bg-[var(--surface-page)]">
+            {children}
+          </div>
           <CookieConsentBanner />
         </ToastProvider>
       </body>

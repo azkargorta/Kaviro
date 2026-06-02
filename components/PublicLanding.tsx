@@ -125,12 +125,12 @@ export default function PublicLanding() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-[#080C14] overflow-x-hidden">
+    <main className="min-h-screen overflow-x-clip overflow-y-visible bg-slate-50 dark:bg-[#080C14]">
 
       <PublicMarketingHeader />
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip">
         {/* Background glow */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           <div
@@ -195,7 +195,8 @@ export default function PublicLanding() {
               </div>
             </Reveal>
 
-            <Reveal variant="scale" delay={1} className="hero-float relative overflow-hidden shadow-2xl">
+            <Reveal variant="scale" delay={1} className="relative shadow-2xl">
+              <div className="hero-float">
               <PlanItineraryCard
                 destination="París, Francia"
                 tripName="Viaje a París 2026"
@@ -232,6 +233,7 @@ export default function PublicLanding() {
                   ))}
                 </div>
               </PlanItineraryCard>
+              </div>
             </Reveal>
           </div>
         </div>
