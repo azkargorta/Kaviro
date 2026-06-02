@@ -123,6 +123,19 @@ Deben incluir `https://www.kaviro.app/auth/verify` (y callback, recovery, reset-
 
 ---
 
+## 8. Emails de aplicación (Kaviro Trips — invitaciones de equipo)
+
+Además del SMTP de Supabase Auth, el servidor Next.js puede enviar correos con la **API HTTP de Resend**:
+
+| Variable (Vercel / `.env.local`) | Uso |
+|-----------------------------------|-----|
+| `RESEND_API_KEY` | Obligatoria para invitaciones automáticas en `/agency/team` |
+| `RESEND_FROM_EMAIL` | Opcional; por defecto `Kaviro <hola@kaviro.app>` |
+
+Si `RESEND_API_KEY` no está definida, la invitación se crea igual y el admin puede **copiar el enlace** manualmente.
+
+---
+
 ## Checklist rápido
 
 - [ ] Cuenta Resend + API key
@@ -133,6 +146,7 @@ Deben incluir `https://www.kaviro.app/auth/verify` (y callback, recovery, reset-
 - [ ] Plantillas signup + reset con `token_hash` + `/auth/verify`
 - [ ] Site URL `https://www.kaviro.app`
 - [ ] Prueba registro + reset password
+- [ ] `RESEND_API_KEY` en Vercel (invitaciones Kaviro Trips)
 
 ---
 

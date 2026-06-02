@@ -28,7 +28,29 @@ export async function GET() {
       throw new Error(error.message);
     }
 
-    return NextResponse.json({ clients: data ?? [] });
+    const clients = data ?? [];
+    const clientIds = clients.map((c) => c.id as string);
+
+    const tripCountByClient: Record<string, number> = {};
+    if (clientIds.length > 0) {
+      const { data: tripRows } = await supabase
+        .from("trips")
+        .select("agency_client_id")
+        .eq("agency_id", ctx.agency.id)
+        .in("agency_client_id", clientIds);
+
+      for (const row of tripRows ?? []) {
+        const cid = row.agency_client_id as string;
+        if (cid) tripCountByClient[cid] = (tripCountByClient[cid] ?? 0) + 1;
+      }
+    }
+
+    return NextResponse.json({
+      clients: clients.map((c) => ({
+        ...c,
+        tripCount: tripCountByClient[c.id as string] ?? 0,
+      })),
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: msg }, { status: 500 });

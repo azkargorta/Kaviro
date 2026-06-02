@@ -85,16 +85,14 @@ Código: `lib/kaviro-trips-trip-nav.ts`, `TripWorkspaceContext`, `TripAgencyRout
 
 ## Funciones B2B en repo (`kaviro_agency_features.sql`)
 
-- **Invitaciones de equipo** — enlace `/agency/join?token=…` (panel → Equipo).
+- **Invitaciones de equipo** — email automático + enlace `/agency/join?token=…` (requiere `RESEND_API_KEY` en Vercel).
+- **Clientes** — `/agency/clients` (CRM ligero, vinculable al crear viaje).
 - **Publicar / ocultar portal** — borrador hasta «Publicar» (`agency_client_portals.is_active`).
 - **PDF del programa** — `/client/{agencia}/{viaje}/pdf`.
 - **Avisos al grupo** — visibles en portal (Ajustes del viaje o panel).
 - **Documentos en portal** — marcar en Docs → «Visible en portal cliente».
 - **Métricas** — vistas del portal (30 días) en el panel `/agency`.
-- **Clientes** — API `/api/agencies/clients` (CRM ligero; UI opcional).
-
 ## Próximo código (opcional)
 
 - Dominio propio del portal (`custom_domain`).
-- Envío automático de email al invitar (hoy: copiar enlace).
 - Roles solo-lectura en viaje y auditoría ampliada.

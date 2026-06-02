@@ -9,6 +9,7 @@ export type CreateTripInput = {
   base_currency: string;
   agency_id?: string | null;
   client_portal_slug?: string | null;
+  agency_client_id?: string | null;
 };
 
 /**
@@ -40,6 +41,7 @@ export async function createTripWithOwner(
       base_currency,
       ...(input.agency_id ? { agency_id: input.agency_id } : {}),
       ...(input.client_portal_slug ? { client_portal_slug: input.client_portal_slug } : {}),
+      ...(input.agency_client_id ? { agency_client_id: input.agency_client_id } : {}),
     })
     .select("id")
     .single();

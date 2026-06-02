@@ -17,7 +17,8 @@ type Overview = {
 
 const CHECKLIST = [
   { href: "/agency/branding", label: "Configura logo y color de marca" },
-  { href: "/agency/team", label: "Invita a tu equipo" },
+  { href: "/agency/clients", label: "Registra tus clientes" },
+  { href: "/agency/team", label: "Invita a tu equipo por email" },
   { href: "/agency/templates", label: "Guarda una plantilla de viaje" },
   { href: "/agency", label: "Publica el portal de un programa" },
 ] as const;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { clientPortalPath } from "@/lib/agency";
@@ -29,6 +29,19 @@ export default function AgencyCreateTripForm({ agencySlug, onCreated }: Props) {
     useSyncedTripDates();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+  const [agencyClientId, setAgencyClientId] = useState("");
+
+  useEffect(() => {
+    fetch("/api/agencies/clients", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.clients)) {
+          setClients(data.clients.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const effectiveSlug = useMemo(() => {
     const raw = portalTouched ? portalSlug : portalSlug || name;
@@ -69,6 +82,7 @@ export default function AgencyCreateTripForm({ agencySlug, onCreated }: Props) {
           end_date: endDate || null,
           client_portal_slug: effectiveSlug,
           base_currency: "EUR",
+          ...(agencyClientId ? { agency_client_id: agencyClientId } : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -105,8 +119,31 @@ export default function AgencyCreateTripForm({ agencySlug, onCreated }: Props) {
       ) : null}
 
       <div className="mt-5 space-y-4">
+        {clients.length > 0 ? (
+          <label className={agencyLabelClass}>
+            Cliente (opcional)
+            <select
+              value={agencyClientId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setAgencyClientId(id);
+                const picked = clients.find((c) => c.id === id);
+                if (picked && !name.trim()) setName(picked.name);
+              }}
+              className={agencyInputClass}
+            >
+              <option value="">— Sin vincular —</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         <label className={agencyLabelClass}>
-          Nombre del grupo / cliente
+          Nombre del grupo / programa
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

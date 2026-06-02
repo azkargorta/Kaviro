@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Trash2, UserPlus, Users } from "lucide-react";
+import { Copy, Mail, Trash2, UserPlus, Users } from "lucide-react";
 import { AGENCY_PARTNERSHIP_EMAIL, agencyPartnershipMailto, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import {
   agencyBtnPrimaryClass,
@@ -82,13 +82,21 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo invitar.");
       setEmail("");
-      toast.push({
-        kind: "success",
-        title: "Invitación creada",
-        description: "Copia el enlace y envíalo a tu compañero.",
-      });
-      if (data.inviteUrl) {
-        await navigator.clipboard.writeText(data.inviteUrl);
+      if (data.emailSent) {
+        toast.push({
+          kind: "success",
+          title: "Invitación enviada por email",
+          description: `Correo enviado a ${data.email}.`,
+        });
+      } else {
+        toast.push({
+          kind: "success",
+          title: "Invitación creada",
+          description:
+            data.emailError ||
+            "No se pudo enviar el email. Copia el enlace desde la lista de pendientes.",
+        });
+        if (data.inviteUrl) await navigator.clipboard.writeText(data.inviteUrl);
       }
       load();
     } catch (err) {
@@ -101,6 +109,25 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
   async function revokeInvite(id: string) {
     const res = await fetch(`/api/agencies/invites?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) load();
+  }
+
+  async function resendInvite(id: string) {
+    try {
+      const res = await fetch("/api/agencies/invites/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo reenviar.");
+      toast.push({
+        kind: data.emailSent ? "success" : "error",
+        title: data.emailSent ? "Email reenviado" : "No se envió el email",
+        description: data.emailError,
+      });
+    } catch (e) {
+      toast.push({ kind: "error", title: e instanceof Error ? e.message : "Error" });
+    }
   }
 
   return (
@@ -118,8 +145,11 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
         <form onSubmit={handleInvite} className={`${agencyCardClass} space-y-3 p-5`}>
           <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
             <UserPlus className="h-4 w-4" aria-hidden />
-            Invitar por enlace
+            Invitar por email
           </h2>
+          <p className="text-xs text-slate-500">
+            Se envía un correo con el enlace de acceso (requiere RESEND_API_KEY en el servidor).
+          </p>
           <div>
             <label className={agencyLabelClass}>Email</label>
             <input
@@ -143,7 +173,7 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
             </select>
           </div>
           <button type="submit" disabled={inviting} className={agencyBtnPrimaryClass}>
-            {inviting ? "Generando…" : "Crear invitación"}
+            {inviting ? "Enviando…" : "Enviar invitación"}
           </button>
         </form>
       ) : null}
@@ -157,6 +187,14 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
                 <p className="text-sm font-medium text-slate-900 dark:text-white">{inv.email}</p>
                 <p className="text-xs text-slate-500">{inv.role}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={`${agencyBtnSecondaryClass} gap-1 text-xs`}
+                    onClick={() => resendInvite(inv.id)}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Reenviar email
+                  </button>
                   <button
                     type="button"
                     className={`${agencyBtnSecondaryClass} gap-1 text-xs`}

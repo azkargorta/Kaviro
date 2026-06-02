@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Layers, Palette, Users } from "lucide-react";
+import { Building2, LayoutGrid, Layers, Palette, Users } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
@@ -13,6 +13,7 @@ const NAV: Array<{
   exact?: boolean;
 }> = [
   { href: "/agency", label: "Viajes", icon: LayoutGrid, exact: true },
+  { href: "/agency/clients", label: "Clientes", icon: Building2 },
   { href: "/agency/templates", label: "Plantillas", icon: Layers },
   { href: "/agency/team", label: "Equipo", icon: Users },
   { href: "/agency/branding", label: "Marca", icon: Palette },

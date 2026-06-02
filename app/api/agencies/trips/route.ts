@@ -39,6 +39,10 @@ export async function POST(req: Request) {
     const base_currency =
       typeof body?.base_currency === "string" ? body.base_currency.trim().toUpperCase() : "EUR";
     const portalSlugRaw = typeof body?.client_portal_slug === "string" ? body.client_portal_slug : "";
+    const agency_client_id =
+      typeof body?.agency_client_id === "string" && body.agency_client_id.trim()
+        ? body.agency_client_id.trim()
+        : null;
 
     if (!name) {
       return NextResponse.json({ error: "El nombre del viaje es obligatorio." }, { status: 400 });
@@ -53,6 +57,18 @@ export async function POST(req: Request) {
 
     const client_portal_slug = slugifyForUrl(portalSlugRaw || name);
 
+    if (agency_client_id) {
+      const { data: clientRow } = await supabase
+        .from("agency_clients")
+        .select("id")
+        .eq("id", agency_client_id)
+        .eq("agency_id", ctx.agency.id)
+        .maybeSingle();
+      if (!clientRow) {
+        return NextResponse.json({ error: "Cliente no válido." }, { status: 400 });
+      }
+    }
+
     const created = await createTripWithOwner(supabase, user, {
       name,
       destination: destination || null,
@@ -61,6 +77,7 @@ export async function POST(req: Request) {
       base_currency: /^[A-Z]{3}$/.test(base_currency) ? base_currency : "EUR",
       agency_id: ctx.agency.id,
       client_portal_slug,
+      agency_client_id,
     });
 
     if ("error" in created) {

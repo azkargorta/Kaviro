@@ -7,7 +7,8 @@ import {
   countPendingAgencyInvites,
   createAgencyInvite,
 } from "@/lib/agency-invites";
-import { headers } from "next/headers";
+import { getAppOrigin } from "@/lib/email/get-app-origin";
+import { sendAgencyInviteNotification } from "@/lib/email/send-agency-invite";
 
 export const runtime = "nodejs";
 
@@ -40,10 +41,7 @@ export async function GET() {
       throw new Error(error.message);
     }
 
-    const h = await headers();
-    const host = h.get("x-forwarded-host") || h.get("host") || "";
-    const proto = h.get("x-forwarded-proto") || "https";
-    const origin = host ? `${proto}://${host}` : "";
+    const origin = await getAppOrigin();
 
     const invites = (data ?? []).map((row) => ({
       id: row.id,
@@ -103,13 +101,24 @@ export async function POST(req: Request) {
       invitedBy: user.id,
     });
 
-    const h = await headers();
-    const host = h.get("x-forwarded-host") || h.get("host") || "";
-    const proto = h.get("x-forwarded-proto") || "https";
-    const origin = host ? `${proto}://${host}` : "";
-    const inviteUrl = `${origin}${agencyInvitePath(invite.token as string)}`;
+    const { inviteUrl, emailSent, emailError } = await sendAgencyInviteNotification({
+      email: invite.email as string,
+      agencyName: ctx.agency.name,
+      role: invite.role as string,
+      token: invite.token as string,
+      expiresAt: invite.expires_at as string,
+    });
 
-    return NextResponse.json({ inviteUrl, email: invite.email, role: invite.role }, { status: 201 });
+    return NextResponse.json(
+      {
+        inviteUrl,
+        email: invite.email,
+        role: invite.role,
+        emailSent,
+        emailError: emailSent ? undefined : emailError,
+      },
+      { status: 201 }
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: msg }, { status: 500 });
