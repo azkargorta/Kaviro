@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Building2, MapPin } from "lucide-react";
 import { clientPortalPath } from "@/lib/agency";
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass, agencyCardClass } from "@/lib/agency-theme";
@@ -14,6 +14,7 @@ export type AgencyTripRow = {
   end_date: string | null;
   client_portal_slug: string | null;
   created_at?: string | null;
+  clientName?: string | null;
 };
 
 function formatRange(start: string | null, end: string | null) {
@@ -45,6 +46,12 @@ export default function AgencyTripCard({
 
   return (
     <article className={`${agencyCardClass} p-4`}>
+      {trip.clientName ? (
+        <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#1e3a5f] dark:text-sky-300">
+          <Building2 className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+          {trip.clientName}
+        </p>
+      ) : null}
       <h3 className="text-base font-semibold text-slate-900 dark:text-white">{trip.name}</h3>
       {trip.destination ? (
         <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">

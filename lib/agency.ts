@@ -86,16 +86,56 @@ export async function getAgencyForUser(
   return { agency: agency as AgencyRow, membership };
 }
 
-export async function getAgencyTrips(client: SupabaseClient, agencyId: string) {
+export type AgencyTripListRow = {
+  id: string;
+  name: string;
+  destination: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  agency_id: string | null;
+  client_portal_slug: string | null;
+  created_at: string | null;
+  agency_client_id: string | null;
+  clientName: string | null;
+};
+
+export async function getAgencyTrips(client: SupabaseClient, agencyId: string): Promise<AgencyTripListRow[]> {
   const { data, error } = await client
     .from("trips")
-    .select("id, name, destination, start_date, end_date, agency_id, client_portal_slug, created_at")
+    .select(
+      "id, name, destination, start_date, end_date, agency_id, client_portal_slug, created_at, agency_client_id, agency_clients ( name )"
+    )
     .eq("agency_id", agencyId)
     .order("start_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  if (error) {
+    if (error.message.includes("agency_client_id") || error.message.includes("agency_clients")) {
+      const { data: fallback, error: fallbackErr } = await client
+        .from("trips")
+        .select("id, name, destination, start_date, end_date, agency_id, client_portal_slug, created_at")
+        .eq("agency_id", agencyId)
+        .order("start_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      if (fallbackErr) throw new Error(fallbackErr.message);
+      return (fallback ?? []).map((row) => ({
+        ...(row as Omit<AgencyTripListRow, "agency_client_id" | "clientName">),
+        agency_client_id: null,
+        clientName: null,
+      }));
+    }
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((row) => {
+    const client = row.agency_clients as { name?: string } | { name?: string }[] | null;
+    const clientName = Array.isArray(client) ? client[0]?.name ?? null : client?.name ?? null;
+    const { agency_clients: _c, ...rest } = row as Record<string, unknown>;
+    return {
+      ...(rest as Omit<AgencyTripListRow, "clientName">),
+      clientName: clientName?.trim() || null,
+    };
+  });
 }
 
 export async function isAgencyMember(
