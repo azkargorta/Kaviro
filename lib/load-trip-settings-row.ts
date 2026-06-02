@@ -25,7 +25,7 @@ export async function loadTripSettingsRow(client: SupabaseClient, tripId: string
   for (const attempt of SELECT_ATTEMPTS) {
     const { data, error } = await client.from("trips").select(attempt.cols).eq("id", tripId).maybeSingle();
     if (!error && data) {
-      const row = data as Record<string, unknown>;
+      const row = data as unknown as Record<string, unknown>;
       if (!("budget_target" in row)) row.budget_target = null;
       if (!("weather_stays" in row)) row.weather_stays = null;
       return { data: row, missingColumns: attempt.missing };

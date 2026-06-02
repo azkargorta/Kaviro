@@ -27,7 +27,8 @@ type TripRow = {
   start_date: string | null;
   end_date: string | null;
   base_currency: string | null;
-  budget_target?: number | null;
+  /** Puede venir como number (normal) o string (fallback/legacy). */
+  budget_target?: unknown;
 };
 
 type ActivityRow = {
