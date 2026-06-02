@@ -28,9 +28,23 @@ export default function PublicMarketingHeader() {
   }, []);
 
   const showGuestAuth = session === "guest";
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 sticky-safe-top border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-[#1E293B] dark:bg-[#080C14]/95">
+    <header
+      className={`sticky top-0 z-50 sticky-safe-top transition-all duration-300 ${
+        scrolled
+          ? "border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-sm dark:border-[#1E293B] dark:bg-[#080C14]/90"
+          : "border-b border-transparent bg-transparent"
+      }`}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-safe-inline py-3 sm:px-6">
         <div className="block dark:hidden">
           <KaviroLogo href="/" variant="dark" size="lg" withWordmark />
@@ -73,7 +87,7 @@ export default function PublicMarketingHeader() {
               </Link>
               <Link
                 href="/auth/register"
-                className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] sm:px-4"
+                className="btn-press inline-flex min-h-9 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] sm:px-4"
               >
                 Empezar gratis
               </Link>

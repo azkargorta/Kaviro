@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PublicMarketingHeader from "@/components/marketing/PublicMarketingHeader";
 import PublicMarketingFooter from "@/components/marketing/PublicMarketingFooter";
+import Reveal from "@/components/ui/Reveal";
+import CountUpStat from "@/components/ui/CountUpStat";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 import PlanActivityRow from "@/components/trip/plan/PlanActivityRow";
 import PlanItineraryCard from "@/components/trip/plan/PlanItineraryCard";
@@ -43,13 +45,14 @@ function FeatureCard({
   );
 }
 
-// ── Stat pill ─────────────────────────────────────────────────────────────────
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-center">
-      <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{value}</div>
-      <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</div>
-    </div>
+    <Reveal variant="fade">
+      <div className="text-center">
+        <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{value}</div>
+        <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</div>
+      </div>
+    </Reveal>
   );
 }
 
@@ -77,9 +80,31 @@ function Testimonial({ text, name, trip }: { text: string; name: string; trip: s
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+const FEATURES = [
+  { icon: CalendarDays, color: "bg-[#F87171]", title: "Plan día a día", desc: "Arrastra y ordena actividades. Añade horas, lugares y notas. Exporta a PDF o calendario." },
+  { icon: MapPinned, color: "bg-emerald-500", title: "Rutas en el mapa", desc: "Conecta tus paradas sobre el mapa. Calcula distancias y tiempos de desplazamiento." },
+  { icon: Wallet, color: "bg-amber-500", title: "Gastos del grupo", desc: "Registra tickets, divide por persona y calcula quién debe a quién al instante." },
+  { icon: Sparkles, color: "bg-[#F87171]", title: "Asistente IA (Premium)", desc: "Itinerarios en lenguaje natural, rutas automáticas y análisis de tickets. También activo si un compañero tiene Premium." },
+  { icon: Users, color: "bg-pink-500", title: "Viaja en grupo", desc: "Invita a los compañeros con un enlace. Todos ven el plan en tiempo real." },
+  { icon: Share2, color: "bg-sky-500", title: "Comparte el recuerdo", desc: "Al volver, genera una tarjeta resumen con stats del viaje para compartir en redes." },
+] as const;
+
 export default function PublicLanding() {
   useAuthRedirect();
   const [activePlan, setActivePlan] = useState<"día1" | "día2" | "día3">("día1");
+  const [parallaxY, setParallaxY] = useState(0);
+  const reducedMotionRef = useRef(false);
+
+  useEffect(() => {
+    reducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const onScroll = () => {
+      if (reducedMotionRef.current) return;
+      setParallaxY(window.scrollY * 0.4);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const PREVIEW = {
     día1: [
@@ -108,15 +133,17 @@ export default function PublicLanding() {
       <section className="relative overflow-hidden">
         {/* Background glow */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-[#F87171]/10 blur-3xl" />
+          <div
+            className="absolute -top-40 left-1/2 h-[500px] w-[800px] rounded-full bg-[#F87171]/10 blur-3xl will-change-transform"
+            style={{ transform: `translateX(-50%) translateY(${parallaxY}px)` }}
+          />
           <div className="absolute top-20 right-0 h-64 w-64 rounded-full bg-indigo-500/5 blur-3xl" />
         </div>
 
         <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-16 lg:pt-24">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
 
-            {/* Left — copy */}
-            <div className="space-y-6">
+            <Reveal variant="slide" className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#F87171]/30 bg-[#F87171]/10 px-3 py-1.5 text-xs font-bold text-[#F87171]">
                 <Sparkles className="h-3 w-3" />
                 Premium · Asistente IA
@@ -135,7 +162,7 @@ export default function PublicLanding() {
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   href="/auth/register"
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#F87171] px-8 text-base font-bold text-white shadow-lg shadow-[#F87171]/25 transition hover:bg-[#EF4444] hover:shadow-[#F87171]/40"
+                  className="btn-press inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#F87171] px-8 text-base font-bold text-white shadow-lg shadow-[#F87171]/25 transition hover:bg-[#EF4444] hover:shadow-[#F87171]/40"
                 >
                   Crear mi viaje gratis
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -166,10 +193,9 @@ export default function PublicLanding() {
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Sin tarjeta</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Listo en 2 min</span>
               </div>
-            </div>
+            </Reveal>
 
-            {/* Right — UI preview */}
-            <div className="relative overflow-hidden shadow-2xl">
+            <Reveal variant="scale" delay={1} className="hero-float relative overflow-hidden shadow-2xl">
               <PlanItineraryCard
                 destination="París, Francia"
                 tripName="Viaje a París 2026"
@@ -206,18 +232,19 @@ export default function PublicLanding() {
                   ))}
                 </div>
               </PlanItineraryCard>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* ── Stats ── */}
       <section className="border-y border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             <Stat value="2 min" label="Para crear tu primer viaje" />
             <Stat value="100%" label="Gratis para empezar" />
-            <Stat value={`${FREE_TRIP_LIMIT}`} label="Viajes en plan gratis" />
+            <Reveal variant="fade" delay={2}>
+              <CountUpStat value={FREE_TRIP_LIMIT} label="Viajes en plan gratis" />
+            </Reveal>
             <Stat value="1 clic" label="Para compartir el plan" />
           </div>
         </div>
@@ -225,68 +252,44 @@ export default function PublicLanding() {
 
       {/* ── Features ── */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="text-center mb-12">
+        <Reveal variant="fade" className="mb-12 text-center">
           <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
             Todo lo que necesitas para viajar sin caos
           </h2>
-          <p className="mt-3 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+          <p className="mt-3 max-w-xl mx-auto text-slate-500 dark:text-slate-400">
             Desde el primer día de planificación hasta el recap final. Sin cambiar de app.
           </p>
-        </div>
+        </Reveal>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard
-            icon={<CalendarDays className="h-6 w-6 text-white" />}
-            color="bg-[#F87171]"
-            title="Plan día a día"
-            desc="Arrastra y ordena actividades. Añade horas, lugares y notas. Exporta a PDF o calendario."
-          />
-          <FeatureCard
-            icon={<MapPinned className="h-6 w-6 text-white" />}
-            color="bg-emerald-500"
-            title="Rutas en el mapa"
-            desc="Conecta tus paradas sobre el mapa. Calcula distancias y tiempos de desplazamiento."
-          />
-          <FeatureCard
-            icon={<Wallet className="h-6 w-6 text-white" />}
-            color="bg-amber-500"
-            title="Gastos del grupo"
-            desc="Registra tickets, divide por persona y calcula quién debe a quién al instante."
-          />
-          <FeatureCard
-            icon={<Sparkles className="h-6 w-6 text-white" />}
-            color="bg-[#F87171]"
-            title="Asistente IA (Premium)"
-            desc="Itinerarios en lenguaje natural, rutas automáticas y análisis de tickets. También activo si un compañero tiene Premium."
-          />
-          <FeatureCard
-            icon={<Users className="h-6 w-6 text-white" />}
-            color="bg-pink-500"
-            title="Viaja en grupo"
-            desc="Invita a los compañeros con un enlace. Todos ven el plan en tiempo real."
-          />
-          <FeatureCard
-            icon={<Share2 className="h-6 w-6 text-white" />}
-            color="bg-sky-500"
-            title="Comparte el recuerdo"
-            desc="Al volver, genera una tarjeta resumen con stats del viaje para compartir en redes."
-          />
+          {FEATURES.map(({ icon: Icon, color, title, desc }, idx) => (
+            <Reveal key={title} variant="slide" delay={(idx % 3) as 0 | 1 | 2}>
+              <FeatureCard
+                icon={<Icon className="h-6 w-6 text-white" />}
+                color={color}
+                title={title}
+                desc={desc}
+              />
+            </Reveal>
+          ))}
         </div>
       </section>
 
       {/* ── How it works ── */}
       <section className="bg-white dark:bg-[#0F1623] border-y border-slate-200 dark:border-[#1E293B]">
         <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
-          <h2 className="text-center text-3xl font-extrabold text-slate-900 dark:text-white mb-12">
-            Tres pasos para el viaje perfecto
-          </h2>
+          <Reveal variant="fade" className="mb-12 text-center">
+            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
+              Tres pasos para el viaje perfecto
+            </h2>
+          </Reveal>
           <div className="grid gap-8 sm:grid-cols-3">
             {[
               { step: "01", title: "Crea el viaje", desc: "Ponle nombre, destino y fechas. Invita a los compañeros con un enlace.", icon: "✈️" },
               { step: "02", title: "Arma el plan", desc: "Añade actividades en el mapa o pide un itinerario al asistente IA (Premium).", icon: "🗺️" },
               { step: "03", title: "Viaja sin caos", desc: "Consulta el plan offline, registra gastos y comparte el recap al volver.", icon: "🎉" },
-            ].map((item) => (
-              <div key={item.step} className="relative text-center">
+            ].map((item, idx) => (
+              <Reveal key={item.step} variant="scale" delay={(idx % 3) as 0 | 1 | 2} className="relative text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#080C14] text-3xl border border-slate-200 dark:border-[#1E293B]">
                   {item.icon}
                 </div>
@@ -295,67 +298,65 @@ export default function PublicLanding() {
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">{item.title}</h3>
                 <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
       <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20">
-        <h2 className="text-center text-3xl font-extrabold text-slate-900 dark:text-white mb-10">
-          Lo que dicen los viajeros
-        </h2>
+        <Reveal variant="fade" className="mb-10 text-center">
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
+            Lo que dicen los viajeros
+          </h2>
+        </Reveal>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Testimonial
-            text="Nunca habíamos organizado un viaje de grupo tan bien. El reparto de gastos nos salvó de más de una discusión."
-            name="Marina G."
-            trip="Roma con 6 personas"
-          />
-          <Testimonial
-            text="Le pedí al asistente un itinerario de 5 días en Lisboa y en 30 segundos tenía algo mejor que lo que yo habría hecho en horas."
-            name="Carlos P."
-            trip="Lisboa en pareja"
-          />
-          <Testimonial
-            text="El mapa con las rutas entre paradas es lo que más me gusta. Ves de un vistazo si el orden tiene sentido geográficamente."
-            name="Ane M."
-            trip="Costa Amalfitana"
-          />
+          {[
+            { text: "Nunca habíamos organizado un viaje de grupo tan bien. El reparto de gastos nos salvó de más de una discusión.", name: "Marina G.", trip: "Roma con 6 personas", variant: "left" as const },
+            { text: "Le pedí al asistente un itinerario de 5 días en Lisboa y en 30 segundos tenía algo mejor que lo que yo habría hecho en horas.", name: "Carlos P.", trip: "Lisboa en pareja", variant: "fade" as const },
+            { text: "El mapa con las rutas entre paradas es lo que más me gusta. Ves de un vistazo si el orden tiene sentido geográficamente.", name: "Ane M.", trip: "Costa Amalfitana", variant: "right" as const },
+          ].map((t, idx) => (
+            <Reveal key={t.name} variant={t.variant} delay={(idx % 3) as 0 | 1 | 2}>
+              <Testimonial text={t.text} name={t.name} trip={t.trip} />
+            </Reveal>
+          ))}
         </div>
       </section>
 
       
       {/* ── Social proof ─────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
-        <p className="mb-8 text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-          Lo que dicen los viajeros
-        </p>
+        <Reveal variant="fade">
+          <p className="mb-8 text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+            Más experiencias
+          </p>
+        </Reveal>
         <div className="grid gap-5 md:grid-cols-3">
           {([
             { quote: "Por fin una app que entiende que viajar en grupo es caos. Los balances automáticos nos salvaron la vida en el viaje a Japón.", name: "Marta G.", trip: "Japón · 6 personas", emoji: "🗾" },
             { quote: "El asistente IA nos montó el itinerario de 10 días por Italia en 3 minutos. Lo que habríamos tardado horas.", name: "Carlos R.", trip: "Italia · 4 personas", emoji: "🇮🇹" },
             { quote: "Llevamos 3 viajes con Kaviro. Nunca más discusiones de quién pagó qué, porque todo queda registrado.", name: "Ana y Pablo", trip: "Viajes en grupo", emoji: "✈️" },
-          ] as const).map(({ quote, name, trip, emoji }) => (
-            <div key={name} className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-[#1E293B] dark:bg-[#0F1623]">
-              <p className="text-2xl mb-3">{emoji}</p>
-              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{quote}</p>
-              <div className="mt-4 border-t border-slate-100 dark:border-[#1E293B] pt-4">
-                <p className="text-sm font-bold text-slate-900 dark:text-white">{name}</p>
-                <p className="text-[11px] text-slate-400">{trip}</p>
+          ] as const).map(({ quote, name, trip, emoji }, idx) => (
+            <Reveal key={name} variant="slide" delay={(idx % 3) as 0 | 1 | 2}>
+              <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 dark:border-[#1E293B] dark:bg-[#0F1623]">
+                <p className="mb-3 text-2xl">{emoji}</p>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{quote}</p>
+                <div className="mt-4 border-t border-slate-100 pt-4 dark:border-[#1E293B]">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{name}</p>
+                  <p className="text-[11px] text-slate-400">{trip}</p>
+                </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
-{/* ── CTA final ── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] py-20 px-4">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
           <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
         </div>
-        <div className="relative mx-auto max-w-2xl text-center">
+        <Reveal variant="scale" className="relative mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
             Tu próximo viaje merece estar bien organizado
           </h2>
@@ -365,7 +366,7 @@ export default function PublicLanding() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/auth/register"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-white px-8 text-base font-bold text-[#F87171] shadow-lg transition hover:bg-slate-50"
+              className="btn-press inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-white px-8 text-base font-bold text-[#F87171] shadow-lg transition hover:bg-slate-50"
             >
               Crear viaje gratis
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -389,17 +390,18 @@ export default function PublicLanding() {
               Inicia sesión
             </Link>
           </p>
-        </div>
+        </Reveal>
       </section>
 
-      {/* Pricing teaser */}
       <section className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+        <Reveal variant="fade">
         <p className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-5 py-4 text-center text-sm text-slate-700 dark:text-slate-300">
           {freePlanBanner()}{" "}
           <Link href="/pricing" className="font-semibold text-[var(--brand)] hover:underline">
             Ver comparativa de planes
           </Link>
         </p>
+        </Reveal>
       </section>
 
       <PublicMarketingFooter />

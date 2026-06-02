@@ -3,17 +3,20 @@
 import { useState } from "react";
 import type { HelpSection } from "@/lib/help-center";
 import { ChevronDown } from "lucide-react";
+import Reveal from "@/components/ui/Reveal";
 
 export default function HelpFaqList({ sections }: { sections: HelpSection[] }) {
   const [openId, setOpenId] = useState<string | null>(sections[0]?.id ?? null);
 
   return (
     <div className="space-y-4">
-      {sections.map((section) => {
+      {sections.map((section, idx) => {
         const open = openId === section.id;
         return (
-          <div
+          <Reveal
             key={section.id}
+            variant="slide"
+            delay={(idx % 4) as 0 | 1 | 2 | 3}
             id={section.id}
             className="scroll-mt-24 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm"
           >
@@ -45,7 +48,7 @@ export default function HelpFaqList({ sections }: { sections: HelpSection[] }) {
                 ))}
               </div>
             ) : null}
-          </div>
+          </Reveal>
         );
       })}
     </div>

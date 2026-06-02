@@ -1,5 +1,6 @@
 import { Calendar, Zap, Map, CreditCard, Users, Star, Shield, Sparkles } from "lucide-react";
-import Link from "next/link";
+import ChangelogTimeline from "@/components/changelog/ChangelogTimeline";
+import Reveal from "@/components/ui/Reveal";
 
 export const metadata = {
   title: "Novedades · Kaviro",
@@ -118,64 +119,19 @@ export default function ChangelogPage() {
   return (
     <main className="page-shell page-shell--safe-top pb-16 space-y-6">
 
-      {/* Header */}
-      <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 px-6 py-10 md:px-10">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Kaviro</p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-          Novedades
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Cada semana mejoramos Kaviro. Aquí tienes lo último.
-        </p>
-      </div>
+      <Reveal variant="fade">
+        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 px-6 py-10 md:px-10">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Kaviro</p>
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+            Novedades
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            Cada semana mejoramos Kaviro. Aquí tienes lo último.
+          </p>
+        </div>
+      </Reveal>
 
-      {/* Timeline */}
-      <div className="relative space-y-5 pl-4">
-        <div className="absolute left-[7px] top-2 bottom-2 w-px bg-slate-200 dark:bg-[#1E293B]" />
-
-        {RELEASES.map((release) => (
-          <div key={release.version} className="relative flex gap-5">
-            {/* Dot */}
-            <div className="mt-5 shrink-0">
-              <div className="h-3.5 w-3.5 rounded-full border-2 border-[#F87171] bg-white dark:bg-[#0F1623]" />
-            </div>
-
-            {/* Card */}
-            <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="font-mono text-xs font-bold text-slate-400">{release.version}</span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${TAG_STYLES[release.tag]}`}>
-                  {TAG_LABELS[release.tag]}
-                </span>
-                <span className="ml-auto flex items-center gap-1 text-[11px] text-slate-400">
-                  <Calendar className="h-3 w-3" />
-                  {release.date}
-                </span>
-              </div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">{release.title}</h2>
-              <ul className="mt-3 space-y-2">
-                {release.items.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400">
-                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F87171]" />
-                    {text}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center dark:border-[#1E293B] dark:bg-[#080C14]">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          ¿Tienes sugerencias?{" "}
-          <Link href="/dashboard" className="font-semibold text-[#F87171] hover:text-[#EF4444] transition">
-            Escríbenos desde el Asistente IA
-          </Link>{" "}
-          dentro de cualquier viaje.
-        </p>
-      </div>
+      <ChangelogTimeline releases={RELEASES} tagStyles={TAG_STYLES} tagLabels={TAG_LABELS} />
     </main>
   );
 }

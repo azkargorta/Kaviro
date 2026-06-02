@@ -300,6 +300,116 @@ textarea.input { resize: vertical; min-height: 120px; }
 }
 .animate-fade-up { animation: fade-up 0.22s ease-out both; }
 
+@keyframes motion-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes motion-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes motion-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes motion-slide-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes motion-slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes motion-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(-1deg); }
+}
+@keyframes motion-pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
+}
+@keyframes motion-bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes motion-step-enter {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.motion-reveal,
+.motion-reveal-fade,
+.motion-reveal-scale,
+.motion-reveal-left,
+.motion-reveal-right {
+  opacity: 0;
+}
+.motion-reveal.motion-visible { animation: motion-slide-up 0.5s ease-out forwards; }
+.motion-reveal-fade.motion-visible { animation: motion-fade-in 0.4s ease-out forwards; }
+.motion-reveal-scale.motion-visible { animation: motion-scale-in 0.45s ease-out forwards; }
+.motion-reveal-left.motion-visible { animation: motion-slide-in-left 0.5s ease-out forwards; }
+.motion-reveal-right.motion-visible { animation: motion-slide-in-right 0.5s ease-out forwards; }
+
+.motion-delay-1.motion-visible { animation-delay: 0.1s; }
+.motion-delay-2.motion-visible { animation-delay: 0.2s; }
+.motion-delay-3.motion-visible { animation-delay: 0.3s; }
+.motion-delay-4.motion-visible { animation-delay: 0.4s; }
+
+.hero-float { animation: motion-float 4s ease-in-out infinite; }
+.plan-featured-pulse { animation: motion-pulse-border 3s ease-in-out infinite; }
+.empty-icon-bounce { animation: motion-bounce-soft 2.5s ease-in-out infinite; }
+.step-enter { animation: motion-step-enter 0.25s ease-out both; }
+
+.btn-press {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.btn-press:active { transform: scale(0.97); }
+.btn-press::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.btn-press:active::after { opacity: 1; }
+
+.trip-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.trip-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(248, 113, 113, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .motion-reveal,
+  .motion-reveal-fade,
+  .motion-reveal-scale,
+  .motion-reveal-left,
+  .motion-reveal-right {
+    opacity: 1;
+  }
+  .motion-reveal.motion-visible,
+  .motion-reveal-fade.motion-visible,
+  .motion-reveal-scale.motion-visible,
+  .motion-reveal-left.motion-visible,
+  .motion-reveal-right.motion-visible,
+  .hero-float,
+  .plan-featured-pulse,
+  .empty-icon-bounce,
+  .step-enter,
+  .animate-fade-up {
+    animation: none !important;
+  }
+  .btn-press:active { transform: none; }
+}
+
 /* ─── Dark mode — Tailwind class overrides ──────────────────────────────── */
 
 /* Cards */

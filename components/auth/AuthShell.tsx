@@ -1,8 +1,11 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
 import KaviroLogo from "@/components/brand/KaviroLogo";
 import { APP_NAME } from "@/lib/brand";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import Reveal from "@/components/ui/Reveal";
 
 type AuthShellProps = {
   title: string;
@@ -62,9 +65,8 @@ export default function AuthShell({
             </div>
           </section>
 
-          {/* Formulario */}
           <section className="flex min-w-0 items-start justify-center bg-[var(--surface-card)] p-4 sm:p-8 md:p-10">
-            <div className="w-full min-w-0 max-w-xl">
+            <Reveal variant="slide" className="w-full min-w-0 max-w-xl">
               <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-[var(--shadow-card)] sm:rounded-[28px] sm:p-8">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6 sm:gap-3">
                   <Link
@@ -106,7 +108,7 @@ export default function AuthShell({
 
                 {children}
               </div>
-            </div>
+            </Reveal>
           </section>
 
         </div>
