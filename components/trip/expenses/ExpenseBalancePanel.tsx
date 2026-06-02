@@ -10,6 +10,7 @@ import type {
   SettlementSuggestion,
 } from "@/lib/expense-balance";
 import { CheckCircle2, Clock, Copy, MessageCircle, Settings2, SlidersHorizontal, Users } from "lucide-react";
+import { getBudgetProgress } from "@/lib/trip-budget-progress";
 
 function safeCurrency(currency?: string | null) {
   const code = (currency || "EUR").toUpperCase().trim();
@@ -119,6 +120,11 @@ export default function ExpenseBalancePanel({
     };
   }, [balances]);
 
+  const budgetProgress = useMemo(() => {
+    if (budgetTarget == null || budgetTarget <= 0) return null;
+    return getBudgetProgress(totals.totalExpenses, budgetTarget);
+  }, [budgetTarget, totals.totalExpenses]);
+
   const orderedSettlements = useMemo(() => {
     const pending = settlements.filter((s) => s.status !== "paid");
     const paid = settlements.filter((s) => s.status === "paid");
@@ -223,18 +229,25 @@ export default function ExpenseBalancePanel({
             </div>
           ) : null}
 
-          {budgetTarget != null && budgetTarget > 0 && (
+          {budgetProgress && (
             <div className="mt-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Presupuesto objetivo</p>
-                <p className="text-xs font-bold text-[var(--text-secondary)]">
-                  {Math.round(Math.min(100, (totals.totalExpenses / budgetTarget) * 100))}%
+                <p
+                  className={`text-xs font-bold tabular-nums ${
+                    budgetProgress.overBudget ? "text-rose-600 dark:text-rose-400" : "text-[var(--text-secondary)]"
+                  }`}
+                >
+                  {budgetProgress.pct}%
                 </p>
               </div>
               <div className="h-2.5 rounded-full bg-slate-100 dark:bg-[#1E293B] overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${totals.totalExpenses > budgetTarget ? "bg-rose-500" : totals.totalExpenses > budgetTarget * 0.8 ? "bg-amber-400" : "bg-[#F87171]"}`}
-                  style={{ width: `${Math.min(100, (totals.totalExpenses / budgetTarget) * 100)}%` }}
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${budgetProgress.barWidthPct}%`,
+                    backgroundColor: budgetProgress.barColor,
+                  }}
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs text-[var(--text-tertiary)]">

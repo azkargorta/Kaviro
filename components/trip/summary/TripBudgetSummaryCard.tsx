@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getBudgetProgress, BUDGET_BAR_CLASS } from "@/lib/trip-budget-progress";
+import { getBudgetProgress } from "@/lib/trip-budget-progress";
 
 function formatMoney(amount: number, currency: string) {
   const c = (currency || "EUR").toUpperCase();
@@ -26,7 +26,7 @@ export default function TripBudgetSummaryCard({
   currency,
   multiCurrency = false,
 }: Props) {
-  const { pct, tone, overBudget } = getBudgetProgress(totalSpent, budgetTarget);
+  const { pct, barWidthPct, barColor, overBudget } = getBudgetProgress(totalSpent, budgetTarget);
   const settingsHref = `/trip/${tripId}/settings#presupuesto`;
 
   return (
@@ -49,13 +49,19 @@ export default function TripBudgetSummaryCard({
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
           Gastado vs objetivo
         </p>
-        <p className="text-xs font-bold text-slate-700 tabular-nums dark:text-slate-200">{pct}%</p>
+        <p
+          className={`text-xs font-bold tabular-nums ${
+            overBudget ? "text-rose-600 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"
+          }`}
+        >
+          {pct}%
+        </p>
       </div>
 
       <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden dark:bg-[#1E293B]">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${BUDGET_BAR_CLASS[tone]}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${barWidthPct}%`, backgroundColor: barColor }}
         />
       </div>
 
