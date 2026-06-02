@@ -25,12 +25,13 @@ export default function RecapShareButton({ tripId }: { tripId: string }) {
 
       const url = `${window.location.origin}/share/recap/${token}`;
       const copied = await writeTextToClipboard(url);
-      toast.show(
-        copied ? "Enlace del recap copiado" : "Enlace creado",
-        copied ? "Pégalo en redes o WhatsApp." : url
-      );
+      if (copied) {
+        toast.success("Enlace del recap copiado", "Pégalo en redes o WhatsApp.");
+      } else {
+        toast.info("Enlace creado", url);
+      }
     } catch (e) {
-      toast.show("No se pudo compartir", e instanceof Error ? e.message : "Error");
+      toast.error("No se pudo compartir", e instanceof Error ? e.message : "Error");
     } finally {
       setBusy(false);
     }
