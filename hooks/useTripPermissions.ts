@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   normalizePermissions,
@@ -20,14 +20,25 @@ export function useTripPermissions(tripId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [participant, setParticipant] = useState<TripPermissionParticipant | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
 
     async function load() {
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       try {
         setLoading(true);
         setError(null);
+
+        timeoutId = setTimeout(() => {
+          if (!isMounted) return;
+          if (requestIdRef.current !== requestId) return;
+          setError("Tiempo de espera cargando permisos. Reintenta o recarga la página.");
+          setLoading(false);
+        }, 8000);
 
         const {
           data: { session },
@@ -56,7 +67,8 @@ export function useTripPermissions(tripId: string) {
           setError(err instanceof Error ? err.message : "No se pudieron cargar los permisos");
         }
       } finally {
-        if (isMounted) setLoading(false);
+        if (timeoutId) clearTimeout(timeoutId);
+        if (isMounted && requestIdRef.current === requestId) setLoading(false);
       }
     }
 

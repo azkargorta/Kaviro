@@ -30,7 +30,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
+          <p className="font-semibold">{error}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-2 inline-flex min-h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-bold text-red-700 hover:bg-red-50"
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
