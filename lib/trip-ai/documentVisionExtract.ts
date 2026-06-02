@@ -98,6 +98,72 @@ export function shouldTryVisionExtract(params: {
   return false;
 }
 
+const EXPENSE_VISION_PROMPT = [
+  "Transcribe este ticket, factura o recibo de compra (puede ser foto, escaneo o PDF).",
+  "Devuelve SOLO texto plano, sin markdown ni JSON.",
+  "Incluye con claridad:",
+  "- Nombre del comercio o establecimiento",
+  "- Fecha de la compra (día, mes, año)",
+  "- Importes: base, IVA, propinas si aparecen",
+  "- TOTAL / IMPORTE TOTAL / AMOUNT DUE (la cifra final a pagar)",
+  "- Moneda (€, EUR, $, USD, etc.)",
+  "- Número de ticket o factura si existe",
+  "Mantén números y decimales exactamente como en el documento.",
+].join("\n");
+
+/** Transcripción de tickets/facturas con visión (Gemini). */
+export async function extractExpenseTextWithVision(params: {
+  buffer: Buffer;
+  mimeType: string;
+  fileName?: string;
+}): Promise<{ text: string; usage: TripAiUsage } | null> {
+  const apiKey = process.env.GEMINI_API_KEY || "";
+  if (!apiKey) return null;
+
+  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const mime = params.mimeType.startsWith("image/")
+    ? params.mimeType
+    : params.mimeType.includes("pdf")
+      ? "application/pdf"
+      : "image/jpeg";
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
+    });
+
+    const result = await model.generateContent([
+      {
+        text: `${EXPENSE_VISION_PROMPT}\nArchivo: ${params.fileName || "ticket"}`,
+      },
+      {
+        inlineData: {
+          data: params.buffer.toString("base64"),
+          mimeType: mime,
+        },
+      },
+    ]);
+
+    const text = result.response.text()?.trim() || "";
+    if (text.length < 20) return null;
+
+    const meta: Record<string, unknown> =
+      (result as { response?: { usageMetadata?: Record<string, unknown> } }).response?.usageMetadata ?? {};
+    const usage: TripAiUsage = {
+      provider: "gemini",
+      model: modelName,
+      inputTokens: typeof meta.promptTokenCount === "number" ? meta.promptTokenCount : null,
+      outputTokens: typeof meta.candidatesTokenCount === "number" ? meta.candidatesTokenCount : null,
+    };
+
+    return { text, usage };
+  } catch {
+    return null;
+  }
+}
+
 export function mergeExtractedTexts(ocrText: string, visionText: string): string {
   const ocr = ocrText.trim();
   const vision = visionText.trim();

@@ -7,7 +7,14 @@ export type ExpenseAnalyzerResult = {
   merchantName: string | null;
   extractedText: string;
   extractedTextAvailable: boolean;
-  extractionMethod: "pdf-parse" | "pdf-ocr" | "image-ocr" | "filename-fallback" | "empty";
+  extractionMethod:
+    | "pdf-parse"
+    | "pdf-ocr"
+    | "image-ocr"
+    | "vision"
+    | "vision+ocr"
+    | "filename-fallback"
+    | "empty";
   warnings: string[];
 };
 

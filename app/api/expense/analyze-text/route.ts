@@ -33,8 +33,7 @@ export async function POST(req: Request) {
     const text = typeof body?.text === "string" ? body.text : "";
     const fileName = typeof body?.fileName === "string" ? body.fileName : "documento";
     const mimeType = typeof body?.mimeType === "string" ? body.mimeType : "";
-    const provider = typeof body?.provider === "string" ? String(body.provider) : null;
-    const enhance = Boolean(body?.enhance);
+    const enhance = body?.enhance !== false;
     const monthKey = monthKeyUtc();
 
     if (!text.trim()) {
@@ -64,16 +63,23 @@ export async function POST(req: Request) {
         text.slice(0, 12000),
       ].join("\n");
       try {
-        const { supabase, userId } = await enforceAiMonthlyBudgetOrThrow({ providerId: provider });
-        const { text: answer, usage } = await askTripAIWithUsage(prompt, "general" as any, { provider });
+        const { supabase, userId } = await enforceAiMonthlyBudgetOrThrow({ providerId: "gemini" });
+        const { text: answer, usage } = await askTripAIWithUsage(prompt, "general" as any, {
+          provider: "gemini",
+          maxOutputTokens: 1024,
+          responseMimeType: "application/json",
+        });
         await trackAiUsage({
           supabase,
           userId,
-          provider: (provider || process.env.AI_PROVIDER || "gemini").toLowerCase(),
+          provider: "gemini",
           monthKey,
           usage,
         });
         llmExpense = extractFirstJsonObject(answer);
+        if (!llmExpense) {
+          llmError = "Gemini no devolvió un JSON válido.";
+        }
       } catch (e) {
         llmError = e instanceof Error ? e.message : "Error al contactar con el asistente personal.";
       }
