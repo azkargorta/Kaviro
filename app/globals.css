@@ -345,31 +345,31 @@ textarea.input { resize: vertical; min-height: 120px; }
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Contenido siempre ocupa espacio y es legible; la animación solo refina entrada */
+/* Ocultos hasta entrar en viewport; .motion-visible dispara la animación */
 .motion-reveal:not(.motion-visible) {
-  opacity: 1;
-  transform: translateY(20px);
+  opacity: 0;
+  transform: translateY(24px);
 }
 .motion-reveal-fade:not(.motion-visible) {
-  opacity: 1;
+  opacity: 0;
 }
 .motion-reveal-scale:not(.motion-visible) {
-  opacity: 1;
-  transform: scale(0.98);
+  opacity: 0;
+  transform: scale(0.95);
 }
 .motion-reveal-left:not(.motion-visible) {
-  opacity: 1;
-  transform: translateX(-16px);
+  opacity: 0;
+  transform: translateX(-20px);
 }
 .motion-reveal-right:not(.motion-visible) {
-  opacity: 1;
-  transform: translateX(16px);
+  opacity: 0;
+  transform: translateX(20px);
 }
-.motion-reveal.motion-visible { animation: motion-slide-up 0.5s ease-out forwards; }
-.motion-reveal-fade.motion-visible { animation: motion-fade-in 0.4s ease-out forwards; }
-.motion-reveal-scale.motion-visible { animation: motion-scale-in 0.45s ease-out forwards; }
-.motion-reveal-left.motion-visible { animation: motion-slide-in-left 0.5s ease-out forwards; }
-.motion-reveal-right.motion-visible { animation: motion-slide-in-right 0.5s ease-out forwards; }
+.motion-reveal.motion-visible { animation: motion-slide-up 0.55s ease-out forwards; }
+.motion-reveal-fade.motion-visible { animation: motion-fade-in 0.45s ease-out forwards; }
+.motion-reveal-scale.motion-visible { animation: motion-scale-in 0.5s ease-out forwards; }
+.motion-reveal-left.motion-visible { animation: motion-slide-in-left 0.55s ease-out forwards; }
+.motion-reveal-right.motion-visible { animation: motion-slide-in-right 0.55s ease-out forwards; }
 
 .motion-delay-1.motion-visible { animation-delay: 0.1s; }
 .motion-delay-2.motion-visible { animation-delay: 0.2s; }
@@ -409,12 +409,18 @@ textarea.input { resize: vertical; min-height: 120px; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .motion-reveal:not(.motion-visible),
+  .motion-reveal-fade:not(.motion-visible),
+  .motion-reveal-scale:not(.motion-visible),
+  .motion-reveal-left:not(.motion-visible),
+  .motion-reveal-right:not(.motion-visible),
   .motion-reveal,
   .motion-reveal-fade,
   .motion-reveal-scale,
   .motion-reveal-left,
   .motion-reveal-right {
     opacity: 1;
+    transform: none;
   }
   .motion-reveal.motion-visible,
   .motion-reveal-fade.motion-visible,

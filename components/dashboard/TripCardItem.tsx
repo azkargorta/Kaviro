@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import TripDashboardEditDialog from "@/components/dashboard/TripDashboardEditDialog";
 import DuplicateTripDialog from "@/components/dashboard/DuplicateTripDialog";
+import { tripTimelineProgress } from "@/lib/trip-timeline-progress";
 
 type Trip = {
   id: string;
@@ -111,6 +112,8 @@ export default function TripCardItem({
     router.push(`/trip/${encodeURIComponent(trip.id)}`);
   }
 
+  const timelineProgress = tripTimelineProgress(trip.start_date, trip.end_date);
+
   return (
     <div
       role={locked ? undefined : "link"}
@@ -120,8 +123,8 @@ export default function TripCardItem({
         if (locked) return;
         if (e.key === "Enter" || e.key === " ") openTrip();
       }}
-      className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-[#1E293B] dark:bg-[#0F1623] ${
-        locked ? "opacity-80" : "cursor-pointer transition hover:-translate-y-0.5 hover:border-[var(--brand-border)] hover:shadow-[var(--shadow-raised)]"
+      className={`trip-card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-[#1E293B] dark:bg-[#0F1623] ${
+        locked ? "opacity-80" : "cursor-pointer"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -190,6 +193,20 @@ export default function TripCardItem({
         <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
           Moneda base: <span className="font-semibold">{(trip.base_currency || "EUR").toUpperCase()}</span>
         </p>
+        {timelineProgress !== null ? (
+          <div className="mt-3" aria-hidden>
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span>Progreso del viaje</span>
+              <span>{timelineProgress}%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+              <div
+                className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-500 ease-out"
+                style={{ width: `${timelineProgress}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {error ? (

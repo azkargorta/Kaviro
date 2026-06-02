@@ -197,6 +197,7 @@ export default function PublicLanding() {
             </Reveal>
 
             <Reveal variant="scale" delay={1} className="relative shadow-2xl">
+              <div className="hero-float">
               <PlanItineraryCard
                 destination="París, Francia"
                 tripName="Viaje a París 2026"
@@ -233,6 +234,7 @@ export default function PublicLanding() {
                   ))}
                 </div>
               </PlanItineraryCard>
+              </div>
             </Reveal>
           </div>
         </div>

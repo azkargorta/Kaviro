@@ -43,7 +43,7 @@ function DashboardEmptyState() {
   return (
     <div className="mx-auto max-w-xl py-10 text-center">
       {/* Illustration */}
-      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-slate-100 text-4xl shadow-sm dark:from-[#1E1040] dark:to-[#0F1623]">
+      <div className="empty-icon-bounce mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-slate-100 text-4xl shadow-sm dark:from-[#1E1040] dark:to-[#0F1623]">
         ✈️
       </div>
 

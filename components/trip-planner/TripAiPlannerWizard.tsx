@@ -845,7 +845,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
 
       {/* FORM */}
       {step === "templates" && (
-        <div className="card-soft p-7 space-y-5">
+        <div key="templates" className="step-enter card-soft p-7 space-y-5">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">¿Qué tipo de viaje es?</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Elige una plantilla o créalo desde cero.</p>
@@ -874,7 +874,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       )}
 
       {step === "form" && (
-        <div className="card-soft p-7 space-y-6">
+        <div key="form" className="step-enter card-soft p-7 space-y-6">
           <div>
             <div className="flex items-center gap-2 mb-3"><MapPin className="w-4 h-4 text-slate-400" /><span className="text-sm font-bold text-slate-800">¿A dónde vas?</span></div>
             <TripPlacesFields places={places} onChange={setPlaces} />
@@ -1029,17 +1029,27 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         </div>
       )}
 
-      {step === "planning" && <GeneratingSkeleton label="Calculando el reparto óptimo de días…" />}
-
-      {step === "review" && planProposal && (
-        <PlanReviewStep proposal={planProposal} onConfirm={(stays) => generateDraft(stays)} onBack={() => setStep("form")} loading={generatingDraft} />
+      {step === "planning" && (
+        <div key="planning" className="step-enter">
+          <GeneratingSkeleton label="Calculando el reparto óptimo de días…" />
+        </div>
       )}
 
-      {step === "generating" && <GeneratingSkeleton label="Generando el itinerario completo con Gemini…" />}
+      {step === "review" && planProposal && (
+        <div key="review" className="step-enter">
+          <PlanReviewStep proposal={planProposal} onConfirm={(stays) => generateDraft(stays)} onBack={() => setStep("form")} loading={generatingDraft} />
+        </div>
+      )}
+
+      {step === "generating" && (
+        <div key="generating" className="step-enter">
+          <GeneratingSkeleton label="Generando el itinerario completo con Gemini…" />
+        </div>
+      )}
 
       {/* PREVIEW */}
       {step === "preview" && draft && (
-        <div className="space-y-5">
+        <div key="preview" className="step-enter space-y-5">
           <div className="card-soft px-6 py-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
               <div><p className="text-xs font-bold uppercase tracking-widest text-slate-400">Destino</p><p className="text-sm font-extrabold text-slate-900 max-w-xs truncate">{destinationLabel}</p></div>
