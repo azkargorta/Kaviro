@@ -41,12 +41,14 @@ const items: Array<{
     href: (id: string) => `/trip/${id}/resources`,
   },
   { key: "chat", label: "Asistente personal", href: (id: string) => `/trip/${id}/ai-chat` },
+  { key: "settings", label: "Ajustes", href: (id: string) => `/trip/${id}/settings` },
 ];
 
 function isActivePath(pathname: string, href: string, key: string) {
   if (pathname === href) return true;
   // En rutas internas bajo /map, mantenemos «Rutas» activo.
   if (key === "map" && pathname.startsWith(`${href}/`)) return true;
+  if (key === "settings" && pathname.startsWith(href)) return true;
   return false;
 }
 

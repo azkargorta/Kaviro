@@ -118,7 +118,10 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       </div>
 
       {/* Budget target */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm space-y-3">
+      <div
+        id="presupuesto"
+        className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm space-y-3 scroll-mt-24"
+      >
         <div>
           <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">Presupuesto objetivo</h3>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">

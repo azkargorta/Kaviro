@@ -598,6 +598,7 @@ export default function TripExpensesView({
             </div>
             <div className="px-4 py-4">
               <ExpenseBalancePanel
+                tripId={tripId}
                 balances={balances}
                 settlements={suggestedSettlements}
                 balanceCurrency={balanceCurrency}

@@ -27,7 +27,7 @@ export default function TripBudgetSummaryCard({
   multiCurrency = false,
 }: Props) {
   const { pct, tone, overBudget } = getBudgetProgress(totalSpent, budgetTarget);
-  const settingsHref = `/trip/${tripId}/settings`;
+  const settingsHref = `/trip/${tripId}/settings#presupuesto`;
 
   return (
     <section className="rounded-3xl border border-amber-200/70 bg-gradient-to-b from-amber-50 via-white to-slate-50 p-5 shadow-md md:p-6 dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)]">

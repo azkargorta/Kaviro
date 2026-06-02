@@ -343,7 +343,24 @@ export default function TripSummaryOverview({
               multiCurrency={expenseMultiCurrency}
             />
           </Reveal>
-        ) : null}
+        ) : (
+          <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
+            <section className="rounded-3xl border border-amber-200/70 bg-gradient-to-b from-amber-50 via-white to-slate-50 p-5 shadow-md md:p-6 dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)]">
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-amber-800 dark:text-[var(--accent)]">
+                Presupuesto del viaje
+              </p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                Aún no has definido un presupuesto objetivo. Configúralo en Ajustes para ver la barra de progreso aquí y en Gastos.
+              </p>
+              <Link
+                href={`/trip/${tripId}/settings#presupuesto`}
+                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
+              >
+                Definir presupuesto en Ajustes
+              </Link>
+            </section>
+          </Reveal>
+        )}
 
         {/* R2 — Weather integrado como columna derecha */}
         <Reveal

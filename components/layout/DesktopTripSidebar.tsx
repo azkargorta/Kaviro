@@ -68,11 +68,18 @@ const items: NavItem[] = [
     href: (id) => `/trip/${id}/ai-chat`,
     isPremiumGated: true,
   },
+  {
+    key: "settings",
+    label: "Ajustes",
+    sublabel: "Presupuesto y datos",
+    href: (id) => `/trip/${id}/settings`,
+  },
 ];
 
 function isActivePath(pathname: string, href: string, key: string) {
   if (pathname === href) return true;
   if (key === "map" && pathname.startsWith(`${href}/`)) return true;
+  if (key === "settings" && pathname.startsWith(`${href}`)) return true;
   return false;
 }
 

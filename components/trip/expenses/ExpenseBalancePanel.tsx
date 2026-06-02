@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type {
   BalanceRow,
@@ -34,6 +35,7 @@ function formatMoney(value: number, currency?: string | null) {
 }
 
 type Props = {
+  tripId?: string;
   budgetTarget?: number | null;
   balances: BalanceRow[];
   settlements: SettlementSuggestion[];
@@ -70,6 +72,7 @@ export default function ExpenseBalancePanel({
   onResetAllPaymentRules,
   strictPaymentMethods,
   onChangeStrictPaymentMethods,
+  tripId,
   budgetTarget,
 }: Props) {
   const displayCurrency = safeCurrency(balanceCurrency);
@@ -205,6 +208,20 @@ export default function ExpenseBalancePanel({
               </span>
             </div>
           )}
+
+          {(budgetTarget == null || budgetTarget <= 0) && tripId ? (
+            <div className="mt-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+              <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                Sin presupuesto objetivo definido.
+              </p>
+              <Link
+                href={`/trip/${tripId}/settings#presupuesto`}
+                className="mt-2 inline-flex text-xs font-bold text-[var(--brand)] hover:underline"
+              >
+                Definir en Ajustes del viaje →
+              </Link>
+            </div>
+          ) : null}
 
           {budgetTarget != null && budgetTarget > 0 && (
             <div className="mt-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 shadow-sm">

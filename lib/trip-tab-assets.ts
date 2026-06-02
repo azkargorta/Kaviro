@@ -7,7 +7,8 @@ export type TripTabKey =
   | "resources"
   | "chat"
   | "recap"
-  | "messages";
+  | "messages"
+  | "settings";
 
 /** PNG de documentos suele llevar más margen interno: escala para igualar peso visual al resto de pestañas. */
 export const tripTabDocsImageClass = "object-contain scale-[1.08] origin-center";
@@ -22,6 +23,7 @@ const tabToBaseName: Record<TripTabKey, string> = {
   chat: "ai",
   recap: "recap",
   messages: "participants",
+  settings: "summary",
 };
 
 export function getTripTabIconSrc(key: TripTabKey, isDark: boolean) {
