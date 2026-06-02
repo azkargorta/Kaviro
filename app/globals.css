@@ -61,18 +61,26 @@
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────── */
-html { scroll-behavior: smooth; overflow-x: clip; }
+html {
+  scroll-behavior: smooth;
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
 
 body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
+  height: auto;
   background: var(--surface-page);
   color: var(--text-primary);
   font-family: "Inter", "SF Pro Display", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: clip;
+  overflow-x: hidden;
+  overflow-y: visible;
   overscroll-behavior-x: none;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -93,7 +101,7 @@ body:not(.dark body) {
 
 * { box-sizing: border-box; }
 a { color: inherit; text-decoration: none; }
-main { min-width: 0; }
+main { min-width: 0; overflow: visible; }
 button, input, select, textarea { font: inherit; }
 
 /* ─── Form inputs ───────────────────────────────────────────────────────── */
@@ -337,13 +345,25 @@ textarea.input { resize: vertical; min-height: 120px; }
   to { opacity: 1; transform: translateX(0); }
 }
 
-.motion-reveal,
-.motion-reveal-fade,
-.motion-reveal-scale,
-.motion-reveal-left,
-.motion-reveal-right {
-  opacity: 0;
-  transform: none;
+/* Contenido siempre ocupa espacio y es legible; la animación solo refina entrada */
+.motion-reveal:not(.motion-visible) {
+  opacity: 1;
+  transform: translateY(20px);
+}
+.motion-reveal-fade:not(.motion-visible) {
+  opacity: 1;
+}
+.motion-reveal-scale:not(.motion-visible) {
+  opacity: 1;
+  transform: scale(0.98);
+}
+.motion-reveal-left:not(.motion-visible) {
+  opacity: 1;
+  transform: translateX(-16px);
+}
+.motion-reveal-right:not(.motion-visible) {
+  opacity: 1;
+  transform: translateX(16px);
 }
 .motion-reveal.motion-visible { animation: motion-slide-up 0.5s ease-out forwards; }
 .motion-reveal-fade.motion-visible { animation: motion-fade-in 0.4s ease-out forwards; }

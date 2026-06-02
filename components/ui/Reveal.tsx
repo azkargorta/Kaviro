@@ -48,6 +48,17 @@ export default function Reveal({
       return;
     }
 
+    const showIfInView = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+        setVisible(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (showIfInView()) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
@@ -55,7 +66,7 @@ export default function Reveal({
           observer.disconnect();
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -32px 0px" }
+      { threshold: 0.05, rootMargin: "0px 0px 10% 0px" }
     );
 
     observer.observe(el);

@@ -92,14 +92,15 @@ const FEATURES = [
 export default function PublicLanding() {
   useAuthRedirect();
   const [activePlan, setActivePlan] = useState<"día1" | "día2" | "día3">("día1");
-  const [parallaxY, setParallaxY] = useState(0);
-  const reducedMotionRef = useRef(false);
+  const parallaxBlobRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    reducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const blob = parallaxBlobRef.current;
+    if (reducedMotion || !blob) return;
+
     const onScroll = () => {
-      if (reducedMotionRef.current) return;
-      setParallaxY(window.scrollY * 0.4);
+      blob.style.transform = `translateX(-50%) translateY(${window.scrollY * 0.35}px)`;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -125,17 +126,17 @@ export default function PublicLanding() {
   };
 
   return (
-    <main className="min-h-screen overflow-x-clip overflow-y-visible bg-slate-50 dark:bg-[#080C14]">
+    <main className="relative min-h-screen bg-slate-50 dark:bg-[#080C14]">
 
       <PublicMarketingHeader />
 
       {/* ── Hero ── */}
-      <section className="relative overflow-x-clip">
-        {/* Background glow */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <section className="relative">
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div
-            className="absolute -top-40 left-1/2 h-[500px] w-[800px] rounded-full bg-[#F87171]/10 blur-3xl will-change-transform"
-            style={{ transform: `translateX(-50%) translateY(${parallaxY}px)` }}
+            ref={parallaxBlobRef}
+            className="absolute -top-40 left-1/2 h-[500px] w-[800px] rounded-full bg-[#F87171]/10 blur-3xl"
+            style={{ transform: "translateX(-50%)" }}
           />
           <div className="absolute top-20 right-0 h-64 w-64 rounded-full bg-indigo-500/5 blur-3xl" />
         </div>
@@ -196,7 +197,6 @@ export default function PublicLanding() {
             </Reveal>
 
             <Reveal variant="scale" delay={1} className="relative shadow-2xl">
-              <div className="hero-float">
               <PlanItineraryCard
                 destination="París, Francia"
                 tripName="Viaje a París 2026"
@@ -233,7 +233,6 @@ export default function PublicLanding() {
                   ))}
                 </div>
               </PlanItineraryCard>
-              </div>
             </Reveal>
           </div>
         </div>

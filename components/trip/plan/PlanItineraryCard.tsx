@@ -141,11 +141,12 @@ export default function PlanItineraryCard({
   }, [days, updateDayScrollArrows]);
 
   useEffect(() => {
+    if (tripId === "preview") return;
     const el = daysScrollRef.current;
     if (!el || !selectedDate) return;
     const tab = el.querySelector<HTMLElement>(`[data-plan-day="${selectedDate}"]`);
     tab?.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
-  }, [selectedDate, days]);
+  }, [selectedDate, days, tripId]);
 
   function scrollDays(direction: "left" | "right") {
     const el = daysScrollRef.current;
