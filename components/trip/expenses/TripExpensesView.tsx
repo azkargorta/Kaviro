@@ -13,6 +13,8 @@ import { useTripData } from "@/hooks/useTripData";
 import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import Reveal from "@/components/ui/Reveal";
 
 export default function TripExpensesView({
   tripId,
@@ -154,7 +156,7 @@ export default function TripExpensesView({
 
   const topButtons = useMemo(() => {
     const base =
-      "inline-flex min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal rounded-full border bg-white px-3 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] sm:px-4";
+      "btn-press inline-flex min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal rounded-full border bg-white px-3 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)] sm:px-4";
     const primary = `${base} border-[var(--brand-border)] text-[var(--brand-text)] hover:border-[var(--brand)] hover:bg-[var(--brand-light)]`;
     const secondary = `${base} border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50`;
 
@@ -213,44 +215,13 @@ export default function TripExpensesView({
   if (loading) {
     return (
       <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden" aria-busy="true" aria-label="Cargando gastos">
-        {/* Pill toggle skeleton */}
-        <div className="animate-pulse h-10 w-52 rounded-xl bg-slate-200 dark:bg-slate-700" />
-        {/* Toolbar skeleton */}
-        <div className="flex flex-wrap gap-2">
-          <div className="animate-pulse h-9 w-28 rounded-xl bg-slate-200 dark:bg-slate-700" />
-          <div className="animate-pulse h-9 w-28 rounded-xl bg-slate-200 dark:bg-slate-700" />
-          <div className="ml-auto animate-pulse h-9 w-20 rounded-xl bg-slate-200 dark:bg-slate-700" />
+        <SkeletonCard rows={2} />
+        <div className="grid gap-6 md:grid-cols-2">
+          <SkeletonCard rows={4} />
+          <SkeletonCard rows={3} />
         </div>
-        {/* Two-column grid skeleton */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-[#0F1623]">
-            <div className="mb-4 h-5 w-2/5 rounded bg-slate-200 dark:bg-slate-700" />
-            <div className="space-y-3">
-              {[1, 2, 3, 4].map((i) => <div key={i} className="h-10 rounded-xl bg-slate-200 dark:bg-slate-700" />)}
-            </div>
-          </div>
-          <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-[#0F1623]">
-            <div className="mb-4 h-5 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-slate-200 dark:bg-slate-700" />)}
-            </div>
-          </div>
-        </div>
-        {/* Expense list skeleton */}
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
-                  <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
-                </div>
-                <div className="h-5 w-16 rounded bg-slate-200 dark:bg-slate-700" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <SkeletonCard rows={2} />
+        <SkeletonCard rows={2} />
       </div>
     );
   }
@@ -317,10 +288,12 @@ export default function TripExpensesView({
       </div>
 
       {activeTab === "charts" ? (
-        <ExpenseCharts expenses={expenses} baseCurrency={tripBaseCurrency || "EUR"} />
+        <div key="charts" className="step-enter">
+          <ExpenseCharts expenses={expenses} baseCurrency={tripBaseCurrency || "EUR"} />
+        </div>
       ) : null}
 
-      <div className={activeTab !== "list" ? "hidden" : undefined}>
+      <div key="list" className={`step-enter ${activeTab !== "list" ? "hidden" : ""}`}>
       {error ? (
         <div className="break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <div className="font-semibold">No se pudieron cargar bien los gastos.</div>
@@ -348,7 +321,7 @@ export default function TripExpensesView({
                   setIsAddOpen(true);
                   setIsAnalyzeOpen(false);
                 }}
-                className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+                className="btn-press mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[var(--brand)] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
               >
                 Añadir ticket
               </button>
@@ -618,7 +591,7 @@ export default function TripExpensesView({
         </div>
 
         <div className="min-w-0 space-y-4">
-          <div data-tour="expenses-balance-panel" className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
+          <Reveal variant="fade" delay={1} data-tour="expenses-balance-panel" className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
             <div className="border-b border-slate-200 bg-slate-50/50 px-5 py-4 dark:border-slate-700/50 dark:bg-slate-900/45">
               <div className="text-sm font-semibold text-slate-950">Balances y pagos</div>
               <div className="mt-1 text-xs text-slate-600">Quién debe a quién y enlaces rápidos por WhatsApp.</div>
@@ -644,7 +617,7 @@ export default function TripExpensesView({
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}
               />
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
 

@@ -21,6 +21,8 @@ import ActivityReservationForm from "@/components/trip/resources/ActivityReserva
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import Reveal from "@/components/ui/Reveal";
 import { useTripPermissions } from "@/hooks/useTripPermissions";
 import { supabase } from "@/lib/supabase";
 
@@ -95,45 +97,15 @@ export default function TripResourcesView({
   if (loading) {
     return (
       <div className="min-w-0 max-w-full space-y-6" aria-busy="true" aria-label="Cargando recursos">
-        {/* Lists section skeleton */}
-        <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
-          <div className="flex items-center justify-between">
-            <div className="h-5 w-32 rounded bg-slate-200 dark:bg-slate-700" />
-            <div className="h-5 w-5 rounded bg-slate-200 dark:bg-slate-700" />
-          </div>
+        <SkeletonCard rows={2} />
+        <div className="grid gap-6 md:grid-cols-2">
+          <SkeletonCard rows={3} />
+          <SkeletonCard rows={3} />
         </div>
-        {/* Upload + analyzer grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-[#0F1623]">
-              <div className="mb-4 h-5 w-2/5 rounded bg-slate-200 dark:bg-slate-700" />
-              <div className="h-28 rounded-xl bg-slate-200 dark:bg-slate-700" />
-            </div>
-          ))}
-        </div>
-        {/* Reservation template skeleton */}
-        <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
-          <div className="flex gap-3">
-            {[1, 2, 3].map((i) => <div key={i} className="h-12 flex-1 rounded-xl bg-slate-200 dark:bg-slate-700" />)}
-          </div>
-        </div>
-        {/* Resource + reservation lists */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="space-y-3">
-              {[1, 2, 3].map((j) => (
-                <div key={j} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0F1623]">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-700" />
-                      <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
+        <SkeletonCard rows={2} />
+        <div className="grid gap-6 md:grid-cols-2">
+          <SkeletonCard rows={3} />
+          <SkeletonCard rows={3} />
         </div>
       </div>
     );
@@ -148,7 +120,7 @@ export default function TripResourcesView({
         </div>
       ) : null}
 
-      <section data-tour="resources-lists-section" className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <Reveal variant="fade" data-tour="resources-lists-section" as="section" className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 max-w-full flex-1">
             <h3 className="text-lg font-semibold text-slate-900">Listas</h3>
@@ -160,18 +132,18 @@ export default function TripResourcesView({
             data-tour="resources-lists-btn"
             type="button"
             onClick={() => setShowLists((v) => !v)}
-            className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
+            className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
           >
             {showLists ? "Cerrar listas" : "Crear/ver listas"}
           </button>
         </div>
 
         {showLists ? (
-          <div data-tour="resources-lists-panel">
+          <div key="lists-panel" data-tour="resources-lists-panel" className="step-enter">
             <TripListsPanel tripId={tripId} isPremium={isPremium} canManageResources={canManageResources} />
           </div>
         ) : null}
-      </section>
+      </Reveal>
 
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2">
         <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
@@ -188,7 +160,7 @@ export default function TripResourcesView({
                 data-tour="resources-upload-btn"
                 type="button"
                 onClick={() => setShowUploadForm((current) => !current)}
-                className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
+                className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
               >
                 {showUploadForm ? "Cerrar" : "Adjuntar documento"}
               </button>
@@ -238,7 +210,7 @@ export default function TripResourcesView({
                   setShowAnalyzerForm((current) => !current);
                 }}
                 disabled={!isPremium}
-                className={`${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
+                className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
               >
                 {showAnalyzerForm ? "Cerrar" : "Analizar documento"}
               </button>

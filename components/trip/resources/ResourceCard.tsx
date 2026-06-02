@@ -35,7 +35,7 @@ export default function ResourceCard({ item, onOpen, onDelete }: Props) {
   const meta = fileTypeMeta(item.type || item.file_name?.split(".").pop());
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:border-slate-300 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-[#334155]">
+    <div className="trip-card-hover overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="flex items-start justify-between gap-3 p-4">
         <div className="min-w-0 flex-1 flex items-start gap-3">
           {/* D1 — Semantic file type icon */}

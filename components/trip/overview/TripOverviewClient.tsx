@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { TripWeatherResult } from "@/lib/trip-weather";
 import TripAiInsights from "@/components/trip/overview/TripAiInsights";
+import Reveal from "@/components/ui/Reveal";
 
 type Activity = {
   id: string;
@@ -126,7 +127,7 @@ export default function TripOverviewClient({
     <div className="space-y-5">
 
       {/* ── Hero countdown card ─────────────────────────────────────────── */}
-      <div data-tour="summary-countdown" className="card-soft px-6 py-6 flex flex-wrap items-center justify-between gap-4">
+      <Reveal variant="fade" data-tour="summary-countdown" className="card-soft px-6 py-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           {phase === "during" && totalTripDays && (
             <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[#F87171]/10 px-3 py-1 ring-1 ring-[#F87171]/25">
@@ -177,12 +178,12 @@ export default function TripOverviewClient({
             <span className="mt-1 text-xs font-semibold text-slate-400">días</span>
           </div>
         )}
-      </div>
+      </Reveal>
 
       {/* ── Stats grid ──────────────────────────────────────────────────── */}
       <div data-tour="summary-stats" className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0 no-scrollbar">
         {/* Activities */}
-        <Link href={`/trip/${tripId}/plan`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-[var(--brand-border)] transition-colors group min-w-[140px] snap-start sm:min-w-0">
+        <Link href={`/trip/${tripId}/plan`} className="trip-tile-hover card-soft px-4 py-4 flex flex-col gap-1 hover:border-[var(--brand-border)] transition-colors group min-w-[140px] snap-start sm:min-w-0">
           <div className="flex items-center justify-between">
             <CalendarDays className="w-4 h-4 text-[var(--brand)]" />
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--brand)] transition-colors" />
@@ -197,7 +198,7 @@ export default function TripOverviewClient({
         </Link>
 
         {/* Expenses */}
-        <Link href={`/trip/${tripId}/expenses`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-emerald-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
+        <Link href={`/trip/${tripId}/expenses`} className="trip-tile-hover card-soft px-4 py-4 flex flex-col gap-1 hover:border-emerald-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
           <div className="flex items-center justify-between">
             <Wallet className="w-4 h-4 text-emerald-500" />
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-400 transition-colors" />
@@ -209,7 +210,7 @@ export default function TripOverviewClient({
         </Link>
 
         {/* Participants */}
-        <Link href={`/trip/${tripId}/participants`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-blue-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
+        <Link href={`/trip/${tripId}/participants`} className="trip-tile-hover card-soft px-4 py-4 flex flex-col gap-1 hover:border-blue-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
           <div className="flex items-center justify-between">
             <Users className="w-4 h-4 text-blue-400" />
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-400 transition-colors" />
@@ -219,7 +220,7 @@ export default function TripOverviewClient({
         </Link>
 
         {/* Resources */}
-        <Link href={`/trip/${tripId}/resources`} className="card-soft px-4 py-4 flex flex-col gap-1 hover:border-amber-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
+        <Link href={`/trip/${tripId}/resources`} className="trip-tile-hover card-soft px-4 py-4 flex flex-col gap-1 hover:border-amber-200 transition-colors group min-w-[140px] snap-start sm:min-w-0">
           <div className="flex items-center justify-between">
             <FileText className="w-4 h-4 text-amber-500" />
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-400 transition-colors" />

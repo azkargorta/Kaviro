@@ -20,6 +20,9 @@ import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
+import Reveal from "@/components/ui/Reveal";
+import type { RevealDelay } from "@/components/ui/Reveal";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { getRoleLabel, getStatusLabel } from "@/lib/participants";
 import {
   Info,
@@ -442,18 +445,15 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
 
   if (loading) {
     return (
-      <main className="space-y-6">
-        <div className="h-40 animate-pulse rounded-3xl bg-gradient-to-r from-slate-200 via-slate-100 to-violet-100" />
-        <div className="grid gap-3 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-[#1E293B]" />
-          ))}
+      <main className="space-y-6" aria-busy="true" aria-label="Cargando participantes">
+        <SkeletonCard rows={2} />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <SkeletonCard rows={1} />
+          <SkeletonCard rows={1} />
+          <SkeletonCard rows={1} />
         </div>
-        <div className="space-y-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-[#1E293B]" />
-          ))}
-        </div>
+        <SkeletonCard rows={3} />
+        <SkeletonCard rows={3} />
       </main>
     );
   }
@@ -486,7 +486,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
 
       {/* Ge1 — 3 stat cards con número grande como protagonista */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <Reveal variant="scale" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
           <div className="flex items-center gap-3 px-4 py-3.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-[#1E293B] text-slate-600 dark:text-slate-300">
               <Users className="h-5 w-5" aria-hidden />
@@ -496,8 +496,8 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               <p className="text-3xl font-extrabold leading-none text-slate-950 tabular-nums">{stats.total}</p>
             </div>
           </div>
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-900/40 dark:bg-[#0F1623]">
+        </Reveal>
+        <Reveal variant="scale" delay={1} className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-900/40 dark:bg-[#0F1623]">
           <div className="flex items-center gap-3 px-4 py-3.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
               <UserCheck className="h-5 w-5" aria-hidden />
@@ -507,8 +507,8 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               <p className="text-3xl font-extrabold leading-none text-emerald-700 tabular-nums">{stats.linked}</p>
             </div>
           </div>
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/40 dark:bg-[#0F1623]">
+        </Reveal>
+        <Reveal variant="scale" delay={2} className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/40 dark:bg-[#0F1623]">
           <div className="flex items-center gap-3 px-4 py-3.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
               <Sparkles className="h-5 w-5" aria-hidden />
@@ -518,7 +518,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               <p className="text-3xl font-extrabold leading-none text-amber-700 tabular-nums">{stats.unlinked}</p>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
 
       {actionError ? (
@@ -641,16 +641,19 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             No hay resultados con estos filtros. Prueba a limpiar la búsqueda o cambiar el filtro de vinculación.
           </div>
         ) : (
-          <div className="grid gap-3">
-            {filteredParticipants.map((participant) => {
+          <div className="motion-stagger-list grid gap-3">
+            {filteredParticipants.map((participant, pIdx) => {
               const isLinkedUser = Boolean(participant.user_id);
               const canInviteThisParticipant = !isLinkedUser;
               const isYou = Boolean(currentUserId && participant.user_id === currentUserId);
 
               return (
-                <article
+                <Reveal
                   key={participant.id}
-                  className={`group rounded-3xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
+                  variant="slide"
+                  delay={(pIdx % 4) as RevealDelay}
+                  as="article"
+                  className={`trip-card-hover group rounded-3xl border bg-white p-4 shadow-sm ${
                     isYou ? "border-violet-200 ring-1 ring-violet-100" : "border-slate-200"
                   }`}
                 >
@@ -740,7 +743,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                       </div>
                     ) : null}
                   </div>
-                </article>
+                </Reveal>
               );
             })}
           </div>
@@ -793,7 +796,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   type="button"
                   data-tour="participants-add-btn"
                   onClick={() => (isCreating ? closeCreateParticipant() : openCreateParticipant())}
-                  className={`${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
+                  className={`btn-press ${btnPrimary} inline-flex items-center gap-2 px-4 py-2.5 text-sm`}
                 >
                   <UserPlus className="h-4 w-4" aria-hidden />
                   {isCreating ? "Cerrar formulario" : "Añadir pasajero"}

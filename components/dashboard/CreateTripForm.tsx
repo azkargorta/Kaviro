@@ -215,7 +215,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary disabled:opacity-50"
+          className="btn-press btn-primary disabled:opacity-50"
         >
           {loading
             ? step === "trip"

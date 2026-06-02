@@ -230,7 +230,7 @@ export default function ExpenseList({
         </div>
       ) : null}
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-4 space-y-4 motion-stagger-list">
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">💸</div>
@@ -249,7 +249,7 @@ export default function ExpenseList({
             const owedBy = normalizeParticipants(expense.owed_by_names);
 
             return (
-              <div key={expense.id} className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:border-slate-300">
+              <div key={expense.id} className="motion-stagger-item trip-card-hover min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
                 {/* G2+G3 — Row: avatar + content + amount */}
                 <div className="flex items-start gap-3 px-4 py-3.5">
                   {/* G2 — Payer avatar */}
