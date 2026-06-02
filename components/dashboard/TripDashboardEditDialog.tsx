@@ -128,12 +128,15 @@ export default function TripDashboardEditDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="trip-dash-edit-title"
+      onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => {
+        e.stopPropagation();
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
         className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-[#1E293B] dark:bg-[#0F1623]"
+        onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-[#1E293B]">

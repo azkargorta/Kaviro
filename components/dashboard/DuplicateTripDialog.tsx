@@ -99,6 +99,8 @@ export default function DuplicateTripDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="dup-trip-title"
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Backdrop */}
       <button
@@ -109,7 +111,11 @@ export default function DuplicateTripDialog({
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700/60 dark:bg-slate-950">
+      <div
+        className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700/60 dark:bg-slate-950"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 pb-4 pt-5 dark:border-slate-700/60">
           <div className="flex items-center gap-3">

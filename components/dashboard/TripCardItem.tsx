@@ -108,7 +108,7 @@ export default function TripCardItem({
   }
 
   function openTrip() {
-    if (locked) return;
+    if (locked || editOpen || duplicateOpen) return;
     router.push(`/trip/${encodeURIComponent(trip.id)}`);
   }
 
@@ -118,10 +118,16 @@ export default function TripCardItem({
     <div
       role={locked ? undefined : "link"}
       tabIndex={locked ? -1 : 0}
-      onClick={openTrip}
+      onClick={(e) => {
+        e.stopPropagation();
+        openTrip();
+      }}
       onKeyDown={(e) => {
-        if (locked) return;
-        if (e.key === "Enter" || e.key === " ") openTrip();
+        if (locked || editOpen || duplicateOpen) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openTrip();
+        }
       }}
       className={`trip-card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-[#1E293B] dark:bg-[#0F1623] ${
         locked ? "opacity-80" : "cursor-pointer"
