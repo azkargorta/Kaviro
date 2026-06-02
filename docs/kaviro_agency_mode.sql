@@ -243,6 +243,7 @@ create policy "agency_templates_member" on public.agency_templates
 
 -- ---------------------------------------------------------------------------
 -- Seed cuenta de prueba TripBoard: docs/kaviro_agency_seed_tripboard.sql
+-- Logos (Storage): docs/kaviro_agency_logos_storage.sql
 -- ---------------------------------------------------------------------------
 -- Seed manual (ejemplo Stripes) — descomentar y sustituir UUIDs tras crear usuarios
 -- ---------------------------------------------------------------------------

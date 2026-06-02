@@ -1,3 +1,12 @@
+const supabaseStorageHost = (() => {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    return url ? new URL(url).hostname : null;
+  } catch {
+    return null;
+  }
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -9,6 +18,15 @@ const nextConfig = {
       },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "source.unsplash.com" },
+      ...(supabaseStorageHost
+        ? [
+            {
+              protocol: "https",
+              hostname: supabaseStorageHost,
+              pathname: "/storage/v1/object/public/**",
+            },
+          ]
+        : []),
     ],
   },
   async headers() {

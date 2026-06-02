@@ -14,7 +14,7 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 | 2 | Panel `/agency` | En repo |
 | 3 | Plantillas (`agency_templates` + duplicar viaje) | En repo (`/agency/templates`) |
 | 4 | Portal `/client/[agency]/[trip]` | En repo (`lib/load-agency-client-portal.ts`) |
-| 5 | Branding (logo, color) | Pendiente (`lib/brand.ts` + Storage) |
+| 5 | Branding (logo, color) | En repo (`/agency/branding` + `kaviro_agency_logos_storage.sql`) |
 | 6 | Stripe Agencia Pro | Pendiente (`AGENCY_PRO_PRICE_ID`) |
 
 ## Semana 1 (bloqueantes)
@@ -59,11 +59,15 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 - Requiere `trips.client_portal_slug` y fila activa en `agency_client_portals` (o solo slug en viaje)
 - Enlace desde tarjeta del viaje en `/agency` → «Portal cliente»
 
+## Branding (Bloque 5)
+
+1. Ejecutar `kaviro_agency_logos_storage.sql` en Supabase.
+2. Panel → **Branding**: nombre, logo, color, email de contacto (solo admin).
+
 ## Próximo código
 
-- Bloque 3: UI plantillas + duplicar desde plantilla
-- Bloque 5: subir logo y color en `/agency/branding`
-- Bloque 6: checkout Stripe Agencia Pro
+- Bloque 6: checkout Stripe Agencia Pro (`AGENCY_PRO_PRICE_ID`)
+- Equipo: invitaciones por email (UI ampliada)
 
 ## Precio orientativo
 
