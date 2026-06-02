@@ -122,7 +122,8 @@ export default function ExpenseBalancePanel({
 
   const budgetProgress = useMemo(() => {
     if (budgetTarget == null || budgetTarget <= 0) return null;
-    return getBudgetProgress(totals.totalExpenses, budgetTarget);
+    const target = budgetTarget;
+    return { ...getBudgetProgress(totals.totalExpenses, target), target };
   }, [budgetTarget, totals.totalExpenses]);
 
   const orderedSettlements = useMemo(() => {
@@ -252,7 +253,7 @@ export default function ExpenseBalancePanel({
               </div>
               <div className="mt-2 flex justify-between text-xs text-[var(--text-tertiary)]">
                 <span>{formatMoney(totals.totalExpenses, displayCurrency)} gastado</span>
-                <span>de {formatMoney(budgetTarget, displayCurrency)}</span>
+                <span>de {formatMoney(budgetProgress.target, displayCurrency)}</span>
               </div>
             </div>
           )}
