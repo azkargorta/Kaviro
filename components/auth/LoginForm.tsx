@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signInWithEmail } from "@/lib/auth";
 import KaviroLoadingScreen from "@/components/brand/KaviroLoadingScreen";
+import { AGENCY_PARTNERSHIP_EMAIL } from "@/lib/brand";
 import { defaultLoginNext, parseWorkspaceModeParam, WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 
 function welcomeLabel(username: string | null, email: string) {
@@ -69,13 +70,35 @@ export default function LoginForm() {
       const label = welcomeLabel(me?.username ?? null, me?.email || email);
       setWelcomeName(label);
 
-      try {
-        localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, isAgencyLogin ? "agency" : "personal");
-      } catch {
-        /* */
-      }
-      const dest =
+      let dest =
         next.startsWith("/") && !next.startsWith("//") ? next : defaultLoginNext(mode);
+
+      if (isAgencyLogin) {
+        const agRes = await fetch("/api/agencies/me", { credentials: "include", cache: "no-store" });
+        const ag = (await agRes.json().catch(() => null)) as { agency?: { id?: string } | null } | null;
+        if (ag?.agency?.id) {
+          dest = "/agency";
+          try {
+            localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "agency");
+          } catch {
+            /* */
+          }
+        } else {
+          dest = "/empresa?reason=no-membership";
+          try {
+            localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "personal");
+          } catch {
+            /* */
+          }
+        }
+      } else {
+        try {
+          localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "personal");
+        } catch {
+          /* */
+        }
+      }
+
       window.setTimeout(() => {
         window.location.assign(dest);
       }, 1800);
@@ -97,6 +120,16 @@ export default function LoginForm() {
 
   return (
     <div className="space-y-6">
+      {isAgencyLogin ? (
+        <p className="rounded-xl border border-[#1e3a5f]/20 bg-[#1e3a5f]/5 px-4 py-3 text-sm text-slate-600 dark:border-sky-900/40 dark:bg-[#1e3a5f]/10 dark:text-slate-300">
+          Acceso al panel solo para cuentas autorizadas. Si aún no tienes acceso, escribe a{" "}
+          <a href={`mailto:${AGENCY_PARTNERSHIP_EMAIL}`} className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
+            {AGENCY_PARTNERSHIP_EMAIL}
+          </a>
+          .
+        </p>
+      ) : null}
+
       {/* ERROR */}
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">

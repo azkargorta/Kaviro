@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import AuthShell from "@/components/auth/AuthShell";
 import LoginForm from "@/components/auth/LoginForm";
 import { createClient } from "@/lib/supabase/server";
+import { getAgencyForUser } from "@/lib/agency";
 import { defaultLoginNext, parseWorkspaceModeParam } from "@/lib/workspace-mode";
 
 type Props = {
@@ -17,6 +18,10 @@ export default async function LoginPage({ searchParams }: Props) {
   const mode = parseWorkspaceModeParam(searchParams?.mode);
 
   if (user) {
+    if (mode === "agency") {
+      const ctx = await getAgencyForUser(supabase, user.id);
+      redirect(ctx ? "/agency" : "/empresa?reason=no-membership");
+    }
     const next = searchParams?.next;
     const dest =
       next && next.startsWith("/") && !next.startsWith("//") ? next : defaultLoginNext(mode);

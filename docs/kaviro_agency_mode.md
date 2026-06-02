@@ -12,7 +12,7 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 |---|--------|----------------|
 | 1 | BD: `agencies`, `agency_members`, `trips.agency_id`, portales | SQL: [`kaviro_agency_mode.sql`](./kaviro_agency_mode.sql) |
 | 2 | Panel `/agency` | En repo |
-| 3 | Plantillas (`agency_templates` + duplicar viaje) | Tabla en SQL; UI pendiente |
+| 3 | Plantillas (`agency_templates` + duplicar viaje) | En repo (`/agency/templates`) |
 | 4 | Portal `/client/[agency]/[trip]` | En repo (`lib/load-agency-client-portal.ts`) |
 | 5 | Branding (logo, color) | Pendiente (`lib/brand.ts` + Storage) |
 | 6 | Stripe Agencia Pro | Pendiente (`AGENCY_PRO_PRICE_ID`) |
@@ -21,7 +21,7 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 
 1. Ejecutar `kaviro_agency_mode.sql` en Supabase.
 2. Crear producto Stripe «Kaviro Agencia Pro» (29€ / 49€).
-3. Seed manual agencia Stripes (comentarios al final del SQL).
+3. Seed agencia de prueba: [`kaviro_agency_seed_tripboard.sql`](./kaviro_agency_seed_tripboard.sql) (`tripboardcomp@gmail.com`).
 
 ## Lo que ya existe (~70 %)
 
@@ -36,7 +36,7 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 | Acceso | URL | Destino tras login |
 |--------|-----|-------------------|
 | **Viajero (B2C)** | `kaviro.app/auth/login` | `/dashboard` |
-| **Agencia (B2B)** | `kaviro.app/empresa` → «Entrar al panel» | `/auth/login?mode=agency&next=/agency` → `/agency` |
+| **Agencia (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | `/auth/login?mode=agency` → `/agency` solo con `agency_members` |
 
 - **`/empresa`**: landing pública solo para agencias (sin mezclar con el home de viajeros).
 - **`/agency/*`**: shell propio (sidebar azul marino, sin barra coral del dashboard).

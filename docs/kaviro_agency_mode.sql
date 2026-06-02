@@ -242,6 +242,8 @@ create policy "agency_templates_member" on public.agency_templates
   with check (public.is_agency_member(agency_id));
 
 -- ---------------------------------------------------------------------------
+-- Seed cuenta de prueba TripBoard: docs/kaviro_agency_seed_tripboard.sql
+-- ---------------------------------------------------------------------------
 -- Seed manual (ejemplo Stripes) — descomentar y sustituir UUIDs tras crear usuarios
 -- ---------------------------------------------------------------------------
 -- insert into public.agencies (name, slug, owner_id, plan, brand_color, contact_email)

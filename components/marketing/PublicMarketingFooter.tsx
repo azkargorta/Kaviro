@@ -24,6 +24,9 @@ export default function PublicMarketingFooter() {
           <Link href="/terms" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Términos
           </Link>
+          <Link href="/empresa" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+            Agencias
+          </Link>
           <Link href="/auth/login" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Entrar
           </Link>
