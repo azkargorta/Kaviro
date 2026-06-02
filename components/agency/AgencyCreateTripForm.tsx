@@ -39,7 +39,7 @@ export default function AgencyCreateTripForm({ onCreated }: { onCreated?: () => 
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "No se pudo crear el viaje.");
-      toast.push({ title: "Viaje creado", description: trimmed });
+      toast.push({ kind: "success", title: "Viaje creado", description: trimmed });
       onCreated?.();
       router.push(`/trip/${data.tripId}/summary`);
       router.refresh();
