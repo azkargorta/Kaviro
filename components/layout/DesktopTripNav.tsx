@@ -34,6 +34,7 @@ const items: Array<{
   },
   { key: "expenses", label: "Gastos", href: (id: string) => `/trip/${id}/expenses` },
   { key: "participants", label: "Gente", href: (id: string) => `/trip/${id}/participants` },
+  { key: "messages", label: "Mensajes", href: (id: string) => `/trip/${id}/messages` },
   {
     key: "resources",
     label: "Docs",

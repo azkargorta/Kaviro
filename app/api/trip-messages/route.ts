@@ -3,6 +3,7 @@ import { requireTripAccessApi } from "@/lib/trip-access-api";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createUserNotification } from "@/lib/server/user-notifications";
 import { getOtherTripParticipantUserIds, resolveActorDisplayName } from "@/lib/server/notify-trip-members";
+import { enrichChatMessages, loadChatProfilesByUserIds } from "@/lib/trip-chat-profiles";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,61 +15,44 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const tripId = searchParams.get("tripId") || "";
+    const before = searchParams.get("before") || "";
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
     const gate = await requireTripAccessApi(tripId);
     if (!gate.ok) return gate.response;
 
-    const { data, error } = await gate.supabase
+    let query = gate.supabase
       .from(TABLE)
       .select("id, trip_id, user_id, body, created_at")
-      .eq("trip_id", tripId)
-      .order("created_at", { ascending: true })
+      .eq("trip_id", tripId);
+
+    if (before) {
+      query = query.lt("created_at", before);
+    }
+
+    const { data, error } = await query
+      .order("created_at", { ascending: false })
       .limit(PAGE_SIZE);
 
     if (error) {
       if (error.code === "42P01") {
         return NextResponse.json(
-          { error: "Ejecuta docs/kaviro_trip_messages.sql en Supabase.", messages: [] },
+          { error: "Ejecuta docs/kaviro_trip_messages.sql en Supabase.", messages: [], tableMissing: true },
           { status: 503 }
         );
       }
       throw error;
     }
 
-    const userIds = [...new Set((data ?? []).map((m) => m.user_id as string).filter(Boolean))];
-    let profilesById: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
-    if (userIds.length) {
-      const { data: profiles } = await gate.supabase
-        .from("profiles")
-        .select("id, display_name, full_name, username, avatar_url")
-        .in("id", userIds);
-      for (const p of profiles ?? []) {
-        const row = p as {
-          id: string;
-          display_name?: string | null;
-          full_name?: string | null;
-          username?: string | null;
-          avatar_url?: string | null;
-        };
-        profilesById[row.id] = {
-          display_name:
-            row.display_name?.trim() ||
-            row.full_name?.trim() ||
-            row.username?.trim() ||
-            "Participante",
-          avatar_url: row.avatar_url ?? null,
-        };
-      }
-    }
+    const page = [...(data ?? [])].reverse();
+    const userIds = page.map((m) => m.user_id as string).filter(Boolean);
+    const profilesById = await loadChatProfilesByUserIds(gate.supabase, userIds);
+    const messages = enrichChatMessages(page, profilesById);
 
-    const messages = (data ?? []).map((m) => ({
-      ...m,
-      author_name: profilesById[m.user_id as string]?.display_name ?? "Participante",
-      author_avatar_url: profilesById[m.user_id as string]?.avatar_url ?? null,
-    }));
-
-    return NextResponse.json({ messages });
+    return NextResponse.json({
+      messages,
+      hasMore: (data?.length ?? 0) === PAGE_SIZE,
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "No se pudieron cargar los mensajes." },
@@ -104,12 +88,15 @@ export async function POST(request: Request) {
     if (error) {
       if (error.code === "42P01") {
         return NextResponse.json(
-          { error: "Ejecuta docs/kaviro_trip_messages.sql en Supabase." },
+          { error: "Ejecuta docs/kaviro_trip_messages.sql en Supabase.", tableMissing: true },
           { status: 503 }
         );
       }
       throw error;
     }
+
+    const profilesById = await loadChatProfilesByUserIds(supabase, [access.userId]);
+    const [enriched] = enrichChatMessages([data], profilesById);
 
     const admin = createSupabaseAdmin();
     const actorName = await resolveActorDisplayName(admin, access.userId);
@@ -127,7 +114,7 @@ export async function POST(request: Request) {
       )
     );
 
-    return NextResponse.json({ message: data }, { status: 201 });
+    return NextResponse.json({ message: enriched }, { status: 201 });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "No se pudo enviar el mensaje." },

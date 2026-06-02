@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { displayNameFromProfileRow } from "@/lib/trip-chat-profiles";
 import UserAvatar from "@/components/profile/UserAvatar";
 
 export type TripChatMessage = {
@@ -38,23 +39,77 @@ export default function TripGroupChat({
   const [messages, setMessages] = useState<TripChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tableMissing, setTableMissing] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const profileCacheRef = useRef<Map<string, { name: string; avatar: string | null }>>(new Map());
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  const loadMessages = useCallback(async () => {
-    setError(null);
-    const res = await fetch(`/api/trip-messages?tripId=${encodeURIComponent(tripId)}`, {
-      cache: "no-store",
-    });
-    const json = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(json?.error || "No se pudieron cargar los mensajes.");
-    setMessages(Array.isArray(json?.messages) ? json.messages : []);
-  }, [tripId]);
+  const resolveAuthor = useCallback(async (userId: string) => {
+    const cached = profileCacheRef.current.get(userId);
+    if (cached) return cached;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("display_name, full_name, username, avatar_url")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const name = displayNameFromProfileRow(
+      data as { display_name?: string | null; full_name?: string | null; username?: string | null } | null
+    );
+    const avatar =
+      data && typeof (data as { avatar_url?: string | null }).avatar_url === "string"
+        ? (data as { avatar_url: string | null }).avatar_url
+        : null;
+    const profile = { name, avatar };
+    profileCacheRef.current.set(userId, profile);
+    return profile;
+  }, []);
+
+  const loadMessages = useCallback(
+    async (opts?: { before?: string; prepend?: boolean }) => {
+      setError(null);
+      const params = new URLSearchParams({ tripId });
+      if (opts?.before) params.set("before", opts.before);
+      const res = await fetch(`/api/trip-messages?${params.toString()}`, { cache: "no-store" });
+      const json = await res.json().catch(() => null);
+      if (res.status === 503 && json?.tableMissing) {
+        setTableMissing(true);
+        setMessages([]);
+        setHasMore(false);
+        throw new Error(json?.error || "Chat no disponible");
+      }
+      if (!res.ok) throw new Error(json?.error || "No se pudieron cargar los mensajes.");
+      setTableMissing(false);
+      const batch = Array.isArray(json?.messages) ? (json.messages as TripChatMessage[]) : [];
+      for (const m of batch) {
+        if (m.author_name) {
+          profileCacheRef.current.set(m.user_id, {
+            name: m.author_name,
+            avatar: m.author_avatar_url ?? null,
+          });
+        }
+      }
+      setHasMore(Boolean(json?.hasMore));
+      if (opts?.prepend) {
+        setMessages((prev) => {
+          const ids = new Set(prev.map((m) => m.id));
+          const older = batch.filter((m) => !ids.has(m.id));
+          return [...older, ...prev];
+        });
+      } else {
+        setMessages(batch);
+      }
+    },
+    [tripId]
+  );
 
   useEffect(() => {
     void loadMessages()
@@ -80,11 +135,21 @@ export default function TripGroupChat({
         (payload) => {
           const row = payload.new as TripChatMessage;
           if (!row?.id) return;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === row.id)) return prev;
-            return [...prev, { ...row, author_name: "Participante" }];
-          });
-          setTimeout(scrollToBottom, 80);
+          void (async () => {
+            const profile = await resolveAuthor(row.user_id);
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === row.id)) return prev;
+              return [
+                ...prev,
+                {
+                  ...row,
+                  author_name: profile.name,
+                  author_avatar_url: profile.avatar,
+                },
+              ];
+            });
+            setTimeout(scrollToBottom, 80);
+          })();
         }
       )
       .subscribe();
@@ -92,12 +157,25 @@ export default function TripGroupChat({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [tripId, scrollToBottom]);
+  }, [tripId, scrollToBottom, resolveAuthor]);
+
+  async function loadOlder() {
+    const first = messages[0];
+    if (!first || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      await loadMessages({ before: first.created_at, prepend: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al cargar más");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || sending) return;
+    if (!text || sending || tableMissing) return;
     setSending(true);
     setError(null);
     try {
@@ -107,12 +185,26 @@ export default function TripGroupChat({
         body: JSON.stringify({ tripId, body: text }),
       });
       const json = await res.json().catch(() => null);
+      if (res.status === 503 && json?.tableMissing) {
+        setTableMissing(true);
+        throw new Error(json?.error || "Chat no disponible");
+      }
       if (!res.ok) throw new Error(json?.error || "No se pudo enviar.");
       const msg = json?.message as TripChatMessage | undefined;
       if (msg) {
+        profileCacheRef.current.set(msg.user_id, {
+          name: msg.author_name || "Tú",
+          avatar: msg.author_avatar_url ?? null,
+        });
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
-          return [...prev, { ...msg, author_name: "Tú" }];
+          return [
+            ...prev,
+            {
+              ...msg,
+              author_name: msg.user_id === currentUserId ? "Tú" : msg.author_name || "Participante",
+            },
+          ];
         });
       } else {
         await loadMessages();
@@ -126,6 +218,19 @@ export default function TripGroupChat({
     }
   }
 
+  if (tableMissing) {
+    return (
+      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+        <p className="font-extrabold">Chat del grupo no activado</p>
+        <p className="mt-2 text-amber-800 dark:text-amber-200">
+          Ejecuta el script{" "}
+          <code className="rounded bg-white/60 px-1 py-0.5 text-xs dark:bg-black/30">docs/kaviro_trip_messages.sql</code>{" "}
+          en el SQL Editor de Supabase para crear la tabla de mensajes.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-[min(70vh,560px)] flex-col rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div className="border-b border-slate-100 px-4 py-3 dark:border-[#1E293B]">
@@ -136,6 +241,17 @@ export default function TripGroupChat({
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+        {hasMore ? (
+          <button
+            type="button"
+            disabled={loadingMore}
+            onClick={() => void loadOlder()}
+            className="mx-auto block rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300"
+          >
+            {loadingMore ? "Cargando…" : "Cargar mensajes anteriores"}
+          </button>
+        ) : null}
+
         {loading ? (
           <p className="text-sm text-slate-500 animate-pulse">Cargando mensajes…</p>
         ) : error && !messages.length ? (

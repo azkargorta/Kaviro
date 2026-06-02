@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Bell, CheckCheck, X } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export const USER_NOTIFICATIONS_CHANGED_EVENT = "kaviro:user-notifications-changed";
 
@@ -79,6 +80,28 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
     void load();
     const intervalId = window.setInterval(() => void load(), 30_000);
     const onFocus = () => void load();
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
+      const userId = data.user?.id;
+      if (!userId) return;
+      channel = supabase
+        .channel(`user-notifications:${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "user_notifications",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            void load();
+          }
+        )
+        .subscribe();
+    })();
     const onChanged = (event: Event) => {
       const detail = (event as CustomEvent<{ unreadCount?: number; notificationId?: string }>).detail;
       if (typeof detail?.unreadCount === "number") {
@@ -107,6 +130,7 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
       window.clearInterval(intervalId);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener(USER_NOTIFICATIONS_CHANGED_EVENT, onChanged as EventListener);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [load]);
 

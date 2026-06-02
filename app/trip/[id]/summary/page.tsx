@@ -10,6 +10,7 @@ import TripSummaryOverview, {
 import { getCachedTripPremium } from "@/lib/entitlements";
 import { getTripWeatherByDestination } from "@/lib/trip-weather";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
+import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
 
 type TripPageProps = {
   params: { id: string };
@@ -91,19 +92,6 @@ function formatMoneyCompact(amount: number, currency: string) {
   }
 }
 
-function sumExpensesByCurrency(rows: Array<{ amount: unknown; currency: string | null }>, baseCurrency: string) {
-  const map = new Map<string, number>();
-  const bc = (baseCurrency || "EUR").toUpperCase();
-  for (const r of rows) {
-    const n = Number(r.amount);
-    if (!Number.isFinite(n)) continue;
-    const c = (typeof r.currency === "string" && r.currency.trim() ? r.currency : bc).toUpperCase();
-    map.set(c, (map.get(c) ?? 0) + n);
-  }
-  return map;
-}
-
-
 export async function generateMetadata({ params }: TripPageProps) {
   try {
     const { createClient: sc } = await import("@/lib/supabase/server");
@@ -177,7 +165,11 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    supabase.from("trip_expenses").select("amount, currency").eq("trip_id", tripId).limit(1200),
+    supabase
+      .from("trip_expenses")
+      .select("amount, currency, exchange_rate_to_base")
+      .eq("trip_id", tripId)
+      .limit(1200),
   ]);
 
   if (tripError || !trip) {
@@ -252,15 +244,20 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
 
   const firstRoute = firstRouteRow as { title?: string | null; route_day?: string | null } | null;
   const baseCurrency = currentTrip.base_currency || "EUR";
-  const expenseSums = sumExpensesByCurrency(
-    (expenseAmountRows ?? []) as Array<{ amount: unknown; currency: string | null }>,
+  const expenseTotals = computeExpenseTotalsInBase(
+    (expenseAmountRows ?? []) as Array<{
+      amount: unknown;
+      currency: string | null;
+      exchange_rate_to_base?: number | null;
+    }>,
     baseCurrency
   );
   const rawBudget = currentTrip.budget_target;
   const budgetTarget =
     typeof rawBudget === "number" && Number.isFinite(rawBudget) && rawBudget > 0 ? rawBudget : null;
-  const totalSpentInBase = expenseSums.get(baseCurrency.toUpperCase()) ?? 0;
-  const expenseMultiCurrency = expenseSums.size > 1;
+  const totalSpentInBase = expenseTotals.totalInBase;
+  const expenseMultiCurrency =
+    expenseTotals.hasUnconvertedForeign || expenseTotals.byCurrency.size > 1;
 
   const alerts = [
     !currentTrip.destination ? "Añade el destino para activar clima y contexto." : null,
@@ -285,10 +282,10 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         : "Edita trayectos y paradas en el mapa.";
 
   const expenseHintParts: string[] = [];
-  if ((expensesCount ?? 0) > 0 && expenseSums.size === 1) {
-    const [cur, val] = [...expenseSums.entries()][0]!;
+  if ((expensesCount ?? 0) > 0 && expenseTotals.byCurrency.size === 1) {
+    const [cur, val] = [...expenseTotals.byCurrency.entries()][0]!;
     expenseHintParts.push(`Suma aprox.: ${formatMoneyCompact(val, cur)}`);
-  } else if ((expensesCount ?? 0) > 0 && expenseSums.size > 1) {
+  } else if ((expensesCount ?? 0) > 0 && expenseTotals.byCurrency.size > 1) {
     expenseHintParts.push("Varias divisas: totales en Gastos");
   }
   if (lastExpenseTitle) expenseHintParts.push(`Último: ${truncateHint(lastExpenseTitle, 38)}`);

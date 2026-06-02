@@ -51,6 +51,9 @@ export default function ShareTripRecap({
     { label: "Participantes", value: String(stats.participantsCount), emoji: "👥" },
     { label: "Gastos", value: String(stats.expensesCount), emoji: "💸" },
     { label: "Rutas", value: String(stats.routesCount), emoji: "🗺️" },
+    ...(stats.routesDistanceKm != null && stats.routesDistanceKm > 0
+      ? [{ label: "Km en rutas", value: String(stats.routesDistanceKm), emoji: "🛣️" }]
+      : []),
   ];
 
   return (

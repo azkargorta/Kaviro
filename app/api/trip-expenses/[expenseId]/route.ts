@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeInsertAudit } from "@/lib/audit";
 import { forbidUnlessCanManageExpenses, requireTripAccessApi } from "@/lib/trip-access-api";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { createUserNotification } from "@/lib/server/user-notifications";
+import { getOtherTripParticipantUserIds, resolveActorDisplayName } from "@/lib/server/notify-trip-members";
 
 export async function PATCH(request: Request, { params }: { params: { expenseId: string } }) {
   try {
@@ -60,6 +63,24 @@ export async function PATCH(request: Request, { params }: { params: { expenseId:
       actor_user_id: actor?.user?.id ?? null,
       actor_email: actor?.user?.email ?? null,
     });
+
+    if (Object.keys(patch).length > 0 && actor?.user?.id) {
+      const admin = createSupabaseAdmin();
+      const actorName = await resolveActorDisplayName(admin, actor.user.id);
+      const detail = String(data.title || "").trim() || "un gasto";
+      const others = await getOtherTripParticipantUserIds(admin, String(row.trip_id), actor.user.id);
+      await Promise.all(
+        others.map((userId) =>
+          createUserNotification(admin, {
+            userId,
+            type: "expense_added",
+            title: "Gasto actualizado",
+            body: `${actorName} editó «${detail}»`,
+            url: `/trip/${row.trip_id}/expenses`,
+          })
+        )
+      );
+    }
 
     return NextResponse.json({ expense: data });
   } catch (error) {

@@ -62,11 +62,28 @@ export async function generateMetadata({ params }: Props) {
   const data = await loadRecapShare(params.token);
   if (!data?.trip) return { title: `Recap | ${APP_NAME}` };
   const dest = data.trip.destination ? ` — ${data.trip.destination}` : "";
-  const title = `Recap: ${data.trip.name}${dest} | ${APP_NAME}`;
+  const name = data.trip.name?.trim() || "Viaje";
+  const title = `Recap: ${name}${dest} | ${APP_NAME}`;
+  const parts = [
+    `${data.stats.activitiesCount} actividades`,
+    `${data.stats.participantsCount} personas`,
+    data.stats.expensesCount > 0 ? `${data.stats.expensesCount} gastos` : null,
+    data.stats.routesDistanceKm != null && data.stats.routesDistanceKm > 0
+      ? `${data.stats.routesDistanceKm} km en rutas`
+      : null,
+  ].filter(Boolean);
+  const description = `Recap de ${name}${dest}: ${parts.join(" · ")}.`;
+  const ogTitle = `Recap · ${name}`;
   return {
     title,
-    description: `Estadísticas del viaje ${data.trip.name}${dest} en ${APP_NAME}.`,
-    openGraph: { title, type: "website", siteName: APP_NAME },
+    description,
+    openGraph: {
+      title: ogTitle,
+      description,
+      type: "website",
+      siteName: APP_NAME,
+    },
+    twitter: { card: "summary_large_image", title: ogTitle, description },
   };
 }
 

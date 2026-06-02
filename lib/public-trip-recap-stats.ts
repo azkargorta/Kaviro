@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
 
 export type PublicRecapStats = {
   activitiesCount: number;
@@ -7,7 +8,25 @@ export type PublicRecapStats = {
   routesCount: number;
   totalSpent: number;
   currency: string;
+  /** Suma aproximada de distancias parseadas desde trip_routes.distance_text (km) */
+  routesDistanceKm: number | null;
 };
+
+function parseDistanceKm(text: string | null | undefined): number | null {
+  if (!text || typeof text !== "string") return null;
+  const normalized = text.replace(",", ".").toLowerCase();
+  const km = normalized.match(/([\d.]+)\s*km/);
+  if (km) {
+    const n = Number(km[1]);
+    return Number.isFinite(n) ? n : null;
+  }
+  const mi = normalized.match(/([\d.]+)\s*mi/);
+  if (mi) {
+    const n = Number(mi[1]);
+    return Number.isFinite(n) ? n * 1.60934 : null;
+  }
+  return null;
+}
 
 export async function loadPublicRecapStats(
   client: SupabaseClient,
@@ -21,6 +40,7 @@ export async function loadPublicRecapStats(
     { count: expensesCount },
     { count: routesCount },
     { data: expenseRows },
+    { data: routeRows },
   ] = await Promise.all([
     client.from("trip_activities").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
     client
@@ -30,22 +50,38 @@ export async function loadPublicRecapStats(
       .neq("status", "removed"),
     client.from("trip_expenses").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
     client.from("trip_routes").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
-    client.from("trip_expenses").select("amount, currency").eq("trip_id", tripId).limit(2000),
+    client
+      .from("trip_expenses")
+      .select("amount, currency, exchange_rate_to_base")
+      .eq("trip_id", tripId)
+      .limit(2000),
+    client.from("trip_routes").select("distance_text").eq("trip_id", tripId).limit(500),
   ]);
 
-  let totalSpent = 0;
-  for (const row of expenseRows ?? []) {
-    const n = Number((row as { amount?: unknown }).amount);
-    const cur = String((row as { currency?: string | null }).currency || currency).toUpperCase();
-    if (Number.isFinite(n) && cur === currency) totalSpent += n;
+  const { totalInBase } = computeExpenseTotalsInBase(
+    (expenseRows ?? []) as Array<{ amount: unknown; currency: string | null; exchange_rate_to_base?: number | null }>,
+    currency
+  );
+
+  let routesDistanceKm: number | null = null;
+  let kmSum = 0;
+  let kmParsed = 0;
+  for (const row of routeRows ?? []) {
+    const km = parseDistanceKm((row as { distance_text?: string | null }).distance_text);
+    if (km != null) {
+      kmSum += km;
+      kmParsed += 1;
+    }
   }
+  if (kmParsed > 0) routesDistanceKm = Math.round(kmSum);
 
   return {
     activitiesCount: activitiesCount ?? 0,
     participantsCount: participantsCount ?? 0,
     expensesCount: expensesCount ?? 0,
     routesCount: routesCount ?? 0,
-    totalSpent,
+    totalSpent: totalInBase,
     currency,
+    routesDistanceKm,
   };
 }

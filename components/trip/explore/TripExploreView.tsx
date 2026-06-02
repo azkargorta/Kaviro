@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
-import { FolderPlus, MapPin, Plus, RefreshCcw } from "lucide-react";
+import { FolderPlus, MapPin, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
+import { FOLDER_COLOR_OPTIONS, folderColorOrDefault } from "@/lib/trip-place-folders-ui";
 
 type PlaceFolder = {
   id: string;
@@ -177,9 +178,12 @@ export default function TripExploreView({
   const [places, setPlaces] = useState<PlaceRow[]>([]);
   const [folders, setFolders] = useState<PlaceFolder[]>([]);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [saveFolderId, setSaveFolderId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderColor, setNewFolderColor] = useState<string>(FOLDER_COLOR_OPTIONS[0].value);
   const [savingFolder, setSavingFolder] = useState(false);
   const [savingPlace, setSavingPlace] = useState(false);
+  const [movingPlaceId, setMovingPlaceId] = useState<string | null>(null);
 
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [visiblePlanKinds, setVisiblePlanKinds] = useState<Record<string, boolean>>({});
@@ -238,6 +242,16 @@ export default function TripExploreView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
+  useEffect(() => {
+    if (pending) setSaveFolderId(activeFolderId);
+  }, [pending, activeFolderId]);
+
+  const folderNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of folders) map.set(f.id, f.name);
+    return map;
+  }, [folders]);
+
   const visiblePlaces = useMemo(() => {
     if (!activeFolderId) return places;
     return places.filter((p) => p.folder_id === activeFolderId);
@@ -252,7 +266,7 @@ export default function TripExploreView({
       const res = await fetch("/api/trip-place-folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tripId, name }),
+        body: JSON.stringify({ tripId, name, color: newFolderColor }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) throw new Error(json?.error || "No se pudo crear la carpeta.");
@@ -277,7 +291,7 @@ export default function TripExploreView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tripId,
-          folderId: activeFolderId,
+          folderId: saveFolderId,
           name: pending.name || pending.address || "Lugar",
           address: pending.address,
           latitude: pending.latitude,
@@ -294,6 +308,45 @@ export default function TripExploreView({
       setError(e instanceof Error ? e.message : "Error al guardar");
     } finally {
       setSavingPlace(false);
+    }
+  }
+
+  async function movePlaceToFolder(placeId: string, folderId: string | null) {
+    setMovingPlaceId(placeId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/trip-places/${encodeURIComponent(placeId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId, folderId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || "No se pudo mover el lugar.");
+      await loadAll();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al mover lugar");
+    } finally {
+      setMovingPlaceId(null);
+    }
+  }
+
+  async function deleteFolder(folderId: string, folderName: string) {
+    const ok = window.confirm(
+      `¿Eliminar la carpeta «${folderName}»? Los lugares guardados quedarán sin carpeta.`
+    );
+    if (!ok) return;
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/trip-place-folders/${encodeURIComponent(folderId)}?tripId=${encodeURIComponent(tripId)}`,
+        { method: "DELETE" }
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || "No se pudo eliminar la carpeta.");
+      if (activeFolderId === folderId) setActiveFolderId(null);
+      await loadAll();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar carpeta");
     }
   }
 
@@ -562,6 +615,24 @@ export default function TripExploreView({
               </div>
 
               <div className="mt-3 grid gap-3">
+                <label className="block">
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Guardar en carpeta</span>
+                  <select
+                    value={saveFolderId ?? ""}
+                    onChange={(e) => setSaveFolderId(e.target.value ? e.target.value : null)}
+                    className="mt-1 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-100"
+                  >
+                    <option value="">Sin carpeta</option>
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  {!folders.length ? (
+                    <p className="mt-1 text-[11px] text-slate-500">Crea una carpeta abajo para organizar tus lugares.</p>
+                  ) : null}
+                </label>
                 <button
                   type="button"
                   disabled={savingPlace}
@@ -569,7 +640,7 @@ export default function TripExploreView({
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
                 >
                   <Plus className="h-4 w-4" aria-hidden />
-                  {savingPlace ? "Guardando…" : activeFolderId ? "Guardar en carpeta" : "Guardar lugar"}
+                  {savingPlace ? "Guardando…" : saveFolderId ? "Guardar en carpeta" : "Guardar lugar"}
                 </button>
                 {onCreatePlan ? (
                   <button
@@ -610,19 +681,53 @@ export default function TripExploreView({
             >
               Todos ({places.length})
             </button>
-            {folders.map((f) => (
+            {folders.map((f) => {
+              const dot = folderColorOrDefault(f.color);
+              const count = places.filter((p) => p.folder_id === f.id).length;
+              return (
+                <div key={f.id} className="inline-flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFolderId(f.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      activeFolderId === f.id
+                        ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: dot }}
+                      aria-hidden
+                    />
+                    {f.name} ({count})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteFolder(f.id, f.name)}
+                    className="rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Eliminar carpeta ${f.name}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Color de carpeta">
+            {FOLDER_COLOR_OPTIONS.map((opt) => (
               <button
-                key={f.id}
+                key={opt.id}
                 type="button"
-                onClick={() => setActiveFolderId(f.id)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                  activeFolderId === f.id
-                    ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                onClick={() => setNewFolderColor(opt.value)}
+                className={`h-7 w-7 rounded-full border-2 transition ${
+                  newFolderColor === opt.value ? "border-slate-900 scale-110" : "border-transparent"
                 }`}
-              >
-                {f.name} ({places.filter((p) => p.folder_id === f.id).length})
-              </button>
+                style={{ backgroundColor: opt.value }}
+                title={opt.label}
+                aria-label={opt.label}
+                aria-pressed={newFolderColor === opt.value}
+              />
             ))}
           </div>
           <div className="mt-3 flex gap-2">
@@ -657,6 +762,11 @@ export default function TripExploreView({
                         {categoryEmoji(p.category)} {p.name}
                       </div>
                       {p.address ? <div className="mt-1 text-[11px] text-slate-600 line-clamp-2">{p.address}</div> : null}
+                      {p.folder_id && folderNameById.get(p.folder_id) ? (
+                        <div className="mt-1 text-[10px] font-semibold text-slate-500">
+                          Carpeta: {folderNameById.get(p.folder_id)}
+                        </div>
+                      ) : null}
                     </div>
                     <button
                       type="button"
@@ -669,6 +779,22 @@ export default function TripExploreView({
                       <MapPin className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
+                  <label className="mt-2 block">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Carpeta</span>
+                    <select
+                      value={p.folder_id ?? ""}
+                      disabled={movingPlaceId === p.id}
+                      onChange={(e) => void movePlaceToFolder(p.id, e.target.value ? e.target.value : null)}
+                      className="mt-0.5 min-h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs dark:border-[#334155] dark:bg-[#080C14]"
+                    >
+                      <option value="">Sin carpeta</option>
+                      {folders.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
               ))
             ) : (

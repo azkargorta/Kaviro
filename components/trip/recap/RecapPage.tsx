@@ -610,7 +610,7 @@ export default function RecapPage(props: RecapData) {
 
             <div className="space-y-3">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Compartir enlace</h2>
-              <RecapShareButton tripId={tripId} />
+              <RecapShareButton tripId={tripId} tripName={tripName} />
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Cualquiera con el enlace verá las estadísticas del viaje (actividades, gastos, participantes).
               </p>

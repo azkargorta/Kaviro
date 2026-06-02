@@ -11,6 +11,7 @@ import {
   forbidUnlessCanManagePlan,
   requireTripAccessApi,
 } from "@/lib/trip-access-api";
+import { notifyTripMembers } from "@/lib/server/notify-trip-members";
 
  function calculateNights(checkInDate?: string | null, checkOutDate?: string | null) {
    if (!checkInDate || !checkOutDate) return null;
@@ -196,6 +197,17 @@ import {
 
       const { error: updResErr } = await supabase.from("trip_reservations").update(resPatch).eq("id", linkedId);
       if (updResErr) throw new Error(updResErr.message);
+    }
+
+    if (Object.keys(patch).length > 0 && actor?.user?.id) {
+      const title = String((data as { title?: string | null })?.title || "").trim() || "una actividad";
+      void notifyTripMembers({
+        tripId: String(row.trip_id),
+        actorUserId: actor.user.id,
+        event: "activity_edited",
+        detail: title,
+        url: `/trip/${row.trip_id}/plan`,
+      });
     }
 
      return NextResponse.json({

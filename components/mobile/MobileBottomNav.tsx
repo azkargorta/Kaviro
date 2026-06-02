@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal, X, Settings, Map, Users, FileText, Star } from "lucide-react";
+import { MoreHorizontal, X, Settings, Map, Users, FileText, Star, MessageCircle } from "lucide-react";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -31,6 +31,7 @@ const PRIMARY_ITEMS: Array<{ key: TripTabKey; label: string; href: (id: string) 
 const SECONDARY_ITEMS: Array<{ key: string; label: string; href: (id: string) => string; icon: React.ReactNode }> = [
   { key: "map",          label: "Rutas",         href: (id) => `/trip/${id}/map`,          icon: <Map className="h-5 w-5" /> },
   { key: "participants", label: "Participantes",  href: (id) => `/trip/${id}/participants`, icon: <Users className="h-5 w-5" /> },
+  { key: "messages",     label: "Mensajes",       href: (id) => `/trip/${id}/messages`,     icon: <MessageCircle className="h-5 w-5" /> },
   { key: "resources",    label: "Documentos",     href: (id) => `/trip/${id}/resources`,    icon: <FileText className="h-5 w-5" /> },
   { key: "settings",     label: "Ajustes",        href: (id) => `/trip/${id}/settings`,     icon: <Settings className="h-5 w-5" /> },
 ];

@@ -1,4 +1,13 @@
-export type TripTabKey = "summary" | "plan" | "map" | "expenses" | "participants" | "resources" | "chat" | "recap";
+export type TripTabKey =
+  | "summary"
+  | "plan"
+  | "map"
+  | "expenses"
+  | "participants"
+  | "resources"
+  | "chat"
+  | "recap"
+  | "messages";
 
 /** PNG de documentos suele llevar más margen interno: escala para igualar peso visual al resto de pestañas. */
 export const tripTabDocsImageClass = "object-contain scale-[1.08] origin-center";
@@ -12,6 +21,7 @@ const tabToBaseName: Record<TripTabKey, string> = {
   resources: "documents",
   chat: "ai",
   recap: "recap",
+  messages: "participants",
 };
 
 export function getTripTabIconSrc(key: TripTabKey, isDark: boolean) {
