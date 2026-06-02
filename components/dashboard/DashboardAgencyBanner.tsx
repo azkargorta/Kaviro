@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Briefcase } from "lucide-react";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 
 export default function DashboardAgencyBanner() {
@@ -35,14 +36,14 @@ export default function DashboardAgencyBanner() {
       <div className="flex items-center gap-2 text-sm text-slate-800 dark:text-slate-100">
         <Briefcase className="h-4 w-4 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
         <span>
-          Tienes acceso al panel de <strong>{agencyName}</strong>.
+          Tienes acceso a <strong>{KAVIRO_TRIPS_PRODUCT_NAME}</strong> ({agencyName}).
         </span>
       </div>
       <Link
         href="/agency"
         className="inline-flex min-h-9 items-center rounded-xl bg-[#1e3a5f] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#162d4d]"
       >
-        Ir al modo empresa
+        Abrir {KAVIRO_TRIPS_PRODUCT_NAME}
       </Link>
     </div>
   );

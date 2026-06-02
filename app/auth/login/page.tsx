@@ -3,6 +3,7 @@ import AuthShell from "@/components/auth/AuthShell";
 import LoginForm from "@/components/auth/LoginForm";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { defaultLoginNext, parseWorkspaceModeParam } from "@/lib/workspace-mode";
 
 type Props = {
@@ -32,10 +33,10 @@ export default async function LoginPage({ searchParams }: Props) {
 
   return (
     <AuthShell
-      title={isAgency ? "Acceso agencias" : "Iniciar sesión"}
+      title={isAgency ? KAVIRO_TRIPS_PRODUCT_NAME : "Iniciar sesión"}
       subtitle={
         isAgency
-          ? "Entra al panel de tu organización (modo empresa)"
+          ? "Accede al panel de tu organización"
           : "Accede a tu cuenta de Kaviro"
       }
     >

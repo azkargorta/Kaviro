@@ -36,7 +36,7 @@ export async function GET() {
       {
         ok: false,
         error: missing
-          ? "Modo agencia no configurado en la base de datos. Ejecuta docs/kaviro_agency_mode.sql."
+          ? "Kaviro Trips no está configurado en la base de datos. Ejecuta docs/kaviro_agency_mode.sql."
           : msg,
         code: missing ? "AGENCY_SCHEMA_MISSING" : undefined,
       },

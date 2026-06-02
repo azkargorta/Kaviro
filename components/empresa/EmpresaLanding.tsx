@@ -1,6 +1,12 @@
 import Link from "next/link";
 import KaviroLogo from "@/components/brand/KaviroLogo";
-import { AGENCY_PARTNERSHIP_EMAIL, agencyPartnershipMailto } from "@/lib/brand";
+import {
+  AGENCY_PARTNERSHIP_EMAIL,
+  APP_NAME,
+  agencyPartnershipMailto,
+  KAVIRO_TRIPS_PRODUCT_NAME,
+  KAVIRO_TRIPS_TAGLINE,
+} from "@/lib/brand";
 import { Briefcase, CheckCircle2, Mail } from "lucide-react";
 
 type Props = {
@@ -20,20 +26,19 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
 
         {reason === "no-membership" && isLoggedIn ? (
           <div className="mt-6 rounded-2xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Tu cuenta aún no tiene acceso al panel de agencia. Escríbenos a{" "}
+            Tu cuenta aún no tiene acceso a {KAVIRO_TRIPS_PRODUCT_NAME}. Escríbenos a{" "}
             <a href={mailto} className="font-semibold underline">
               {AGENCY_PARTNERSHIP_EMAIL}
             </a>{" "}
-            y te activamos el modo empresa.
+            y te activamos el acceso.
           </div>
         ) : null}
 
-        <h1 className="mt-8 text-3xl font-black leading-tight sm:text-4xl">
-          Kaviro para agencias y organizadores
-        </h1>
-        <p className="mt-4 text-lg text-slate-200">
-          Gestiona todos los viajes de tus clientes en un panel con tu marca. Los viajeros ven el programa en un
-          enlace público, sin mezclarse con el modo personal de Kaviro.
+        <h1 className="mt-8 text-3xl font-black leading-tight sm:text-4xl">{KAVIRO_TRIPS_PRODUCT_NAME}</h1>
+        <p className="mt-4 text-lg text-slate-200">{KAVIRO_TRIPS_TAGLINE}.</p>
+        <p className="mt-2 text-sm text-slate-300">
+          Panel para agencias y organizadores. Tus clientes ven el programa en un enlace con tu marca, aparte del
+          modo personal de {APP_NAME}.
         </p>
 
         <ul className="mt-8 space-y-3 text-sm text-slate-100">
@@ -55,10 +60,10 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
             <div className="flex items-start gap-3">
               <Mail className="mt-0.5 h-5 w-5 shrink-0 text-sky-200" aria-hidden />
               <div>
-                <p className="font-bold text-white">¿Quieres trabajar con Kaviro?</p>
+                <p className="font-bold text-white">¿Quieres usar {KAVIRO_TRIPS_PRODUCT_NAME}?</p>
                 <p className="mt-2 text-sm text-slate-200">
-                  El modo empresa es para agencias y organizadores con acuerdo previo. Cuéntanos tu caso y te
-                  explicamos planes, onboarding y precios.
+                  Es para agencias y organizadores con acuerdo previo. Cuéntanos tu caso y te explicamos planes,
+                  onboarding y precios.
                 </p>
                 <a
                   href={mailto}
@@ -79,7 +84,7 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
               className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#1e3a5f] shadow-lg transition hover:bg-slate-100"
             >
               <Briefcase className="h-4 w-4" aria-hidden />
-              Ir al panel de agencia
+              Abrir {KAVIRO_TRIPS_PRODUCT_NAME}
             </Link>
           ) : (
             <a
@@ -96,7 +101,7 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
               href={hasAgency ? "/agency" : loginHref}
               className="inline-flex min-h-11 items-center rounded-xl border border-white/30 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              {hasAgency ? "Panel de agencia" : "Ya tengo acceso — iniciar sesión"}
+              {hasAgency ? KAVIRO_TRIPS_PRODUCT_NAME : "Ya tengo acceso — iniciar sesión"}
             </Link>
           ) : (
             <Link
@@ -116,7 +121,7 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
         </div>
 
         <p className="mt-8 text-xs text-slate-400">
-          Acceso empresa: <strong className="text-slate-200">kaviro.app/empresa</strong> · Panel:{" "}
+          {KAVIRO_TRIPS_PRODUCT_NAME}: <strong className="text-slate-200">kaviro.app/empresa</strong> · Panel:{" "}
           <strong className="text-slate-200">kaviro.app/agency</strong> (solo cuentas autorizadas)
         </p>
       </div>

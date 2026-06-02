@@ -1,4 +1,4 @@
-/** Modo de aplicación: viajero (B2C) vs panel de agencia (B2B). */
+/** Modo de aplicación: Kaviro personal (B2C) vs Kaviro Trips (B2B). */
 export type WorkspaceMode = "personal" | "agency";
 
 export const WORKSPACE_MODE_STORAGE_KEY = "kaviro_workspace_mode";

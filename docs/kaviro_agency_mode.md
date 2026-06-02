@@ -1,10 +1,10 @@
-# Kaviro — Modo Agencia Pro
+# Kaviro Trips
 
-Plan de producto (PDF interno, junio 2026). Este documento enlaza el SQL y el código del repo.
+Producto B2B de Kaviro para agencias y organizadores (PDF interno, junio 2026). Constante en código: `KAVIRO_TRIPS_PRODUCT_NAME` en `lib/brand.ts`.
 
 ## Resumen
 
-Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el cliente ve el programa en `/client/{agency-slug}/{trip-slug}` con branding, sin reescribir plan/gastos/rutas.
+Capa B2B encima de Kaviro (B2C): la agencia gestiona viajes en `/agency`, el cliente ve el programa en `/client/{agency-slug}/{trip-slug}` con branding, sin reescribir plan/gastos/rutas.
 
 ## Bloques
 
@@ -15,12 +15,12 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 | 3 | Plantillas (`agency_templates` + duplicar viaje) | En repo (`/agency/templates`) |
 | 4 | Portal `/client/[agency]/[trip]` | En repo (`lib/load-agency-client-portal.ts`) |
 | 5 | Branding (logo, color) | En repo (`/agency/branding` + `kaviro_agency_logos_storage.sql`) |
-| 6 | Stripe Agencia Pro | Pendiente (`AGENCY_PRO_PRICE_ID`) |
+| 6 | Stripe Kaviro Trips Pro | Pendiente (`AGENCY_PRO_PRICE_ID`) |
 
 ## Semana 1 (bloqueantes)
 
 1. Ejecutar `kaviro_agency_mode.sql` en Supabase.
-2. Crear producto Stripe «Kaviro Agencia Pro» (29€ / 49€).
+2. Crear producto Stripe «Kaviro Trips Pro» (29€ / 49€).
 3. Seed agencia de prueba: [`kaviro_agency_seed_tripboard.sql`](./kaviro_agency_seed_tripboard.sql) (`tripboardcomp@gmail.com`).
 
 ## Lo que ya existe (~70 %)
@@ -31,16 +31,16 @@ Capa B2B encima del producto actual: la agencia gestiona viajes en `/agency`, el
 - Import dossier IA (`agencyCalendarParse`)
 - Premium por viaje / usuario (`lib/entitlements.ts`)
 
-## Entrada: modo personal vs modo empresa
+## Entrada: Kaviro (personal) vs Kaviro Trips
 
 | Acceso | URL | Destino tras login |
 |--------|-----|-------------------|
-| **Viajero (B2C)** | `kaviro.app/auth/login` | `/dashboard` |
-| **Agencia (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | `/auth/login?mode=agency` → `/agency` solo con `agency_members` |
+| **Kaviro (B2C)** | `kaviro.app/auth/login` | `/dashboard` |
+| **Kaviro Trips (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | `/auth/login?mode=agency` → `/agency` solo con `agency_members` |
 
-- **`/empresa`**: landing pública solo para agencias (sin mezclar con el home de viajeros).
-- **`/agency/*`**: shell propio (sidebar azul marino, sin barra coral del dashboard).
-- **Conmutador**: en el panel agencia → «Modo personal»; en el menú cuenta del dashboard → «Panel de agencia» (si eres miembro).
+- **`/empresa`**: landing pública de Kaviro Trips (sin mezclar con el home de viajeros).
+- **`/agency/*`**: panel Kaviro Trips (sidebar azul marino, sin barra coral del dashboard).
+- **Conmutador**: en el panel → «Modo personal»; en el dashboard → «Kaviro Trips» (si eres miembro).
 - **`localStorage` `kaviro_workspace_mode`**: recuerda el último contexto (`personal` | `agency`).
 
 Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso** (`agency_members` + `trips.agency_id`).
@@ -66,7 +66,7 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 
 ## Próximo código
 
-- Bloque 6: checkout Stripe Agencia Pro (`AGENCY_PRO_PRICE_ID`)
+- Bloque 6: checkout Stripe Kaviro Trips Pro (`AGENCY_PRO_PRICE_ID`)
 - Equipo: invitaciones por email (UI ampliada)
 
 ## Precio orientativo

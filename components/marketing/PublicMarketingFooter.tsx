@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
+import { APP_NAME, APP_TAGLINE, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 export default function PublicMarketingFooter() {
   return (
@@ -25,7 +25,7 @@ export default function PublicMarketingFooter() {
             Términos
           </Link>
           <Link href="/empresa" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-            Agencias
+            {KAVIRO_TRIPS_PRODUCT_NAME}
           </Link>
           <Link href="/auth/login" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Entrar

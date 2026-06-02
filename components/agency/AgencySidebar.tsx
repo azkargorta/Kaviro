@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 const NAV: Array<{
   href: string;
@@ -35,7 +36,7 @@ export default function AgencySidebar({ agency }: { agency: AgencyRow }) {
           </span>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-              Modo empresa
+              {KAVIRO_TRIPS_PRODUCT_NAME}
             </p>
             <p className="truncate text-sm font-extrabold text-slate-950 dark:text-white">{agency.name}</p>
           </div>

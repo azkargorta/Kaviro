@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Users } from "lucide-react";
-import { AGENCY_PARTNERSHIP_EMAIL, agencyPartnershipMailto } from "@/lib/brand";
+import { AGENCY_PARTNERSHIP_EMAIL, agencyPartnershipMailto, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 type Member = {
   userId: string;
@@ -86,7 +86,7 @@ export default function AgencyTeamPanel({ agencyName, yourRole }: Props) {
         <p className="font-semibold text-slate-800 dark:text-slate-200">¿Añadir a alguien?</p>
         <p className="mt-1">
           Escríbenos a{" "}
-          <a href={agencyPartnershipMailto("Nuevo miembro en agencia")} className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
+          <a href={agencyPartnershipMailto(`Nuevo miembro en ${KAVIRO_TRIPS_PRODUCT_NAME}`)} className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
             {AGENCY_PARTNERSHIP_EMAIL}
           </a>{" "}
           con el email de la persona y el rol (admin o editor). Las invitaciones automáticas llegarán en una

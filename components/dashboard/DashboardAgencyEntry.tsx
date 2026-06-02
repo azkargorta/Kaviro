@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Briefcase, Mail } from "lucide-react";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 export default function DashboardAgencyEntry() {
   const [hasAgency, setHasAgency] = useState<boolean | null>(null);
@@ -40,13 +41,13 @@ export default function DashboardAgencyEntry() {
         <span>
           {hasAgency ? (
             <>
-              Modo empresa — <strong>{agencyName}</strong>
+              {KAVIRO_TRIPS_PRODUCT_NAME} — <strong>{agencyName}</strong>
             </>
           ) : (
             <>
               ¿Organizas viajes para clientes?{" "}
               <span className="text-slate-600 dark:text-slate-400">
-                Contacta con Kaviro para activar el modo agencia.
+                Contacta con Kaviro para activar {KAVIRO_TRIPS_PRODUCT_NAME}.
               </span>
             </>
           )}
@@ -59,12 +60,12 @@ export default function DashboardAgencyEntry() {
         {hasAgency ? (
           <>
             <Briefcase className="h-3.5 w-3.5" aria-hidden />
-            Modo agencia
+            {KAVIRO_TRIPS_PRODUCT_NAME}
           </>
         ) : (
           <>
             <Mail className="h-3.5 w-3.5" aria-hidden />
-            Modo agencia
+            {KAVIRO_TRIPS_PRODUCT_NAME}
           </>
         )}
       </Link>

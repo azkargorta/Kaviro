@@ -1,4 +1,4 @@
--- Kaviro Modo Agencia (Bloque 1)
+-- Kaviro Trips — esquema B2B (Bloque 1)
 -- Ejecutar en Supabase SQL Editor antes de /agency y portal cliente.
 -- Ver docs/kaviro_agency_mode.md para el plan completo.
 
@@ -25,7 +25,7 @@ create table if not exists public.agencies (
 create index if not exists agencies_owner_id_idx on public.agencies (owner_id);
 create index if not exists agencies_slug_idx on public.agencies (slug);
 
-comment on table public.agencies is 'Workspace de agencia (Modo Agencia Pro).';
+comment on table public.agencies is 'Workspace Kaviro Trips (agencia u organizador).';
 comment on column public.agencies.slug is 'URL: /client/{slug}/… y /agency contexto.';
 
 -- ---------------------------------------------------------------------------

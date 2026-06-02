@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Briefcase, HelpCircle, Menu, Shield, Tag, User } from "lucide-react";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { iconInline16 } from "@/components/ui/iconTokens";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 type Props = {
   isAdmin?: boolean;
@@ -129,7 +130,7 @@ export default function DashboardPageHeader({ isAdmin: isAdminProp, heroMode = f
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] text-white shadow-sm">
             <Briefcase className={iconInline16} aria-hidden />
           </span>
-          {hasAgency ? "Modo agencia" : "Modo agencia (contactar)"}
+          {hasAgency ? KAVIRO_TRIPS_PRODUCT_NAME : `${KAVIRO_TRIPS_PRODUCT_NAME} (contactar)`}
         </Link>
         {isAdmin ? (
           <Link href="/dashboard/admin" role="menuitem" className={`${dropItem} text-amber-950 dark:text-amber-200`}>

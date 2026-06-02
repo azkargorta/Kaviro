@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signInWithEmail } from "@/lib/auth";
 import KaviroLoadingScreen from "@/components/brand/KaviroLoadingScreen";
-import { AGENCY_PARTNERSHIP_EMAIL } from "@/lib/brand";
+import { AGENCY_PARTNERSHIP_EMAIL, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { defaultLoginNext, parseWorkspaceModeParam, WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 
 function welcomeLabel(username: string | null, email: string) {
@@ -194,7 +194,7 @@ export default function LoginForm() {
           disabled={loading}
           className="btn-press w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--brand-hover)] disabled:opacity-50"
         >
-          {loading ? "Entrando..." : isAgencyLogin ? "Entrar al panel" : "Iniciar sesión"}
+          {loading ? "Entrando..." : isAgencyLogin ? `Entrar a ${KAVIRO_TRIPS_PRODUCT_NAME}` : "Iniciar sesión"}
         </button>
       </form>
 
@@ -209,7 +209,7 @@ export default function LoginForm() {
             href="/empresa"
             className="text-center font-semibold text-[#1e3a5f] hover:underline dark:text-sky-300"
           >
-            ¿Eres agencia u organizador? Entra aquí
+            ¿Usas {KAVIRO_TRIPS_PRODUCT_NAME}? Entra aquí
           </Link>
         )}
         <Link

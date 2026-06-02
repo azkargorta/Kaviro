@@ -9,6 +9,7 @@ import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 import type { AgencyRow } from "@/lib/agency";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { ArrowLeftRight } from "lucide-react";
 
 export default function AgencyShell({
@@ -40,7 +41,7 @@ export default function AgencyShell({
           }}
         >
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-            <Link href="/agency" className="shrink-0" aria-label="Panel de agencia">
+            <Link href="/agency" className="shrink-0" aria-label={KAVIRO_TRIPS_PRODUCT_NAME}>
               <KaviroLogo variant="light" size="sm" withWordmark />
             </Link>
 
