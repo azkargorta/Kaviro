@@ -13,7 +13,7 @@ create table if not exists public.agencies (
   brand_color text null default '#1e3a5f',
   contact_email text null,
   owner_id uuid not null references auth.users (id) on delete restrict,
-  plan text not null default 'free' check (plan in ('free', 'agency_pro', 'trial')),
+  plan text not null default 'partnership' check (plan in ('free', 'agency_pro', 'trial', 'partnership', 'suspended')),
   stripe_customer_id text null,
   stripe_subscription_id text null,
   plan_active_until timestamptz null,

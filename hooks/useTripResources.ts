@@ -20,6 +20,7 @@ export type TripResource = {
   linked_reservation_id: string | null;
   visibility?: string | null;
   visible_to_user_ids?: string[] | null;
+  show_on_client_portal?: boolean | null;
   created_by_user_id?: string | null;
   created_at: string;
 };

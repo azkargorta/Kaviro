@@ -136,10 +136,11 @@ export function clientPortalPath(agencySlug: string, tripSlug: string) {
   return `/client/${encodeURIComponent(agencySlug)}/${encodeURIComponent(tripSlug)}`;
 }
 
-/** Plan activo para features de agencia (simplificado hasta Stripe Bloque 6). */
+/**
+ * Agencias onboarded por acuerdo comercial (sin checkout público).
+ * Límites de miembros y precio se negocian manualmente; `max_members` es referencia en BD.
+ */
 export function isAgencyPlanActive(agency: Pick<AgencyRow, "plan" | "plan_active_until">): boolean {
-  if (agency.plan === "agency_pro" || agency.plan === "trial") return true;
-  const until = agency.plan_active_until;
-  if (!until) return false;
-  return new Date(until).getTime() > Date.now();
+  if (agency.plan === "suspended") return false;
+  return true;
 }

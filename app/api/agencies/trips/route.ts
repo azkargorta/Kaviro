@@ -4,6 +4,7 @@ import { getAgencyForUser, isAgencyPlanActive } from "@/lib/agency";
 import { createTripWithOwner } from "@/lib/trips/createTripWithOwner";
 import { ensureUserCanCreateTrip } from "@/lib/trips/tripCreationLimits";
 import { slugifyForUrl } from "@/lib/agency-slug";
+import { ensureAgencyPortalRow } from "@/lib/agency-portal";
 
 export const runtime = "nodejs";
 
@@ -67,16 +68,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await supabase.from("agency_client_portals").upsert(
-        {
-          trip_id: created.tripId,
-          agency_id: ctx.agency.id,
-          slug: client_portal_slug,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "trip_id" }
-      );
+      await ensureAgencyPortalRow(supabase, created.tripId, ctx.agency.id, client_portal_slug);
     } catch {
       /* tabla opcional si aún no está la migración */
     }

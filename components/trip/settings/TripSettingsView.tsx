@@ -14,6 +14,7 @@ import {
   validateWeatherStays,
 } from "@/lib/trip-weather-stays";
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
+import AgencyTripAnnouncements from "@/components/agency/AgencyTripAnnouncements";
 import { agencyCardClass } from "@/lib/agency-theme";
 
 type TripSettingsViewProps = {
@@ -330,10 +331,20 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           <div className={`${agencyCardClass} p-4 text-sm`}>
             <p className="font-semibold text-slate-900 dark:text-white">Portal cliente</p>
             <p className="mt-1 font-mono text-xs text-slate-600 break-all dark:text-slate-400">{clientPortalHref}</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Publica el programa desde el panel de agencia. En Docs del viaje puedes marcar documentos visibles en el
+              portal.
+            </p>
           </div>
         ) : null}
 
       </div>
+
+      {isAgencyTrip ? (
+        <div className="mt-6">
+          <AgencyTripAnnouncements tripId={tripId} />
+        </div>
+      ) : null}
 
       {!hideWeather ? (
       <div

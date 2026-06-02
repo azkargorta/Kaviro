@@ -12,6 +12,20 @@ export type ClientPortalActivity = {
   activity_type: string | null;
 };
 
+export type ClientPortalDocument = {
+  id: string;
+  title: string | null;
+  file_url: string | null;
+  mime_type: string | null;
+};
+
+export type ClientPortalAnnouncement = {
+  id: string;
+  title: string;
+  body: string;
+  created_at: string;
+};
+
 export type ClientPortalPayload = {
   agency: AgencyRow;
   trip: {
@@ -24,6 +38,8 @@ export type ClientPortalPayload = {
   activities: ClientPortalActivity[];
   portalSlug: string;
   lastPublishedAt: string | null;
+  documents: ClientPortalDocument[];
+  announcements: ClientPortalAnnouncement[];
 };
 
 /** Resuelve /client/{agencySlug}/{tripSlug} (lectura pública). */
@@ -54,10 +70,9 @@ export async function loadAgencyClientPortal(
       .select("trip_id, slug, is_active, last_published_at")
       .eq("agency_id", agency.id)
       .eq("slug", tripSlug)
-      .eq("is_active", true)
       .maybeSingle();
 
-    if (!portal?.trip_id) return null;
+    if (!portal?.trip_id || portal.is_active !== true) return null;
 
     const { data: tripViaPortal } = await supabase
       .from("trips")
@@ -75,7 +90,7 @@ export async function loadAgencyClientPortal(
     .eq("trip_id", trip.id)
     .maybeSingle();
 
-  if (portalMeta && portalMeta.is_active === false) return null;
+  if (!portalMeta || portalMeta.is_active !== true) return null;
 
   return loadActivities(
     supabase,
@@ -99,12 +114,26 @@ async function loadActivities(
   portalSlug: string,
   lastPublishedAt: string | null
 ): Promise<ClientPortalPayload> {
-  const { data: activities } = await supabase
-    .from("trip_activities")
-    .select("id, title, activity_date, activity_time, place_name, address, activity_kind, activity_type")
-    .eq("trip_id", trip.id)
-    .order("activity_date", { ascending: true })
-    .order("activity_time", { ascending: true });
+  const [{ data: activities }, { data: documents }, { data: announcements }] = await Promise.all([
+    supabase
+      .from("trip_activities")
+      .select("id, title, activity_date, activity_time, place_name, address, activity_kind, activity_type")
+      .eq("trip_id", trip.id)
+      .order("activity_date", { ascending: true })
+      .order("activity_time", { ascending: true }),
+    supabase
+      .from("trip_resources")
+      .select("id, title, file_url, mime_type")
+      .eq("trip_id", trip.id)
+      .eq("show_on_client_portal", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("agency_trip_announcements")
+      .select("id, title, body, created_at")
+      .eq("trip_id", trip.id)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
 
   return {
     agency,
@@ -118,6 +147,8 @@ async function loadActivities(
     activities: (activities ?? []) as ClientPortalActivity[],
     portalSlug,
     lastPublishedAt: lastPublishedAt,
+    documents: (documents ?? []) as ClientPortalDocument[],
+    announcements: (announcements ?? []) as ClientPortalAnnouncement[],
   };
 }
 

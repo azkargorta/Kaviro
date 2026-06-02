@@ -79,17 +79,8 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     }
 
     try {
-      await supabase.from("agency_client_portals").upsert(
-        {
-          trip_id: dup.tripId,
-          agency_id: ctx.agency.id,
-          slug: client_portal_slug,
-          is_active: true,
-          last_published_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "trip_id" }
-      );
+      const { ensureAgencyPortalRow } = await import("@/lib/agency-portal");
+      await ensureAgencyPortalRow(supabase, dup.tripId, ctx.agency.id, client_portal_slug);
     } catch {
       /* migración opcional */
     }

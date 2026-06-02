@@ -63,8 +63,8 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
           <div className="mt-10 rounded-md border border-white/15 bg-white/5 p-5">
             <p className="font-semibold text-white">Solicitar acceso</p>
             <p className="mt-2 text-sm text-slate-300">
-              {KAVIRO_TRIPS_PRODUCT_NAME} se activa bajo acuerdo comercial. Indícanos volumen de grupos y tipo de
-              viajes.
+              {KAVIRO_TRIPS_PRODUCT_NAME} se activa con un acuerdo personalizado (precio y número de perfiles del
+              equipo). Cuéntanos volumen de grupos y tipo de viajes.
             </p>
             <a
               href={mailto}

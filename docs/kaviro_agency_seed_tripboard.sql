@@ -2,14 +2,15 @@
 -- Ejecutar DESPUÉS de kaviro_agency_mode.sql
 -- Requiere que el usuario ya exista en auth.users (registro previo en Kaviro).
 
-insert into public.agencies (name, slug, owner_id, plan, brand_color, contact_email)
+insert into public.agencies (name, slug, owner_id, plan, brand_color, contact_email, max_members)
 select
   'TripBoard',
   'tripboard',
   u.id,
-  'trial',
+  'partnership',
   '#1e3a5f',
-  'tripboardcomp@gmail.com'
+  'tripboardcomp@gmail.com',
+  10
 from auth.users u
 where lower(u.email) = lower('tripboardcomp@gmail.com')
 on conflict (slug) do update

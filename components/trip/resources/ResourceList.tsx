@@ -11,12 +11,14 @@ export default function ResourceList({
   onDelete,
   onDeleteMany,
   onAdd,
+  onToggleClientPortal,
   deleting = false,
 }: {
   resources: TripResource[];
   onDelete?: (resourceId: string) => void;
   onDeleteMany?: (resourceIds: string[]) => void | Promise<void>;
   onAdd?: () => void;
+  onToggleClientPortal?: (resourceId: string, visible: boolean) => void | Promise<void>;
   deleting?: boolean;
 }) {
   const canBulk = Boolean(onDeleteMany);
@@ -146,6 +148,17 @@ export default function ResourceList({
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-[#1E293B] dark:text-slate-300">
                           {resourceVisibilityLabel(resource.visibility)}
                         </span>
+                        {onToggleClientPortal ? (
+                          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-[#1e3a5f] dark:text-sky-300">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(resource.show_on_client_portal)}
+                              onChange={(e) => onToggleClientPortal(resource.id, e.target.checked)}
+                              className="rounded border-slate-300"
+                            />
+                            Portal cliente
+                          </label>
+                        ) : null}
                       </div>
                       {resource.file_url ? (
                         <a

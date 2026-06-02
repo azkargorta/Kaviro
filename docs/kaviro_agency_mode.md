@@ -15,12 +15,13 @@ Capa B2B encima de Kaviro (B2C): la agencia gestiona viajes en `/agency`, el cli
 | 3 | Plantillas (`agency_templates` + duplicar viaje) | En repo (`/agency/templates`) |
 | 4 | Portal `/client/[agency]/[trip]` | En repo (`lib/load-agency-client-portal.ts`) |
 | 5 | Branding (logo, color) | En repo (`/agency/branding` + `kaviro_agency_logos_storage.sql`) |
-| 6 | Stripe Kaviro Trips Pro | Pendiente (`AGENCY_PRO_PRICE_ID`) |
+| 6 | Comercial (precio / cupo perfiles) | **Manual** — sin checkout público |
+| 7 | Funciones operativas B2B | SQL: [`kaviro_agency_features.sql`](./kaviro_agency_features.sql) |
 
 ## Semana 1 (bloqueantes)
 
 1. Ejecutar `kaviro_agency_mode.sql` en Supabase.
-2. Crear producto Stripe «Kaviro Trips Pro» (29€ / 49€).
+2. Ejecutar `kaviro_agency_features.sql` (invitaciones, métricas, avisos, docs en portal).
 3. Seed agencia de prueba: [`kaviro_agency_seed_tripboard.sql`](./kaviro_agency_seed_tripboard.sql) (`tripboardcomp@gmail.com`).
 
 ## Lo que ya existe (~70 %)
@@ -76,11 +77,24 @@ Código: `lib/kaviro-trips-trip-nav.ts`, `TripWorkspaceContext`, `TripAgencyRout
 1. Ejecutar `kaviro_agency_logos_storage.sql` en Supabase.
 2. Panel → **Branding**: nombre, logo, color, email de contacto (solo admin).
 
-## Próximo código
+## Comercial (sin precio fijo en producto)
 
-- Bloque 6: checkout Stripe Kaviro Trips Pro (`AGENCY_PRO_PRICE_ID`)
-- Equipo: invitaciones por email (UI ampliada)
+- Precio y **número de perfiles** se negocian caso a caso (`agencies.max_members` en BD).
+- No hay pantalla de checkout Stripe para agencias en esta fase.
+- Alta de agencia: contacto en `/empresa` → acuerdo → fila en `agencies` + `agency_members`.
 
-## Precio orientativo
+## Funciones B2B en repo (`kaviro_agency_features.sql`)
 
-29 €/mes (hasta 3 miembros) · 49 €/mes (hasta 10 miembros).
+- **Invitaciones de equipo** — enlace `/agency/join?token=…` (panel → Equipo).
+- **Publicar / ocultar portal** — borrador hasta «Publicar» (`agency_client_portals.is_active`).
+- **PDF del programa** — `/client/{agencia}/{viaje}/pdf`.
+- **Avisos al grupo** — visibles en portal (Ajustes del viaje o panel).
+- **Documentos en portal** — marcar en Docs → «Visible en portal cliente».
+- **Métricas** — vistas del portal (30 días) en el panel `/agency`.
+- **Clientes** — API `/api/agencies/clients` (CRM ligero; UI opcional).
+
+## Próximo código (opcional)
+
+- Dominio propio del portal (`custom_domain`).
+- Envío automático de email al invitar (hoy: copiar enlace).
+- Roles solo-lectura en viaje y auditoría ampliada.

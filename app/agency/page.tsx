@@ -1,6 +1,7 @@
 import { getAgencyTrips } from "@/lib/agency";
 import { requireAgencyContext } from "@/lib/require-agency";
 import AgencyTripList from "@/components/agency/AgencyTripList";
+import AgencyOverviewPanel from "@/components/agency/AgencyOverviewPanel";
 import { agencyCardClass } from "@/lib/agency-theme";
 
 export default async function AgencyHomePage() {
@@ -19,6 +20,8 @@ export default async function AgencyHomePage() {
 
   return (
     <div className="space-y-8">
+      <AgencyOverviewPanel />
+
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           { label: "Programas", value: trips.length },

@@ -2,6 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ShareTripItinerary from "@/components/share/ShareTripItinerary";
 import ClientPortalHeader from "@/components/agency/ClientPortalHeader";
+import {
+  ClientPortalAnnouncements,
+  ClientPortalDocuments,
+  ClientPortalViewTracker,
+} from "@/components/agency/ClientPortalExtras";
 import { agencyBrandingFromRow } from "@/lib/agency";
 import {
   formatClientPortalDate,
@@ -45,6 +50,8 @@ export default async function ClientPortalPage({ params }: Props) {
     <main
       className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} min-h-[100svh] bg-slate-50 dark:bg-[#080C14]`}
     >
+      <ClientPortalViewTracker agencySlug={params.agency} tripSlug={params.trip} />
+
       <ClientPortalHeader
         branding={branding}
         tripName={data.trip.name || "Viaje"}
@@ -54,6 +61,8 @@ export default async function ClientPortalPage({ params }: Props) {
       />
 
       <section className="mx-auto max-w-[980px] px-4 py-6 sm:px-6">
+        <ClientPortalAnnouncements items={data.announcements} />
+        <ClientPortalDocuments items={data.documents} />
         <ShareTripItinerary days={days} />
       </section>
 

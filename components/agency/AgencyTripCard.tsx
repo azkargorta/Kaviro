@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { clientPortalPath } from "@/lib/agency";
+import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass, agencyCardClass } from "@/lib/agency-theme";
 
 export type AgencyTripRow = {
@@ -55,21 +56,19 @@ export default function AgencyTripCard({
         {formatRange(trip.start_date, trip.end_date)}
       </p>
 
+      <AgencyPortalControls
+        tripId={trip.id}
+        agencySlug={agencySlug}
+        clientPortalSlug={trip.client_portal_slug}
+      />
+
       <div className="mt-4 flex flex-wrap gap-2">
         <Link href={`/trip/${trip.id}/plan`} className={agencyBtnPrimaryClass}>
           Gestionar plan
         </Link>
-        {portalHref ? (
-          <Link
-            href={portalHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${agencyBtnSecondaryClass} gap-1.5`}
-          >
-            Portal cliente
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-          </Link>
-        ) : null}
+        <Link href={`/trip/${trip.id}/settings`} className={agencyBtnSecondaryClass}>
+          Ajustes y avisos
+        </Link>
       </div>
     </article>
   );

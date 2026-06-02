@@ -24,6 +24,7 @@ import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import Reveal from "@/components/ui/Reveal";
 import { useTripPermissions } from "@/hooks/useTripPermissions";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import { supabase } from "@/lib/supabase";
 
 function templateFromDetected(data: DetectedDocumentData): ReservationTemplateType {
@@ -74,6 +75,20 @@ export default function TripResourcesView({
   const [showLists, setShowLists] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { participant } = useTripPermissions(tripId);
+  const { isAgencyTrip } = useTripWorkspace();
+
+  async function toggleClientPortal(resourceId: string, visible: boolean) {
+    const res = await fetch(`/api/trip-resources/${resourceId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ show_on_client_portal: visible }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "No se pudo actualizar.");
+    }
+    window.location.reload();
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -451,6 +466,9 @@ export default function TripResourcesView({
                   setShowUploadForm(true);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 },
+                ...(isAgencyTrip
+                  ? { onToggleClientPortal: toggleClientPortal }
+                  : {}),
               }
             : {})}
         />
