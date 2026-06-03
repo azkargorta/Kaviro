@@ -10,6 +10,8 @@ export type TripPlanRefreshDetail = {
   message?: string;
   /** Selecciona este día en la vista Plan tras recargar. */
   focusDate?: string;
+  /** Rutas / mapa deben recargar planes (p. ej. coordenadas actualizadas). */
+  mapPlansChanged?: boolean;
 };
 
 /** Pide a las vistas de Plan que recarguen actividades (p. ej. tras ejecutar itinerario en IA). */
@@ -20,6 +22,7 @@ export function dispatchTripPlanRefresh(
     plansAdded?: number;
     message?: string;
     focusDate?: string;
+    mapPlansChanged?: boolean;
   }
 ): void {
   if (typeof window === "undefined") return;
@@ -32,6 +35,7 @@ export function dispatchTripPlanRefresh(
           plansAdded: options?.plansAdded,
           message: options?.message,
           focusDate: options?.focusDate,
+          mapPlansChanged: options?.mapPlansChanged,
         },
       })
     );

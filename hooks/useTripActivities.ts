@@ -279,6 +279,7 @@ export function useTripActivities(
 
         await load({ silent: true });
         dispatchTripOnboardingRefresh(tripId);
+        dispatchTripPlanRefresh(tripId, { mapPlansChanged: true });
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo crear la actividad.");
         throw err;
@@ -320,6 +321,7 @@ export function useTripActivities(
         );
 
         await load({ silent: true });
+        dispatchTripPlanRefresh(tripId, { mapPlansChanged: true });
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo actualizar la actividad.");
         throw err;
@@ -327,7 +329,7 @@ export function useTripActivities(
         setSaving(false);
       }
     },
-    [load]
+    [load, tripId]
   );
 
   const deleteActivity = useCallback(
@@ -345,11 +347,12 @@ export function useTripActivities(
         );
 
         await load({ silent: true });
+        dispatchTripPlanRefresh(tripId, { mapPlansChanged: true });
       } finally {
         setSaving(false);
       }
     },
-    [load]
+    [load, tripId]
   );
 
   const deleteActivitiesBulk = useCallback(

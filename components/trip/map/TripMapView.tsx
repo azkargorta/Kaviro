@@ -17,6 +17,10 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ROUTE_COLOR_PALETTE, pickNextRouteColor, pickRouteColorByIndex } from "@/lib/route-colors";
+import {
+  KAVIRO_TRIP_PLAN_REFRESH_EVENT,
+  type TripPlanRefreshDetail,
+} from "@/lib/trip-plan-events";
 
 type UnknownRow = Record<string, unknown>;
 type RouteMode = "DRIVING";
@@ -124,6 +128,18 @@ type PlanPlace = {
   activityDate?: string | null;
   latitude: number;
   longitude: number;
+};
+
+type PlanSelectOption = {
+  id: string;
+  activityId: string;
+  title: string;
+  address: string;
+  kind: string | null;
+  activityDate: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  hasCoords: boolean;
 };
 
 type RouteSources = {
@@ -279,6 +295,39 @@ function normalizePlanPlaces(rows: unknown[] | undefined, prefix: string): PlanP
   return list;
 }
 
+function normalizePlanSelectOptions(rows: unknown[] | undefined, prefix: string): PlanSelectOption[] {
+  const list: PlanSelectOption[] = [];
+  for (const raw of rows || []) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as UnknownRow;
+    const activityId = rowStr(row, "id");
+    if (!activityId) continue;
+    const lat = rowNum(row, "latitude");
+    const lng = rowNum(row, "longitude");
+    const title =
+      rowStr(row, "title") ||
+      rowStr(row, "place_name") ||
+      rowStr(row, "location_name") ||
+      rowStr(row, "name") ||
+      "Lugar";
+    const address = rowStr(row, "address") || rowStr(row, "place_name") || rowStr(row, "location_name") || title;
+    const kind = rowStr(row, "activity_kind") || rowStr(row, "activity_type") || null;
+    const activityDate = rowStr(row, "activity_date") || null;
+    list.push({
+      id: `${prefix}:${activityId}`,
+      activityId,
+      title,
+      address,
+      kind,
+      activityDate,
+      latitude: lat,
+      longitude: lng,
+      hasCoords: lat != null && lng != null,
+    });
+  }
+  return list;
+}
+
 function tripMapRouteKey(r: TripMapRoute) {
   return `${r.source || "trip_routes"}:${r.id}`;
 }
@@ -411,6 +460,29 @@ function todayISO() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function normalizeIsoDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const d = value.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+}
+
+/** Día por defecto al crear una ruta: filtro/día elegido → inicio del viaje → hoy. */
+function defaultNewRouteDate(opts: {
+  preferred?: string | null;
+  tripStart?: string | null;
+  tripDates?: string[];
+}): string {
+  const preferred = normalizeIsoDate(opts.preferred);
+  if (preferred) return preferred;
+  const tripStart = normalizeIsoDate(opts.tripStart);
+  if (tripStart) return tripStart;
+  for (const d of opts.tripDates ?? []) {
+    const iso = normalizeIsoDate(d);
+    if (iso) return iso;
+  }
+  return todayISO();
 }
 
 function normalizeFilterDate(v: string): string {
@@ -605,6 +677,7 @@ function MapSurface({
 
 export default function TripMapView({
   tripId,
+  trip,
   tripDates = [],
   planSources,
   routeSources,
@@ -613,21 +686,56 @@ export default function TripMapView({
   isPremium = false,
   canManageMap = true,
 }: Props) {
+  const tripStartDate = useMemo(
+    () => normalizeIsoDate(trip?.start_date) ?? normalizeIsoDate(tripDates[0]) ?? null,
+    [trip?.start_date, tripDates]
+  );
   const searchParams = useSearchParams();
   const router = useRouter();
   const [mapRef, setMapRef] = useState<L.Map | null>(null);
+  const [liveTripActivities, setLiveTripActivities] = useState<unknown[]>(
+    () => planSources?.tripActivities ?? []
+  );
+
+  const reloadPlanActivities = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trip-activities?tripId=${encodeURIComponent(tripId)}`, {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const payload = await res.json().catch(() => null);
+      if (res.ok && Array.isArray(payload?.activities)) {
+        setLiveTripActivities(payload.activities);
+      }
+    } catch {
+      // noop
+    }
+  }, [tripId]);
+
+  useEffect(() => {
+    void reloadPlanActivities();
+  }, [reloadPlanActivities]);
+
+  useEffect(() => {
+    function onPlanRefresh(event: Event) {
+      const detail = (event as CustomEvent<TripPlanRefreshDetail>).detail;
+      if (!detail?.tripId || detail.tripId !== tripId) return;
+      void reloadPlanActivities();
+    }
+    window.addEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+    return () => window.removeEventListener(KAVIRO_TRIP_PLAN_REFRESH_EVENT, onPlanRefresh);
+  }, [tripId, reloadPlanActivities]);
+
   const allPlanPlaces = useMemo(() => {
+    const legacy = planSources?.legacyActivities ?? [];
     const fromSources =
-      planSources && (planSources.tripActivities || planSources.legacyActivities)
-        ? [
-            ...normalizePlanPlaces(planSources.tripActivities, "trip"),
-            ...normalizePlanPlaces(planSources.legacyActivities, "legacy"),
-          ]
+      liveTripActivities.length || legacy.length
+        ? [...normalizePlanPlaces(liveTripActivities, "trip"), ...normalizePlanPlaces(legacy, "legacy")]
         : normalizePlanPlaces(points, "legacy-page");
     const byId = new Map<string, PlanPlace>();
     for (const p of fromSources) byId.set(p.id, p);
     return Array.from(byId.values());
-  }, [planSources, points]);
+  }, [liveTripActivities, planSources?.legacyActivities, points]);
 
   const allRoutes = useMemo(() => {
     const fromSources =
@@ -671,7 +779,9 @@ export default function TripMapView({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   // Formulario crear/editar ruta
-  const [form, setForm] = useState<RouteFormState>(() => defaultRouteForm(todayISO()));
+  const [form, setForm] = useState<RouteFormState>(() =>
+    defaultRouteForm(defaultNewRouteDate({ tripStart: trip?.start_date ?? null, tripDates }))
+  );
   const [mode] = useState<RouteMode>("DRIVING");
 
   const [origin, setOrigin] = useState<{ address: string; latitude: number | null; longitude: number | null }>({
@@ -841,11 +951,18 @@ export default function TripMapView({
     if (routeError) setError(routeError);
   }, [routeError]);
 
-  const planOptions = useMemo(() => {
-    const list = allPlanPlaces.slice();
-    list.sort((a, b) => (a.activityDate || "").localeCompare(b.activityDate || "") || a.title.localeCompare(b.title));
+  const planSelectOptions = useMemo(() => {
+    const legacy = planSources?.legacyActivities ?? [];
+    const list = [
+      ...normalizePlanSelectOptions(liveTripActivities, "trip"),
+      ...normalizePlanSelectOptions(legacy, "legacy"),
+    ];
+    list.sort(
+      (a, b) =>
+        (a.activityDate || "").localeCompare(b.activityDate || "") || a.title.localeCompare(b.title)
+    );
     return list;
-  }, [allPlanPlaces]);
+  }, [liveTripActivities, planSources?.legacyActivities]);
 
   const availablePlanKinds = useMemo(() => {
     const s = new Set<string>();
@@ -870,23 +987,100 @@ export default function TripMapView({
     return map;
   }, [customKinds]);
 
-  const applyPlan = useCallback((planId: string) => planOptions.find((p) => p.id === planId) || null, [planOptions]);
+  const findPlanOption = useCallback(
+    (planId: string) => planSelectOptions.find((p) => p.id === planId) || null,
+    [planSelectOptions]
+  );
+
+  const resolvePlanCoords = useCallback(
+    async (opt: PlanSelectOption): Promise<{ address: string; latitude: number; longitude: number } | null> => {
+      const address = (opt.address || opt.title).trim();
+      if (opt.hasCoords && opt.latitude != null && opt.longitude != null) {
+        return { address: address || opt.title, latitude: opt.latitude, longitude: opt.longitude };
+      }
+      if (!address) return null;
+
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ tripId, address }),
+      });
+      const data = await res.json().catch(() => null);
+      const lat = typeof data?.latitude === "number" ? data.latitude : null;
+      const lng = typeof data?.longitude === "number" ? data.longitude : null;
+      if (!res.ok || lat == null || lng == null) return null;
+
+      const formatted =
+        typeof data?.formattedAddress === "string" && data.formattedAddress.trim()
+          ? data.formattedAddress.trim()
+          : address;
+
+      if (opt.id.startsWith("trip:")) {
+        await fetch(`/api/trip-activities/${encodeURIComponent(opt.activityId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            latitude: lat,
+            longitude: lng,
+            address: formatted,
+          }),
+        }).catch(() => null);
+        void reloadPlanActivities();
+      }
+
+      return { address: formatted, latitude: lat, longitude: lng };
+    },
+    [tripId, reloadPlanActivities]
+  );
 
   useEffect(() => {
-    const p = originPlanId ? applyPlan(originPlanId) : null;
-    if (!p) return;
-    setOrigin({ address: p.address || p.title, latitude: p.latitude, longitude: p.longitude });
-  }, [applyPlan, originPlanId]);
+    if (!isRouteFormOpen) return;
+    void reloadPlanActivities();
+  }, [isRouteFormOpen, reloadPlanActivities]);
+
   useEffect(() => {
-    const p = stopPlanId ? applyPlan(stopPlanId) : null;
+    if (!originPlanId) return;
+    const p = findPlanOption(originPlanId);
     if (!p) return;
-    setStop({ address: p.address || p.title, latitude: p.latitude, longitude: p.longitude });
-  }, [applyPlan, stopPlanId]);
+    let cancelled = false;
+    void resolvePlanCoords(p).then((coords) => {
+      if (cancelled || !coords) return;
+      setOrigin(coords);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [findPlanOption, originPlanId, resolvePlanCoords]);
+
   useEffect(() => {
-    const p = destinationPlanId ? applyPlan(destinationPlanId) : null;
+    if (!stopPlanId) return;
+    const p = findPlanOption(stopPlanId);
     if (!p) return;
-    setDestination({ address: p.address || p.title, latitude: p.latitude, longitude: p.longitude });
-  }, [applyPlan, destinationPlanId]);
+    let cancelled = false;
+    void resolvePlanCoords(p).then((coords) => {
+      if (cancelled || !coords) return;
+      setStop(coords);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [findPlanOption, stopPlanId, resolvePlanCoords]);
+
+  useEffect(() => {
+    if (!destinationPlanId) return;
+    const p = findPlanOption(destinationPlanId);
+    if (!p) return;
+    let cancelled = false;
+    void resolvePlanCoords(p).then((coords) => {
+      if (cancelled || !coords) return;
+      setDestination(coords);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [destinationPlanId, findPlanOption, resolvePlanCoords]);
 
   useEffect(() => {
     setRoutesState(allRoutes);
@@ -1142,7 +1336,11 @@ export default function TripMapView({
     setForm((prev) => ({
       ...prev,
       editingRouteId: route.source === "trip_routes" ? route.id : null,
-      routeDate: (route.route_day || route.route_date || prev.routeDate || todayISO()) as string,
+      routeDate: (route.route_day ||
+        route.route_date ||
+        prev.routeDate ||
+        tripStartDate ||
+        todayISO()) as string,
       routeName: String(route.route_name || route.title || "Ruta"),
       departureTime: route.departure_time || "",
       color: route.color || ROUTE_COLOR_PALETTE[0],
@@ -1379,14 +1577,17 @@ export default function TripMapView({
     setSelectedRouteKeys(new Set());
 
     setIsRouteFormOpen(true);
-    const day = r.route_day || draft.date || todayISO();
+    const day =
+      r.route_day ||
+      draft.date ||
+      defaultNewRouteDate({ tripStart: tripStartDate, tripDates });
     setFilterDateFrom(day);
     setFilterDateTo(day);
 
     setForm((prev) => ({
       ...prev,
       editingRouteId: null,
-      routeDate: r.route_day || draft.date || todayISO(),
+      routeDate: day,
       routeName: r.title || "Ruta",
       departureTime: r.departure_time || "",
       stopEnabled: false,
@@ -2030,7 +2231,15 @@ export default function TripMapView({
                     type="button"
                     onClick={() => {
                       setIsRouteFormOpen(false);
-                      setForm(defaultRouteForm(form.routeDate || todayISO()));
+                      setForm(
+                        defaultRouteForm(
+                          defaultNewRouteDate({
+                            preferred: form.routeDate,
+                            tripStart: tripStartDate,
+                            tripDates,
+                          })
+                        )
+                      );
                       setRoutePreview(null);
                       setOrigin({ address: "", latitude: null, longitude: null });
                       setStop({ address: "", latitude: null, longitude: null });
@@ -2048,7 +2257,15 @@ export default function TripMapView({
                     type="button"
                     onClick={() => {
                       setIsRouteFormOpen(true);
-                      setForm(defaultRouteForm(reorderDay || filterDateFrom || todayISO()));
+                      setForm(
+                        defaultRouteForm(
+                          defaultNewRouteDate({
+                            preferred: reorderDay || filterDateFrom || null,
+                            tripStart: tripStartDate,
+                            tripDates,
+                          })
+                        )
+                      );
                       setRoutePreview(null);
                       setOrigin({ address: "", latitude: null, longitude: null });
                       setStop({ address: "", latitude: null, longitude: null });
@@ -2228,9 +2445,11 @@ export default function TripMapView({
                     className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
                   >
                     <option value="">Elegir plan…</option>
-                    {planOptions.map((p) => (
+                    {planSelectOptions.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {(p.activityDate ? `${p.activityDate} · ` : "") + p.title}
+                        {(p.activityDate ? `${p.activityDate} · ` : "") +
+                          p.title +
+                          (p.hasCoords ? "" : " (sin ubicación en mapa)")}
                       </option>
                     ))}
                   </select>
@@ -2261,9 +2480,11 @@ export default function TripMapView({
                     disabled={!form.stopEnabled}
                   >
                     <option value="">Elegir plan…</option>
-                    {planOptions.map((p) => (
+                    {planSelectOptions.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {(p.activityDate ? `${p.activityDate} · ` : "") + p.title}
+                        {(p.activityDate ? `${p.activityDate} · ` : "") +
+                          p.title +
+                          (p.hasCoords ? "" : " (sin ubicación en mapa)")}
                       </option>
                     ))}
                   </select>
@@ -2285,9 +2506,11 @@ export default function TripMapView({
                     className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
                   >
                     <option value="">Elegir plan…</option>
-                    {planOptions.map((p) => (
+                    {planSelectOptions.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {(p.activityDate ? `${p.activityDate} · ` : "") + p.title}
+                        {(p.activityDate ? `${p.activityDate} · ` : "") +
+                          p.title +
+                          (p.hasCoords ? "" : " (sin ubicación en mapa)")}
                       </option>
                     ))}
                   </select>
@@ -2663,7 +2886,12 @@ export default function TripMapView({
         route={duplicateRoute}
         tripId={tripId}
         tripDates={Array.isArray(tripDates) ? tripDates : []}
-        defaultDate={reorderDay || filterDateFrom || undefined}
+        defaultDate={
+          reorderDay ||
+          filterDateFrom ||
+          tripStartDate ||
+          undefined
+        }
         onClose={() => setDuplicateOpen(false)}
         onDuplicated={() => void reloadRoutes()}
       />
