@@ -26,6 +26,10 @@ export const agencyCardClass =
 export const agencyPanelBgClass = "min-h-screen bg-slate-100 dark:bg-[#060a12]";
 
 export const agencyPageTitleClass =
-  "text-xl font-semibold tracking-tight text-slate-900 dark:text-white";
+  "text-xl font-semibold leading-snug tracking-tight text-slate-900 dark:text-white";
 
-export const agencyPageSubtitleClass = "mt-1 text-sm text-slate-600 dark:text-slate-400";
+export const agencyPageSubtitleClass = "mt-1 text-sm leading-normal text-slate-600 dark:text-slate-400";
+
+/** Etiquetas de menú lateral / navegación (evita recorte de g, p, y). */
+export const agencyNavLinkClass =
+  "flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium leading-normal transition md:w-full md:px-3.5 md:py-3 md:text-[15px]";

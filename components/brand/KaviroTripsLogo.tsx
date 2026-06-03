@@ -75,7 +75,7 @@ export default function KaviroTripsLogo({
           .filter(Boolean)
           .join(" ")}
       />
-      <span className={[wordmarkClass[size], textColor, "leading-none"].join(" ")}>{APP_NAME}</span>
+      <span className={[wordmarkClass[size], textColor, "leading-snug"].join(" ")}>{APP_NAME}</span>
     </span>
   ) : (
     <span className={`inline-flex items-center ${className}`.trim()}>

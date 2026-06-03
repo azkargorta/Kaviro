@@ -43,10 +43,10 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
     <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">
       <div className="sticky top-24 space-y-2">
         <div
-          className={`overflow-hidden shadow-sm ${
+          className={`shadow-sm ${
             isAgencyTrip
-              ? "rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
-              : "rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)] dark:border-[#1E293B]"
+              ? "overflow-visible rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+              : "overflow-hidden rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)] dark:border-[#1E293B]"
           }`}
         >
           <div
@@ -57,7 +57,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             }`}
           >
             <p
-              className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+              className={`text-[10px] font-bold uppercase leading-normal tracking-[0.18em] ${
                 isAgencyTrip ? "text-slate-300" : "text-[var(--text-tertiary)]"
               }`}
             >
@@ -65,7 +65,12 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             </p>
           </div>
 
-          <nav aria-label="Navegación del viaje" data-tour="sidebar-nav" className="p-1.5 space-y-0.5">
+          <nav
+            aria-label="Navegación del viaje"
+            data-tour="sidebar-nav"
+            data-trip-sidebar-nav
+            className="space-y-0.5 p-1.5"
+          >
             {visibleItems.map((item) => (
               <SidebarLink
                 key={item.key}
@@ -123,7 +128,7 @@ function SidebarLink({
       prefetch
       title={item.label}
       className={`
-        group relative flex min-h-[48px] items-center gap-3 rounded-md px-2.5 py-2
+        group relative flex min-h-[52px] items-center gap-3 rounded-md px-2.5 py-2.5
         transition-all duration-150
         ${
           active
@@ -156,11 +161,19 @@ function SidebarLink({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className={`text-[13px] font-semibold leading-tight truncate ${active ? "text-white" : ""}`}>
+        <p
+          className={`text-[13px] font-semibold leading-snug truncate ${active ? "text-white" : "text-slate-900 dark:text-slate-100"}`}
+        >
           {item.label}
         </p>
-        {item.sublabel && !active ? (
-          <p className="text-[10px] leading-none mt-0.5 truncate text-slate-500">{item.sublabel}</p>
+        {item.sublabel ? (
+          <p
+            className={`mt-0.5 truncate text-[10px] font-medium leading-snug ${
+              active ? "text-white/80" : "text-slate-500"
+            }`}
+          >
+            {item.sublabel}
+          </p>
         ) : null}
       </div>
 

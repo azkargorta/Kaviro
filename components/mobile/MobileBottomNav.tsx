@@ -142,7 +142,7 @@ export default function MobileBottomNav({
                   <span className={active ? "text-[var(--brand)]" : "text-[var(--text-tertiary)]"}>
                     {item.icon}
                   </span>
-                  <span className="text-sm font-semibold">{item.label}</span>
+                  <span className="text-sm font-semibold leading-snug">{item.label}</span>
                   {item.key === "participants" && newParticipantCount > 0 && (
                     <span
                       className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${
@@ -172,7 +172,7 @@ export default function MobileBottomNav({
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
         aria-label="Navegación del viaje"
       >
-        <div className="mx-2 mb-1 overflow-hidden rounded-2xl border border-slate-200/90 bg-[var(--surface-card)]/96 shadow-[0_-4px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-[#1E293B] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-2 mb-1 rounded-2xl border border-slate-200/90 bg-[var(--surface-card)]/96 shadow-[0_-4px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-[#1E293B] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
           <div className="flex">
             {/* Primary nav items */}
             {primaryItems.map((item) => {
@@ -206,7 +206,7 @@ export default function MobileBottomNav({
                   </span>
 
                   {/* Label */}
-                  <span className={`relative z-10 text-[9px] font-semibold leading-none tracking-wide ${
+                  <span className={`relative z-10 px-0.5 text-[9px] font-semibold leading-snug tracking-wide ${
                     active ? item.isAI ? "text-[var(--brand)]" : "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]"
                   }`}>
                     {item.label}
@@ -262,7 +262,7 @@ export default function MobileBottomNav({
               <span className="relative z-10 flex h-6 w-6 items-center justify-center" aria-hidden>
                 <MoreHorizontal className="h-5 w-5" />
               </span>
-              <span className="relative z-10 text-[9px] font-semibold leading-none tracking-wide text-[var(--text-tertiary)]">
+              <span className="relative z-10 px-0.5 text-[9px] font-semibold leading-snug tracking-wide text-[var(--text-tertiary)]">
                 Más
               </span>
               {/* Badge for secondary items */}

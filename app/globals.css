@@ -90,6 +90,12 @@ html:has(.kaviro-trips-workspace) body:not(.dark body) {
   background-image: none;
 }
 
+/* Menús Kaviro Trips: evita recorte de descendentes (g, p, y) por line-height demasiado bajo */
+.kaviro-trips-workspace aside nav a,
+.kaviro-trips-workspace [data-trip-sidebar-nav] a {
+  line-height: 1.375;
+}
+
 /* ─── Base ──────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;

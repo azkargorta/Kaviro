@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
-import { AGENCY_NAVY } from "@/lib/agency-theme";
+import { AGENCY_NAVY, agencyNavLinkClass } from "@/lib/agency-theme";
 
 function agencyInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -66,15 +66,15 @@ export default function AgencySidebar({
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+            <p className="text-[9px] font-semibold uppercase leading-normal tracking-[0.12em] text-slate-400">
               {KAVIRO_TRIPS_PRODUCT_NAME}
             </p>
-            <p className="truncate text-base font-semibold leading-tight text-white">{agency.name}</p>
+            <p className="truncate text-base font-semibold leading-snug text-white">{agency.name}</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto px-2 py-3 md:flex-col md:gap-0.5 md:overflow-visible md:px-3 md:py-4">
+      <nav className="flex gap-1 overflow-x-auto overflow-y-visible px-2 py-3 md:flex-col md:gap-0.5 md:overflow-visible md:px-3 md:py-4">
         {NAV.map((item) => {
           const active =
             item.exact === true
@@ -85,7 +85,7 @@ export default function AgencySidebar({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition md:w-full md:px-3.5 md:py-3 md:text-[15px] md:leading-snug ${
+              className={`${agencyNavLinkClass} ${
                 active
                   ? "bg-[#1e3a5f]/80 font-semibold text-white ring-1 ring-white/15"
                   : "text-slate-300 hover:bg-white/5 hover:text-white"

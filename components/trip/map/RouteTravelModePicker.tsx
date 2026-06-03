@@ -45,7 +45,7 @@ export default function RouteTravelModePicker({ value, onChange, disabled = fals
             }`}
           >
             <Icon className={`h-4 w-4 shrink-0 ${active ? "text-[var(--brand)]" : "text-slate-500"}`} aria-hidden />
-            <span className="text-[11px] font-bold leading-tight">{opt.label}</span>
+            <span className="text-[11px] font-bold leading-snug">{opt.label}</span>
           </button>
         );
       })}
