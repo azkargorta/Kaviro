@@ -61,6 +61,8 @@ type RouteFormState = {
 
 type RoutePreview = {
   key: string;
+  /** Modo con el que se calculó distancia/tiempo (debe coincidir con el selector actual). */
+  calculatedTravelMode: TripRouteTravelMode;
   points: RoutePoint[];
   distanceText: string | null;
   durationText: string | null;
@@ -68,6 +70,7 @@ type RoutePreview = {
   arrivalTime: string | null;
   color: string;
   label: string;
+  durationAdjusted?: boolean;
 };
 
 type RoutesDraftPayload = {
@@ -383,6 +386,24 @@ function normalizeRoutes(rows: unknown[] | undefined, source: "trip_routes" | "l
 function formatKm(meters: number) {
   const km = meters / 1000;
   return km >= 10 ? `${km.toFixed(0)} km` : `${km.toFixed(1)} km`;
+}
+
+function pathLengthMeters(points: RoutePoint[]): number {
+  if (points.length < 2) return 0;
+  const R = 6371000;
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const lat1 = (a.lat * Math.PI) / 180;
+    const lat2 = (b.lat * Math.PI) / 180;
+    const h =
+      Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    total += 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  return total;
 }
 
 function formatDuration(seconds: number) {
@@ -1458,6 +1479,7 @@ export default function TripMapView({
       let durationSeconds: number | null = null;
 
       let transitApproximate = false;
+      let durationAdjusted = false;
       try {
         const profile = osrmProfileForTravelMode(travelMode);
         const osrm = await fetchOsrmRoute({ origin: originPt, destination: destPt, stop: stopPt, profile });
@@ -1469,6 +1491,7 @@ export default function TripMapView({
           durationSeconds: osrm.durationSeconds,
         });
         transitApproximate = Boolean(adjusted.transitApproximate);
+        durationAdjusted = Boolean(adjusted.durationAdjusted);
         if (typeof adjusted.distanceMeters === "number" && Number.isFinite(adjusted.distanceMeters)) {
           distanceText = formatKm(adjusted.distanceMeters);
         }
@@ -1477,12 +1500,25 @@ export default function TripMapView({
           durationText = formatDuration(adjusted.durationSeconds);
         }
       } catch {
-        // Si OSRM falla, enseñamos igualmente la línea directa si hay puntos válidos.
+        const pathMeters = pathLengthMeters(routePoints);
+        if (pathMeters > 0) {
+          const fixed = applyTravelModeToOsrmMetrics(travelMode, {
+            distanceMeters: pathMeters,
+            durationSeconds: null,
+          });
+          durationAdjusted = Boolean(fixed.durationAdjusted) || durationAdjusted;
+          if (typeof fixed.distanceMeters === "number") distanceText = formatKm(fixed.distanceMeters);
+          if (typeof fixed.durationSeconds === "number") {
+            durationSeconds = fixed.durationSeconds;
+            durationText = formatDuration(fixed.durationSeconds);
+          }
+        }
       }
 
-      const durationHint = travelModeDurationHint(travelMode, transitApproximate);
+      const durationHint = travelModeDurationHint(travelMode, { transitApproximate, durationAdjusted });
       const preview: RoutePreview = {
         key: routeCalcKey,
+        calculatedTravelMode: travelMode,
         points: routePoints,
         distanceText,
         durationText,
@@ -1490,6 +1526,7 @@ export default function TripMapView({
         arrivalTime: addDurationToTime(form.departureTime, durationSeconds),
         color: effectiveRouteColor,
         label: name,
+        durationAdjusted,
       };
       setFocusedRouteKey(null);
       setRoutePreview(preview);
@@ -1515,7 +1552,9 @@ export default function TripMapView({
     setSaving(true);
     try {
       const name = form.routeName.trim() || "Ruta";
-      const preview = routePreview?.key === routeCalcKey ? routePreview : await calculateRoutePreview();
+      const previewMatchesMode =
+        routePreview?.key === routeCalcKey && routePreview.calculatedTravelMode === travelMode;
+      const preview = previewMatchesMode ? routePreview : await calculateRoutePreview();
       if (!preview) return;
 
       const input: SaveRouteInput = {
@@ -1683,6 +1722,7 @@ export default function TripMapView({
 
     setRoutePreview({
       key: `draft:${idx}`,
+      calculatedTravelMode: normalizeTripRouteTravelMode(r.travel_mode || draft.travelMode),
       points:
         Array.isArray(r.path_points) && r.path_points.length
           ? r.path_points
@@ -2769,9 +2809,15 @@ export default function TripMapView({
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
                         <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-emerald-800">Ruta calculada</div>
                         <p className="mt-1 text-xs font-semibold text-emerald-900">
-                          Modo: {travelModeLabel(travelMode)}
-                          {travelMode === "TRANSIT" ? " · tiempo estimado" : null}
+                          Modo: {travelModeLabel(routePreview.calculatedTravelMode)}
+                          {routePreview.calculatedTravelMode === "TRANSIT" ? " · tiempo estimado" : null}
+                          {routePreview.durationAdjusted ? " · duración ajustada al modo" : null}
                         </p>
+                        {routePreview.calculatedTravelMode !== travelMode ? (
+                          <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-900">
+                            Has cambiado el modo de transporte. Pulsa «Calcular ruta» de nuevo para actualizar distancia y tiempo.
+                          </p>
+                        ) : null}
                         <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div className="rounded-xl bg-white px-3 py-2">
                             <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">Distancia</div>

@@ -61,22 +61,77 @@ export type OsrmMetrics = {
   durationSeconds: number | null;
 };
 
-/** Ajusta distancia/tiempo según el modo elegido (p. ej. TP sin perfil OSRM). */
+/** Velocidad media urbana (km/h) para estimar si OSRM devolvió otro perfil. */
+const TYPICAL_SPEED_KMH: Record<TripRouteTravelMode, number> = {
+  WALKING: 4.5,
+  BICYCLING: 14,
+  DRIVING: 45,
+  TRANSIT: 22,
+};
+
+/** Límites plausibles de velocidad media (km/h) por modo. */
+const SPEED_BOUNDS_KMH: Record<TripRouteTravelMode, { min: number; max: number }> = {
+  WALKING: { min: 2, max: 7 },
+  BICYCLING: { min: 8, max: 32 },
+  DRIVING: { min: 12, max: 130 },
+  TRANSIT: { min: 8, max: 90 },
+};
+
+function estimateDurationSeconds(mode: TripRouteTravelMode, distanceMeters: number): number {
+  const km = distanceMeters / 1000;
+  const speed = TYPICAL_SPEED_KMH[mode];
+  return Math.max(60, Math.round((km / speed) * 3600));
+}
+
+function impliedSpeedKmh(distanceMeters: number, durationSeconds: number): number {
+  if (durationSeconds <= 0) return 0;
+  return distanceMeters / 1000 / (durationSeconds / 3600);
+}
+
+/**
+ * Alinea distancia/tiempo con el modo elegido.
+ * OSRM a veces devuelve tiempos de coche aunque se pida walking, o falla en trayectos largos.
+ */
 export function applyTravelModeToOsrmMetrics(
   mode: TripRouteTravelMode,
   metrics: OsrmMetrics
-): OsrmMetrics & { transitApproximate?: boolean } {
-  if (mode !== "TRANSIT") return metrics;
+): OsrmMetrics & { transitApproximate?: boolean; durationAdjusted?: boolean } {
   const distanceMeters = metrics.distanceMeters;
   let durationSeconds = metrics.durationSeconds;
+
+  if (typeof distanceMeters === "number" && distanceMeters > 0) {
+    const bounds = SPEED_BOUNDS_KMH[mode];
+    const speed =
+      typeof durationSeconds === "number" && durationSeconds > 0
+        ? impliedSpeedKmh(distanceMeters, durationSeconds)
+        : 0;
+    const outOfRange = !speed || speed < bounds.min || speed > bounds.max;
+    if (outOfRange) {
+      durationSeconds = estimateDurationSeconds(mode, distanceMeters);
+      if (mode === "TRANSIT") {
+        durationSeconds = Math.round(durationSeconds * 1.2 + 8 * 60);
+        return { distanceMeters, durationSeconds, transitApproximate: true, durationAdjusted: true };
+      }
+      return { distanceMeters, durationSeconds, durationAdjusted: true };
+    }
+  }
+
+  if (mode !== "TRANSIT") return { distanceMeters, durationSeconds };
+
   if (typeof durationSeconds === "number" && Number.isFinite(durationSeconds)) {
     durationSeconds = Math.round(durationSeconds * 1.35 + 8 * 60);
   }
   return { distanceMeters, durationSeconds, transitApproximate: true };
 }
 
-export function travelModeDurationHint(mode: TripRouteTravelMode, transitApproximate?: boolean): string | null {
-  if (mode === "TRANSIT" || transitApproximate) {
+export function travelModeDurationHint(
+  mode: TripRouteTravelMode,
+  opts?: { transitApproximate?: boolean; durationAdjusted?: boolean }
+): string | null {
+  if (opts?.durationAdjusted) {
+    return "Duración recalculada según el modo de transporte elegido (el motor de rutas no devolvió un tiempo coherente).";
+  }
+  if (mode === "TRANSIT" || opts?.transitApproximate) {
     return "Tiempo estimado en transporte público (paradas y transbordos incluidos de forma aproximada).";
   }
   return null;
