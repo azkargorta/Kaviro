@@ -27,6 +27,8 @@ type Props = {
   aiSuggest?: React.ReactNode;
   canManagePlan?: boolean;
   onAddPlan?: () => void;
+  /** Botón de importar dossier (p. ej. Utilizar Archivo en Kaviro Trips). */
+  fileImportAction?: React.ReactNode;
 };
 
 function PlanParticipantsHeader({ participants }: { participants: string[] }) {
@@ -111,9 +113,10 @@ export default function PlanItineraryCard({
   aiSuggest,
   canManagePlan = false,
   onAddPlan,
+  fileImportAction,
 }: Props) {
   const destLabel = formatPlanDestinationLabel(destination);
-  const hasHeaderActions = Boolean((canManagePlan && onAddPlan) || aiSuggest);
+  const hasHeaderActions = Boolean((canManagePlan && onAddPlan) || aiSuggest || fileImportAction);
   const hasHeaderParticipants = participants.length > 0;
   const daysScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -173,6 +176,7 @@ export default function PlanItineraryCard({
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
             {hasHeaderActions ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
+                {fileImportAction}
                 {canManagePlan && onAddPlan ? (
                   <button
                     type="button"

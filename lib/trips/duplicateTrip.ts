@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getAgencyForUser } from "@/lib/agency";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import {
   DEFAULT_TRIP_TEMPLATE_INCLUDES,
   type TripTemplateIncludes,
@@ -66,7 +67,10 @@ export async function duplicateTripForUser(
   const targetAgencyId = options.agencyId ?? tripAgencyId;
   const sourceDescription = (trip as { description?: string | null }).description ?? null;
 
-  const { data: newTrip, error: newTripError } = await supabase
+  /** Copia con service role: el staff de agencia suele no ser participante del viaje origen (RLS). */
+  const db = createSupabaseAdmin();
+
+  const { data: newTrip, error: newTripError } = await db
     .from("trips")
     .insert({
       name: newName,
@@ -92,7 +96,7 @@ export async function duplicateTripForUser(
 
   const newTripId = newTrip.id as string;
 
-  await supabase.from("trip_participants").insert({
+  await db.from("trip_participants").insert({
     trip_id: newTripId,
     user_id: user.id,
     role: "owner",
@@ -103,7 +107,7 @@ export async function duplicateTripForUser(
   });
 
   if (includes.activityKinds) {
-    const { data: kinds } = await supabase
+    const { data: kinds } = await db
       .from("trip_activity_kinds")
       .select("*")
       .eq("trip_id", sourceTripId);
@@ -113,38 +117,52 @@ export async function duplicateTripForUser(
         ...k,
         trip_id: newTripId,
       }));
-      await supabase.from("trip_activity_kinds").insert(kindInserts);
+      const { error: kindsErr } = await db.from("trip_activity_kinds").insert(kindInserts);
+      if (kindsErr) {
+        return { ok: false, error: "No se pudieron copiar los tipos de actividad.", status: 500 };
+      }
     }
   }
 
   const activityMap = new Map<string, string>();
 
   if (includes.plan) {
-    const { data: activities } = await supabase
+    const { data: activities, error: actReadErr } = await db
       .from("trip_activities")
       .select("*")
       .eq("trip_id", sourceTripId)
       .order("activity_date", { ascending: true })
       .order("sort_order", { ascending: true });
 
+    if (actReadErr) {
+      return { ok: false, error: "No se pudo leer el plan del viaje origen.", status: 500 };
+    }
+
     if (activities?.length) {
       for (const act of activities) {
         const { id: _id, trip_id: _tid, created_at: _ca, updated_at: _ua, ...fields } = act;
-        const { data: newAct } = await supabase
+        const { data: newAct, error: actInsErr } = await db
           .from("trip_activities")
           .insert({ ...fields, trip_id: newTripId })
           .select("id")
           .single();
+        if (actInsErr) {
+          return { ok: false, error: "No se pudo copiar el plan del viaje.", status: 500 };
+        }
         if (newAct) activityMap.set(act.id, newAct.id);
       }
     }
   }
 
   if (includes.routes) {
-    const { data: routes } = await supabase
+    const { data: routes, error: routeReadErr } = await db
       .from("trip_routes")
       .select("*")
       .eq("trip_id", sourceTripId);
+
+    if (routeReadErr) {
+      return { ok: false, error: "No se pudieron leer las rutas del viaje origen.", status: 500 };
+    }
 
     if (routes?.length) {
       const routeInserts = routes.map(({ id: _id, trip_id: _tid, created_at: _ca, ...r }) => ({
@@ -157,35 +175,43 @@ export async function duplicateTripForUser(
           ? (activityMap.get(r.destination_activity_id) ?? null)
           : null,
       }));
-      await supabase.from("trip_routes").insert(routeInserts);
+      const { error: routesErr } = await db.from("trip_routes").insert(routeInserts);
+      if (routesErr) {
+        return { ok: false, error: "No se pudieron copiar las rutas del viaje.", status: 500 };
+      }
     }
   }
 
   if (includes.lists) {
-    const { data: lists } = await supabase.from("trip_lists").select("*").eq("trip_id", sourceTripId);
+    const { data: lists } = await db.from("trip_lists").select("*").eq("trip_id", sourceTripId);
 
     if (lists?.length) {
       for (const list of lists) {
         const { id: _id, trip_id: _tid, created_at: _ca, updated_at: _ua, ...listFields } = list;
-        const { data: newList } = await supabase
+        const { data: newList, error: listErr } = await db
           .from("trip_lists")
           .insert({ ...listFields, trip_id: newTripId })
           .select("id")
           .single();
 
-        if (newList) {
-          const { data: items } = await supabase
-            .from("trip_list_items")
-            .select("*")
-            .eq("list_id", list.id);
+        if (listErr || !newList) {
+          return { ok: false, error: "No se pudieron copiar las listas del viaje.", status: 500 };
+        }
 
-          if (items?.length) {
-            const itemInserts = items.map(({ id: _id, list_id: _lid, created_at: _ca, ...item }) => ({
-              ...item,
-              list_id: newList.id,
-              is_done: false,
-            }));
-            await supabase.from("trip_list_items").insert(itemInserts);
+        const { data: items } = await db
+          .from("trip_list_items")
+          .select("*")
+          .eq("list_id", list.id);
+
+        if (items?.length) {
+          const itemInserts = items.map(({ id: _id, list_id: _lid, created_at: _ca, ...item }) => ({
+            ...item,
+            list_id: newList.id,
+            is_done: false,
+          }));
+          const { error: itemsErr } = await db.from("trip_list_items").insert(itemInserts);
+          if (itemsErr) {
+            return { ok: false, error: "No se pudieron copiar los ítems de las listas.", status: 500 };
           }
         }
       }
@@ -194,7 +220,7 @@ export async function duplicateTripForUser(
 
   if (includes.docs) {
     const resourceMap = new Map<string, string>();
-    const { data: resources } = await supabase
+    const { data: resources } = await db
       .from("trip_resources")
       .select("*")
       .eq("trip_id", sourceTripId);
@@ -202,7 +228,7 @@ export async function duplicateTripForUser(
     if (resources?.length) {
       for (const res of resources) {
         const { id: oldId, trip_id: _tid, created_at: _ca, updated_at: _ua, ...fields } = res;
-        const { data: newRes } = await supabase
+        const { data: newRes, error: resErr } = await db
           .from("trip_resources")
           .insert({
             ...fields,
@@ -211,11 +237,14 @@ export async function duplicateTripForUser(
           })
           .select("id")
           .single();
+        if (resErr) {
+          return { ok: false, error: "No se pudieron copiar los documentos del viaje.", status: 500 };
+        }
         if (newRes) resourceMap.set(oldId, newRes.id);
       }
     }
 
-    const { data: reservations } = await supabase
+    const { data: reservations } = await db
       .from("trip_reservations")
       .select("*")
       .eq("trip_id", sourceTripId);
@@ -229,18 +258,21 @@ export async function duplicateTripForUser(
           created_by_user_id: user.id,
         })
       );
-      await supabase.from("trip_reservations").insert(resvInserts);
+      const { error: resvErr } = await db.from("trip_reservations").insert(resvInserts);
+      if (resvErr) {
+        return { ok: false, error: "No se pudieron copiar las reservas del viaje.", status: 500 };
+      }
     }
   }
 
   if (includes.announcements && tripAgencyId) {
-    const { data: announcements } = await supabase
+    const { data: announcements } = await db
       .from("agency_trip_announcements")
       .select("title, body, agency_id")
       .eq("trip_id", sourceTripId);
 
     if (announcements?.length) {
-      await supabase.from("agency_trip_announcements").insert(
+      const { error: annErr } = await db.from("agency_trip_announcements").insert(
         announcements.map((a) => ({
           trip_id: newTripId,
           agency_id: a.agency_id,
@@ -249,6 +281,9 @@ export async function duplicateTripForUser(
           created_by: user.id,
         }))
       );
+      if (annErr) {
+        return { ok: false, error: "No se pudieron copiar los avisos del viaje.", status: 500 };
+      }
     }
   }
 

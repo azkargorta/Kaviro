@@ -9,6 +9,7 @@ import PlanActivityRow from "@/components/trip/plan/PlanActivityRow";
 import PlanItineraryCard from "@/components/trip/plan/PlanItineraryCard";
 import PlanExpenseFooter from "@/components/trip/plan/PlanExpenseFooter";
 import PlanDocumentImportPanel from "@/components/trip/plan/PlanDocumentImportPanel";
+import PlanUtilizarArchivoButton from "@/components/trip/plan/PlanUtilizarArchivoButton";
 import PlanActivityDetailSheet from "@/components/trip/plan/PlanActivityDetailSheet";
 import PlanAiSuggestBadge from "@/components/trip/plan/PlanAiSuggestBadge";
 import { isLodgingPlanActivity } from "@/lib/plan-activity-meta";
@@ -797,6 +798,14 @@ export default function TripPlanView({
               </button>
             </>
           ) : null}
+          {canManagePlan && isAgencyTrip ? (
+            <PlanUtilizarArchivoButton
+              tripId={tripId}
+              isPremium={premiumEnabled || isAgencyTrip}
+              appearance="toolbar"
+              className="hidden sm:inline-flex"
+            />
+          ) : null}
           {canManagePlan ? (
           <button
             data-tour="plan-add-btn"
@@ -1470,6 +1479,15 @@ export default function TripPlanView({
           tripId={tripId}
           canManagePlan={canManagePlan}
           onAddPlan={canManagePlan ? handleStartCreate : undefined}
+          fileImportAction={
+            canManagePlan && isAgencyTrip ? (
+              <PlanUtilizarArchivoButton
+                tripId={tripId}
+                isPremium={premiumEnabled || isAgencyTrip}
+                appearance="header"
+              />
+            ) : undefined
+          }
           hideExpenseFooter={isAgencyTrip}
           expenseFooter={isAgencyTrip ? undefined : <PlanExpenseFooter tripId={tripId} />}
           aiSuggest={
@@ -1504,7 +1522,11 @@ export default function TripPlanView({
               <div className="py-6 text-center sm:py-8">
                 {isAgencyTrip && canManagePlan ? (
                   <div className="mx-auto mb-6 max-w-lg text-left">
-                    <PlanDocumentImportPanel tripId={tripId} isPremium={premiumEnabled} compact />
+                    <PlanDocumentImportPanel
+                      tripId={tripId}
+                      isPremium={premiumEnabled || isAgencyTrip}
+                      compact
+                    />
                   </div>
                 ) : (
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-[var(--brand-light)] text-3xl shadow-sm">
