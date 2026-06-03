@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import type { AgencyTripListRow } from "@/lib/agency";
 import AgencyTripRowItem from "@/components/agency/AgencyTripRow";
 import AgencyCreateTripForm from "@/components/agency/AgencyCreateTripForm";
+import AgencyInstantiateFromTemplateModal from "@/components/agency/AgencyInstantiateFromTemplateModal";
 import {
   agencyBtnPrimaryClass,
   agencyBtnSecondaryClass,
@@ -36,6 +36,7 @@ type Props = {
 
 export default function AgencyTripsPageClient({ agencySlug, trips }: Props) {
   const [showCreate, setShowCreate] = useState(false);
+  const [showFromTemplate, setShowFromTemplate] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "upcoming" | "past">("all");
   const buckets = useMemo(() => categorize(trips), [trips]);
 
@@ -56,13 +57,23 @@ export default function AgencyTripsPageClient({ agencySlug, trips }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
-        <Link href="/agency/templates" className={`${agencyBtnSecondaryClass} gap-1.5 text-xs`}>
-          <Layers className="h-3.5 w-3.5" aria-hidden />
-          Desde plantilla
-        </Link>
         <button
           type="button"
-          onClick={() => setShowCreate((v) => !v)}
+          onClick={() => {
+            setShowFromTemplate(true);
+            setShowCreate(false);
+          }}
+          className={`${agencyBtnSecondaryClass} gap-1.5 text-xs`}
+        >
+          <Layers className="h-3.5 w-3.5" aria-hidden />
+          Desde plantilla
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowCreate((v) => !v);
+            setShowFromTemplate(false);
+          }}
           className={showCreate ? agencyBtnSecondaryClass : `${agencyBtnPrimaryClass} gap-1.5 text-xs`}
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -73,6 +84,11 @@ export default function AgencyTripsPageClient({ agencySlug, trips }: Props) {
       {showCreate ? (
         <AgencyCreateTripForm agencySlug={agencySlug} onCreated={() => setShowCreate(false)} />
       ) : null}
+
+      <AgencyInstantiateFromTemplateModal
+        open={showFromTemplate}
+        onClose={() => setShowFromTemplate(false)}
+      />
 
       <div className="flex flex-wrap gap-2">
         {tabs.map((tab) => (

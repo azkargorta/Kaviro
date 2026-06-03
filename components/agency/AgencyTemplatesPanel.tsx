@@ -1,20 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Layers, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { clientPortalPath } from "@/lib/agency";
+import AgencyInstantiateFromTemplateModal from "@/components/agency/AgencyInstantiateFromTemplateModal";
 import {
   agencyBtnPrimaryClass,
   agencyBtnSecondaryClass,
   agencyCardClass,
-  agencyInputClass,
   agencyPageSubtitleClass,
   agencyPageTitleClass,
 } from "@/lib/agency-theme";
-import { useSyncedTripDates } from "@/lib/use-synced-trip-dates";
 import {
   DEFAULT_TRIP_TEMPLATE_INCLUDES,
   formatTemplateIncludesSummary,
@@ -40,10 +38,10 @@ type Props = {
 };
 
 export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
-  const router = useRouter();
   const toast = useToast();
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [sourceTripId, setSourceTripId] = useState(trips[0]?.id ?? "");
   const [templateName, setTemplateName] = useState("");
   const [templateDesc, setTemplateDesc] = useState("");
@@ -51,18 +49,8 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
     ...DEFAULT_TRIP_TEMPLATE_INCLUDES,
   });
   const [saving, setSaving] = useState(false);
-  const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
-  const [newTripName, setNewTripName] = useState("");
-  const [newDestination, setNewDestination] = useState("");
-  const {
-    startDate: newStart,
-    endDate: newEnd,
-    setStartDate: setNewStart,
-    setEndDate: setNewEnd,
-    endDateMin: newEndMin,
-    validateDates,
-  } = useSyncedTripDates();
-  const [creating, setCreating] = useState(false);
+  const [instantiateOpen, setInstantiateOpen] = useState(false);
+  const [instantiateTemplateId, setInstantiateTemplateId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,6 +96,7 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
       toast.push({ kind: "success", title: "Plantilla guardada" });
       setTemplateName("");
       setTemplateDesc("");
+      setShowCreateForm(false);
       await load();
     } catch (e) {
       toast.push({
@@ -137,46 +126,6 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
     }
   }
 
-  async function handleInstantiate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!useTemplateId || !newTripName.trim()) return;
-    const dateErr = validateDates();
-    if (dateErr) {
-      toast.push({ kind: "error", title: dateErr });
-      return;
-    }
-    setCreating(true);
-    try {
-      const res = await fetch(
-        `/api/agencies/templates/${encodeURIComponent(useTemplateId)}/instantiate`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: newTripName.trim(),
-            destination: newDestination.trim() || null,
-            start_date: newStart || null,
-            end_date: newEnd || null,
-          }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "No se pudo crear el viaje.");
-      toast.push({ kind: "success", title: "Viaje creado desde plantilla" });
-      setUseTemplateId(null);
-      setNewTripName("");
-      router.push(`/trip/${data.tripId}/plan`);
-      router.refresh();
-    } catch (e) {
-      toast.push({
-        kind: "error",
-        title: e instanceof Error ? e.message : "Error",
-      });
-    } finally {
-      setCreating(false);
-    }
-  }
-
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
@@ -187,17 +136,41 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
       </div>
 
       <section className={`${agencyCardClass} p-5`}>
-        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-          <Plus className="h-4 w-4" aria-hidden />
-          Nueva plantilla
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Nueva plantilla</h2>
+          {!showCreateForm ? (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(true)}
+              disabled={trips.length === 0}
+              className={`${agencyBtnPrimaryClass} gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50`}
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              Crear plantilla
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              className={`${agencyBtnSecondaryClass} px-3 py-1.5 text-xs`}
+            >
+              Cerrar
+            </button>
+          )}
+        </div>
+
         {trips.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">
             Crea primero un viaje en{" "}
-            <Link href="/agency" className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
+            <Link href="/agency/trips" className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
               Mis viajes
             </Link>
             .
+          </p>
+        ) : !showCreateForm ? (
+          <p className="mt-3 text-sm text-slate-500">
+            Pulsa <strong className="text-slate-700 dark:text-slate-300">Crear plantilla</strong> para elegir un
+            viaje origen y qué bloques copiar.
           </p>
         ) : (
           <form onSubmit={handleSaveTemplate} className="mt-4 space-y-3">
@@ -319,11 +292,8 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
                       <button
                         type="button"
                         onClick={() => {
-                          setUseTemplateId(tpl.id);
-                          setNewTripName("");
-                          setNewDestination("");
-                          setNewStart("");
-                          setNewEnd("");
+                          setInstantiateTemplateId(tpl.id);
+                          setInstantiateOpen(true);
                         }}
                         className={`${agencyBtnPrimaryClass} gap-1 px-3 py-1.5 text-xs`}
                       >
@@ -347,70 +317,21 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
         )}
       </section>
 
-      {useTemplateId ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-          <form
-            onSubmit={handleInstantiate}
-            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-[#0F1623]"
-          >
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nuevo viaje desde plantilla</h3>
-            <div className="mt-4 space-y-3">
-              <input
-                value={newTripName}
-                onChange={(e) => setNewTripName(e.target.value)}
-                placeholder="Nombre del viaje / cliente"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0B1220]"
-                required
-              />
-              <input
-                value={newDestination}
-                onChange={(e) => setNewDestination(e.target.value)}
-                placeholder="Destino"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0B1220]"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  value={newStart}
-                  onChange={(e) => setNewStart(e.target.value)}
-                  className={agencyInputClass}
-                />
-                <input
-                  type="date"
-                  value={newEnd}
-                  min={newEndMin}
-                  disabled={!newStart}
-                  onChange={(e) => setNewEnd(e.target.value)}
-                  className={agencyInputClass}
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setUseTemplateId(null)}
-                className="flex-1 rounded-xl border border-slate-200 py-2 text-sm font-semibold dark:border-[#334155]"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={creating}
-                className={`${agencyBtnPrimaryClass} flex-1 disabled:opacity-50`}
-              >
-                {creating ? "Creando…" : "Crear viaje"}
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+      <AgencyInstantiateFromTemplateModal
+        open={instantiateOpen}
+        onClose={() => {
+          setInstantiateOpen(false);
+          setInstantiateTemplateId(null);
+        }}
+        initialTemplateId={instantiateTemplateId}
+      />
 
       <p className="text-xs text-slate-500">
         Portal cliente: <code className="text-slate-700 dark:text-slate-300">{clientPortalPath(agencySlug, "…")}</code>
       </p>
 
       <Link
-        href="/agency"
+        href="/agency/trips"
         className="inline-flex text-sm font-bold text-[#1e3a5f] hover:underline dark:text-sky-300"
       >
         ← Volver a mis viajes
