@@ -1,6 +1,6 @@
 import { APP_NAME } from "@/lib/brand";
 import KaviroMark from "@/components/brand/KaviroMark";
-import { AGENCY_NAVY, AGENCY_NAVY_DARK } from "@/lib/agency-theme";
+import { AGENCY_NAVY, AGENCY_NAVY_DARK, KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 
 type Props = {
   /** Pantalla completa fija (navegación) o bloque dentro del layout de Next. */
@@ -25,13 +25,19 @@ export default function KaviroLoadingScreen({ fixed = false, subtitle, brand = "
     : "linear-gradient(135deg, #F87171 0%, #EF4444 55%, #DC2626 100%)";
 
   return (
-    <div className={shell} role="status" aria-live="polite" aria-busy="true" aria-label="Cargando">
+    <div
+      className={`${shell} ${isNavy ? KAVIRO_TRIPS_WORKSPACE_CLASS : ""}`}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Cargando"
+    >
       <div className="flex flex-col items-center">
         <KaviroMark
           variant={isNavy ? "navy" : "coral"}
           size={96}
-          className={`overflow-hidden rounded-[28px] shadow-[var(--shadow-raised)] ${
-            isNavy ? "ring-1 ring-[#1e3a5f]/30 rounded-full" : "ring-1 ring-[#F87171]/25 rounded-full"
+          className={`overflow-hidden rounded-full shadow-[var(--shadow-raised)] ${
+            isNavy ? "ring-1 ring-[#1e3a5f]/30" : "ring-1 ring-[#F87171]/25"
           }`}
         />
         <h1
@@ -52,7 +58,11 @@ export default function KaviroLoadingScreen({ fixed = false, subtitle, brand = "
               : "Preparando tu viaje, rutas, gastos y documentos…")}
         </p>
         <div className="mt-8 h-2 w-48 overflow-hidden rounded-full bg-[var(--border-subtle)]">
-          <div className="h-full w-1/2 animate-pulse rounded-full bg-[var(--brand)]" />
+          <div
+            className={`h-full w-1/2 animate-pulse rounded-full ${
+              isNavy ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+            }`}
+          />
         </div>
       </div>
     </div>

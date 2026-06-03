@@ -8,6 +8,29 @@ export function isAgencyPath(pathname: string | null | undefined): boolean {
   return pathname === "/agency" || pathname.startsWith("/agency/");
 }
 
+/** Rutas donde la UI y la pantalla de carga usan marca navy (Kaviro Trips). */
+export function isKaviroTripsUiPath(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  if (isAgencyPath(pathname)) return true;
+  if (pathname === "/empresa" || pathname.startsWith("/empresa")) return true;
+  return false;
+}
+
+/** Marca de la pantalla de carga según ruta y modo guardado (panel agencia en viajes). */
+export function loadingBrandForPath(pathname: string | null | undefined): "coral" | "navy" {
+  if (isKaviroTripsUiPath(pathname)) return "navy";
+  if (pathname?.startsWith("/trip/")) {
+    try {
+      if (typeof localStorage !== "undefined" && localStorage.getItem(WORKSPACE_MODE_STORAGE_KEY) === "agency") {
+        return "navy";
+      }
+    } catch {
+      /* */
+    }
+  }
+  return "coral";
+}
+
 export function isPersonalAppPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   if (isAgencyPath(pathname)) return false;

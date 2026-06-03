@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import KaviroLoadingScreen from "@/components/brand/KaviroLoadingScreen";
+import { loadingBrandForPath } from "@/lib/workspace-mode";
 
 function isModifiedClick(e: MouseEvent) {
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
@@ -111,5 +112,7 @@ export default function GlobalRouteLoading() {
 
   if (!visible) return null;
 
-  return <KaviroLoadingScreen fixed />;
+  const brand = loadingBrandForPath(pathname);
+
+  return <KaviroLoadingScreen fixed brand={brand} />;
 }

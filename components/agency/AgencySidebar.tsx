@@ -50,7 +50,7 @@ export default function AgencySidebar({
   const initials = agencyInitials(agency.name);
 
   return (
-    <aside className="flex w-full flex-col border-b border-[#0f2744] bg-[#0f2744] md:w-[220px] md:shrink-0 md:border-b-0 md:border-r">
+    <aside className="flex w-full flex-col border-b border-[#0f2744] bg-[#0f2744] md:w-[248px] md:shrink-0 md:border-b-0 md:border-r">
       <div className="border-b border-white/10 px-4 py-4">
         <div className="flex items-center gap-2.5">
           {logoUrl ? (
@@ -69,12 +69,12 @@ export default function AgencySidebar({
             <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               {KAVIRO_TRIPS_PRODUCT_NAME}
             </p>
-            <p className="truncate text-sm font-semibold leading-tight text-white">{agency.name}</p>
+            <p className="truncate text-base font-semibold leading-tight text-white">{agency.name}</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex gap-0.5 overflow-x-auto px-2 py-3 md:flex-col md:overflow-visible">
+      <nav className="flex gap-1 overflow-x-auto px-2 py-3 md:flex-col md:gap-0.5 md:overflow-visible md:px-3 md:py-4">
         {NAV.map((item) => {
           const active =
             item.exact === true
@@ -85,13 +85,13 @@ export default function AgencySidebar({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition md:w-full ${
+              className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition md:w-full md:px-3.5 md:py-3 md:text-[15px] md:leading-snug ${
                 active
                   ? "bg-[#1e3a5f]/80 font-semibold text-white ring-1 ring-white/15"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  : "text-slate-300 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <item.icon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+              <item.icon className="h-[18px] w-[18px] shrink-0 opacity-90 md:h-5 md:w-5" aria-hidden />
               {item.label}
             </Link>
           );
