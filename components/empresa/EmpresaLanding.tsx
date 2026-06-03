@@ -1,117 +1,705 @@
+"use client";
+
 import Link from "next/link";
+import { useRef } from "react";
 import KaviroTripsLogo from "@/components/brand/KaviroTripsLogo";
+import Reveal from "@/components/ui/Reveal";
 import {
   AGENCY_PARTNERSHIP_EMAIL,
   APP_NAME,
   agencyPartnershipMailto,
   KAVIRO_TRIPS_PRODUCT_NAME,
-  KAVIRO_TRIPS_TAGLINE,
 } from "@/lib/brand";
-import { Mail } from "lucide-react";
 import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ExternalLink,
+  Globe,
+  ImageIcon,
+  LayoutDashboard,
+  Mail,
+  Palette,
+  Sparkles,
+  Users,
+  Wallet,
+  BookTemplate,
+} from "lucide-react";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Props = {
   hasAgency: boolean;
   isLoggedIn: boolean;
   reason?: string;
 };
 
-export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props) {
-  const loginHref = "/auth/login?mode=agency&next=/agency";
-  const mailto = agencyPartnershipMailto();
+// ── Sub-components ────────────────────────────────────────────────────────────
 
+function NavBar({ hasAgency, isLoggedIn }: { hasAgency: boolean; isLoggedIn: boolean }) {
   return (
-    <div className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} min-h-screen bg-[#0f2744] text-white`}>
-      <div className="border-b border-white/10 bg-[#1e3a5f]">
-        <div className="mx-auto max-w-3xl px-safe-inline py-4 sm:px-6">
-          <KaviroTripsLogo variant="onDark" size="md" withWordmark />
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-3xl px-safe-inline py-12 sm:px-6 sm:py-16">
-        {reason === "no-membership" && isLoggedIn ? (
-          <div className="rounded-md border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Tu cuenta aún no tiene acceso a {KAVIRO_TRIPS_PRODUCT_NAME}. Escríbenos a{" "}
-            <a href={mailto} className="font-semibold underline">
-              {AGENCY_PARTNERSHIP_EMAIL}
-            </a>
-            .
-          </div>
-        ) : null}
-
-        <h1 className="mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">{KAVIRO_TRIPS_PRODUCT_NAME}</h1>
-        <p className="mt-3 text-lg text-slate-200">{KAVIRO_TRIPS_TAGLINE}.</p>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
-          Herramienta profesional para agencias y DMC. Tus clientes consultan el programa en un portal con tu marca;
-          tu equipo opera en un panel separado de {APP_NAME} personal.
-        </p>
-
-        <ul className="mt-10 space-y-3 border-t border-white/10 pt-8 text-sm text-slate-200">
-          {[
-            "Panel centralizado de programas y grupos",
-            "Roles de equipo: administración y edición",
-            "Plantillas operativas entre temporadas",
-            "Portal cliente corporativo (logo y color de marca)",
-          ].map((line) => (
-            <li key={line} className="border-l-2 border-white/25 pl-4">
-              {line}
-            </li>
-          ))}
-        </ul>
-
-        {!hasAgency ? (
-          <div className="mt-10 rounded-md border border-white/15 bg-white/5 p-5">
-            <p className="font-semibold text-white">Solicitar acceso</p>
-            <p className="mt-2 text-sm text-slate-300">
-              {KAVIRO_TRIPS_PRODUCT_NAME} se activa con un acuerdo personalizado (precio y número de perfiles del
-              equipo). Cuéntanos volumen de grupos y tipo de viajes.
-            </p>
-            <a
-              href={mailto}
-              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-[#1e3a5f] transition hover:bg-slate-100"
-            >
-              <Mail className="h-4 w-4" aria-hidden />
-              {AGENCY_PARTNERSHIP_EMAIL}
-            </a>
-          </div>
-        ) : null}
-
-        <div className="mt-8 flex flex-wrap gap-3">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#1e3a5f]/95 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
+        <KaviroTripsLogo variant="onDark" size="sm" withWordmark />
+        <nav className="flex items-center gap-2">
+          <a
+            href="#features"
+            className="hidden text-sm font-medium text-white/70 transition hover:text-white sm:inline"
+          >
+            Funcionalidades
+          </a>
+          <a
+            href="#how"
+            className="hidden text-sm font-medium text-white/70 transition hover:text-white sm:inline"
+          >
+            Cómo funciona
+          </a>
+          <a
+            href="#pricing"
+            className="hidden text-sm font-medium text-white/70 transition hover:text-white sm:inline"
+          >
+            Precios
+          </a>
           {hasAgency ? (
             <Link
               href="/agency"
-              className="inline-flex min-h-10 items-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-[#1e3a5f] transition hover:bg-slate-100"
+              className="inline-flex min-h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#1e3a5f] transition hover:bg-slate-100"
             >
-              Acceder al panel
+              Ir al panel
             </Link>
           ) : (
-            <a
-              href={mailto}
-              className="inline-flex min-h-10 items-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-[#1e3a5f] transition hover:bg-slate-100"
-            >
-              Contactar
-            </a>
+            <>
+              <Link
+                href="/auth/login?mode=agency&next=/agency"
+                className="text-sm font-medium text-white/70 transition hover:text-white"
+              >
+                Iniciar sesión
+              </Link>
+              <a
+                href="#contact"
+                className="inline-flex min-h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#1e3a5f] transition hover:bg-slate-100"
+              >
+                Solicitar acceso
+              </a>
+            </>
           )}
-
           <Link
-            href={hasAgency ? "/agency" : loginHref}
-            className="inline-flex min-h-10 items-center rounded-md border border-white/25 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/5"
+            href={isLoggedIn ? "/dashboard" : "/"}
+            className="text-xs font-medium text-white/40 transition hover:text-white/70"
           >
-            {hasAgency ? "Panel" : "Iniciar sesión (cuenta autorizada)"}
+            {APP_NAME} personal
           </Link>
-
-          <Link
-            href={isLoggedIn ? "/dashboard" : "/auth/login"}
-            className="inline-flex min-h-10 items-center px-3 py-2.5 text-sm text-slate-400 transition hover:text-white"
-          >
-            {isLoggedIn ? `${APP_NAME} personal` : `Soy usuario de ${APP_NAME}`}
-          </Link>
-        </div>
-
-        <p className="mt-10 text-xs text-slate-500">
-          {KAVIRO_TRIPS_PRODUCT_NAME} · kaviro.app/empresa · Panel: kaviro.app/agency
-        </p>
+        </nav>
       </div>
+    </header>
+  );
+}
+
+function Hero({ hasAgency }: { hasAgency: boolean }) {
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#1e3a5f] via-[#162d4d] to-[#0f2744] px-5 pb-24 pt-20 sm:px-8 sm:pb-32 sm:pt-28">
+      {/* Decorative blobs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full opacity-[0.07]"
+        style={{ background: "radial-gradient(circle, #60a5fa 0%, transparent 70%)" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 -left-20 h-[320px] w-[320px] rounded-full opacity-[0.06]"
+        style={{ background: "radial-gradient(circle, #93c5fd 0%, transparent 70%)" }}
+      />
+
+      <div className="relative mx-auto max-w-4xl text-center">
+        <Reveal variant="fade">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-white/80">
+            <Building2 className="h-3.5 w-3.5" aria-hidden />
+            {KAVIRO_TRIPS_PRODUCT_NAME} · Para agencias y organizadores
+          </span>
+        </Reveal>
+
+        <Reveal variant="slide" delay={1}>
+          <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Gestiona viajes para tus clientes{" "}
+            <span
+              className="bg-gradient-to-r from-sky-300 to-blue-200 bg-clip-text text-transparent"
+            >
+              con tu marca
+            </span>
+          </h1>
+        </Reveal>
+
+        <Reveal variant="fade" delay={2}>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
+            Tu equipo prepara el itinerario. Tus clientes lo consultan en un portal con tu logo y
+            colores. Sin que nadie tenga que descargarse nada ni registrarse.
+          </p>
+        </Reveal>
+
+        <Reveal variant="scale" delay={3}>
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            {hasAgency ? (
+              <Link
+                href="/agency"
+                className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-white px-7 py-3 text-base font-bold text-[#1e3a5f] shadow-lg transition hover:bg-slate-100"
+              >
+                Ir al panel <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            ) : (
+              <>
+                <a
+                  href="#contact"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-white px-7 py-3 text-base font-bold text-[#1e3a5f] shadow-lg transition hover:bg-slate-100"
+                >
+                  Solicitar acceso gratuito <ArrowRight className="h-4 w-4" aria-hidden />
+                </a>
+                <a
+                  href="#how"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/25 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Ver cómo funciona <ChevronDown className="h-4 w-4" aria-hidden />
+                </a>
+              </>
+            )}
+          </div>
+        </Reveal>
+
+        {/* Social proof strip */}
+        <Reveal variant="fade" delay={4}>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-white/50">
+            <span>✓ Sin contratos anuales</span>
+            <span>✓ Sin límite de viajes</span>
+            <span>✓ Setup en menos de 10 minutos</span>
+            <span>✓ Soporte por email incluido</span>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+const FEATURES = [
+  {
+    icon: <LayoutDashboard className="h-5 w-5 text-sky-200" />,
+    bg: "bg-sky-900/40",
+    title: "Panel centralizado",
+    desc: "Todos tus viajes en un solo lugar. Filtra por estado, asigna al equipo y accede a cualquier programa en un clic.",
+  },
+  {
+    icon: <Globe className="h-5 w-5 text-emerald-200" />,
+    bg: "bg-emerald-900/40",
+    title: "Portal cliente con tu marca",
+    desc: "URL pública con tu logo y colores. Tus clientes ven el itinerario, el mapa y los documentos. Sin registro, desde el móvil.",
+  },
+  {
+    icon: <BookTemplate className="h-5 w-5 text-violet-200" />,
+    bg: "bg-violet-900/40",
+    title: "Plantillas reutilizables",
+    desc: "Guarda tu itinerario Chicago NFL o NYC NBA como plantilla. La próxima temporada, un clic y está listo para el nuevo grupo.",
+  },
+  {
+    icon: <Sparkles className="h-5 w-5 text-amber-200" />,
+    bg: "bg-amber-900/40",
+    title: "IA que entiende dossiers",
+    desc: "Sube el PDF del programa de tu agencia y la IA crea todas las actividades del itinerario. Con horarios, ubicaciones y tipo de actividad.",
+  },
+  {
+    icon: <Users className="h-5 w-5 text-pink-200" />,
+    bg: "bg-pink-900/40",
+    title: "Equipo con roles",
+    desc: "Invita a tu equipo. Roles de admin y editor. Cada miembro accede al panel completo de la agencia. Logs de actividad incluidos.",
+  },
+  {
+    icon: <Wallet className="h-5 w-5 text-teal-200" />,
+    bg: "bg-teal-900/40",
+    title: "Gastos del grupo",
+    desc: "Registra los gastos compartidos del grupo. Balances automáticos y settlements. Tus clientes saben quién debe qué sin WhatsApp.",
+  },
+  {
+    icon: <Palette className="h-5 w-5 text-rose-200" />,
+    bg: "bg-rose-900/40",
+    title: "Branding completo",
+    desc: "Logo, color de marca y email de contacto. Aplicado en el portal cliente, el PDF del itinerario y los emails enviados a los viajeros.",
+  },
+  {
+    icon: <CalendarDays className="h-5 w-5 text-cyan-200" />,
+    bg: "bg-cyan-900/40",
+    title: "Plan día a día visual",
+    desc: "El plan del viaje organizado por días, con horarios, mapas, tipos de actividad y notas internas para el equipo.",
+  },
+] as const;
+
+function Features() {
+  return (
+    <section
+      id="features"
+      className="bg-[#0f2744] px-5 py-20 sm:px-8 sm:py-24"
+    >
+      <div className="mx-auto max-w-6xl">
+        <Reveal variant="fade">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">
+              Funcionalidades
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Todo lo que necesita una agencia profesional
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-400">
+              Construido para organizadores que gestionan múltiples grupos al año y necesitan
+              eficiencia, no hojas de cálculo.
+            </p>
+          </div>
+        </Reveal>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} variant="slide" delay={(i % 4) as 0 | 1 | 2 | 3}>
+              <div className="rounded-xl border border-white/8 bg-white/4 p-5 backdrop-blur-sm transition hover:border-white/15 hover:bg-white/6">
+                <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg ${f.bg}`}>
+                  {f.icon}
+                </div>
+                <h3 className="text-sm font-bold text-white">{f.title}</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{f.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    {
+      num: "01",
+      title: "Crea tu agencia en minutos",
+      desc: "Nombre, logo y color. Invita a tu equipo con un email. El panel Kaviro Trips queda listo en menos de 10 minutos.",
+      detail: "Sin instalaciones, sin configuraciones complejas.",
+    },
+    {
+      num: "02",
+      title: "Prepara el viaje (o impórtalo con IA)",
+      desc: "Crea el itinerario manualmente o sube el PDF de tu programa y la IA extrae todos los días, horarios y actividades automáticamente.",
+      detail: "Funciona con cualquier formato de dossier.",
+    },
+    {
+      num: "03",
+      title: "Comparte el portal con tus clientes",
+      desc: "Un clic publica el portal. Tus clientes reciben la URL y ven el programa completo con tu logo, en su móvil, sin registrarse.",
+      detail: "kaviro.app/client/tu-agencia/nombre-del-viaje",
+    },
+  ];
+
+  return (
+    <section id="how" className="bg-gradient-to-b from-[#0f2744] to-[#1e3a5f] px-5 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-5xl">
+        <Reveal variant="fade">
+          <div className="mb-14 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">
+              Cómo funciona
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Operativo en menos de 10 minutos
+            </h2>
+          </div>
+        </Reveal>
+
+        <div className="relative grid gap-0 md:grid-cols-3">
+          {/* Connector line */}
+          <div
+            aria-hidden
+            className="absolute left-0 right-0 top-8 hidden h-px bg-gradient-to-r from-transparent via-white/15 to-transparent md:block"
+          />
+
+          {steps.map((s, i) => (
+            <Reveal key={s.num} variant="slide" delay={i as 0 | 1 | 2}>
+              <div className="relative px-4 pb-10 text-center md:pb-0">
+                <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border-2 border-sky-500/40 bg-[#1e3a5f] shadow-lg">
+                  <span className="text-lg font-black text-sky-300">{s.num}</span>
+                </div>
+                <h3 className="text-base font-bold text-white">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{s.desc}</p>
+                <p className="mt-2 text-xs font-medium text-sky-500/70">{s.detail}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CaseStudy() {
+  return (
+    <section className="bg-[#1e3a5f] px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-5xl">
+        <Reveal variant="fade">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+            <div className="grid md:grid-cols-2">
+              {/* Left — content */}
+              <div className="p-8 sm:p-10">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">
+                  Caso de uso
+                </p>
+                <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+                  Stripes Sports Trips
+                </h2>
+                <p className="mt-1 text-sm font-medium text-sky-300">
+                  Agencia de viajes deportivos · Sports trips since 2013
+                </p>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300">
+                  Stripes organiza viajes a la NFL, NBA, F1 y maratones desde 2013. Con Kaviro
+                  Trips, cada grupo de viajeros recibe un portal con el programa completo — vuelos,
+                  excursiones, partidos, hoteles — accesible desde el móvil sin necesidad de
+                  registrarse.
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                  Su equipo prepara el itinerario importando el PDF del programa con la IA. En
+                  minutos el portal está listo para 14 viajeros con el logo azul marino de Stripes.
+                </p>
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  {[
+                    { value: "30", label: "actividades/viaje" },
+                    { value: "14", label: "viajeros/grupo" },
+                    { value: "<5 min", label: "para publicar el portal" },
+                  ].map(({ value, label }) => (
+                    <div key={label}>
+                      <div className="text-2xl font-bold text-sky-300">{value}</div>
+                      <div className="text-xs text-slate-400">{label}</div>
+                    </div>
+                  ))}
+                </div>
+                <blockquote className="mt-7 border-l-2 border-sky-500/50 pl-4">
+                  <p className="text-sm italic text-slate-300">
+                    "Nuestros clientes ven el programa de Chicago en su móvil con el logo de
+                    Stripes. Antes lo hacíamos con PDFs por email."
+                  </p>
+                  <footer className="mt-2 text-xs font-semibold text-white">
+                    Fidel Márquez · Co-fundador de Stripes
+                  </footer>
+                </blockquote>
+              </div>
+
+              {/* Right — portal preview mockup */}
+              <div className="flex items-center justify-center border-t border-white/10 bg-[#0f2744]/50 p-8 md:border-l md:border-t-0">
+                <div className="w-full max-w-xs overflow-hidden rounded-xl border border-white/15 bg-[#1e3a5f] shadow-xl">
+                  {/* Portal header */}
+                  <div className="flex items-center gap-3 bg-[#0A3D6B] px-4 py-3">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white text-[8px] font-black text-[#0A3D6B]">
+                      STR
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-white">Stripes Sports Trips</div>
+                      <div className="text-[9px] text-white/60">Chicago & Lambeau Field 2026</div>
+                    </div>
+                  </div>
+                  {/* Portal content */}
+                  <div className="space-y-2 p-4">
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 w-10 flex-shrink-0 text-[9px] font-bold text-red-300">07:00</span>
+                        <div>
+                          <div className="text-[10px] font-bold text-white">Salida a Green Bay</div>
+                          <div className="text-[9px] text-slate-400">Bus privado Stripes</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-red-400/30 bg-red-500/10 p-3">
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 w-10 flex-shrink-0 text-[9px] font-bold text-red-300">15:25</span>
+                        <div>
+                          <div className="text-[10px] font-bold text-white">🏈 Bears AT Packers</div>
+                          <div className="text-[9px] text-slate-400">Lambeau Field · NFL Week 5</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 w-10 flex-shrink-0 text-[9px] font-bold text-red-300">19:30</span>
+                        <div>
+                          <div className="text-[10px] font-bold text-white">Regreso a Chicago</div>
+                          <div className="text-[9px] text-slate-400">Bus privado</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-1 text-center text-[8px] text-slate-500">
+                      Vista de solo lectura · hola@stripes.es
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function Pricing() {
+  const features = [
+    "Panel centralizado de todos los viajes",
+    "Plantillas operativas reutilizables",
+    "Portal cliente con tu marca y colores",
+    "Hasta 5 miembros del equipo",
+    "Importación de documentos con IA",
+    "Anuncios y comunicación a clientes",
+    "Informes de temporada",
+    "Soporte por email",
+  ];
+
+  return (
+    <section id="pricing" className="bg-[#0f2744] px-5 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-4xl">
+        <Reveal variant="fade">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">Precios</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Simple y sin sorpresas
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-sm text-slate-400">
+              Actualmente Kaviro Trips se activa con un acuerdo directo. Sin contratos anuales ni
+              costes de implantación.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal variant="scale" delay={1}>
+          <div className="overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-[#1e3a5f] to-[#162d4d] shadow-xl">
+            <div className="grid md:grid-cols-2">
+              <div className="p-8 sm:p-10">
+                <p className="text-xs font-bold uppercase tracking-widest text-sky-400">
+                  Kaviro Trips — Partnership
+                </p>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-5xl font-black text-white">Precio</span>
+                </div>
+                <p className="mt-1 text-sm text-slate-400">
+                  Personalizado según volumen de grupos y equipo
+                </p>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300">
+                  El acceso incluye viajes ilimitados, el portal cliente y todas las
+                  funcionalidades del panel de agencia. El precio se adapta al tamaño de tu
+                  operación.
+                </p>
+                <a
+                  href={agencyPartnershipMailto()}
+                  className="mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold text-[#1e3a5f] shadow-md transition hover:bg-slate-100"
+                >
+                  <Mail className="h-4 w-4" aria-hidden />
+                  Solicitar acceso
+                </a>
+                <p className="mt-3 text-center text-xs text-slate-500">
+                  Respondemos en menos de 24 horas
+                </p>
+              </div>
+
+              <div className="border-t border-white/10 px-8 py-8 md:border-l md:border-t-0">
+                <p className="text-xs font-bold uppercase tracking-widest text-sky-400">
+                  Incluido
+                </p>
+                <ul className="mt-4 space-y-3">
+                  {features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-slate-300">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-400" aria-hidden />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Comparison strip */}
+        <Reveal variant="fade" delay={2}>
+          <div className="mt-8 text-center">
+            <p className="text-sm text-slate-500">
+              ¿Eres un viajero particular?{" "}
+              <Link href="/" className="font-semibold text-sky-400 underline hover:text-sky-300">
+                Kaviro personal es gratis
+              </Link>
+            </p>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function FAQ() {
+  const faqs = [
+    {
+      q: "¿Mis clientes necesitan descargarse una app?",
+      a: "No. El portal cliente es una URL pública. Tus clientes abren el enlace en el navegador de su móvil y ven el itinerario completo. Sin registro, sin descarga.",
+    },
+    {
+      q: "¿Qué pasa si actualizo el itinerario después de publicarlo?",
+      a: "Los cambios se reflejan en el portal en tiempo real. La próxima vez que tu cliente abra la URL verá la versión actualizada. También puedes añadir anuncios para avisar de cambios.",
+    },
+    {
+      q: "¿Puedo usar mi propio logo y colores?",
+      a: "Sí. En la configuración de branding subes tu logo (PNG o SVG) y defines el color principal en hexadecimal. Ese color se aplica en el portal cliente, el PDF exportable y los emails.",
+    },
+    {
+      q: "¿Cuántos miembros puede tener mi equipo?",
+      a: "El plan base incluye hasta 5 miembros. Si necesitas más, cuéntanoslo al solicitar el acceso y lo ajustamos.",
+    },
+    {
+      q: "¿Cómo funciona la importación de documentos con IA?",
+      a: "Subes un PDF o imagen de tu programa (dossier de la agencia, tabla de actividades, horarios). La IA extrae todos los días, horarios, lugares y tipos de actividad y crea las tarjetas del itinerario automáticamente. Funciona con cualquier formato.",
+    },
+    {
+      q: "¿Kaviro Trips es diferente de Kaviro personal?",
+      a: "Sí. Kaviro personal es para viajeros que organizan sus propios viajes en grupo. Kaviro Trips es para agencias y organizadores profesionales que gestionan viajes de clientes. Los usuarios del panel de agencia también pueden acceder a Kaviro personal con la misma cuenta.",
+    },
+  ];
+
+  return (
+    <section className="bg-[#1e3a5f] px-5 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-3xl">
+        <Reveal variant="fade">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">FAQ</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Preguntas frecuentes
+            </h2>
+          </div>
+        </Reveal>
+
+        <div className="space-y-4">
+          {faqs.map((faq, i) => (
+            <Reveal key={faq.q} variant="slide" delay={(i % 3) as 0 | 1 | 2}>
+              <details className="group rounded-xl border border-white/10 bg-white/5 px-5 py-4">
+                <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-white list-none">
+                  {faq.q}
+                  <ChevronDown
+                    className="h-4 w-4 flex-shrink-0 text-sky-400 transition group-open:rotate-180"
+                    aria-hidden
+                  />
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-slate-400">{faq.a}</p>
+              </details>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Contact({ hasAgency }: { hasAgency: boolean }) {
+  if (hasAgency) return null;
+
+  return (
+    <section id="contact" className="bg-gradient-to-b from-[#1e3a5f] to-[#0f2744] px-5 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-2xl text-center">
+        <Reveal variant="fade">
+          <Building2 className="mx-auto mb-5 h-10 w-10 text-sky-400" aria-hidden />
+          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Empieza hoy con tu agencia
+          </h2>
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-slate-300">
+            Cuéntanos el nombre de tu agencia, cuántos viajes gestionas al año y el tamaño de tu
+            equipo. Te damos acceso en menos de 24 horas.
+          </p>
+        </Reveal>
+
+        <Reveal variant="scale" delay={1}>
+          <a
+            href={agencyPartnershipMailto(
+              "Solicitud de acceso a Kaviro Trips"
+            )}
+            className="mt-8 inline-flex min-h-14 items-center gap-3 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-[#1e3a5f] shadow-xl transition hover:bg-slate-100"
+          >
+            <Mail className="h-5 w-5" aria-hidden />
+            {AGENCY_PARTNERSHIP_EMAIL}
+            <ArrowRight className="h-5 w-5" aria-hidden />
+          </a>
+        </Reveal>
+
+        <Reveal variant="fade" delay={2}>
+          <p className="mt-5 text-xs text-slate-500">
+            O escríbenos directamente con el asunto "Kaviro Trips". Sin formularios ni demos
+            pregrabadas.
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function Footer({ isLoggedIn }: { isLoggedIn: boolean }) {
+  return (
+    <footer className="border-t border-white/10 bg-[#0f2744] px-5 py-10 sm:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div>
+            <KaviroTripsLogo variant="onDark" size="sm" withWordmark />
+            <p className="mt-2 text-xs text-slate-500">
+              Herramienta profesional para agencias y organizadores de viajes.
+            </p>
+          </div>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
+            <Link href="/" className="transition hover:text-white">
+              {APP_NAME} personal
+            </Link>
+            <Link href="/pricing" className="transition hover:text-white">
+              Precios personales
+            </Link>
+            <Link href="/privacy" className="transition hover:text-white">
+              Privacidad
+            </Link>
+            <Link href="/terms" className="transition hover:text-white">
+              Términos
+            </Link>
+            {isLoggedIn ? (
+              <Link href="/agency" className="font-semibold text-sky-400 transition hover:text-sky-300">
+                Ir al panel
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login?mode=agency&next=/agency"
+                className="font-semibold text-sky-400 transition hover:text-sky-300"
+              >
+                Iniciar sesión
+              </Link>
+            )}
+          </nav>
+        </div>
+        <div className="mt-8 border-t border-white/8 pt-6 text-center text-xs text-slate-600">
+          © {new Date().getFullYear()} Kaviro · kaviro.app
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props) {
+  return (
+    <div className={`${KAVIRO_TRIPS_WORKSPACE_CLASS}`}>
+      {reason === "no-membership" && isLoggedIn && (
+        <div className="border-b border-amber-500/30 bg-amber-500/10 px-5 py-2.5 text-center text-sm text-amber-200">
+          Tu cuenta aún no tiene acceso a {KAVIRO_TRIPS_PRODUCT_NAME}. Escríbenos a{" "}
+          <a href={agencyPartnershipMailto()} className="font-bold underline">
+            {AGENCY_PARTNERSHIP_EMAIL}
+          </a>
+          .
+        </div>
+      )}
+      <NavBar hasAgency={hasAgency} isLoggedIn={isLoggedIn} />
+      <Hero hasAgency={hasAgency} />
+      <Features />
+      <HowItWorks />
+      <CaseStudy />
+      <Pricing />
+      <FAQ />
+      <Contact hasAgency={hasAgency} />
+      <Footer isLoggedIn={isLoggedIn} />
     </div>
   );
 }

@@ -3,6 +3,20 @@
 import { useEffect, useRef } from "react";
 import { resyncPushIfPreferencesEnabled } from "@/lib/push-subscribe-client";
 
+const PUSH_RESYNC_MIN_MS = 5 * 60 * 1000;
+const PUSH_RESYNC_STORAGE_KEY = "kaviro-push-resync-at";
+
+function shouldThrottlePushResync(): boolean {
+  try {
+    const last = Number(sessionStorage.getItem(PUSH_RESYNC_STORAGE_KEY) || 0);
+    if (Date.now() - last < PUSH_RESYNC_MIN_MS) return true;
+    sessionStorage.setItem(PUSH_RESYNC_STORAGE_KEY, String(Date.now()));
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export default function PwaServiceWorker() {
   const resyncingRef = useRef(false);
 
@@ -19,8 +33,9 @@ export default function PwaServiceWorker() {
 
     let cancelled = false;
 
-    async function runResync() {
+    async function runResync(force = false) {
       if (cancelled || resyncingRef.current) return;
+      if (!force && shouldThrottlePushResync()) return;
       resyncingRef.current = true;
       try {
         await resyncPushIfPreferencesEnabled();
@@ -35,13 +50,13 @@ export default function PwaServiceWorker() {
         await navigator.serviceWorker.ready;
 
         if (cancelled) return;
-        await runResync();
+        await runResync(true);
 
         registration.addEventListener("updatefound", () => {
           const worker = registration.installing;
           if (!worker) return;
           worker.addEventListener("statechange", () => {
-            if (worker.state === "activated") void runResync();
+            if (worker.state === "activated") void runResync(true);
           });
         });
       } catch {

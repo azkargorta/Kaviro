@@ -135,8 +135,12 @@ export async function notifyTripMembers(opts: {
 
   let push = 0;
   if (pushUserIds.length) {
-    const result = await sendPushToUserIds(pushUserIds, { ...copy, url });
-    push = result.sent ?? pushUserIds.length;
+    const result = await sendPushToUserIds(pushUserIds, {
+      ...copy,
+      url,
+      tag: `kaviro:${opts.tripId}:${opts.event}`,
+    });
+    push = result.sent;
   }
 
   return { inApp: userIds.length, push };

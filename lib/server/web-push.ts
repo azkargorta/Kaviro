@@ -6,7 +6,37 @@ export type PushPayload = {
   body: string;
   url?: string;
   icon?: string;
+  /** Agrupa/reemplaza notificaciones en el SO (mismo tag = una sola burbuja). */
+  tag?: string;
 };
+
+export type PushSubscriptionRow = {
+  user_id: string;
+  endpoint: string;
+  p256dh: string | null;
+  auth: string | null;
+  updated_at?: string | null;
+};
+
+/** Una suscripción por usuario (la más reciente) para no disparar N pushes por evento. */
+export function latestPushSubscriptionPerUser(
+  rows: PushSubscriptionRow[]
+): PushSubscriptionRow[] {
+  const sorted = [...rows].sort((a, b) => {
+    const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
+    const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
+    return tb - ta;
+  });
+  const seen = new Set<string>();
+  const out: PushSubscriptionRow[] = [];
+  for (const row of sorted) {
+    if (!row.user_id || seen.has(row.user_id)) continue;
+    if (!row.endpoint || !row.p256dh || !row.auth) continue;
+    seen.add(row.user_id);
+    out.push(row);
+  }
+  return out;
+}
 
 function configureVapid() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || "";
@@ -32,29 +62,34 @@ export async function sendPushToUserIds(
   const admin = createSupabaseAdmin();
   const { data: subs, error } = await admin
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
-    .in("user_id", unique);
+    .select("user_id, endpoint, p256dh, auth, updated_at")
+    .in("user_id", unique)
+    .order("updated_at", { ascending: false });
 
   if (error) {
     console.error("push_subscriptions read:", error.message);
     return { sent: 0, dead: 0, skipped: "db" };
   }
-  if (!subs?.length) return { sent: 0, dead: 0 };
+  const targets = latestPushSubscriptionPerUser((subs ?? []) as PushSubscriptionRow[]);
+  if (!targets.length) return { sent: 0, dead: 0 };
 
+  const url = payload.url || "/dashboard";
+  const tag = payload.tag?.trim() || url;
   const body = JSON.stringify({
     title: payload.title,
     body: payload.body,
     icon: payload.icon || "/brand/icon.png",
     badge: "/brand/icon.png",
-    url: payload.url || "/dashboard",
-    data: { url: payload.url || "/dashboard" },
+    url,
+    tag,
+    data: { url, tag },
   });
 
   let sent = 0;
   const dead: string[] = [];
 
   await Promise.allSettled(
-    subs.map(async (row) => {
+    targets.map(async (row) => {
       if (!row.endpoint || !row.p256dh || !row.auth) return;
       try {
         await webpush.sendNotification(

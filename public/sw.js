@@ -1,4 +1,4 @@
-// Kaviro Service Worker — v6
+// Kaviro Service Worker — v7
 // Lectura offline del viaje: APIs + páginas/RSC de pestañas visitadas o precargadas
 
 const CACHE_NAME = "kaviro-v6";
@@ -193,13 +193,18 @@ self.addEventListener("push", (event) => {
     data = { ...data, ...event.data.json() };
   } catch {}
 
+  const url = data.url || data.data?.url || "/";
+  const tag = data.tag || data.data?.tag || url;
+
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: data.icon || "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
+      tag,
+      renotify: false,
       vibrate: [100, 50, 100],
-      data: { url: data.url || "/" },
+      data: { url, tag },
     })
   );
 });

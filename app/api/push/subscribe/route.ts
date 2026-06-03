@@ -23,6 +23,26 @@ export async function POST(request: Request) {
       { onConflict: "endpoint" }
     );
 
+    // Máx. 3 endpoints por usuario (re-sincronizaciones / varios navegadores).
+    const { data: userSubs } = await supabase
+      .from("push_subscriptions")
+      .select("endpoint")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false });
+
+    const staleEndpoints = (userSubs ?? [])
+      .slice(3)
+      .map((row) => row.endpoint)
+      .filter((ep): ep is string => Boolean(ep));
+
+    if (staleEndpoints.length) {
+      await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("user_id", user.id)
+        .in("endpoint", staleEndpoints);
+    }
+
     // Mantener preferencias alineadas cuando el dispositivo se re-registra tras un deploy.
     const { data: existingPrefs } = await supabase
       .from("push_notification_preferences")
