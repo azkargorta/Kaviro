@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getDefaultHomePathForUser } from "@/lib/agency-default-route";
 
 export const runtime = "nodejs";
 
@@ -82,25 +83,29 @@ export async function GET(request: Request) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error, data: sessionData } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     return redirectConfirmedError(origin, error.message, nextPath);
   }
 
+  const userId = sessionData?.user?.id;
+  const resolvedNext =
+    userId != null ? await getDefaultHomePathForUser(supabase, userId, nextPath) : nextPath;
+
   if (type === "recovery" || nextPath.startsWith("/auth/reset-password")) {
     return redirectWithSessionCookies(`${origin}/auth/reset-password`, cookieWrites);
   }
 
-  /** Registro / confirmación email: sesión activa y tour demo vía dashboard. */
+  /** Registro / confirmación email: sesión activa; agencias van al panel B2B. */
   if (type === "signup" || type === "email" || type === "email_confirmation") {
-    const welcome = new URL("/dashboard", origin);
-    welcome.searchParams.set("welcome", "1");
+    const welcome = new URL(resolvedNext, origin);
+    if (resolvedNext === "/dashboard") welcome.searchParams.set("welcome", "1");
     return redirectWithSessionCookies(welcome.toString(), cookieWrites);
   }
 
   const ok = new URL("/auth/confirmed", origin);
   ok.searchParams.set("status", "ok");
-  ok.searchParams.set("next", nextPath);
+  ok.searchParams.set("next", resolvedNext);
   return redirectWithSessionCookies(ok.toString(), cookieWrites);
 }

@@ -4,7 +4,7 @@ import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { agencyHeroGradient } from "@/lib/agency-theme";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Eye } from "lucide-react";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -120,24 +120,33 @@ export default function TripHeroCard({
       </div>
 
       {isAgencyTrip ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/15 px-4 pb-3 pt-2 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/15 px-4 pb-3 pt-2">
           <Link
             href="/agency"
-            className="font-semibold text-white/90 underline-offset-2 hover:underline"
+            className="text-xs font-semibold text-white/90 underline-offset-2 hover:underline"
           >
             ← Panel de viajes
           </Link>
-          {clientPortalHref ? (
+          <div className="flex flex-wrap gap-2">
             <Link
-              href={clientPortalHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-semibold text-white/90 hover:text-white"
+              href={`/trip/${tripId}/client-preview`}
+              className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
             >
-              Portal cliente
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              <Eye className="h-3.5 w-3.5" aria-hidden />
+              Vista como cliente
             </Link>
-          ) : null}
+            {clientPortalHref ? (
+              <Link
+                href={clientPortalHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/90 transition hover:bg-white/20 hover:text-white"
+              >
+                Portal publicado
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            ) : null}
+          </div>
         </div>
       ) : (
         <TripHeroShareBar tripId={tripId} tripName={tripName} destination={destination} />

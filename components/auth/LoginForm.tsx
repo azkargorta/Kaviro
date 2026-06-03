@@ -70,26 +70,30 @@ export default function LoginForm() {
       const label = welcomeLabel(me?.username ?? null, me?.email || email);
       setWelcomeName(label);
 
+      const agRes = await fetch("/api/agencies/me", { credentials: "include", cache: "no-store" });
+      const ag = (await agRes.json().catch(() => null)) as { agency?: { id?: string } | null } | null;
+      const hasAgency = Boolean(ag?.agency?.id);
+
       let dest =
         next.startsWith("/") && !next.startsWith("//") ? next : defaultLoginNext(mode);
 
-      if (isAgencyLogin) {
-        const agRes = await fetch("/api/agencies/me", { credentials: "include", cache: "no-store" });
-        const ag = (await agRes.json().catch(() => null)) as { agency?: { id?: string } | null } | null;
-        if (ag?.agency?.id) {
-          dest = "/agency";
-          try {
-            localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "agency");
-          } catch {
-            /* */
-          }
-        } else {
-          dest = "/empresa?reason=no-membership";
-          try {
-            localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "personal");
-          } catch {
-            /* */
-          }
+      if (hasAgency) {
+        const honorNext =
+          next.startsWith("/agency/join") ||
+          next.startsWith("/trip/") ||
+          next.startsWith("/client/");
+        dest = honorNext ? next : "/agency";
+        try {
+          localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "agency");
+        } catch {
+          /* */
+        }
+      } else if (isAgencyLogin) {
+        dest = "/empresa?reason=no-membership";
+        try {
+          localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "personal");
+        } catch {
+          /* */
         }
       } else {
         try {

@@ -1,52 +1,101 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Building2, LayoutGrid, Layers, Palette, Users } from "lucide-react";
+import {
+  Building2,
+  FileText,
+  Globe,
+  LayoutGrid,
+  Layers,
+  Palette,
+  BarChart3,
+  Users,
+} from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
+
+function agencyInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
+  return (parts[0]?.slice(0, 3) || "KT").toUpperCase();
+}
 
 const NAV: Array<{
   href: string;
   label: string;
   icon: typeof LayoutGrid;
   exact?: boolean;
+  accent?: string;
 }> = [
-  { href: "/agency", label: "Viajes", icon: LayoutGrid, exact: true },
-  { href: "/agency/clients", label: "Clientes", icon: Building2 },
-  { href: "/agency/templates", label: "Plantillas", icon: Layers },
-  { href: "/agency/team", label: "Equipo", icon: Users },
-  { href: "/agency/branding", label: "Marca", icon: Palette },
+  { href: "/agency", label: "Panel", icon: LayoutGrid, exact: true, accent: "#F87171" },
+  { href: "/agency#viajes", label: "Mis viajes", icon: LayoutGrid, accent: "#F87171" },
+  { href: "/agency/templates", label: "Plantillas", icon: Layers, accent: "#F59E0B" },
+  { href: "/agency/clients", label: "Clientes", icon: Building2, accent: "#3B82F6" },
+  { href: "/agency/portals", label: "Portales", icon: Globe, accent: "#10B981" },
+  { href: "/agency/reports", label: "Informes", icon: BarChart3, accent: "#8B5CF6" },
+  { href: "/agency/team", label: "Equipo", icon: Users, accent: "#1e3a5f" },
+  { href: "/agency/branding", label: "Branding", icon: Palette, accent: "#64748B" },
 ];
 
-export default function AgencySidebar({ agency }: { agency: AgencyRow }) {
+export default function AgencySidebar({
+  agency,
+  logoUrl,
+}: {
+  agency: AgencyRow;
+  logoUrl?: string | null;
+}) {
   const pathname = usePathname();
+  const initials = agencyInitials(agency.name);
 
   return (
-    <aside className="flex w-full flex-col border-b border-[#1e3a5f] bg-[#0f2744] md:w-60 md:shrink-0 md:border-b-0 md:border-r">
-      <div className="border-b border-white/10 px-4 py-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-          {KAVIRO_TRIPS_PRODUCT_NAME}
-        </p>
-        <p className="mt-1 truncate text-sm font-semibold text-white">{agency.name}</p>
+    <aside className="flex w-full flex-col border-b border-[#0f2744] bg-[#0f2744] md:w-[220px] md:shrink-0 md:border-b-0 md:border-r">
+      <div className="border-b border-white/10 px-4 py-4">
+        <div className="flex items-center gap-2.5">
+          {logoUrl ? (
+            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-white/10">
+              <Image src={logoUrl} alt="" fill className="object-contain p-0.5" sizes="36px" />
+            </div>
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#1e3a5f] text-[10px] font-bold text-white ring-1 ring-white/20">
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {KAVIRO_TRIPS_PRODUCT_NAME}
+            </p>
+            <p className="truncate text-sm font-semibold leading-tight text-white">{agency.name}</p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex gap-0.5 overflow-x-auto px-2 py-3 md:flex-col md:overflow-visible md:px-2">
+      <nav className="flex gap-0.5 overflow-x-auto px-2 py-3 md:flex-col md:overflow-visible">
         {NAV.map((item) => {
           const active =
-            item.exact === true ? pathname === item.href : Boolean(pathname?.startsWith(item.href));
+            item.exact === true
+              ? pathname === "/agency" && item.href === "/agency"
+              : item.href === "/agency#viajes"
+                ? pathname === "/agency"
+                : Boolean(pathname?.startsWith(item.href.split("#")[0]!));
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
                 active
-                  ? "bg-white/12 text-white"
+                  ? "bg-[#F87171]/15 font-semibold text-[#fecaca]"
                   : "text-slate-300 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: item.accent || "#64748B" }}
+                aria-hidden
+              />
+              <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
               {item.label}
             </Link>
           );

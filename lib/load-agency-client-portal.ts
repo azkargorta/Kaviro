@@ -42,11 +42,18 @@ export type ClientPortalPayload = {
   announcements: ClientPortalAnnouncement[];
 };
 
-/** Resuelve /client/{agencySlug}/{tripSlug} (lectura pública). */
+type LoadPortalOptions = {
+  /** Vista previa del equipo: muestra el programa aunque el portal no esté publicado. */
+  staffPreview?: boolean;
+};
+
+/** Resuelve /client/{agencySlug}/{tripSlug} (lectura pública o vista previa staff). */
 export async function loadAgencyClientPortal(
   agencySlug: string,
-  tripSlug: string
+  tripSlug: string,
+  options?: LoadPortalOptions
 ): Promise<ClientPortalPayload | null> {
+  const staffPreview = options?.staffPreview === true;
   const supabase = getServiceRoleClient();
 
   const { data: agency, error: agencyErr } = await supabase
@@ -72,7 +79,8 @@ export async function loadAgencyClientPortal(
       .eq("slug", tripSlug)
       .maybeSingle();
 
-    if (!portal?.trip_id || portal.is_active !== true) return null;
+    if (!portal?.trip_id) return null;
+    if (!staffPreview && portal.is_active !== true) return null;
 
     const { data: tripViaPortal } = await supabase
       .from("trips")
@@ -90,13 +98,47 @@ export async function loadAgencyClientPortal(
     .eq("trip_id", trip.id)
     .maybeSingle();
 
-  if (!portalMeta || portalMeta.is_active !== true) return null;
+  if (!staffPreview && (!portalMeta || portalMeta.is_active !== true)) return null;
 
   return loadActivities(
     supabase,
     agency as AgencyRow,
     trip,
     tripSlug,
+    portalMeta?.last_published_at ?? null
+  );
+}
+
+/** Vista previa staff por tripId (no requiere portal publicado). */
+export async function loadAgencyClientPortalStaffPreview(tripId: string) {
+  const supabase = getServiceRoleClient();
+  const { data: trip } = await supabase
+    .from("trips")
+    .select("id, name, destination, start_date, end_date, agency_id, client_portal_slug")
+    .eq("id", tripId)
+    .maybeSingle();
+
+  if (!trip?.agency_id || !trip.client_portal_slug) return null;
+
+  const { data: agency } = await supabase
+    .from("agencies")
+    .select("id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members")
+    .eq("id", trip.agency_id)
+    .maybeSingle();
+
+  if (!agency) return null;
+
+  const { data: portalMeta } = await supabase
+    .from("agency_client_portals")
+    .select("last_published_at")
+    .eq("trip_id", tripId)
+    .maybeSingle();
+
+  return loadActivities(
+    supabase,
+    agency as AgencyRow,
+    trip,
+    trip.client_portal_slug as string,
     portalMeta?.last_published_at ?? null
   );
 }

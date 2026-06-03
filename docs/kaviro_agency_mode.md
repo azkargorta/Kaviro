@@ -36,8 +36,8 @@ Capa B2B encima de Kaviro (B2C): la agencia gestiona viajes en `/agency`, el cli
 
 | Acceso | URL | Destino tras login |
 |--------|-----|-------------------|
-| **Kaviro (B2C)** | `kaviro.app/auth/login` | `/dashboard` |
-| **Kaviro Trips (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | `/auth/login?mode=agency` → `/agency` solo con `agency_members` |
+| **Kaviro (B2C)** | `kaviro.app/auth/login` | `/dashboard` (salvo `agency_members` → `/agency`) |
+| **Kaviro Trips (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | Tras login: **`/agency`** si hay `agency_members` (`lib/agency-default-route.ts`) |
 
 - **`/empresa`**: landing pública de Kaviro Trips (sin mezclar con el home de viajeros).
 - **`/agency/*`**: panel Kaviro Trips (clase CSS `kaviro-trips-workspace`: tokens navy en botones y acentos).
@@ -49,7 +49,7 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 
 ## Código del Bloque 2 (en repo)
 
-- `app/agency/` — panel (viajes, equipo, branding, plantillas stub)
+- `app/agency/` — panel estilo boceto (KPIs, filas Gestionar / Vista cliente / Portal), `/agency/portals`, `/agency/reports`
 - `app/empresa/` — landing de acceso
 - `app/api/agencies/me` — ¿tengo agencia?
 - `app/api/agencies/trips` — crear viaje con `agency_id`
@@ -59,7 +59,8 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 
 - URL: `/client/{slug-agencia}/{slug-viaje}` (ej. `/client/stripes/chicago-2026`)
 - Requiere `trips.client_portal_slug` y fila activa en `agency_client_portals` (o solo slug en viaje)
-- Enlace desde tarjeta del viaje en `/agency` → «Portal cliente»
+- Enlace desde tarjeta del viaje en `/agency` → «Portal cliente» (solo si está publicado)
+- **Vista previa equipo** — `/trip/{id}/client-preview`: mismo aspecto que el portal aunque esté en borrador (`loadAgencyClientPortalStaffPreview`). Botones «Vista como cliente» en panel, filas de viaje y cabecera del programa.
 
 ## Experiencia dentro del viaje (Kaviro Trips)
 

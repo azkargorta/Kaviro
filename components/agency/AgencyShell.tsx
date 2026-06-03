@@ -8,6 +8,7 @@ import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 import type { AgencyRow } from "@/lib/agency";
+import { agencyBrandingFromRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { agencyPanelBgClass, KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 import { ArrowLeftRight } from "lucide-react";
@@ -33,7 +34,7 @@ export default function AgencyShell({
     <div
       className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} flex min-h-[100dvh] flex-col md:flex-row ${agencyPanelBgClass}`}
     >
-      <AgencySidebar agency={agency} />
+      <AgencySidebar agency={agency} logoUrl={agencyBrandingFromRow(agency).logoUrl} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 border-b border-[#0f2744] bg-[#1e3a5f] shadow-md">

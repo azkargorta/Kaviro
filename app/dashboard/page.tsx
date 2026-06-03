@@ -23,6 +23,7 @@ import {
 } from "@/lib/onboarding/createDemoTrip";
 import { isDemoTripForListing } from "@/lib/onboarding/is-demo-trip";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
+import { userHasAgencyWorkspace } from "@/lib/agency-default-route";
 
 type Trip = {
   id: string;
@@ -109,6 +110,10 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/auth/login");
+  }
+
+  if (await userHasAgencyWorkspace(supabase, user.id)) {
+    redirect("/agency");
   }
 
   const [{ data: profileRow }, { data: participantRows, error: participantsError }] = await Promise.all([

@@ -1,45 +1,55 @@
 import { getAgencyTrips } from "@/lib/agency";
 import { requireAgencyContext } from "@/lib/require-agency";
-import AgencyTripList from "@/components/agency/AgencyTripList";
-import AgencyOverviewPanel from "@/components/agency/AgencyOverviewPanel";
-import { agencyCardClass } from "@/lib/agency-theme";
+import AgencyDashboardHome from "@/components/agency/AgencyDashboardHome";
 
 export default async function AgencyHomePage() {
-  const { supabase, agency } = await requireAgencyContext();
+  const { supabase, agency, userId } = await requireAgencyContext();
   const trips = await getAgencyTrips(supabase, agency.id);
 
-  const activeCount = trips.filter((t) => {
-    const today = new Date().toISOString().slice(0, 10);
-    return t.start_date && t.end_date && t.start_date <= today && today <= t.end_date;
-  }).length;
+  const tripIds = trips.map((t) => t.id);
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
 
-  const upcomingCount = trips.filter((t) => {
-    const today = new Date().toISOString().slice(0, 10);
-    return t.start_date && t.start_date > today;
-  }).length;
+  const [
+    { data: profile },
+    { count: templateCount },
+    { count: clientCount },
+    { count: portalViews30d },
+  ] = await Promise.all([
+    supabase.from("profiles").select("full_name, username").eq("id", userId).maybeSingle(),
+    supabase
+      .from("agency_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("agency_id", agency.id)
+      .eq("is_active", true),
+    supabase
+      .from("agency_clients")
+      .select("id", { count: "exact", head: true })
+      .eq("agency_id", agency.id),
+    tripIds.length > 0
+      ? supabase
+          .from("agency_portal_views")
+          .select("id", { count: "exact", head: true })
+          .eq("agency_id", agency.id)
+          .gte("viewed_at", since.toISOString())
+      : Promise.resolve({ count: 0 }),
+  ]);
+
+  const profileRow = profile as { full_name?: string | null; username?: string | null } | null;
+  const userDisplayName =
+    profileRow?.full_name?.trim() ||
+    (profileRow?.username ? `@${profileRow.username}` : null) ||
+    "equipo";
 
   return (
-    <div className="space-y-8">
-      <AgencyOverviewPanel />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { label: "Programas", value: trips.length },
-          { label: "En curso", value: activeCount },
-          { label: "Próximos", value: upcomingCount },
-        ].map((stat) => (
-          <div key={stat.label} className={`${agencyCardClass} p-4`}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {stat.label}
-            </p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-              {stat.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <AgencyTripList trips={trips} agencySlug={agency.slug} />
-    </div>
+    <AgencyDashboardHome
+      agencyName={agency.name}
+      agencySlug={agency.slug}
+      userDisplayName={userDisplayName.split(" ")[0] || userDisplayName}
+      trips={trips}
+      clientCount={clientCount ?? 0}
+      templateCount={templateCount ?? 0}
+      portalViews30d={portalViews30d ?? 0}
+    />
   );
 }
