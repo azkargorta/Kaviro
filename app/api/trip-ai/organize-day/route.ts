@@ -14,6 +14,19 @@ import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { createClient } from "@/lib/supabase/server";
 import { safeInsertAudit } from "@/lib/audit";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
+import {
+  applyMealsOnlyPlanFilter,
+  detectMealsOnlyDayPlannerRequest,
+} from "@/lib/day-planner-scope";
+import {
+  applyTravelModeToOsrmMetrics,
+  dayPlanTravelModeToTripRoute,
+  inferDayPlanTravelModeFromHint,
+  normalizeDayPlanTravelMode,
+  osrmProfileForTravelMode,
+  type DayPlanTravelMode,
+  type TripRouteTravelMode,
+} from "@/lib/route-travel-mode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,7 +45,7 @@ type DayPlanPayload = {
   version: 1;
   date: string; // YYYY-MM-DD
   cityHint: string | null;
-  travelMode: "driving" | "walking" | "cycling";
+  travelMode: DayPlanTravelMode;
   dayStart: string | null;
   dayEnd: string | null;
   items: DayPlanItem[];
@@ -41,12 +54,12 @@ type DayPlanPayload = {
 type RouteDraftPayload = {
   version: 1;
   date: string;
-  travelMode: "DRIVING" | "WALKING" | "BICYCLING";
+  travelMode: TripRouteTravelMode;
   routes: Array<{
     title: string;
     route_day: string;
     departure_time: string | null;
-    travel_mode: "DRIVING" | "WALKING" | "BICYCLING";
+    travel_mode: TripRouteTravelMode;
     origin_name: string;
     origin_address: string | null;
     origin_latitude: number | null;
@@ -98,14 +111,8 @@ function normalizeParsedDayPlan(parsed: unknown): DayPlanPayload | null {
   if (typeof p.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(p.date.trim())) return null;
   if (!Array.isArray(p.items) || p.items.length === 0) return null;
 
-  let travelMode: DayPlanPayload["travelMode"] = "walking";
-  const tm = p.travelMode;
-  if (tm === "driving" || tm === "walking" || tm === "cycling") travelMode = tm;
-  else if (typeof tm === "string") {
-    const s = tm.toLowerCase();
-    if (s.includes("cycl") || s.includes("bici") || s.includes("bike")) travelMode = "cycling";
-    else if (s.includes("drive") || s.includes("coche") || s.includes("car")) travelMode = "driving";
-  }
+  let travelMode: DayPlanTravelMode = "walking";
+  travelMode = normalizeDayPlanTravelMode(p.travelMode);
 
   const items: DayPlanItem[] = [];
   for (const raw of p.items) {
@@ -329,13 +336,6 @@ function compareActivityTime(a: unknown, b: unknown): number {
   return aa.localeCompare(bb);
 }
 
-function inferTravelModeFromHint(hintText: string): DayPlanPayload["travelMode"] {
-  const h = hintText.toLowerCase();
-  if (/\bbici\b|bicicleta|bicycle|cicl/.test(h)) return "cycling";
-  if (/coche|driving|en coche|\bcar\b/.test(h)) return "driving";
-  return "walking";
-}
-
 function inferDayStartEndFromHint(hintText: string, items: DayPlanItem[]): { dayStart: string | null; dayEnd: string | null } {
   const times = [...hintText.matchAll(/\b(\d{1,2}:\d{2})\b/g)]
     .map((x) => padHhMm(x[1]))
@@ -421,10 +421,9 @@ function tryCoerceFlexibleDayPlan(parsed: unknown, hintText: string): DayPlanPay
   const date = (typeof rawDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawDate.trim()) ? rawDate.trim() : null) || inferDateLoose(hintText);
   if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) return null;
 
-  let travelMode: DayPlanPayload["travelMode"] = inferTravelModeFromHint(hintText);
+  let travelMode: DayPlanTravelMode = inferDayPlanTravelModeFromHint(hintText);
   if (parsed && typeof parsed === "object") {
-    const tm = (parsed as Record<string, unknown>).travelMode;
-    if (tm === "driving" || tm === "walking" || tm === "cycling") travelMode = tm;
+    travelMode = normalizeDayPlanTravelMode((parsed as Record<string, unknown>).travelMode);
   }
   const { dayStart, dayEnd } = inferDayStartEndFromHint(hintText, items);
   let cityHint: string | null = null;
@@ -564,16 +563,12 @@ function extractDayPlan(text: string, hintText: string): DayPlanPayload | null {
   return extractDayPlanFromLooseText(text, hintText);
 }
 
-function asProfile(mode: DayPlanPayload["travelMode"]) {
-  if (mode === "walking") return "walking";
-  if (mode === "cycling") return "cycling";
-  return "driving";
+function asProfile(mode: DayPlanTravelMode) {
+  return osrmProfileForTravelMode(dayPlanTravelModeToTripRoute(mode));
 }
 
-function asTravelMode(mode: DayPlanPayload["travelMode"]): "DRIVING" | "WALKING" | "BICYCLING" {
-  if (mode === "walking") return "WALKING";
-  if (mode === "cycling") return "BICYCLING";
-  return "DRIVING";
+function asTravelMode(mode: DayPlanTravelMode): TripRouteTravelMode {
+  return dayPlanTravelModeToTripRoute(mode);
 }
 
 async function wikidataOfficialWebsite(query: string): Promise<string | null> {
@@ -750,7 +745,7 @@ export async function POST(req: Request) {
 
     // Si el usuario pide un rango de días, creamos rutas ENTRE planes existentes (sin inventar actividades).
     if (resolvedDates && resolvedDates.length > 1) {
-      const tm = inferTravelModeFromHint(hintForDates);
+      const tm = inferDayPlanTravelModeFromHint(hintForDates);
       const travelMode = asTravelMode(tm);
       const profile = asProfile(tm);
 
@@ -820,17 +815,31 @@ export async function POST(req: Request) {
           destination: { lat: params.dLat, lng: params.dLng },
           profile,
         });
+        const adjusted = applyTravelModeToOsrmMetrics(travelMode, {
+          distanceMeters: route.distanceMeters,
+          durationSeconds: route.durationSeconds,
+        });
         const title = `${params.oName.trim()} → ${params.dName.trim()}`;
         const distance_text =
-          typeof route.distanceMeters === "number" ? `${(route.distanceMeters / 1000).toFixed(1)} km` : null;
+          typeof adjusted.distanceMeters === "number"
+            ? `${(adjusted.distanceMeters / 1000).toFixed(1)} km`
+            : null;
         const duration_text =
-          typeof route.durationSeconds === "number" ? `${Math.max(1, Math.round(route.durationSeconds / 60))} min` : null;
+          typeof adjusted.durationSeconds === "number"
+            ? `${Math.max(1, Math.round(adjusted.durationSeconds / 60))} min`
+            : null;
+        const routeNotes =
+          tm === "transit"
+            ? "Tiempo estimado en transporte público (paradas y transbordos aproximados)."
+            : adjusted.durationAdjusted
+              ? "Duración ajustada al modo de transporte del día."
+              : null;
         const fields = {
           title,
           route_day: params.date,
           departure_time: null,
           travel_mode: travelMode,
-          notes: null,
+          notes: routeNotes,
           origin_name: params.oName.trim(),
           origin_address: params.oAddr,
           origin_latitude: params.oLat,
@@ -970,17 +979,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ answer, plan: null, diff, routesDraft, missingCoords });
     }
 
+    const plannerHintBlob = [question, ...conversationSlice.map((c) => c.content)].join("\n");
+    const mealsOnlyScope = detectMealsOnlyDayPlannerRequest(plannerHintBlob);
+
     const prompt = [
       "Eres un asistente experto de viajes dentro de Kaviro.",
       "Responde siempre en español.",
-      "Tu tarea es organizar UN día completo con tiempos y desplazamientos aproximados.",
+      mealsOnlyScope
+        ? "El usuario pide SOLO propuestas de comida/cena cerca de sus visitas ese día (ya tiene planes guardados). No reorganices el día entero."
+        : "Tu tarea es organizar UN día completo con tiempos y desplazamientos aproximados.",
       "",
       "REGLAS CRÍTICAS PARA EL JSON DEL DÍA:",
       "- La fecha puede venir como YYYY-MM-DD o en formato humano (ej. «10/11», «10 de noviembre», «día 2 del viaje»). Si está clara por el mensaje, el historial o el calendario del viaje, NO la vuelvas a pedir.",
       `- Si ya tienes fecha + ventana horaria + preferencia de transporte + intereses, DEBES generar EN ESTA MISMA RESPUESTA el plan en JSON con los marcadores literales ${KAVIRO_DAYPLAN_JSON_START} y ${KAVIRO_DAYPLAN_JSON_END} (sin envolverlos en \`\`\` markdown).`,
       "- Si el usuario da reglas mixtas (p. ej. andar si el tramo es corto y bici si es largo), elige travelMode \"cycling\" o \"walking\" según lo que predomine en el día y explica la regla en el texto humano antes del JSON.",
-      "- travelMode debe ser exactamente uno de: driving | walking | cycling.",
-      "- El JSON debe ser válido (comillas dobles, sin comentarios). Incluye al menos 4 items con query geocodable (nombre + ciudad + país o región del viaje, para evitar homónimos lejanos).",
+      "- travelMode debe ser exactamente uno de: driving | walking | cycling | transit (transporte público: metro, bus, tren urbano).",
+      "- Si el usuario pide transporte público, usa travelMode \"transit\" (no lo rechaces).",
+      ...(mealsOnlyScope
+        ? [
+            "- PETICIÓN ACOTADA: en `items` incluye ÚNICAMENTE 1–3 entradas kind \"restaurant\" (comida y/o cena con horario). NO añadas visitas, museos, desayunos en hotel ni títulos «Desplazamiento a…».",
+            "- Usa el CONTEXTO DEL VIAJE (planes ya guardados ese día) para ubicar restaurantes cerca de donde estará, no inventes un itinerario nuevo.",
+          ]
+        : [
+            "- El JSON debe ser válido (comillas dobles, sin comentarios). Incluye al menos 4 items con query geocodable (nombre + ciudad + país o región del viaje, para evitar homónimos lejanos).",
+          ]),
       "- Si aún faltan datos imprescindibles, haz solo preguntas breves y NO incluyas el bloque JSON todavía.",
       "",
       "Primero pregunta lo mínimo solo si faltan datos (fecha, transporte, horario, preferencias).",
@@ -1007,7 +1029,21 @@ export async function POST(req: Request) {
     });
 
     const hintBlob = [question, ...conversationSlice.map((c) => c.content), answer.slice(0, 8000)].join("\n");
-    const plan = extractDayPlan(answer, hintBlob);
+    let plan = extractDayPlan(answer, hintBlob);
+    const mealsOnlyFinal = mealsOnlyScope || detectMealsOnlyDayPlannerRequest(hintBlob);
+    if (plan && mealsOnlyFinal) {
+      plan = applyMealsOnlyPlanFilter(plan);
+      if (!plan.items.length) {
+        return NextResponse.json({
+          answer:
+            answer +
+            "\n\nNo he podido extraer solo propuestas de comida del plan. Indica tipo de cocina (ej. italiana) y si es comida, cena o ambas.",
+          plan: null,
+          diff: null,
+          dayPlannerHint: "Pide solo restaurantes para ese día (comida/cena cerca de tus visitas).",
+        });
+      }
+    }
     if (!plan) {
       const multiTurn = conversationSlice.length >= 2;
       const detailedAnswer = question.length > 40 || /\d{1,2}:\d{2}/.test(question);
@@ -1100,11 +1136,13 @@ export async function POST(req: Request) {
       });
     }
 
-    // Rutas consecutivas (solo entre paradas con coords; sin restaurantes/comidas)
+    // Rutas consecutivas (omitidas si el usuario solo pidió comidas; no duplicar desplazamientos como planes)
     const profile = asProfile(plan.travelMode);
     const travelMode = asTravelMode(plan.travelMode);
     const routeStops = enrichedItems.filter((x) => x.kind !== "restaurant");
-    for (let i = 0; i < routeStops.length - 1; i++) {
+    const skipRouteGeneration =
+      mealsOnlyFinal || (routeStops.length <= 1 && enrichedItems.every((x) => x.kind === "restaurant"));
+    if (!skipRouteGeneration) for (let i = 0; i < routeStops.length - 1; i++) {
       const a = routeStops[i];
       const b = routeStops[i + 1];
       if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) continue;
@@ -1114,6 +1152,17 @@ export async function POST(req: Request) {
         destination: { lat: b.lat, lng: b.lng },
         profile,
       });
+      const tripMode = asTravelMode(plan.travelMode);
+      const adjusted = applyTravelModeToOsrmMetrics(tripMode, {
+        distanceMeters: route.distanceMeters,
+        durationSeconds: route.durationSeconds,
+      });
+      const routeNotes =
+        plan.travelMode === "transit"
+          ? "Tiempo estimado en transporte público (paradas y transbordos aproximados)."
+          : adjusted.durationAdjusted
+            ? "Duración ajustada al modo de transporte del día."
+            : null;
       operations.push({
         op: "create_route",
         fields: {
@@ -1121,7 +1170,7 @@ export async function POST(req: Request) {
           route_day: plan.date,
           departure_time: null,
           travel_mode: travelMode,
-          notes: null,
+          notes: routeNotes,
           origin_name: a.title,
           origin_address: a.addressLabel,
           origin_latitude: a.lat,
@@ -1133,18 +1182,19 @@ export async function POST(req: Request) {
           path_points: route.points,
           route_points: route.points,
           distance_text:
-            typeof route.distanceMeters === "number"
-              ? `${(route.distanceMeters / 1000).toFixed(1)} km`
+            typeof adjusted.distanceMeters === "number"
+              ? `${(adjusted.distanceMeters / 1000).toFixed(1)} km`
               : null,
           duration_text:
-            typeof route.durationSeconds === "number"
-              ? `${Math.max(1, Math.round(route.durationSeconds / 60))} min`
+            typeof adjusted.durationSeconds === "number"
+              ? `${Math.max(1, Math.round(adjusted.durationSeconds / 60))} min`
               : null,
         },
       });
     }
 
-    const diff = { version: 1, title: `Organizar día ${plan.date}`, operations };
+    const diffTitle = mealsOnlyFinal ? `Comidas ${plan.date}` : `Organizar día ${plan.date}`;
+    const diff = { version: 1, title: diffTitle, operations };
     const routesDraft: RouteDraftPayload = {
       version: 1,
       date: plan.date,

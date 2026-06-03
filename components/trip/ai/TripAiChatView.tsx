@@ -2826,7 +2826,7 @@ export default function TripAiChatView({
           className={`rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${
             layout === "drawer"
               ? "flex min-h-0 max-h-[min(58dvh,560px)] shrink-0 flex-col overflow-hidden p-3 sm:p-4"
-              : "max-h-[min(75vh,720px)] overflow-hidden p-5"
+              : "flex max-h-[min(75vh,720px)] min-h-0 flex-col overflow-hidden p-4 sm:p-5 xl:max-h-[min(72vh,calc(100dvh-10rem))]"
           }`}
         >
           <div className="shrink-0">
@@ -2964,9 +2964,11 @@ export default function TripAiChatView({
           </div>
 
           <div
-            className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-color:rgba(148,163,184,0.55)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/80 ${
-              layout === "drawer" ? "mt-2 pr-1" : "mt-4"
+            className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(148,163,184,0.55)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/80 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600/80 ${
+              layout === "drawer" ? "mt-2 pr-1" : "mt-4 pr-0.5"
             }`}
+            role="region"
+            aria-label="Lista de cambios propuestos"
           >
           {diffContextLoading ? (
             <div className="text-sm text-slate-600">Preparando preview…</div>

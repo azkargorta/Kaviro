@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyTravelModeToOsrmMetrics } from "@/lib/route-travel-mode";
+import {
+  applyTravelModeToOsrmMetrics,
+  inferDayPlanTravelModeFromHint,
+  normalizeDayPlanTravelMode,
+} from "@/lib/route-travel-mode";
 
 describe("applyTravelModeToOsrmMetrics", () => {
   it("corrige duración de coche cuando el modo es a pie", () => {
@@ -9,6 +13,11 @@ describe("applyTravelModeToOsrmMetrics", () => {
     });
     expect(adjusted.durationAdjusted).toBe(true);
     expect(adjusted.durationSeconds).toBeGreaterThan(2 * 3600);
+  });
+
+  it("acepta transporte público en el plan del día", () => {
+    expect(normalizeDayPlanTravelMode("transit")).toBe("transit");
+    expect(inferDayPlanTravelModeFromHint("vamos en metro y bus")).toBe("transit");
   });
 
   it("mantiene duración coherente en coche", () => {

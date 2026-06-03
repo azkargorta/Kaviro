@@ -3,6 +3,9 @@ import type { OsrmProfile } from "@/lib/osrm/projectOsrmRoute";
 /** Modos guardados en `trip_routes.travel_mode`. */
 export type TripRouteTravelMode = "DRIVING" | "WALKING" | "BICYCLING" | "TRANSIT";
 
+/** Modo en JSON DayPlan del asistente «Organizar día». */
+export type DayPlanTravelMode = "driving" | "walking" | "cycling" | "transit";
+
 export const ROUTE_TRAVEL_MODE_OPTIONS: ReadonlyArray<{
   value: TripRouteTravelMode;
   label: string;
@@ -45,15 +48,47 @@ export function osrmProfileForTravelMode(mode: TripRouteTravelMode): OsrmProfile
 }
 
 /** Inferencia desde texto libre (rutas automáticas). */
-export function inferTravelModeFromText(text: string): TripRouteTravelMode {
-  const t = String(text || "").toLowerCase();
-  if (/\b(metro|autob[uú]s|bus|tranv[ií]a|tren urbano|transporte p[uú]blico|transit|public transport|ctp|emt)\b/.test(t)) {
-    return "TRANSIT";
+export function normalizeDayPlanTravelMode(raw: unknown): DayPlanTravelMode {
+  if (typeof raw === "string") {
+    const s = raw.trim().toLowerCase().replace(/\s+/g, "_");
+    if (s === "driving" || s === "drive" || s === "coche" || s === "car") return "driving";
+    if (s === "walking" || s === "walk" || s === "foot" || s === "on_foot") return "walking";
+    if (s === "cycling" || s === "cycle" || s === "bike" || s === "bici" || s === "bicycle") return "cycling";
+    if (
+      s === "transit" ||
+      s === "public_transport" ||
+      s === "publictransport" ||
+      s === "metro" ||
+      s === "bus" ||
+      s === "train" ||
+      s === "transporte_publico"
+    ) {
+      return "transit";
+    }
   }
-  if (/\b(pie|andar|andando|caminar|caminando|a pie|walk|foot)\b/.test(t)) return "WALKING";
-  if (/\b(bici|bicicleta|cycling|bike|ciclo)\b/.test(t)) return "BICYCLING";
-  if (/\b(coche|carro|auto|driving|car|taxi|uber)\b/.test(t)) return "DRIVING";
+  return "walking";
+}
+
+export function dayPlanTravelModeToTripRoute(mode: DayPlanTravelMode): TripRouteTravelMode {
+  if (mode === "transit") return "TRANSIT";
+  if (mode === "walking") return "WALKING";
+  if (mode === "cycling") return "BICYCLING";
   return "DRIVING";
+}
+
+/** Inferencia desde mensajes del usuario (organizar día / rutas automáticas). */
+export function inferDayPlanTravelModeFromHint(text: string): DayPlanTravelMode {
+  const t = String(text || "").toLowerCase();
+  if (/\b(metro|autob[uú]s|bus|tranv[ií]a|transporte p[uú]blico|transit|public transport|subway|tren urbano|ctp|emt)\b/.test(t)) {
+    return "transit";
+  }
+  if (/\b(bici|bicicleta|cycling|bike|ciclo)\b/.test(t)) return "cycling";
+  if (/\b(coche|driving|en coche|\bcar\b|taxi|uber)\b/.test(t)) return "driving";
+  return "walking";
+}
+
+export function inferTravelModeFromText(text: string): TripRouteTravelMode {
+  return dayPlanTravelModeToTripRoute(inferDayPlanTravelModeFromHint(text));
 }
 
 export type OsrmMetrics = {
