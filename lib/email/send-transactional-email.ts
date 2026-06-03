@@ -99,6 +99,40 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
+export function buildAgencyAccessRequestEmailHtml(params: {
+  name: string;
+  agencyName: string;
+  email: string;
+  groupsPerYear: string;
+  message: string;
+}) {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Segoe UI,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:24px auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;">
+    <tr>
+      <td style="background:linear-gradient(90deg,#1e3a5f,#0f2744);padding:24px 28px;">
+        <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.75);">${KAVIRO_TRIPS_PRODUCT_NAME}</p>
+        <h1 style="margin:8px 0 0;font-size:20px;font-weight:600;color:#fff;">Nueva solicitud de acceso</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px;color:#334155;font-size:15px;line-height:1.6;">
+        <p style="margin:0 0 12px;"><strong>Nombre:</strong> ${escapeHtml(params.name)}</p>
+        <p style="margin:0 0 12px;"><strong>Agencia:</strong> ${escapeHtml(params.agencyName)}</p>
+        <p style="margin:0 0 12px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(params.email)}">${escapeHtml(params.email)}</a></p>
+        <p style="margin:0 0 12px;"><strong>Grupos/año:</strong> ${escapeHtml(params.groupsPerYear)}</p>
+        <p style="margin:0 0 8px;"><strong>Mensaje:</strong></p>
+        <p style="margin:0;white-space:pre-wrap;">${escapeHtml(params.message)}</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 export async function sendAgencyInviteEmail(params: {
   to: string;
   agencyName: string;

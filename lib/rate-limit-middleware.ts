@@ -50,6 +50,9 @@ export function resolveRateLimitPreset(pathname: string, method: string): RateLi
   ) {
     return "geocode";
   }
+  if (pathname === "/api/contact/agency" && method === "POST") {
+    return "contact";
+  }
   return null;
 }
 

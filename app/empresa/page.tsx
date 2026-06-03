@@ -2,11 +2,43 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
 import EmpresaLanding from "@/components/empresa/EmpresaLanding";
-import { APP_NAME, KAVIRO_TRIPS_PRODUCT_NAME, KAVIRO_TRIPS_TAGLINE } from "@/lib/brand";
+import {
+  EMPRESA_KEYWORDS,
+  EMPRESA_META_DESCRIPTION,
+  EMPRESA_META_TITLE,
+  EMPRESA_PAGE_URL,
+  empresaJsonLd,
+} from "@/lib/empresa-seo";
 
 export const metadata: Metadata = {
-  title: `${KAVIRO_TRIPS_PRODUCT_NAME} | ${APP_NAME}`,
-  description: KAVIRO_TRIPS_TAGLINE,
+  title: EMPRESA_META_TITLE,
+  description: EMPRESA_META_DESCRIPTION,
+  keywords: [...EMPRESA_KEYWORDS],
+  alternates: {
+    canonical: EMPRESA_PAGE_URL,
+  },
+  openGraph: {
+    title: EMPRESA_META_TITLE,
+    description: EMPRESA_META_DESCRIPTION,
+    type: "website",
+    url: EMPRESA_PAGE_URL,
+    siteName: "Kaviro Trips",
+    locale: "es_ES",
+    images: [
+      {
+        url: "/empresa/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: EMPRESA_META_TITLE,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: EMPRESA_META_TITLE,
+    description: EMPRESA_META_DESCRIPTION,
+    images: ["/empresa/opengraph-image"],
+  },
 };
 
 type Props = {
@@ -25,11 +57,19 @@ export default async function EmpresaLandingPage({ searchParams }: Props) {
     hasAgency = Boolean(ctx);
   }
 
+  const jsonLd = empresaJsonLd();
+
   return (
-    <EmpresaLanding
-      hasAgency={hasAgency}
-      isLoggedIn={Boolean(user)}
-      reason={searchParams?.reason}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <EmpresaLanding
+        hasAgency={hasAgency}
+        isLoggedIn={Boolean(user)}
+        reason={searchParams?.reason}
+      />
+    </>
   );
 }

@@ -30,6 +30,11 @@ export const RATE_LIMIT_PRESETS = {
     windowMs: 60_000,
     message: "Demasiadas búsquedas de lugares. Espera un momento.",
   },
+  contact: {
+    maxCalls: 5,
+    windowMs: 3_600_000,
+    message: "Has enviado demasiadas solicitudes. Inténtalo más tarde.",
+  },
 } as const satisfies Record<string, RateLimitPreset>;
 
 export type RateLimitPresetId = keyof typeof RATE_LIMIT_PRESETS;

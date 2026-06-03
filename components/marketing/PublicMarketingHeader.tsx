@@ -54,6 +54,12 @@ export default function PublicMarketingHeader() {
         </div>
         <nav className="flex items-center gap-2">
           <Link
+            href="/empresa"
+            className="hidden sm:block px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+          >
+            Para agencias
+          </Link>
+          <Link
             href="/help"
             className="hidden sm:block px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
           >

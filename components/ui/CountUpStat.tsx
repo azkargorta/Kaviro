@@ -5,9 +5,22 @@ import { useEffect, useRef, useState } from "react";
 type CountUpStatProps = {
   value: number;
   label: string;
+  prefix?: string;
+  suffix?: string;
+  valueClassName?: string;
+  labelClassName?: string;
+  className?: string;
 };
 
-export default function CountUpStat({ value, label }: CountUpStatProps) {
+export default function CountUpStat({
+  value,
+  label,
+  prefix = "",
+  suffix = "",
+  valueClassName = "text-3xl font-extrabold tabular-nums text-slate-900 dark:text-white",
+  labelClassName = "mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400",
+  className = "text-center",
+}: CountUpStatProps) {
   const ref = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const [display, setDisplay] = useState(0);
@@ -49,11 +62,13 @@ export default function CountUpStat({ value, label }: CountUpStatProps) {
   }, [value]);
 
   return (
-    <div ref={ref} className="text-center">
-      <div className="text-3xl font-extrabold tabular-nums text-slate-900 dark:text-white">
+    <div ref={ref} className={className}>
+      <div className={valueClassName}>
+        {prefix}
         {display}
+        {suffix}
       </div>
-      <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</div>
+      <div className={labelClassName}>{label}</div>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useState } from "react";
 import KaviroTripsLogo from "@/components/brand/KaviroTripsLogo";
+import EmpresaContactForm from "@/components/empresa/EmpresaContactForm";
 import Reveal from "@/components/ui/Reveal";
+import CountUpStat from "@/components/ui/CountUpStat";
 import {
   AGENCY_PARTNERSHIP_EMAIL,
   APP_NAME,
@@ -13,20 +15,21 @@ import {
 import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 import {
   ArrowRight,
+  Briefcase,
   Building2,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
-  ExternalLink,
   Globe,
-  ImageIcon,
   LayoutDashboard,
+  LayoutTemplate,
   Mail,
+  MapPin,
   Palette,
   Sparkles,
+  Trophy,
   Users,
   Wallet,
-  BookTemplate,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -98,13 +101,28 @@ function NavBar({ hasAgency, isLoggedIn }: { hasAgency: boolean; isLoggedIn: boo
 }
 
 function Hero({ hasAgency }: { hasAgency: boolean }) {
+  const [parallaxY, setParallaxY] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = Math.min(window.scrollY * 0.12, 80);
+      setParallaxY(y);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[#1e3a5f] via-[#162d4d] to-[#0f2744] px-5 pb-24 pt-20 sm:px-8 sm:pb-32 sm:pt-28">
       {/* Decorative blobs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full opacity-[0.07]"
-        style={{ background: "radial-gradient(circle, #60a5fa 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full opacity-[0.07] transition-transform duration-75 will-change-transform"
+        style={{
+          background: "radial-gradient(circle, #60a5fa 0%, transparent 70%)",
+          transform: `translate3d(0, ${parallaxY}px, 0)`,
+        }}
       />
       <div
         aria-hidden
@@ -122,19 +140,19 @@ function Hero({ hasAgency }: { hasAgency: boolean }) {
 
         <Reveal variant="slide" delay={1}>
           <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Gestiona viajes para tus clientes{" "}
+            Software para agencias de viajes:{" "}
             <span
               className="bg-gradient-to-r from-sky-300 to-blue-200 bg-clip-text text-transparent"
             >
-              con tu marca
+              gestión de grupos con tu marca
             </span>
           </h1>
         </Reveal>
 
         <Reveal variant="fade" delay={2}>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
-            Tu equipo prepara el itinerario. Tus clientes lo consultan en un portal con tu logo y
-            colores. Sin que nadie tenga que descargarse nada ni registrarse.
+            Herramienta y portal cliente para tus viajes en grupo: itinerario, mapa y documentos con
+            tu logo. Tus clientes abren la URL en el móvil — sin app, sin registro.
           </p>
         </Reveal>
 
@@ -180,6 +198,90 @@ function Hero({ hasAgency }: { hasAgency: boolean }) {
   );
 }
 
+function ProductComparison() {
+  const rows = [
+    {
+      label: "Para quién",
+      personal: "Viajeros que organizan su propio viaje en grupo",
+      trips: "Agencias y organizadores profesionales",
+    },
+    {
+      label: "Quién usa la herramienta",
+      personal: "Los participantes del viaje",
+      trips: "Tu equipo (editores y admins)",
+    },
+    {
+      label: "Experiencia del cliente",
+      personal: "App/web con cuenta de usuario",
+      trips: "Portal público con tu marca, sin registro",
+    },
+    {
+      label: "Diferencia clave",
+      personal: "Gratis para grupos de amigos",
+      trips: "Panel B2B + plantillas + branding de agencia",
+    },
+  ];
+
+  return (
+    <section
+      id="compare"
+      className="border-y border-white/8 bg-[#162d4d] px-5 py-16 sm:px-8 sm:py-20"
+    >
+      <div className="mx-auto max-w-5xl">
+        <Reveal variant="fade">
+          <div className="mb-10 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">
+              ¿Viajero o agencia?
+            </p>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Kaviro personal vs {KAVIRO_TRIPS_PRODUCT_NAME}
+            </h2>
+          </div>
+        </Reveal>
+
+        <Reveal variant="slide" delay={1}>
+          <div className="overflow-hidden rounded-2xl border border-white/10">
+            <div className="grid grid-cols-3 bg-white/5 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <div className="px-4 py-3" />
+              <div className="border-l border-white/10 px-4 py-3 text-center text-white">
+                {APP_NAME} personal
+              </div>
+              <div className="border-l border-white/10 bg-sky-500/10 px-4 py-3 text-center text-sky-200">
+                {KAVIRO_TRIPS_PRODUCT_NAME}
+              </div>
+            </div>
+            {rows.map((row) => (
+              <div
+                key={row.label}
+                className="grid grid-cols-3 border-t border-white/10 text-sm"
+              >
+                <div className="px-4 py-3.5 font-semibold text-slate-300">{row.label}</div>
+                <div className="border-l border-white/10 px-4 py-3.5 text-slate-400">
+                  {row.personal}
+                </div>
+                <div className="border-l border-white/10 bg-sky-500/5 px-4 py-3.5 text-slate-200">
+                  {row.trips}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            ¿Organizas viajes para clientes?{" "}
+            <a href="#contact" className="font-semibold text-sky-400 underline hover:text-sky-300">
+              Solicita acceso a {KAVIRO_TRIPS_PRODUCT_NAME}
+            </a>
+            . ¿Viajas con amigos?{" "}
+            <Link href="/" className="font-semibold text-sky-400 underline hover:text-sky-300">
+              Usa {APP_NAME} personal gratis
+            </Link>
+            .
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 const FEATURES = [
   {
     icon: <LayoutDashboard className="h-5 w-5 text-sky-200" />,
@@ -194,7 +296,7 @@ const FEATURES = [
     desc: "URL pública con tu logo y colores. Tus clientes ven el itinerario, el mapa y los documentos. Sin registro, desde el móvil.",
   },
   {
-    icon: <BookTemplate className="h-5 w-5 text-violet-200" />,
+    icon: <LayoutTemplate className="h-5 w-5 text-violet-200" />,
     bg: "bg-violet-900/40",
     title: "Plantillas reutilizables",
     desc: "Guarda tu itinerario Chicago NFL o NYC NBA como plantilla. La próxima temporada, un clic y está listo para el nuevo grupo.",
@@ -244,11 +346,11 @@ function Features() {
               Funcionalidades
             </p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Todo lo que necesita una agencia profesional
+              Herramienta de gestión de viajes en grupo para agencias
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-slate-400">
-              Construido para organizadores que gestionan múltiples grupos al año y necesitan
-              eficiencia, no hojas de cálculo.
+              Portal cliente, plantillas operativas e IA para dossiers — pensado para quien gestiona
+              varios grupos al año sin hojas de cálculo.
             </p>
           </div>
         </Reveal>
@@ -332,6 +434,59 @@ function HowItWorks() {
   );
 }
 
+function WhoIsItFor() {
+  const audiences = [
+    {
+      icon: <Trophy className="h-5 w-5 text-amber-200" />,
+      bg: "bg-amber-900/40",
+      title: "Agencias especializadas",
+      desc: "Deportivos, aventura, culturales: programas complejos con muchas actividades y horarios.",
+    },
+    {
+      icon: <MapPin className="h-5 w-5 text-emerald-200" />,
+      bg: "bg-emerald-900/40",
+      title: "DMC y receptivos",
+      desc: "Operadores locales que entregan el itinerario final al cliente o agencia madre con su marca.",
+    },
+    {
+      icon: <Briefcase className="h-5 w-5 text-sky-200" />,
+      bg: "bg-sky-900/40",
+      title: "Empresa y team building",
+      desc: "Organizadores de viajes corporativos que necesitan un portal claro para cada grupo.",
+    },
+  ];
+
+  return (
+    <section className="bg-[#1e3a5f] px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-5xl">
+        <Reveal variant="fade">
+          <div className="mb-10 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-400">
+              Público objetivo
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              ¿Para quién es {KAVIRO_TRIPS_PRODUCT_NAME}?
+            </h2>
+          </div>
+        </Reveal>
+        <div className="grid gap-4 md:grid-cols-3">
+          {audiences.map((a, i) => (
+            <Reveal key={a.title} variant="slide" delay={i as 0 | 1 | 2}>
+              <div className="h-full rounded-xl border border-white/10 bg-white/5 p-6">
+                <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg ${a.bg}`}>
+                  {a.icon}
+                </div>
+                <h3 className="text-base font-bold text-white">{a.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{a.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CaseStudy() {
   return (
     <section className="bg-[#1e3a5f] px-5 py-16 sm:px-8 sm:py-20">
@@ -361,31 +516,51 @@ function CaseStudy() {
                   minutos el portal está listo para 14 viajeros con el logo azul marino de Stripes.
                 </p>
                 <div className="mt-6 grid grid-cols-3 gap-4">
-                  {[
-                    { value: "30", label: "actividades/viaje" },
-                    { value: "14", label: "viajeros/grupo" },
-                    { value: "<5 min", label: "para publicar el portal" },
-                  ].map(({ value, label }) => (
-                    <div key={label}>
-                      <div className="text-2xl font-bold text-sky-300">{value}</div>
-                      <div className="text-xs text-slate-400">{label}</div>
-                    </div>
-                  ))}
+                  <CountUpStat
+                    value={30}
+                    label="actividades/viaje"
+                    valueClassName="text-2xl font-bold tabular-nums text-sky-300"
+                    labelClassName="text-xs text-slate-400"
+                    className=""
+                  />
+                  <CountUpStat
+                    value={14}
+                    label="viajeros/grupo"
+                    valueClassName="text-2xl font-bold tabular-nums text-sky-300"
+                    labelClassName="text-xs text-slate-400"
+                    className=""
+                  />
+                  <CountUpStat
+                    value={5}
+                    prefix="<"
+                    suffix=" min"
+                    label="para publicar el portal"
+                    valueClassName="text-2xl font-bold tabular-nums text-sky-300"
+                    labelClassName="text-xs text-slate-400"
+                    className=""
+                  />
                 </div>
-                <blockquote className="mt-7 border-l-2 border-sky-500/50 pl-4">
-                  <p className="text-sm italic text-slate-300">
-                    "Nuestros clientes ven el programa de Chicago en su móvil con el logo de
-                    Stripes. Antes lo hacíamos con PDFs por email."
+                <div className="mt-7 rounded-lg border border-sky-500/25 bg-sky-500/10 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-sky-400">
+                    Resultado típico
                   </p>
-                  <footer className="mt-2 text-xs font-semibold text-white">
-                    Fidel Márquez · Co-fundador de Stripes
-                  </footer>
-                </blockquote>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                    Los viajeros consultan el programa de Chicago en el móvil con el branding de
+                    Stripes, en lugar de PDFs sueltos por email.
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Ejemplo representativo basado en el flujo operativo de la agencia.
+                  </p>
+                </div>
               </div>
 
               {/* Right — portal preview mockup */}
               <div className="flex items-center justify-center border-t border-white/10 bg-[#0f2744]/50 p-8 md:border-l md:border-t-0">
-                <div className="w-full max-w-xs overflow-hidden rounded-xl border border-white/15 bg-[#1e3a5f] shadow-xl">
+                <div
+                  className="w-full max-w-xs overflow-hidden rounded-xl border border-white/15 bg-[#1e3a5f] shadow-xl"
+                  role="img"
+                  aria-label="Vista previa del portal cliente de Stripes Sports Trips con actividades del viaje a Chicago y Lambeau Field"
+                >
                   {/* Portal header */}
                   <div className="flex items-center gap-3 bg-[#0A3D6B] px-4 py-3">
                     <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white text-[8px] font-black text-[#0A3D6B]">
@@ -609,23 +784,7 @@ function Contact({ hasAgency }: { hasAgency: boolean }) {
         </Reveal>
 
         <Reveal variant="scale" delay={1}>
-          <a
-            href={agencyPartnershipMailto(
-              "Solicitud de acceso a Kaviro Trips"
-            )}
-            className="mt-8 inline-flex min-h-14 items-center gap-3 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-[#1e3a5f] shadow-xl transition hover:bg-slate-100"
-          >
-            <Mail className="h-5 w-5" aria-hidden />
-            {AGENCY_PARTNERSHIP_EMAIL}
-            <ArrowRight className="h-5 w-5" aria-hidden />
-          </a>
-        </Reveal>
-
-        <Reveal variant="fade" delay={2}>
-          <p className="mt-5 text-xs text-slate-500">
-            O escríbenos directamente con el asunto "Kaviro Trips". Sin formularios ni demos
-            pregrabadas.
-          </p>
+          <EmpresaContactForm />
         </Reveal>
       </div>
     </section>
@@ -693,8 +852,10 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
       )}
       <NavBar hasAgency={hasAgency} isLoggedIn={isLoggedIn} />
       <Hero hasAgency={hasAgency} />
+      <ProductComparison />
       <Features />
       <HowItWorks />
+      <WhoIsItFor />
       <CaseStudy />
       <Pricing />
       <FAQ />
