@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser, isAgencyPlanActive } from "@/lib/agency";
 import { createTripWithOwner } from "@/lib/trips/createTripWithOwner";
 import { ensureUserCanCreateTrip } from "@/lib/trips/tripCreationLimits";
+import { friendlyAgencyPortalSlugError, resolveUniqueAgencyClientPortalSlug } from "@/lib/agency-portal-slug";
 import { slugifyForUrl } from "@/lib/agency-slug";
 import { bootstrapAgencyTripForTravelers } from "@/lib/agency/bootstrap-agency-trip";
 
@@ -55,7 +56,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const client_portal_slug = slugifyForUrl(portalSlugRaw || name);
+    const client_portal_slug = await resolveUniqueAgencyClientPortalSlug(
+      supabase,
+      ctx.agency.id,
+      slugifyForUrl(portalSlugRaw || name)
+    );
 
     if (agency_client_id) {
       const { data: clientRow } = await supabase
@@ -81,7 +86,10 @@ export async function POST(req: Request) {
     });
 
     if ("error" in created) {
-      return NextResponse.json({ error: created.error }, { status: 400 });
+      return NextResponse.json(
+        { error: friendlyAgencyPortalSlugError(created.error) },
+        { status: 400 }
+      );
     }
 
     try {
@@ -100,7 +108,9 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "No se pudo crear el viaje.";
+    const msg = friendlyAgencyPortalSlugError(
+      e instanceof Error ? e.message : "No se pudo crear el viaje."
+    );
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

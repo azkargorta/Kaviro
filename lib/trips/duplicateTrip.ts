@@ -2,6 +2,10 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getAgencyForUser } from "@/lib/agency";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import {
+  friendlyAgencyPortalSlugError,
+  resolveUniqueAgencyClientPortalSlug,
+} from "@/lib/agency-portal-slug";
+import {
   DEFAULT_TRIP_TEMPLATE_INCLUDES,
   type TripTemplateIncludes,
 } from "@/lib/trips/template-includes";
@@ -16,7 +20,7 @@ export type DuplicateTripOptions = {
 };
 
 export type DuplicateTripResult =
-  | { ok: true; tripId: string }
+  | { ok: true; tripId: string; clientPortalSlug?: string | null }
   | { ok: false; error: string; status: number };
 
 function resolveIncludes(input?: TripTemplateIncludes | null): TripTemplateIncludes {
@@ -70,6 +74,14 @@ export async function duplicateTripForUser(
   /** Copia con service role: el staff de agencia suele no ser participante del viaje origen (RLS). */
   const db = createSupabaseAdmin();
 
+  let clientPortalSlug =
+    typeof options.clientPortalSlug === "string" && options.clientPortalSlug.trim()
+      ? options.clientPortalSlug.trim()
+      : null;
+  if (clientPortalSlug && targetAgencyId) {
+    clientPortalSlug = await resolveUniqueAgencyClientPortalSlug(db, targetAgencyId, clientPortalSlug);
+  }
+
   const { data: newTrip, error: newTripError } = await db
     .from("trips")
     .insert({
@@ -81,15 +93,16 @@ export async function duplicateTripForUser(
       budget_target: trip.budget_target ?? null,
       description: includes.notes ? sourceDescription : null,
       ...(targetAgencyId ? { agency_id: targetAgencyId } : {}),
-      ...(options.clientPortalSlug ? { client_portal_slug: options.clientPortalSlug } : {}),
+      ...(clientPortalSlug ? { client_portal_slug: clientPortalSlug } : {}),
     })
     .select("id")
     .single();
 
   if (newTripError || !newTrip) {
+    const raw = newTripError?.message ?? "No se pudo crear el viaje.";
     return {
       ok: false,
-      error: newTripError?.message ?? "No se pudo crear el viaje.",
+      error: friendlyAgencyPortalSlugError(raw),
       status: 500,
     };
   }
@@ -287,5 +300,5 @@ export async function duplicateTripForUser(
     }
   }
 
-  return { ok: true, tripId: newTripId };
+  return { ok: true, tripId: newTripId, clientPortalSlug };
 }

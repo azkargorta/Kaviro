@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
 import { duplicateTripForUser } from "@/lib/trips/duplicateTrip";
 import { parseTripTemplateIncludes } from "@/lib/trips/template-includes";
+import { friendlyAgencyPortalSlugError } from "@/lib/agency-portal-slug";
 import { slugifyForUrl } from "@/lib/agency-slug";
 
 export const runtime = "nodejs";
@@ -84,19 +85,21 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
         .eq("id", dup.tripId);
     }
 
+    const portalSlug = dup.clientPortalSlug ?? client_portal_slug;
+
     try {
       const { bootstrapAgencyTripForTravelers } = await import("@/lib/agency/bootstrap-agency-trip");
-      await bootstrapAgencyTripForTravelers(supabase, dup.tripId, ctx.agency.id, client_portal_slug);
+      await bootstrapAgencyTripForTravelers(supabase, dup.tripId, ctx.agency.id, portalSlug);
     } catch (e) {
       console.warn("bootstrapAgencyTripForTravelers:", e);
     }
 
     return NextResponse.json(
-      { tripId: dup.tripId, clientPortalSlug: client_portal_slug },
+      { tripId: dup.tripId, clientPortalSlug: portalSlug },
       { status: 201 }
     );
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error";
+    const msg = friendlyAgencyPortalSlugError(e instanceof Error ? e.message : "Error");
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

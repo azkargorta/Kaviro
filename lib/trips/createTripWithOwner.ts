@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { friendlyAgencyPortalSlugError } from "@/lib/agency-portal-slug";
 
 export type CreateTripInput = {
   name: string;
@@ -47,7 +47,8 @@ export async function createTripWithOwner(
     .single();
 
   if (tripInsert.error || !tripInsert.data) {
-    return { error: tripInsert.error?.message || "No se pudo crear el viaje." };
+    const raw = tripInsert.error?.message || "No se pudo crear el viaje.";
+    return { error: friendlyAgencyPortalSlugError(raw) };
   }
 
   const tripId = String((tripInsert.data as { id: string }).id);
