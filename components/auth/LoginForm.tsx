@@ -117,7 +117,12 @@ export default function LoginForm() {
     return (
       <KaviroLoadingScreen
         fixed
-        subtitle={`¡Vamos a viajar, ${welcomeName}!`}
+        brand={isAgencyLogin ? "navy" : "coral"}
+        subtitle={
+          isAgencyLogin
+            ? `Entrando al panel, ${welcomeName}…`
+            : `¡Vamos a viajar, ${welcomeName}!`
+        }
       />
     );
   }

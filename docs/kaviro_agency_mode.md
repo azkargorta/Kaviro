@@ -62,9 +62,19 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 - Enlace desde tarjeta del viaje en `/agency` → «Portal cliente» (solo si está publicado)
 - **Vista previa equipo** — `/trip/{id}/client-preview`: mismo aspecto que el portal aunque esté en borrador (`loadAgencyClientPortalStaffPreview`). Botones «Vista como cliente» en panel, filas de viaje y cabecera del programa.
 
-## Experiencia dentro del viaje (Kaviro Trips)
+## Viajes listos para viajeros (Kaviro B2C)
 
-Si `trips.agency_id` está definido:
+Al crear un programa en Kaviro Trips (`POST /api/agencies/trips`), `bootstrapAgencyTripForTravelers`:
+
+- Portal cliente en borrador (`agency_client_portals`, `is_active: false`)
+- Tipos de actividad por defecto (visita, transporte, alojamiento, etc.)
+- `is_demo: false`
+
+**Quién ve qué:** solo miembros de la agencia ven el menú operativo (Plan, sin Gastos/Resumen). Los viajeros invitados al mismo viaje entran con **menú Kaviro completo** (gastos, resumen, clima, etc.) aunque el viaje tenga `agency_id`.
+
+## Experiencia dentro del viaje (Kaviro Trips — personal de agencia)
+
+Si `trips.agency_id` está definido y el usuario es miembro de esa agencia:
 
 - **Menú:** Plan · Rutas · Docs · Equipo · Herramientas IA · Ajustes (sin Resumen, Gastos, Mensajes).
 - **Entrada por defecto:** `/trip/{id}/plan` (el Resumen redirige).
@@ -75,8 +85,10 @@ Código: `lib/kaviro-trips-trip-nav.ts`, `TripWorkspaceContext`, `TripAgencyRout
 
 ## Branding (Bloque 5)
 
-1. Ejecutar `kaviro_agency_logos_storage.sql` en Supabase.
-2. Panel → **Branding**: nombre, logo, color, email de contacto (solo admin).
+1. Ejecutar `kaviro_agency_logos_storage.sql` en Supabase (bucket `agency-logos` + políticas).
+2. En Vercel/local: variable `SUPABASE_SERVICE_ROLE_KEY` (la API sube logos con service role tras validar admin).
+3. Panel → **Branding**: nombre, logo, color, email de contacto (solo admin).
+4. Marca navy en UI: `KaviroTripsLogo`, `public/brand/kaviro-mark-navy.svg`.
 
 ## Comercial (sin precio fijo en producto)
 

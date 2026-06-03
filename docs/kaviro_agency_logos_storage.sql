@@ -37,3 +37,10 @@ using (
   bucket_id = 'agency-logos'
   and public.is_agency_admin(split_part(name, '/', 1)::uuid)
 );
+
+-- Lectura pública (portal cliente y URLs en agencies.logo_url)
+drop policy if exists "agency-logos: public read" on storage.objects;
+create policy "agency-logos: public read"
+on storage.objects for select
+to public
+using (bucket_id = 'agency-logos');

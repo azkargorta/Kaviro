@@ -5,16 +5,17 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Building2,
-  FileText,
   Globe,
   LayoutGrid,
   Layers,
+  Map,
   Palette,
   BarChart3,
   Users,
 } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
+import { AGENCY_NAVY } from "@/lib/agency-theme";
 
 function agencyInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -27,16 +28,15 @@ const NAV: Array<{
   label: string;
   icon: typeof LayoutGrid;
   exact?: boolean;
-  accent?: string;
 }> = [
-  { href: "/agency", label: "Panel", icon: LayoutGrid, exact: true, accent: "#F87171" },
-  { href: "/agency#viajes", label: "Mis viajes", icon: LayoutGrid, accent: "#F87171" },
-  { href: "/agency/templates", label: "Plantillas", icon: Layers, accent: "#F59E0B" },
-  { href: "/agency/clients", label: "Clientes", icon: Building2, accent: "#3B82F6" },
-  { href: "/agency/portals", label: "Portales", icon: Globe, accent: "#10B981" },
-  { href: "/agency/reports", label: "Informes", icon: BarChart3, accent: "#8B5CF6" },
-  { href: "/agency/team", label: "Equipo", icon: Users, accent: "#1e3a5f" },
-  { href: "/agency/branding", label: "Branding", icon: Palette, accent: "#64748B" },
+  { href: "/agency", label: "Panel", icon: LayoutGrid, exact: true },
+  { href: "/agency/trips", label: "Mis viajes", icon: Map },
+  { href: "/agency/templates", label: "Plantillas", icon: Layers },
+  { href: "/agency/clients", label: "Clientes", icon: Building2 },
+  { href: "/agency/portals", label: "Portales", icon: Globe },
+  { href: "/agency/reports", label: "Informes", icon: BarChart3 },
+  { href: "/agency/team", label: "Equipo", icon: Users },
+  { href: "/agency/branding", label: "Branding", icon: Palette },
 ];
 
 export default function AgencySidebar({
@@ -58,7 +58,10 @@ export default function AgencySidebar({
               <Image src={logoUrl} alt="" fill className="object-contain p-0.5" sizes="36px" />
             </div>
           ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#1e3a5f] text-[10px] font-bold text-white ring-1 ring-white/20">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white ring-1 ring-white/20"
+              style={{ backgroundColor: AGENCY_NAVY }}
+            >
               {initials}
             </div>
           )}
@@ -75,27 +78,20 @@ export default function AgencySidebar({
         {NAV.map((item) => {
           const active =
             item.exact === true
-              ? pathname === "/agency" && item.href === "/agency"
-              : item.href === "/agency#viajes"
-                ? pathname === "/agency"
-                : Boolean(pathname?.startsWith(item.href.split("#")[0]!));
-          const Icon = item.icon;
+              ? pathname === "/agency"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition md:w-full ${
                 active
-                  ? "bg-[#F87171]/15 font-semibold text-[#fecaca]"
-                  : "text-slate-300 hover:bg-white/5 hover:text-white"
+                  ? "bg-[#1e3a5f]/80 font-semibold text-white ring-1 ring-white/15"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-sm"
-                style={{ backgroundColor: item.accent || "#64748B" }}
-                aria-hidden
-              />
-              <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+              <item.icon className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
               {item.label}
             </Link>
           );

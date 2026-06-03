@@ -53,7 +53,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
         .neq("status", "removed")
         .limit(6),
       getCachedTripPremium(params.id, access.userId),
-      loadTripWorkspaceMeta(supabase, params.id),
+      loadTripWorkspaceMeta(supabase, params.id, access.userId),
     ]);
 
   const isDemo =

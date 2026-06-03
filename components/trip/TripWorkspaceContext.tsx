@@ -44,6 +44,7 @@ export function useTripWorkspace() {
     ctx ?? {
       tripId: "",
       isAgencyTrip: false,
+      isAgencyManaged: false,
       agencyId: null,
       agencySlug: null,
       clientPortalSlug: null,

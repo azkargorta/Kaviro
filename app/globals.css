@@ -85,6 +85,11 @@
   --accent-light:    rgba(61,106,158,0.12);
 }
 
+/* Sin tinte coral cuando la página es Kaviro Trips */
+html:has(.kaviro-trips-workspace) body:not(.dark body) {
+  background-image: none;
+}
+
 /* ─── Base ──────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;

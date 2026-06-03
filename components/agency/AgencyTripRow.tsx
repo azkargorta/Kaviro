@@ -14,7 +14,7 @@ function tripStatus(trip: TripRow): { label: string; className: string; dot: str
     return {
       label: "En curso",
       className: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
-      dot: "#F87171",
+      dot: "#1e3a5f",
     };
   }
   if (s && s > today) {

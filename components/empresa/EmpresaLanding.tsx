@@ -1,5 +1,5 @@
 import Link from "next/link";
-import KaviroLogo from "@/components/brand/KaviroLogo";
+import KaviroTripsLogo from "@/components/brand/KaviroTripsLogo";
 import {
   AGENCY_PARTNERSHIP_EMAIL,
   APP_NAME,
@@ -24,7 +24,7 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
     <div className={`${KAVIRO_TRIPS_WORKSPACE_CLASS} min-h-screen bg-[#0f2744] text-white`}>
       <div className="border-b border-white/10 bg-[#1e3a5f]">
         <div className="mx-auto max-w-3xl px-safe-inline py-4 sm:px-6">
-          <KaviroLogo variant="light" size="md" withWordmark />
+          <KaviroTripsLogo variant="onDark" size="md" withWordmark lockup />
         </div>
       </div>
 

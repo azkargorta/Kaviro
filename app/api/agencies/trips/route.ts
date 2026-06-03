@@ -4,7 +4,7 @@ import { getAgencyForUser, isAgencyPlanActive } from "@/lib/agency";
 import { createTripWithOwner } from "@/lib/trips/createTripWithOwner";
 import { ensureUserCanCreateTrip } from "@/lib/trips/tripCreationLimits";
 import { slugifyForUrl } from "@/lib/agency-slug";
-import { ensureAgencyPortalRow } from "@/lib/agency-portal";
+import { bootstrapAgencyTripForTravelers } from "@/lib/agency/bootstrap-agency-trip";
 
 export const runtime = "nodejs";
 
@@ -85,9 +85,14 @@ export async function POST(req: Request) {
     }
 
     try {
-      await ensureAgencyPortalRow(supabase, created.tripId, ctx.agency.id, client_portal_slug);
-    } catch {
-      /* tabla opcional si aún no está la migración */
+      await bootstrapAgencyTripForTravelers(
+        supabase,
+        created.tripId,
+        ctx.agency.id,
+        client_portal_slug
+      );
+    } catch (e) {
+      console.warn("bootstrapAgencyTripForTravelers:", e);
     }
 
     return NextResponse.json(

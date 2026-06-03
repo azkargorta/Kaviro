@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import KaviroLogo from "@/components/brand/KaviroLogo";
+import KaviroTripsLogo from "@/components/brand/KaviroTripsLogo";
 import { APP_NAME, KAVIRO_TRIPS_PRODUCT_NAME, KAVIRO_TRIPS_TAGLINE } from "@/lib/brand";
 import {
   agencyHeroGradientDiagonal,
@@ -54,7 +55,11 @@ export default function AuthShell({
 
             <div className="relative z-10">
               <div className="max-w-md">
-                <KaviroLogo variant="light" size="lg" withWordmark imageClassName="scale-[1.04] origin-left" />
+                {isAgency ? (
+                  <KaviroTripsLogo variant="onDark" size="lg" withWordmark imageClassName="scale-[1.04] origin-left" />
+                ) : (
+                  <KaviroLogo variant="light" size="lg" withWordmark imageClassName="scale-[1.04] origin-left" />
+                )}
                 <p className="mt-3 text-sm text-white/80">
                   {isAgency
                     ? "Panel profesional para agencias y DMC"
@@ -114,12 +119,23 @@ export default function AuthShell({
                 </div>
                 <div className="mb-6 text-center sm:mb-8">
                   <div className="mb-4 flex justify-center sm:mb-5">
-                    <span className="block dark:hidden">
-                      <KaviroLogo href="/" variant="dark" size="lg" withWordmark />
-                    </span>
-                    <span className="hidden dark:block">
-                      <KaviroLogo href="/" variant="light" size="lg" withWordmark />
-                    </span>
+                    {isAgency ? (
+                      <KaviroTripsLogo
+                        href="/empresa"
+                        variant="onLight"
+                        size="lg"
+                        withWordmark
+                      />
+                    ) : (
+                      <>
+                        <span className="block dark:hidden">
+                          <KaviroLogo href="/" variant="dark" size="lg" withWordmark />
+                        </span>
+                        <span className="hidden dark:block">
+                          <KaviroLogo href="/" variant="light" size="lg" withWordmark />
+                        </span>
+                      </>
+                    )}
                   </div>
                   <h3 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
                     {title}

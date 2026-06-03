@@ -79,10 +79,10 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     }
 
     try {
-      const { ensureAgencyPortalRow } = await import("@/lib/agency-portal");
-      await ensureAgencyPortalRow(supabase, dup.tripId, ctx.agency.id, client_portal_slug);
-    } catch {
-      /* migración opcional */
+      const { bootstrapAgencyTripForTravelers } = await import("@/lib/agency/bootstrap-agency-trip");
+      await bootstrapAgencyTripForTravelers(supabase, dup.tripId, ctx.agency.id, client_portal_slug);
+    } catch (e) {
+      console.warn("bootstrapAgencyTripForTravelers:", e);
     }
 
     return NextResponse.json(
