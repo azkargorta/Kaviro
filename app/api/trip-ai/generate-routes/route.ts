@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { forbidUnlessCanManageMap, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
-import { fetchProjectOsrmRoute, type OsrmProfile } from "@/lib/osrm/projectOsrmRoute";
+import { fetchProjectOsrmRoute } from "@/lib/osrm/projectOsrmRoute";
 import { pickRouteColorByIndex } from "@/lib/route-colors";
+import {
+  applyTravelModeToOsrmMetrics,
+  inferTravelModeFromText,
+  normalizeTripRouteTravelMode,
+  osrmProfileForTravelMode,
+  type TripRouteTravelMode,
+} from "@/lib/route-travel-mode";
 
-type DraftTravelMode = "DRIVING" | "WALKING" | "BICYCLING";
+type DraftTravelMode = TripRouteTravelMode;
 
 type RouteDraftPayload = {
   version: 1;
@@ -49,19 +56,6 @@ function listDatesInclusive(start: string, end: string) {
   return out;
 }
 
-function inferOsrmProfileFromText(text: string): OsrmProfile {
-  const t = String(text || "").toLowerCase();
-  if (/\b(pie|andar|andando|caminar|caminando|walk)\b/.test(t)) return "walking";
-  if (/\b(bici|bicicleta|cycling|bike)\b/.test(t)) return "cycling";
-  return "driving";
-}
-
-function toDraftMode(profile: OsrmProfile): DraftTravelMode {
-  if (profile === "walking") return "WALKING";
-  if (profile === "cycling") return "BICYCLING";
-  return "DRIVING";
-}
-
 function formatKm(meters: number) {
   const km = meters / 1000;
   return km >= 10 ? `${km.toFixed(0)} km` : `${km.toFixed(1)} km`;
@@ -84,6 +78,9 @@ export async function POST(request: Request) {
     const endDate = typeof body?.endDate === "string" ? body.endDate : typeof body?.end_date === "string" ? body.end_date : "";
     const transportNotes = typeof body?.transportNotes === "string" ? body.transportNotes : "";
     const followUp = typeof body?.followUp === "string" ? body.followUp : "";
+    const travelModeExplicit = body?.travelMode
+      ? normalizeTripRouteTravelMode(body.travelMode)
+      : null;
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
 
@@ -108,12 +105,12 @@ export async function POST(request: Request) {
     }
 
     const combined = `${transportNotes}\n${followUp}`.trim();
-    if (!combined || combined.length < 3) {
+    if (!travelModeExplicit && (!combined || combined.length < 3)) {
       return NextResponse.json(
         {
           status: "needs_clarification",
           question:
-            "¿Qué transporte quieres para las rutas? Por ejemplo: “a pie dentro de ciudad, metro si llueve, y tren entre ciudades” o “todo en coche”.",
+            "Elige un modo de transporte arriba o escribe preferencias (ej. «a pie en ciudad, metro si llueve, coche entre ciudades»).",
         },
         { status: 200 }
       );
@@ -124,8 +121,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Faltan fechas válidas (date o startDate/endDate)." }, { status: 400 });
     }
 
-    const profile = inferOsrmProfileFromText(combined);
-    const travelMode = toDraftMode(profile);
+    const travelMode = travelModeExplicit ?? inferTravelModeFromText(combined);
+    const profile = osrmProfileForTravelMode(travelMode);
 
     const { data: rawActs, error: actsErr } = await supabase
       .from("trip_activities")
@@ -179,10 +176,16 @@ export async function POST(request: Request) {
           destination: { lat: bLat, lng: bLng },
           profile,
         });
+        const adjusted = applyTravelModeToOsrmMetrics(travelMode, {
+          distanceMeters: osrm.distanceMeters,
+          durationSeconds: osrm.durationSeconds,
+        });
 
         const points = Array.isArray(osrm.points) && osrm.points.length >= 2 ? osrm.points : [{ lat: aLat, lng: aLng }, { lat: bLat, lng: bLng }];
-        const distance_text = typeof osrm.distanceMeters === "number" ? formatKm(osrm.distanceMeters) : null;
-        const duration_text = typeof osrm.durationSeconds === "number" ? formatDuration(osrm.durationSeconds) : null;
+        const distance_text =
+          typeof adjusted.distanceMeters === "number" ? formatKm(adjusted.distanceMeters) : null;
+        const duration_text =
+          typeof adjusted.durationSeconds === "number" ? formatDuration(adjusted.durationSeconds) : null;
 
         draftRoutes.push({
           title,

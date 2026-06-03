@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { normalizeTripRouteTravelMode } from "@/lib/route-travel-mode";
 
 export type RoutePoint = {
   lat: number;
@@ -217,8 +218,8 @@ export function useTripRoutes(tripId: string, reload?: () => Promise<void>) {
         departure_time: input.departureTime || null,
         start_time: input.departureTime || null,
         route_start_time: input.departureTime || null,
-        mode: input.mode || "driving",
-        travel_mode: (input.mode || "driving").toUpperCase(),
+        mode: normalizeTripRouteTravelMode(input.mode).toLowerCase(),
+        travel_mode: normalizeTripRouteTravelMode(input.mode),
         color: input.color || null,
         notes: input.notes ?? null,
         origin_name: input.originName || input.originAddress || "Origen",

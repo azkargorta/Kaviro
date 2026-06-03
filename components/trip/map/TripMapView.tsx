@@ -12,6 +12,15 @@ import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import { useTripRoutes, type RoutePoint, type SaveRouteInput } from "@/hooks/useTripRoutes";
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
 import DuplicateRouteDialog from "@/components/trip/map/DuplicateRouteDialog";
+import RouteTravelModePicker from "@/components/trip/map/RouteTravelModePicker";
+import {
+  applyTravelModeToOsrmMetrics,
+  normalizeTripRouteTravelMode,
+  osrmProfileForTravelMode,
+  travelModeDurationHint,
+  travelModeLabel,
+  type TripRouteTravelMode,
+} from "@/lib/route-travel-mode";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -23,8 +32,6 @@ import {
 } from "@/lib/trip-plan-events";
 
 type UnknownRow = Record<string, unknown>;
-type RouteMode = "DRIVING";
-
 type AutocompletePayload = {
   address: string;
   latitude: number | null;
@@ -66,12 +73,12 @@ type RoutePreview = {
 type RoutesDraftPayload = {
   version: 1;
   date: string;
-  travelMode: "DRIVING" | "WALKING" | "BICYCLING";
+  travelMode: TripRouteTravelMode;
   routes: Array<{
     title: string;
     route_day: string;
     departure_time: string | null;
-    travel_mode: "DRIVING" | "WALKING" | "BICYCLING";
+    travel_mode: TripRouteTravelMode;
     origin_name: string;
     origin_address: string | null;
     origin_latitude: number | null;
@@ -400,11 +407,21 @@ function addDurationToTime(time: string, durationSeconds: number | null) {
   return `${hh}:${mm}`;
 }
 
-async function fetchOsrmRoute(params: { origin: RoutePoint; destination: RoutePoint; stop?: RoutePoint | null }) {
+async function fetchOsrmRoute(params: {
+  origin: RoutePoint;
+  destination: RoutePoint;
+  stop?: RoutePoint | null;
+  profile?: "driving" | "walking" | "cycling";
+}) {
   const resp = await fetch("/api/osrm/route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      origin: params.origin,
+      destination: params.destination,
+      stop: params.stop ?? null,
+      profile: params.profile ?? "driving",
+    }),
   });
   const payload = await resp.json().catch(() => null);
   if (!resp.ok) throw new Error(payload?.error || `Error ${resp.status}`);
@@ -782,7 +799,8 @@ export default function TripMapView({
   const [form, setForm] = useState<RouteFormState>(() =>
     defaultRouteForm(defaultNewRouteDate({ tripStart: trip?.start_date ?? null, tripDates }))
   );
-  const [mode] = useState<RouteMode>("DRIVING");
+  const [travelMode, setTravelMode] = useState<TripRouteTravelMode>("DRIVING");
+  const [routesAutoTravelMode, setRoutesAutoTravelMode] = useState<TripRouteTravelMode>("DRIVING");
 
   const [origin, setOrigin] = useState<{ address: string; latitude: number | null; longitude: number | null }>({
     address: "",
@@ -870,6 +888,7 @@ export default function TripMapView({
           endDate,
           transportNotes: routesAutoNotes,
           followUp: routesAutoFollowUp,
+          travelMode: routesAutoTravelMode,
         }),
       });
       const payload = await resp.json().catch(() => null);
@@ -918,8 +937,26 @@ export default function TripMapView({
       origin: [origin.address, origin.latitude, origin.longitude],
       stop: form.stopEnabled ? [stop.address, stop.latitude, stop.longitude] : null,
       destination: [destination.address, destination.latitude, destination.longitude],
+      travelMode,
     });
-  }, [destination.address, destination.latitude, destination.longitude, form.autoColor, form.color, form.departureTime, form.routeDate, form.routeName, form.stopEnabled, origin.address, origin.latitude, origin.longitude, stop.address, stop.latitude, stop.longitude]);
+  }, [
+    destination.address,
+    destination.latitude,
+    destination.longitude,
+    form.autoColor,
+    form.color,
+    form.departureTime,
+    form.routeDate,
+    form.routeName,
+    form.stopEnabled,
+    origin.address,
+    origin.latitude,
+    origin.longitude,
+    stop.address,
+    stop.latitude,
+    stop.longitude,
+    travelMode,
+  ]);
 
   const effectiveRouteColor = useMemo(() => {
     if (!form.autoColor) return form.color || ROUTE_COLOR_PALETTE[0];
@@ -1383,6 +1420,7 @@ export default function TripMapView({
       latitude: route.destination_latitude ?? null,
       longitude: route.destination_longitude ?? null,
     });
+    setTravelMode(normalizeTripRouteTravelMode(route.travel_mode));
   }
 
   async function calculateRoutePreview() {
@@ -1419,20 +1457,30 @@ export default function TripMapView({
       let durationText: string | null = null;
       let durationSeconds: number | null = null;
 
+      let transitApproximate = false;
       try {
-        const osrm = await fetchOsrmRoute({ origin: originPt, destination: destPt, stop: stopPt });
+        const profile = osrmProfileForTravelMode(travelMode);
+        const osrm = await fetchOsrmRoute({ origin: originPt, destination: destPt, stop: stopPt, profile });
         if (Array.isArray(osrm.points) && osrm.points.length >= 2) {
           routePoints = osrm.points;
         }
-        if (typeof osrm.distanceMeters === "number" && Number.isFinite(osrm.distanceMeters)) distanceText = formatKm(osrm.distanceMeters);
-        if (typeof osrm.durationSeconds === "number" && Number.isFinite(osrm.durationSeconds)) {
-          durationSeconds = osrm.durationSeconds;
-          durationText = formatDuration(osrm.durationSeconds);
+        const adjusted = applyTravelModeToOsrmMetrics(travelMode, {
+          distanceMeters: osrm.distanceMeters,
+          durationSeconds: osrm.durationSeconds,
+        });
+        transitApproximate = Boolean(adjusted.transitApproximate);
+        if (typeof adjusted.distanceMeters === "number" && Number.isFinite(adjusted.distanceMeters)) {
+          distanceText = formatKm(adjusted.distanceMeters);
+        }
+        if (typeof adjusted.durationSeconds === "number" && Number.isFinite(adjusted.durationSeconds)) {
+          durationSeconds = adjusted.durationSeconds;
+          durationText = formatDuration(adjusted.durationSeconds);
         }
       } catch {
         // Si OSRM falla, enseñamos igualmente la línea directa si hay puntos válidos.
       }
 
+      const durationHint = travelModeDurationHint(travelMode, transitApproximate);
       const preview: RoutePreview = {
         key: routeCalcKey,
         points: routePoints,
@@ -1445,7 +1493,11 @@ export default function TripMapView({
       };
       setFocusedRouteKey(null);
       setRoutePreview(preview);
-      setInfo("Ruta calculada. Revisa el trazado y guarda cuando quieras.");
+      setInfo(
+        durationHint
+          ? `Ruta calculada en modo ${travelModeLabel(travelMode).toLowerCase()}. ${durationHint} Revisa el trazado y guarda cuando quieras.`
+          : `Ruta calculada en modo ${travelModeLabel(travelMode).toLowerCase()}. Revisa el trazado y guarda cuando quieras.`
+      );
       return preview;
     } catch (e) {
       setRoutePreview(null);
@@ -1470,7 +1522,7 @@ export default function TripMapView({
         routeDate: form.routeDate,
         routeName: name,
         departureTime: form.departureTime,
-        mode,
+        mode: travelMode,
         color: form.autoColor ? effectiveRouteColor : form.color || ROUTE_COLOR_PALETTE[0],
         originName: origin.address || "Origen",
         originAddress: origin.address || "Origen",
@@ -1495,6 +1547,7 @@ export default function TripMapView({
       await saveRoute(input, form.editingRouteId || undefined);
       const savedMsg = form.editingRouteId ? "Ruta actualizada." : "Ruta guardada.";
       setForm(defaultRouteForm(form.routeDate));
+      setTravelMode("DRIVING");
       setIsRouteFormOpen(false);
       setRoutePreview(null);
       setOrigin({ address: "", latitude: null, longitude: null });
@@ -1623,6 +1676,7 @@ export default function TripMapView({
       latitude: r.destination_latitude ?? null,
       longitude: r.destination_longitude ?? null,
     });
+    setTravelMode(normalizeTripRouteTravelMode(r.travel_mode || draft.travelMode));
     setOriginPlanId("");
     setStopPlanId("");
     setDestinationPlanId("");
@@ -1763,7 +1817,12 @@ export default function TripMapView({
 
     const active = focusedRouteKey === key;
     const title = String(route.title || route.route_name || "Ruta");
-    const subtitle = [route.departure_time ? `Salida ${route.departure_time}` : "", route.distance_text || "", route.duration_text || ""]
+    const subtitle = [
+      route.travel_mode ? travelModeLabel(normalizeTripRouteTravelMode(route.travel_mode)) : "",
+      route.departure_time ? `Salida ${route.departure_time}` : "",
+      route.distance_text || "",
+      route.duration_text || "",
+    ]
       .filter(Boolean)
       .join(" · ");
 
@@ -1872,13 +1931,28 @@ export default function TripMapView({
             </div>
           ) : null}
 
+          <div>
+            <div className="text-xs font-semibold text-slate-700">Modo de transporte</div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Distancia, trazado y tiempo se calculan según el modo elegido (el transporte público es una estimación).
+            </p>
+            <div className="mt-2">
+              <RouteTravelModePicker
+                value={routesAutoTravelMode}
+                onChange={setRoutesAutoTravelMode}
+                disabled={routesAutoLoading}
+                compact
+              />
+            </div>
+          </div>
+
           <label className="text-xs font-semibold text-slate-700">
-            Preferencias de transporte (para que el asistente elija el modo)
+            Preferencias adicionales (opcional)
             <textarea
               value={routesAutoNotes}
               onChange={(e) => setRoutesAutoNotes(e.target.value)}
-              rows={3}
-              placeholder="Ej. dentro de ciudad a pie/metro; entre ciudades tren; si un tramo > 3h, vuelo."
+              rows={2}
+              placeholder="Ej. evitar autopista, más paradas de metro…"
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
             />
           </label>
@@ -2272,6 +2346,7 @@ export default function TripMapView({
                     type="button"
                     onClick={() => {
                       setIsRouteFormOpen(true);
+                      setTravelMode("DRIVING");
                       setForm(
                         defaultRouteForm(
                           defaultNewRouteDate({
@@ -2419,6 +2494,25 @@ export default function TripMapView({
                       className="mt-2 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
                     />
                   </label>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">
+                    Modo de transporte
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Elige cómo se recorre el trayecto. Al calcular la ruta, distancia, camino y duración usan este modo.
+                  </p>
+                  <div className="mt-3">
+                    <RouteTravelModePicker
+                      value={travelMode}
+                      onChange={(m) => {
+                        setTravelMode(m);
+                        setRoutePreview(null);
+                      }}
+                      disabled={calculatingRoute || saving || savingRoute}
+                    />
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-3">
@@ -2674,6 +2768,10 @@ export default function TripMapView({
                     {routePreview ? (
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
                         <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-emerald-800">Ruta calculada</div>
+                        <p className="mt-1 text-xs font-semibold text-emerald-900">
+                          Modo: {travelModeLabel(travelMode)}
+                          {travelMode === "TRANSIT" ? " · tiempo estimado" : null}
+                        </p>
                         <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div className="rounded-xl bg-white px-3 py-2">
                             <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">Distancia</div>
@@ -2760,7 +2858,12 @@ export default function TripMapView({
                   const active = focusedRouteKey === key;
                   const bulkSelected = selectedRouteKeys.has(key);
                   const title = String(r.title || r.route_name || "Ruta");
-                  const subtitle = [r.departure_time ? `Salida ${r.departure_time}` : "", r.distance_text || "", r.duration_text || ""]
+                  const subtitle = [
+                    r.travel_mode ? travelModeLabel(normalizeTripRouteTravelMode(r.travel_mode)) : "",
+                    r.departure_time ? `Salida ${r.departure_time}` : "",
+                    r.distance_text || "",
+                    r.duration_text || "",
+                  ]
                     .filter(Boolean)
                     .join(" · ");
                   return (
