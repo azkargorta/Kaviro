@@ -92,7 +92,7 @@ export async function POST(request: Request) {
           participants = structured.slice(0, MAX_ROWS);
           source = "text";
         } else {
-          const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: null });
+          const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: null, tripId });
           if (budget.userId !== gate.access.userId) {
             return NextResponse.json({ error: "No autenticado." }, { status: 401 });
           }
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
     } else {
       participants = parseParticipantListFromText(pastedText).slice(0, MAX_ROWS);
       if (participants.length < 2 && pastedText.length > 80) {
-        const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: null });
+        const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: null, tripId });
         const ai = await extractParticipantsWithAi(pastedText);
         if (ai.participants.length > participants.length) {
           participants = ai.participants.slice(0, MAX_ROWS);

@@ -90,7 +90,7 @@ export default function PlanActivityRow({
         <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{title}</p>
         <p className="truncate text-[10px] text-slate-400">{subtitle}</p>
       </div>
-      <span className="shrink-0 rounded-md bg-[#F87171] px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">{timeLabel}</span>
+      <span className="shrink-0 rounded-md bg-[var(--brand)] px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">{timeLabel}</span>
     </div>
   );
 }

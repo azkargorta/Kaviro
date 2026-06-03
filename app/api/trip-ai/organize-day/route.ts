@@ -697,7 +697,7 @@ export async function POST(req: Request) {
     if (!question) return NextResponse.json({ error: "Pregunta vacía" }, { status: 400 });
 
     const monthKey = monthKeyUtc();
-    const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: provider });
+    const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: provider, tripId });
     const supabase = budget.supabase;
     const userId = budget.userId;
 

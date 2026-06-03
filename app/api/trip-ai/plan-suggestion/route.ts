@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     const monthKey = monthKeyUtc();
     let userId = "";
     try {
-      const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: null });
+      const budget = await enforceAiMonthlyBudgetOrThrow({ providerId: null, tripId });
       userId = budget.userId;
     } catch (e) {
       const err = e as { httpStatus?: number; code?: string; message?: string; budget?: unknown };

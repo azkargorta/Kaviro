@@ -26,7 +26,7 @@ export const AGENCY_TRIP_NAV: TripNavItem[] = [
   { key: "map", label: "Rutas", sublabel: "Logística", href: (id) => `/trip/${id}/map` },
   { key: "resources", label: "Docs", sublabel: "Dossier", href: (id) => `/trip/${id}/resources` },
   { key: "participants", label: "Equipo", sublabel: "Coordinación", href: (id) => `/trip/${id}/participants` },
-  { key: "chat", label: "Herramientas IA", sublabel: "Importar y organizar", href: (id) => `/trip/${id}/ai-chat`, isPremiumGated: true },
+  { key: "chat", label: "Herramientas IA", sublabel: "Importar y organizar", href: (id) => `/trip/${id}/ai-chat` },
   { key: "settings", label: "Ajustes", sublabel: "Programa y portal", href: (id) => `/trip/${id}/settings` },
 ];
 

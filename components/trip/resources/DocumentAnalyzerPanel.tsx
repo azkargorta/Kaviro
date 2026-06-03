@@ -5,6 +5,7 @@ import type { DetectedDocumentData } from "@/lib/document-analyzer";
 import { btnPrimary } from "@/components/ui/brandStyles";
 
 type Props = {
+  tripId?: string;
   onUseDetectedData: (data: DetectedDocumentData) => void;
 };
 
@@ -15,7 +16,7 @@ function prettyLabel(value?: string | null) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export default function DocumentAnalyzerPanel({ onUseDetectedData }: Props) {
+export default function DocumentAnalyzerPanel({ tripId, onUseDetectedData }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,8 @@ export default function DocumentAnalyzerPanel({ onUseDetectedData }: Props) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/ai-budget/status", { cache: "no-store" });
+        const q = tripId ? `?tripId=${encodeURIComponent(tripId)}` : "";
+        const res = await fetch(`/api/ai-budget/status${q}`, { cache: "no-store" });
         const data = await res.json().catch(() => null);
         if (!cancelled && res.ok && data && typeof data?.exceeded === "boolean") {
           setAiBudgetExceeded(Boolean(data.exceeded));
@@ -40,7 +42,7 @@ export default function DocumentAnalyzerPanel({ onUseDetectedData }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tripId]);
 
   async function handleAnalyze() {
     if (!file) {

@@ -19,7 +19,7 @@ type Props = {
 };
 
 const BTN_HEADER =
-  "inline-flex max-w-[min(100%,11rem)] shrink-0 items-center gap-1.5 rounded-xl border border-white/90 bg-white px-2.5 py-1.5 text-left text-[#F87171] shadow-sm transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/80";
+  "inline-flex max-w-[min(100%,11rem)] shrink-0 items-center gap-1.5 rounded-xl border border-white/90 bg-white px-2.5 py-1.5 text-left text-[var(--brand)] shadow-sm transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/80";
 const BTN_GRADIENT =
   "inline-flex max-w-[min(100%,11rem)] shrink-0 items-center gap-1.5 rounded-xl border border-white/35 bg-white/15 px-2.5 py-1.5 text-left text-white shadow-sm transition hover:bg-white/25";
 

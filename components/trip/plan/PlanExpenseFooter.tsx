@@ -60,7 +60,7 @@ export default function PlanExpenseFooter({ tripId }: Props) {
       <div className="flex items-center gap-2">
         <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
           <div
-            className="h-full rounded-full bg-[#F87171] transition-all"
+            className="h-full rounded-full bg-[var(--brand)] transition-all"
             style={{ width: total && total > 0 ? "min(100%, 60%)" : "0%" }}
           />
         </div>

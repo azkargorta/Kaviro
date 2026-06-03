@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     let supabase: any;
     let userId = "";
     try {
-      const res = await enforceAiMonthlyBudgetOrThrow({ providerId: provider });
+      const res = await enforceAiMonthlyBudgetOrThrow({ providerId: provider, tripId });
       supabase = res.supabase;
       userId = res.userId;
     } catch (e) {

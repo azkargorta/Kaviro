@@ -194,7 +194,7 @@ export default function PlanActivityCard({
               </span>
             ) : null}
             {activity.activity_time ? (
-              <span className="ml-auto shrink-0 inline-flex items-center rounded-lg bg-[#F87171]/10 px-2.5 py-1 text-[12px] font-bold tabular-nums text-[#EF4444] dark:bg-[#F87171]/20 dark:text-[#F87171]">
+              <span className="ml-auto shrink-0 inline-flex items-center rounded-lg bg-[var(--brand-light)] px-2.5 py-1 text-[12px] font-bold tabular-nums text-[var(--brand-text)]">
                 {activity.activity_time.slice(0, 5)}
               </span>
             ) : null}

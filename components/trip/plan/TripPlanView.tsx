@@ -1062,9 +1062,9 @@ export default function TripPlanView({
           <button
             type="button"
             onClick={clearUnseen}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#F87171]/15 px-3 py-1 text-xs font-bold text-[#F87171] ring-1 ring-[#F87171]/30 transition hover:bg-[#F87171]/25 mb-2"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-light)] px-3 py-1 text-xs font-bold text-[var(--brand)] ring-1 ring-[var(--brand-border)] transition hover:bg-[var(--brand-light)] mb-2"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#F87171] animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
             {unseenCount} cambio{unseenCount !== 1 ? "s" : ""} nuevo{unseenCount !== 1 ? "s" : ""}
           </button>
         )}
@@ -1499,7 +1499,7 @@ export default function TripPlanView({
               </div>
             ) : isEmpty ? (
               <div className="py-8 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#FEF2F2] to-[#F87171]/20 text-3xl shadow-sm">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-[var(--brand-light)] text-3xl shadow-sm">
                   🗺️
                 </div>
                 <p className="text-lg font-extrabold text-slate-900 dark:text-white">Empieza a planificar</p>

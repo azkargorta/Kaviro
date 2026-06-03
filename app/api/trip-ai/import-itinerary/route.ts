@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     let supabase: Awaited<ReturnType<typeof enforceAiMonthlyBudgetOrThrow>>["supabase"];
     let userId = "";
     try {
-      const res = await enforceAiMonthlyBudgetOrThrow({ providerId: null });
+      const res = await enforceAiMonthlyBudgetOrThrow({ providerId: null, tripId });
       supabase = res.supabase;
       userId = res.userId;
     } catch (e) {

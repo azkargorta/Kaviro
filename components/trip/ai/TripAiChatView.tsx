@@ -615,7 +615,10 @@ export default function TripAiChatView({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/ai-budget/status", { cache: "no-store" });
+        const res = await fetch(
+          `/api/ai-budget/status?tripId=${encodeURIComponent(tripId)}`,
+          { cache: "no-store" }
+        );
         const data = await res.json().catch(() => null);
         if (!cancelled && res.ok && data && typeof data?.exceeded === "boolean") {
           setAiBudgetExceeded(Boolean(data.exceeded));
@@ -627,7 +630,7 @@ export default function TripAiChatView({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tripId]);
 
   const { trip, participants, reload: reloadTrip, loading: tripDataLoading } = useTripData(tripId);
 

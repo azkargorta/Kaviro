@@ -96,6 +96,10 @@ Código: `lib/kaviro-trips-trip-nav.ts`, `TripWorkspaceContext`, `TripAgencyRout
 - No hay pantalla de checkout Stripe para agencias en esta fase.
 - Alta de agencia: contacto en `/empresa` → acuerdo → fila en `agencies` + `agency_members`.
 
+### Sin Premium B2C dentro de Kaviro Trips
+
+Los viajes con `trips.agency_id` tienen **todas las funciones desbloqueadas** (IA, importación, rutas, etc.): no aplican límites Premium ni el cupo mensual de IA del modo personal. La lógica está en `lib/kaviro-trips-entitlements.ts` + `isPremiumEnabledForTrip`.
+
 ## Funciones B2B en repo (`kaviro_agency_features.sql`)
 
 - **Invitaciones de equipo** — email automático + enlace `/agency/join?token=…` (requiere `RESEND_API_KEY` en Vercel).

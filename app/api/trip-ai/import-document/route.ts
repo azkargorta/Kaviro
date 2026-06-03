@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     if (shouldTryVisionExtract({ mimeType, ocrTextLength: ocrText.length, fileName })) {
       try {
-        const { supabase, userId } = await enforceAiMonthlyBudgetOrThrow({ providerId: null });
+        const { supabase, userId } = await enforceAiMonthlyBudgetOrThrow({ providerId: null, tripId });
         const vision = await extractItineraryTextWithVision({
           buffer,
           mimeType: mimeType || "image/jpeg",

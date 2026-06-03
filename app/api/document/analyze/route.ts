@@ -88,7 +88,10 @@ export async function POST(request: Request) {
       ].join("\n");
 
       try {
-        const { supabase, userId } = await enforceAiMonthlyBudgetOrThrow({ providerId: provider });
+        const { supabase, userId } = await enforceAiMonthlyBudgetOrThrow({
+          providerId: provider,
+          tripId: tripId || null,
+        });
         const { text: answer, usage } = await askTripAIWithUsage(prompt, "general" as any, { provider });
         await trackAiUsage({
           supabase,

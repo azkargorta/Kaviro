@@ -241,6 +241,7 @@ export default function TripResourcesView({
           {canManageResources && showAnalyzerForm && isPremium ? (
             <div className="mt-5">
               <DocumentAnalyzerPanel
+                tripId={tripId}
                 onUseDetectedData={(data) => {
                   setDetectedData(data);
                   setEditingReservation(null);

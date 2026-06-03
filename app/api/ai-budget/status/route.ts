@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getMonthlyAiBudgetEur, monthKeyUtc } from "@/lib/ai-usage";
+import { isKaviroTripsUnlimitedTrip } from "@/lib/kaviro-trips-entitlements";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -14,6 +15,19 @@ export async function GET() {
     } = await supabase.auth.getUser();
     if (userError) return NextResponse.json({ error: userError.message }, { status: 401 });
     if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+
+    const tripId = new URL(req.url).searchParams.get("tripId")?.trim() || null;
+    if (tripId && (await isKaviroTripsUnlimitedTrip(supabase, tripId))) {
+      return NextResponse.json({
+        ok: true,
+        kaviroTripsUnlimited: true,
+        monthKey: monthKeyUtc(),
+        monthlyBudgetEur: 0,
+        currentEstimatedEur: 0,
+        usagePct: 0,
+        exceeded: false,
+      });
+    }
 
     const monthKey = monthKeyUtc();
     const monthlyBudgetEur = getMonthlyAiBudgetEur();

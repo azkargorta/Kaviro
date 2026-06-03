@@ -49,7 +49,7 @@ export default function PlanLodgingCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${selectable ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80" : ""} ${selected ? "ring-2 ring-violet-600 dark:ring-[#F87171]" : ""}`}
+      className={`relative overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] ${selectable ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80" : ""} ${selected ? "ring-2 ring-violet-600 dark:ring-[var(--brand)]" : ""}`}
       onClick={selectable && onToggleSelect ? () => onToggleSelect() : undefined}
       onKeyDown={
         selectable && onToggleSelect
@@ -65,13 +65,13 @@ export default function PlanLodgingCard({
       tabIndex={selectable ? 0 : undefined}
     >
       {/* P6 — Left violet stripe */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-violet-500 dark:bg-[#F87171]" aria-hidden />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-violet-500 dark:bg-[var(--brand)]" aria-hidden />
 
       {selectable ? (
         <button
           type="button"
           className={`absolute left-5 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-sm ${
-            selected ? "border-violet-600 bg-violet-600 text-white dark:border-[#F87171] dark:bg-[#F87171]" : "border-slate-300 bg-white text-transparent dark:border-[#334155] dark:bg-[#0F1623]"
+            selected ? "border-violet-600 bg-violet-600 text-white dark:border-[var(--brand)] dark:bg-[var(--brand)]" : "border-slate-300 bg-white text-transparent dark:border-[#334155] dark:bg-[#0F1623]"
           }`}
           aria-label={selected ? "Quitar selección" : "Seleccionar"}
           onClick={(e) => {

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isKaviroTripsUnlimitedTrip } from "@/lib/kaviro-trips-entitlements";
 
 export type Entitlements = {
   isPremium: boolean;
@@ -76,6 +77,8 @@ export async function isPremiumEnabledForTrip(params: {
   tripId: string;
 }): Promise<boolean> {
   const { supabase, userId, tripId } = params;
+
+  if (await isKaviroTripsUnlimitedTrip(supabase, tripId)) return true;
 
   const mine = await getUserPremiumFlag(supabase, userId);
   if (mine) return true;

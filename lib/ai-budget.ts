@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { estimateGemini25FlashCostEur, getMonthlyAiBudgetEur, monthKeyUtc } from "@/lib/ai-usage";
+import { isKaviroTripsUnlimitedTrip } from "@/lib/kaviro-trips-entitlements";
 import type { TripAiUsage } from "@/lib/trip-ai/providers";
 
 type BudgetInfo = {
@@ -10,6 +11,8 @@ type BudgetInfo = {
 
 export async function enforceAiMonthlyBudgetOrThrow(params: {
   providerId: string | null;
+  /** Viajes de agencia: sin tope mensual B2C (contrato Kaviro Trips). */
+  tripId?: string | null;
 }): Promise<{ supabase: Awaited<ReturnType<typeof createClient>>; userId: string; budget: BudgetInfo; shouldTrack: boolean }> {
   const supabase = await createClient();
   const {
@@ -19,11 +22,20 @@ export async function enforceAiMonthlyBudgetOrThrow(params: {
   if (userError) throw new Error(userError.message);
   if (!user) throw new Error("No hay sesión activa.");
 
-  const requestedProvider = (params.providerId || process.env.AI_PROVIDER || "gemini").toLowerCase();
-  const usesGemini = requestedProvider === "gemini";
-
   const monthKey = monthKeyUtc();
   const monthlyBudgetEur = getMonthlyAiBudgetEur();
+
+  if (params.tripId && (await isKaviroTripsUnlimitedTrip(supabase, params.tripId))) {
+    return {
+      supabase,
+      userId: user.id,
+      budget: { monthKey, monthlyBudgetEur, currentEstimatedEur: 0 },
+      shouldTrack: true,
+    };
+  }
+
+  const requestedProvider = (params.providerId || process.env.AI_PROVIDER || "gemini").toLowerCase();
+  const usesGemini = requestedProvider === "gemini";
 
   let currentEstimatedEur = 0;
   if (usesGemini) {
