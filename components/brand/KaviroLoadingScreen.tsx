@@ -31,7 +31,7 @@ export default function KaviroLoadingScreen({ fixed = false, subtitle, brand = "
           variant={isNavy ? "navy" : "coral"}
           size={96}
           className={`overflow-hidden rounded-[28px] shadow-[var(--shadow-raised)] ${
-            isNavy ? "ring-1 ring-[#1e3a5f]/30" : "ring-1 ring-[#F87171]/25"
+            isNavy ? "ring-1 ring-[#1e3a5f]/30 rounded-full" : "ring-1 ring-[#F87171]/25 rounded-full"
           }`}
         />
         <h1

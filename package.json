@@ -14,7 +14,8 @@
     "icons:build": "node scripts/build-kaviro-icon.mjs",
     "icons:generate": "node scripts/build-kaviro-icon.mjs",
     "brand:lockup": "node scripts/build-kaviro-lockup.mjs",
-    "brand:lockup-hero": "node scripts/build-kaviro-lockup-hero.mjs"
+    "brand:lockup-hero": "node scripts/build-kaviro-lockup-hero.mjs",
+    "brand:navy": "node scripts/build-kaviro-brand-navy.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -5,7 +5,7 @@ export const KAVIRO_MARK_NAVY = "#1e3a5f";
 
 const MARK_SRC = {
   coral: "/brand/icon.png",
-  navy: "/brand/kaviro-mark-navy.svg",
+  navy: "/brand/icon-navy.png",
 } as const;
 
 type Props = {

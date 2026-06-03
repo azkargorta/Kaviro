@@ -88,7 +88,7 @@ Código: `lib/kaviro-trips-trip-nav.ts`, `TripWorkspaceContext`, `TripAgencyRout
 1. Ejecutar `kaviro_agency_logos_storage.sql` en Supabase (bucket `agency-logos` + políticas).
 2. En Vercel/local: variable `SUPABASE_SERVICE_ROLE_KEY` (la API sube logos con service role tras validar admin).
 3. Panel → **Branding**: nombre, logo, color, email de contacto (solo admin).
-4. Marca navy en UI: `KaviroTripsLogo`, `public/brand/kaviro-mark-navy.svg`.
+4. Marca navy (mismo logo que Kaviro coral, recolorizado): `npm run brand:navy` → `public/brand/icon-navy.png`, `kaviro-lockup-navy.png`. UI: `KaviroTripsLogo` / `KaviroMark variant="navy"`.
 
 ## Comercial (sin precio fijo en producto)
 

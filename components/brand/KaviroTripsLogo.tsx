@@ -4,9 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import KaviroMark from "@/components/brand/KaviroMark";
 import { APP_NAME } from "@/lib/brand";
-import { AGENCY_NAVY } from "@/lib/agency-theme";
-
-const LOCKUP_NAVY_SRC = "/brand/kaviro-lockup-navy.svg";
+const LOCKUP_NAVY_SRC = "/brand/kaviro-lockup-navy.png";
 
 type Props = {
   size?: "sm" | "md" | "lg";
@@ -70,20 +68,18 @@ export default function KaviroTripsLogo({
         variant="navy"
         size={px}
         className={[
-          "shrink-0 overflow-hidden rounded-[22%] shadow-sm",
-          variant === "onDark" ? "ring-1 ring-white/25" : "ring-1 ring-slate-200/80",
+          "shrink-0 overflow-hidden rounded-full shadow-sm",
+          variant === "onDark" ? "ring-1 ring-white/25" : "ring-1 ring-slate-200/80 dark:ring-slate-600/80",
           imageClassName,
         ]
           .filter(Boolean)
           .join(" ")}
       />
-      <span className={[wordmarkClass[size], textColor, "leading-none"].join(" ")} style={variant === "onLight" ? { color: AGENCY_NAVY } : undefined}>
-        {APP_NAME}
-      </span>
+      <span className={[wordmarkClass[size], textColor, "leading-none"].join(" ")}>{APP_NAME}</span>
     </span>
   ) : (
     <span className={`inline-flex items-center ${className}`.trim()}>
-      <KaviroMark variant="navy" size={px} className={["shrink-0 overflow-hidden rounded-[22%] shadow-sm", imageClassName].filter(Boolean).join(" ")} />
+      <KaviroMark variant="navy" size={px} className={["shrink-0 overflow-hidden rounded-full shadow-sm", imageClassName].filter(Boolean).join(" ")} />
     </span>
   );
 
