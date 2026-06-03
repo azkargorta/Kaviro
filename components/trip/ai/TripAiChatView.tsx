@@ -38,6 +38,10 @@ import { formatItineraryDayOneLine } from "@/lib/plan-activity-meta";
 import { dispatchTripPlanRefresh } from "@/lib/trip-plan-events";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import TripAiDocumentImportBar from "@/components/trip/ai/TripAiDocumentImportBar";
+import PlanImportCardsStatusBanner, {
+  PlanImportReadingBanner,
+  type PlanImportCardsStatus,
+} from "@/components/trip/plan/PlanImportCardsStatusBanner";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import { useToast } from "@/components/ui/toast";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
@@ -580,6 +584,8 @@ export default function TripAiChatView({
     label: string;
   } | null>(null);
   const [importCardsFailed, setImportCardsFailed] = useState(false);
+  const [importCardsStatus, setImportCardsStatus] = useState<PlanImportCardsStatus | null>(null);
+  const [importReadingLabel, setImportReadingLabel] = useState<string | null>(null);
   const [diffDraft, setDiffDraft] = useState<DiffPayload | null>(null);
   const [routesDraft, setRoutesDraft] = useState<RoutesDraftPayload | null>(null);
   const [missingCoords, setMissingCoords] = useState<MissingCoordsItem[] | null>(null);
@@ -862,9 +868,16 @@ export default function TripAiChatView({
       );
       if (!text || importingItineraryCards) return null;
       lastImportSourceRef.current = text;
+      setImportReadingLabel(null);
       setImportingItineraryCards(true);
       setImportProgress(null);
       setImportCardsFailed(false);
+      setImportCardsStatus({
+        phase: "generating",
+        current: 0,
+        total: 1,
+        label: "Preparando el itinerario…",
+      });
       setError(null);
       const isAgencyCalendar = looksLikeAgencyWeekdayCalendar(text);
       const tripSummaryForImport =
@@ -897,6 +910,17 @@ export default function TripAiChatView({
 
       let sectionResults: Array<ItineraryPayload | null> = [];
 
+      const finishImportSuccess = (draft: ItineraryPayload, infoLine?: string) => {
+        const days = draft.days.length;
+        const activities = countItineraryItems(draft);
+        setImportCardsStatus({ phase: "ready", days, activities });
+        setInfo(
+          infoLine ??
+            `Tarjetas listas (${days} día${days !== 1 ? "s" : ""}, ${activities} actividad${activities !== 1 ? "es" : ""}). Revisa y pulsa «Añadir seleccionadas».`
+        );
+        return draft;
+      };
+
       try {
         let agencyQuickDraft: ItineraryPayload | null = null;
         if (tripSummaryForImport && isAgencyCalendar) {
@@ -911,10 +935,7 @@ export default function TripAiChatView({
               isAgencyCalendarParseAcceptable(agencyQuickDraft, text, tripSummaryForImport) &&
               agencyQuickDraft.days.length >= minDays
             ) {
-              setInfo(
-                `Tarjetas listas (${agencyQuickDraft.days.length} días, ${countItineraryItems(agencyQuickDraft)} actividades). Revisa y pulsa «Añadir».`
-              );
-              return agencyQuickDraft;
+              return finishImportSuccess(agencyQuickDraft);
             }
           }
         }
@@ -923,6 +944,12 @@ export default function TripAiChatView({
           const activeSections = sections.filter((s) => s.body.trim());
           const total = activeSections.length;
           let completed = 0;
+          setImportCardsStatus({
+            phase: "generating",
+            current: 0,
+            total: Math.max(1, total),
+            label: total > 1 ? `Procesando ${total} tramos del dossier…` : "Generando tarjetas del itinerario…",
+          });
 
           const importOneSection = async (
             section: { header: string; body: string },
@@ -975,16 +1002,40 @@ export default function TripAiChatView({
             if (expandedDay == null && partial.days[0]) {
               setExpandedDay(partial.days[0]!.day);
             }
+            setImportCardsStatus((prev) =>
+              prev?.phase === "generating"
+                ? {
+                    ...prev,
+                    partialDays: partial.days.length,
+                    partialActivities: countItineraryItems(partial),
+                  }
+                : prev
+            );
           };
 
           sectionResults = new Array(total).fill(null);
 
           for (let i = 0; i < activeSections.length; i += IMPORT_CHUNK_CONCURRENCY) {
             const batch = activeSections.slice(i, i + IMPORT_CHUNK_CONCURRENCY);
-            setImportProgress({ current: completed + 1, total, label: batch.map((s) => s.header).join(" · ") });
-            setInfo(
-              `Generando tarjetas: tramos ${completed + 1}–${Math.min(completed + batch.length, total)} de ${total}…`
+            const batchEnd = Math.min(completed + batch.length, total);
+            const batchLabel = batch.map((s) => s.header).join(" · ");
+            setImportProgress({ current: completed + 1, total, label: batchLabel });
+            setImportCardsStatus((prev) =>
+              prev?.phase === "generating"
+                ? {
+                    ...prev,
+                    current: completed + 1,
+                    total,
+                    label: batchLabel || `Tramos ${completed + 1}–${batchEnd} de ${total}`,
+                  }
+                : {
+                    phase: "generating",
+                    current: completed + 1,
+                    total,
+                    label: batchLabel,
+                  }
             );
+            setInfo(`Generando tarjetas: tramos ${completed + 1}–${batchEnd} de ${total}…`);
             const chunkResults = await Promise.all(
               batch.map((section, batchOffset) => importOneSection(section, i + batchOffset))
             );
@@ -994,6 +1045,11 @@ export default function TripAiChatView({
             });
             completed += batch.length;
             setImportProgress({ current: completed, total, label: batch[batch.length - 1]!.header });
+            setImportCardsStatus((prev) =>
+              prev?.phase === "generating"
+                ? { ...prev, current: completed, total, label: batch[batch.length - 1]!.header }
+                : prev
+            );
             flushPartial();
           }
 
@@ -1019,17 +1075,11 @@ export default function TripAiChatView({
             expectedSectionDays >= 2 &&
             mergedDraft.days.length >= expectedSectionDays
           ) {
-            setInfo(
-              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
-            );
-            return mergedDraft;
+            return finishImportSuccess(mergedDraft);
           }
 
           if (mergedDraft && isItineraryImportSufficient(mergedDraft, text)) {
-            setInfo(
-              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
-            );
-            return mergedDraft;
+            return finishImportSuccess(mergedDraft);
           }
 
           const needsMoreDays =
@@ -1039,13 +1089,15 @@ export default function TripAiChatView({
                 mergedDraft.days.length < Math.max(2, Math.floor(expectedSectionDays * 0.9));
 
           if (!needsMoreDays && mergedDraft) {
-            setInfo(
-              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
-            );
-            return mergedDraft;
+            return finishImportSuccess(mergedDraft);
           }
 
           setInfo("Completando días que falten…");
+          setImportCardsStatus((prev) =>
+            prev?.phase === "generating"
+              ? { ...prev, label: "Completando días que falten en el dossier…" }
+              : prev
+          );
           const { res: fullRes, payload: fullPayload } = await fetchJsonWithTimeout(
             "/api/trip-ai/import-itinerary",
             {
@@ -1075,23 +1127,27 @@ export default function TripAiChatView({
           }
 
           if (mergedDraft) {
-            setInfo(
-              `Tarjetas listas (${mergedDraft.days.length} días, ${countItineraryItems(mergedDraft)} actividades). Revisa y pulsa «Añadir».`
-            );
-            return mergedDraft;
+            return finishImportSuccess(mergedDraft);
           }
 
           setImportCardsFailed(true);
           setInfo(null);
           const apiErr = typeof fullPayload?.error === "string" ? fullPayload.error : null;
-          setError(
+          const failMsg =
             apiErr ||
-              "No se pudieron generar las tarjetas. Pulsa «Generar tarjetas» o pega solo 2–3 días a la vez."
-          );
+            "No se pudieron generar las tarjetas. Pulsa «Generar tarjetas» o pega solo 2–3 días a la vez.";
+          setImportCardsStatus({ phase: "failed", message: failMsg });
+          setError(failMsg);
           return null;
         }
 
         setInfo("Generando tarjetas para validar el itinerario…");
+        setImportCardsStatus({
+          phase: "generating",
+          current: 0,
+          total: 1,
+          label: "Generando tarjetas del itinerario…",
+        });
         const { res, payload } = await fetchJsonWithTimeout(
           "/api/trip-ai/import-itinerary",
           {
@@ -1105,14 +1161,14 @@ export default function TripAiChatView({
         if (!res.ok || !payload?.itinerary) {
           setImportCardsFailed(true);
           setInfo(null);
-          setError(
-            typeof payload?.error === "string" ? payload.error : "No se pudieron generar las tarjetas."
-          );
+          const failMsg =
+            typeof payload?.error === "string" ? payload.error : "No se pudieron generar las tarjetas.";
+          setImportCardsStatus({ phase: "failed", message: failMsg });
+          setError(failMsg);
           return null;
         }
         const draft = finalizeImportDraft(payload.itinerary as ItineraryPayload);
-        setInfo("Tarjetas listas: revisa cada actividad y pulsa «Añadir seleccionadas».");
-        return draft;
+        return finishImportSuccess(draft);
       } catch (e) {
         setImportCardsFailed(true);
         setInfo(null);
@@ -1133,12 +1189,19 @@ export default function TripAiChatView({
           partialCount > 0
             ? ` Ya hay ${partialCount} actividades en las tarjetas; puedes revisarlas o volver a generar para el resto.`
             : "";
-        setError(
-          isAbort
-            ? `Tiempo de espera al generar tarjetas.${partialHint}`
-            : `Error de red al generar las tarjetas.${partialHint}`
-        );
-        return partialDraft;
+        const errMsg = isAbort
+          ? `Tiempo de espera al generar tarjetas.${partialHint}`
+          : `Error de red al generar las tarjetas.${partialHint}`;
+        if (partialDraft) {
+          setError(errMsg);
+          return finishImportSuccess(
+            partialDraft,
+            `Tarjetas parciales (${partialDraft.days.length} días). Revisa lo generado o vuelve a intentar el resto.`
+          );
+        }
+        setImportCardsStatus({ phase: "failed", message: errMsg });
+        setError(errMsg);
+        return null;
       } finally {
         setImportingItineraryCards(false);
         setImportProgress(null);
@@ -1198,6 +1261,10 @@ export default function TripAiChatView({
   }, [itineraryDraft, expandedDay]);
 
   const reviewingItineraryDraft = Boolean(itineraryDraft);
+  const showImportStatusGlobally = Boolean(
+    importCardsStatus &&
+      !(planImportOnly && reviewingItineraryDraft && importCardsStatus.phase === "ready")
+  );
   const itineraryFillsDrawer =
     reviewingItineraryDraft && layout === "drawer" && itineraryFullscreenReview && !isMobileViewport;
   const hideChatForItineraryCards = itineraryFillsDrawer;
@@ -2175,7 +2242,18 @@ export default function TripAiChatView({
       defaultExpanded={
         planImportOnly || mode === "planning" || layout === "drawer" || assistantContext === "plan"
       }
-      onStatus={(msg) => setInfo(msg)}
+      onReadingPhase={(active, label) => setImportReadingLabel(active ? label ?? "Leyendo el documento…" : null)}
+      onStatus={(msg) => {
+        if (msg) setInfo(msg);
+        if (msg?.includes("generando tarjetas")) {
+          setImportCardsStatus({
+            phase: "generating",
+            current: 0,
+            total: 1,
+            label: msg,
+          });
+        }
+      }}
       onGenerateFromText={async (sourceText, hint) => {
         const draft = await runImportItineraryCards(sourceText, hint);
         if (!draft) return null;
@@ -2355,23 +2433,17 @@ export default function TripAiChatView({
 
       {hideChatForItineraryCards && !planImportOnly ? documentImportSection : null}
 
-      {importingItineraryCards ? (
-        <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-3 text-sm font-semibold text-[var(--brand-text)]">
-          {importProgress ? (
-            <>
-              Generando tarjetas: <strong>tramo {importProgress.current} de {importProgress.total}</strong>
-              {importProgress.label ? ` · ${importProgress.label}` : null}
-              {itineraryDraft ? (
-                <span className="mt-1 block text-xs font-normal text-slate-600">
-                  Ya hay {itineraryDraft.days.length} día{itineraryDraft.days.length !== 1 ? "s" : ""} en
-                  pantalla — sigue cargando el resto.
-                </span>
-              ) : null}
-            </>
-          ) : (
-            "Generando tarjetas para validar… (en agendas largas va tramo a tramo; no cierres la app)"
-          )}
-        </section>
+      {importReadingLabel && !importingItineraryCards ? (
+        <PlanImportReadingBanner label={importReadingLabel} />
+      ) : null}
+
+      {showImportStatusGlobally && importCardsStatus ? (
+        <PlanImportCardsStatusBanner
+          status={importCardsStatus}
+          onDismissReady={
+            importCardsStatus.phase === "ready" ? () => setImportCardsStatus(null) : undefined
+          }
+        />
       ) : null}
 
       {!itineraryDraft && (lastPastedItinerarySource || importCardsFailed) && !importingItineraryCards ? (
@@ -2422,6 +2494,14 @@ export default function TripAiChatView({
               layout === "page" ? "overflow-y-auto overscroll-y-contain" : "overflow-hidden"
             }`}
           >
+            {importCardsStatus?.phase === "ready" && planImportOnly ? (
+              <PlanImportCardsStatusBanner
+                status={importCardsStatus}
+                compact
+                onDismissReady={() => setImportCardsStatus(null)}
+              />
+            ) : null}
+
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">
@@ -3022,13 +3102,16 @@ export default function TripAiChatView({
               aparezcan y el tipo de cada actividad; luego revisas las tarjetas y las añades al plan.
             </p>
           </div>
+          {importReadingLabel && !importingItineraryCards ? (
+            <PlanImportReadingBanner label={importReadingLabel} />
+          ) : null}
           {documentImportSection}
           {error ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
               {error}
             </div>
           ) : null}
-          {info ? (
+          {info && !importCardsStatus ? (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               {info}
             </div>

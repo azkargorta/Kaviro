@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
+  formatPlanDayActivityCount,
   formatPlanDayTabLabel,
   formatPlanDestinationLabel,
   planParticipantInitials,
@@ -29,6 +30,8 @@ type Props = {
   onAddPlan?: () => void;
   /** Botón de importar dossier (p. ej. Utilizar Archivo en Kaviro Trips). */
   fileImportAction?: React.ReactNode;
+  /** Actividades por fecha (YYYY-MM-DD), según filtros activos del plan. */
+  activityCountByDate?: Record<string, number>;
 };
 
 function PlanParticipantsHeader({ participants }: { participants: string[] }) {
@@ -114,6 +117,7 @@ export default function PlanItineraryCard({
   canManagePlan = false,
   onAddPlan,
   fileImportAction,
+  activityCountByDate,
 }: Props) {
   const destLabel = formatPlanDestinationLabel(destination);
   const hasHeaderActions = Boolean((canManagePlan && onAddPlan) || aiSuggest || fileImportAction);
@@ -222,6 +226,9 @@ export default function PlanItineraryCard({
             {days.map((date, i) => {
               const isActive = selectedDate === date;
               const tab = formatPlanDayTabLabel(date, i + 1);
+              const activityCount = activityCountByDate?.[date] ?? 0;
+              const countLabel = formatPlanDayActivityCount(activityCount);
+              const ariaDay = tab.date ? `${tab.day}, ${tab.date}` : tab.day;
               return (
                 <button
                   key={date}
@@ -229,10 +236,10 @@ export default function PlanItineraryCard({
                   role="tab"
                   data-plan-day={date}
                   aria-selected={isActive}
-                  aria-label={tab.date ? `${tab.day}, ${tab.date}` : tab.day}
-                  title={tab.date ? `${tab.day} · ${tab.date}` : tab.day}
+                  aria-label={`${ariaDay}, ${countLabel}`}
+                  title={`${ariaDay} · ${countLabel}`}
                   onClick={() => onSelectDate(date)}
-                  className={`relative flex min-w-[4.75rem] shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2.5 transition ${
+                  className={`relative flex min-w-[5.25rem] shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2.5 transition ${
                     isActive ? "text-[var(--brand)]" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   }`}
                 >
@@ -246,6 +253,13 @@ export default function PlanItineraryCard({
                       {tab.date}
                     </span>
                   ) : null}
+                  <span
+                    className={`text-[10px] font-medium leading-none tabular-nums ${
+                      isActive ? "text-[var(--brand-text)]/90" : "text-slate-400 dark:text-slate-500"
+                    }`}
+                  >
+                    {countLabel}
+                  </span>
                   {isActive ? (
                     <span aria-hidden className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-[var(--brand)]" />
                   ) : null}

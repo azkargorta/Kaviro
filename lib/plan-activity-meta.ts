@@ -90,6 +90,12 @@ export function formatPlanDayTabLabel(isoDate: string, dayIndex: number): { day:
   };
 }
 
+/** Etiqueta de recuento bajo la pestaña de día del plan. */
+export function formatPlanDayActivityCount(count: number): string {
+  if (count === 1) return "1 actividad";
+  return `${count} actividades`;
+}
+
 /** Una línea para chips del asistente: «Día 6 · 3 nov 2026». */
 export function formatItineraryDayOneLine(dayIndex: number, isoDate: string | null | undefined): string {
   const base = `Día ${dayIndex}`;

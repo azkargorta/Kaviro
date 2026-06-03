@@ -454,6 +454,16 @@ export default function TripPlanView({
     [filtered]
   );
 
+  const activityCountByDate = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const a of filtered) {
+      const d = a.activity_date;
+      if (!d) continue;
+      counts[d] = (counts[d] ?? 0) + 1;
+    }
+    return counts;
+  }, [filtered]);
+
   const selectableActivityIds = useMemo(
     () => bulkSelectionActivities.filter(canBulkDeletePlanActivity).map((a) => a.id),
     [bulkSelectionActivities]
@@ -1474,6 +1484,7 @@ export default function TripPlanView({
           tripName={trip?.name || "Viaje"}
           participants={participants}
           days={allDaysWithActivity}
+          activityCountByDate={activityCountByDate}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
           tripId={tripId}

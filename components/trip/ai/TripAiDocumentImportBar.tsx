@@ -17,6 +17,7 @@ type Props = {
   defaultExpanded?: boolean;
   onGenerateFromText: (sourceText: string, hint?: string) => Promise<unknown>;
   onStatus?: (message: string | null) => void;
+  onReadingPhase?: (active: boolean, label?: string) => void;
 };
 
 function resourceHasFile(r: TripResource) {
@@ -41,6 +42,7 @@ export default function TripAiDocumentImportBar({
   defaultExpanded = true,
   onGenerateFromText,
   onStatus,
+  onReadingPhase,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(defaultExpanded);
@@ -127,6 +129,7 @@ export default function TripAiDocumentImportBar({
     }
     setExtracting(true);
     setLocalError(null);
+    onReadingPhase?.(true, "Extrayendo texto del documento…");
     try {
       const res = await fetch(
         `/api/trip-resources/${encodeURIComponent(selectedId)}/extract-text?tripId=${encodeURIComponent(tripId)}`,
@@ -146,12 +149,14 @@ export default function TripAiDocumentImportBar({
       onStatus?.(null);
     } finally {
       setExtracting(false);
+      onReadingPhase?.(false);
     }
   }
 
   async function handleFilePicked(file: File) {
     setUploading(true);
     setLocalError(null);
+    onReadingPhase?.(true, "Subiendo y leyendo el archivo…");
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -207,6 +212,7 @@ export default function TripAiDocumentImportBar({
       onStatus?.(null);
     } finally {
       setUploading(false);
+      onReadingPhase?.(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -240,6 +246,26 @@ export default function TripAiDocumentImportBar({
 
       {open ? (
         <div className="space-y-2 border-t border-[var(--brand-border)]/40 px-3 pb-3 pt-2 sm:px-4 sm:pb-4">
+          {working ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-2 rounded-xl border-2 border-[var(--brand)] bg-[var(--brand-light)] px-3 py-2.5"
+            >
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--brand)]" aria-hidden />
+              <div className="min-w-0 text-xs font-semibold text-[var(--brand-text)] sm:text-sm">
+                {uploading
+                  ? "Leyendo PDF o imagen…"
+                  : extracting
+                    ? "Extrayendo texto del documento…"
+                    : "Generando tarjetas del itinerario…"}
+                <span className="mt-0.5 block text-[10px] font-normal text-slate-600 dark:text-slate-400">
+                  No cierres esta ventana hasta ver «Tarjetas generadas».
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
             Sube el calendario de la agencia (PDF o foto). Extraemos vuelos, hoteles, excursiones y horarios; generamos
             tarjetas por día para que las revises antes de añadirlas al plan. También puedes elegir un archivo de{" "}
