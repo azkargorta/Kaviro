@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { dispatchTripOnboardingRefresh } from "@/lib/trip-onboarding";
 import {
   KAVIRO_TRIP_PLAN_REFRESH_EVENT,
+  dispatchTripPlanRefresh,
   type TripPlanRefreshDetail,
 } from "@/lib/trip-plan-events";
 import { getLocalTripBundle, isOffline } from "@/lib/offline/sync-trip-bundle";
