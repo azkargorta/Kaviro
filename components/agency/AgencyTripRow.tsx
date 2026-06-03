@@ -6,6 +6,7 @@ import type { AgencyTripListRow as TripRow } from "@/lib/agency";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass } from "@/lib/agency-theme";
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
 import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
+import AgencyFillTripFromTemplateButton from "@/components/agency/AgencyFillTripFromTemplateButton";
 
 function tripStatus(trip: TripRow): { label: string; className: string; dot: string } {
   const today = new Date().toISOString().slice(0, 10);
@@ -88,6 +89,7 @@ export default function AgencyTripRowItem({
           <Link href={`/trip/${trip.id}/plan`} className={`${agencyBtnPrimaryClass} text-xs`}>
             Gestionar
           </Link>
+          <AgencyFillTripFromTemplateButton tripId={trip.id} tripName={trip.name} />
           <Link
             href={`/trip/${trip.id}/client-preview`}
             className={`${agencyBtnSecondaryClass} gap-1 text-xs`}

@@ -116,7 +116,17 @@ export default function AgencyInstantiateFromTemplateModal({
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo crear el viaje.");
-      toast.push({ kind: "success", title: "Viaje creado desde plantilla" });
+      const n = typeof data?.copied?.activities === "number" ? data.copied.activities : 0;
+      if (typeof data?.warning === "string" && data.warning) {
+        toast.push({ kind: "error", title: data.warning });
+      }
+      toast.push({
+        kind: "success",
+        title:
+          n > 0
+            ? `Viaje creado con ${n} actividad${n === 1 ? "" : "es"} del plan`
+            : "Viaje creado desde plantilla",
+      });
       onClose();
       router.push(`/trip/${data.tripId}/plan`);
       router.refresh();
@@ -258,7 +268,8 @@ export default function AgencyInstantiateFromTemplateModal({
           <button
             type="button"
             onClick={onClose}
-            className={`${agencyBtnSecondaryClass} flex-1`}
+            disabled={creating}
+            className={`${agencyBtnSecondaryClass} flex-1 disabled:opacity-50`}
           >
             Cancelar
           </button>

@@ -94,8 +94,19 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       console.warn("bootstrapAgencyTripForTravelers:", e);
     }
 
+    const activitiesCopied = dup.stats?.activities ?? 0;
+    const warning =
+      includes.plan && activitiesCopied === 0
+        ? "El viaje se creó pero el viaje origen de la plantilla no tiene actividades en el plan (o «Plan» no está marcado en la plantilla)."
+        : undefined;
+
     return NextResponse.json(
-      { tripId: dup.tripId, clientPortalSlug: portalSlug },
+      {
+        tripId: dup.tripId,
+        clientPortalSlug: portalSlug,
+        copied: dup.stats ?? null,
+        warning,
+      },
       { status: 201 }
     );
   } catch (e) {

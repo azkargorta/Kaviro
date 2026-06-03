@@ -5,6 +5,7 @@ import { Building2, MapPin } from "lucide-react";
 import { clientPortalPath } from "@/lib/agency";
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
 import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
+import AgencyFillTripFromTemplateButton from "@/components/agency/AgencyFillTripFromTemplateButton";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass, agencyCardClass } from "@/lib/agency-theme";
 
 export type AgencyTripRow = {
@@ -74,6 +75,7 @@ export default function AgencyTripCard({
         <Link href={`/trip/${trip.id}/plan`} className={agencyBtnPrimaryClass}>
           Gestionar plan
         </Link>
+        <AgencyFillTripFromTemplateButton tripId={trip.id} tripName={trip.name} />
         <Link href={`/trip/${trip.id}/settings`} className={agencyBtnSecondaryClass}>
           Ajustes y avisos
         </Link>
