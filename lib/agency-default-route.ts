@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isAgencyPanelPath } from "@/lib/agency-access";
 import { getAgencyForUser } from "@/lib/agency";
 
 function isSafeRelativePath(next: string): boolean {
@@ -30,7 +31,12 @@ export async function getDefaultHomePathForUser(
   const ctx = await getAgencyForUser(supabase, userId);
   if (ctx) return "/agency";
 
-  if (requestedNext && isSafeRelativePath(requestedNext)) return requestedNext;
+  if (requestedNext && isSafeRelativePath(requestedNext)) {
+    if (isAgencyPanelPath(requestedNext)) {
+      return "/empresa?reason=no-membership";
+    }
+    return requestedNext;
+  }
   return "/dashboard";
 }
 

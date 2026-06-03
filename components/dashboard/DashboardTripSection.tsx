@@ -12,6 +12,7 @@ type Trip = {
   start_date: string | null;
   end_date: string | null;
   base_currency: string | null;
+  agency_id?: string | null;
 };
 
 export default function DashboardTripSection({

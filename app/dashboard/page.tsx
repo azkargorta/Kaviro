@@ -24,6 +24,8 @@ import {
 import { isDemoTripForListing } from "@/lib/onboarding/is-demo-trip";
 import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 import { userHasAgencyWorkspace } from "@/lib/agency-default-route";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { countUnreadAnnouncementsByTrip } from "@/lib/dashboard-announcement-unread";
 
 type Trip = {
   id: string;
@@ -35,6 +37,11 @@ type Trip = {
   created_at?: string | null;
   is_demo?: boolean | null;
   is_favorite?: boolean;
+  agency_id?: string | null;
+};
+
+type DashboardPageProps = {
+  searchParams?: { personal?: string };
 };
 
 type TripParticipantRow = {
@@ -101,7 +108,7 @@ function categorizeTrips(trips: Trip[]) {
   return { current, future, past, unscheduled };
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const supabase = await createClient();
 
   const {
@@ -112,7 +119,8 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  if (await userHasAgencyWorkspace(supabase, user.id)) {
+  const personalMode = searchParams?.personal === "1";
+  if (!personalMode && (await userHasAgencyWorkspace(supabase, user.id))) {
     redirect("/agency");
   }
 
@@ -184,7 +192,7 @@ export default async function DashboardPage() {
   if (tripIds.length > 0) {
     const { data: tripsData, error: tripsError } = await supabase
       .from("trips")
-      .select("id, name, destination, start_date, end_date, base_currency, created_at, is_demo")
+      .select("id, name, destination, start_date, end_date, base_currency, created_at, is_demo, agency_id")
       .in("id", tripIds)
       .order("created_at", { ascending: false });
 
@@ -248,6 +256,16 @@ export default async function DashboardPage() {
   }
 
   const allRealTrips = [...current, ...future, ...past, ...unscheduled];
+
+  const admin = createSupabaseAdmin();
+  const { data: unreadAnnouncementRows } = await admin
+    .from("user_notifications")
+    .select("url")
+    .eq("user_id", user.id)
+    .eq("type", "trip_announcement")
+    .is("read_at", null);
+
+  const announcementUnreadByTripId = countUnreadAnnouncementsByTrip(unreadAnnouncementRows);
 
   return (
     <main className="page-shell space-y-4 pb-8 md:space-y-5 md:pb-10">
@@ -373,6 +391,7 @@ export default async function DashboardPage() {
           unscheduled={unscheduled}
           favoriteTrips={favoriteTrips}
           lockedTripIds={Array.from(lockedTripIds)}
+          announcementUnreadByTripId={announcementUnreadByTripId}
         />
       ) : null}
     </main>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal, X, Settings, Map, Users, FileText, Star, MessageCircle } from "lucide-react";
+import { MoreHorizontal, X, Settings, Map, Users, FileText, Star, MessageCircle, Megaphone } from "lucide-react";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -33,6 +33,7 @@ const SECONDARY_META: Record<
   messages: { label: "Mensajes", icon: <MessageCircle className="h-5 w-5" /> },
   resources: { label: "Documentos", icon: <FileText className="h-5 w-5" /> },
   settings: { label: "Ajustes", icon: <Settings className="h-5 w-5" /> },
+  announcements: { label: "Avisos", icon: <Megaphone className="h-5 w-5" /> },
   chat: { label: "Herramientas IA", icon: <Star className="h-5 w-5" /> },
   expenses: { label: "Gastos", icon: <Star className="h-5 w-5" /> },
   summary: { label: "Resumen", icon: <Star className="h-5 w-5" /> },
@@ -48,10 +49,12 @@ export default function MobileBottomNav({
 }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
-  const { isAgencyTrip } = useTripWorkspace();
+  const { isAgencyTrip, isAgencyManaged } = useTripWorkspace();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const navItems = getTripNavItems(isAgencyTrip).filter((item) => !item.isPremiumGated || isPremium);
+  const navItems = getTripNavItems(isAgencyTrip, isAgencyManaged).filter(
+    (item) => !item.isPremiumGated || isPremium
+  );
   const primaryKeys = isAgencyTrip ? AGENCY_PRIMARY_KEYS : PERSONAL_PRIMARY_KEYS;
   const primaryItems = navItems
     .filter((item) => primaryKeys.includes(item.key))

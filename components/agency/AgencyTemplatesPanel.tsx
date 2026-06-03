@@ -15,6 +15,12 @@ import {
   agencyPageTitleClass,
 } from "@/lib/agency-theme";
 import { useSyncedTripDates } from "@/lib/use-synced-trip-dates";
+import {
+  DEFAULT_TRIP_TEMPLATE_INCLUDES,
+  formatTemplateIncludesSummary,
+  TEMPLATE_INCLUDE_LABELS,
+  type TripTemplateIncludes,
+} from "@/lib/trips/template-includes";
 
 type AgencyTripOption = { id: string; name: string | null };
 
@@ -24,6 +30,7 @@ type TemplateRow = {
   description: string | null;
   category: string | null;
   source_trip_id: string;
+  includes?: TripTemplateIncludes;
   trips?: { id: string; name: string | null; destination: string | null } | null;
 };
 
@@ -40,6 +47,9 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
   const [sourceTripId, setSourceTripId] = useState(trips[0]?.id ?? "");
   const [templateName, setTemplateName] = useState("");
   const [templateDesc, setTemplateDesc] = useState("");
+  const [templateIncludes, setTemplateIncludes] = useState<TripTemplateIncludes>({
+    ...DEFAULT_TRIP_TEMPLATE_INCLUDES,
+  });
   const [saving, setSaving] = useState(false);
   const [useTemplateId, setUseTemplateId] = useState<string | null>(null);
   const [newTripName, setNewTripName] = useState("");
@@ -87,10 +97,14 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
           source_trip_id: sourceTripId,
           name: templateName.trim(),
           description: templateDesc.trim() || null,
+          includes: templateIncludes,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo guardar.");
+      if (data.warning) {
+        toast.push({ kind: "info", title: data.warning });
+      }
       toast.push({ kind: "success", title: "Plantilla guardada" });
       setTemplateName("");
       setTemplateDesc("");
@@ -225,6 +239,37 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-[#334155] dark:bg-[#0F1623]"
               />
             </div>
+            <fieldset className="rounded-xl border border-slate-200 p-3 dark:border-[#334155]">
+              <legend className="px-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                Qué incluir al usar esta plantilla
+              </legend>
+              <ul className="mt-2 space-y-2">
+                {TEMPLATE_INCLUDE_LABELS.map(({ key, label, hint }) => (
+                  <li key={key}>
+                    <label className="flex cursor-pointer items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={templateIncludes[key]}
+                        disabled={key === "routes" && !templateIncludes.plan}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setTemplateIncludes((prev) => {
+                            const next = { ...prev, [key]: checked };
+                            if (key === "plan" && !checked) next.routes = false;
+                            return next;
+                          });
+                        }}
+                        className="mt-0.5 rounded border-slate-300"
+                      />
+                      <span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{label}</span>
+                        <span className="mt-0.5 block text-xs text-slate-500">{hint}</span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
             <button
               type="submit"
               disabled={saving || !templateName.trim()}
@@ -263,6 +308,11 @@ export default function AgencyTemplatesPanel({ agencySlug, trips }: Props) {
                       </p>
                       {tpl.description ? (
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{tpl.description}</p>
+                      ) : null}
+                      {tpl.includes ? (
+                        <p className="mt-1 text-xs text-slate-500">
+                          Incluye: {formatTemplateIncludesSummary(tpl.includes)}
+                        </p>
                       ) : null}
                     </div>
                     <div className="flex gap-2">

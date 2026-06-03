@@ -77,6 +77,10 @@ export default function LoginForm() {
       let dest =
         next.startsWith("/") && !next.startsWith("//") ? next : defaultLoginNext(mode);
 
+      const wantsAgencyPanel =
+        dest === "/agency" ||
+        (dest.startsWith("/agency/") && !dest.startsWith("/agency/join"));
+
       if (hasAgency) {
         const honorNext =
           next.startsWith("/agency/join") ||
@@ -88,7 +92,7 @@ export default function LoginForm() {
         } catch {
           /* */
         }
-      } else if (isAgencyLogin) {
+      } else if (isAgencyLogin || wantsAgencyPanel) {
         dest = "/empresa?reason=no-membership";
         try {
           localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "personal");

@@ -40,10 +40,10 @@ Capa B2B encima de Kaviro (B2C): la agencia gestiona viajes en `/agency`, el cli
 | **Kaviro Trips (B2B)** | `kaviro.app/empresa` → contacto o login si ya tienes acceso | Tras login: **`/agency`** si hay `agency_members` (`lib/agency-default-route.ts`) |
 
 - **`/empresa`**: landing pública de Kaviro Trips (sin mezclar con el home de viajeros).
-- **`/agency/*`**: panel Kaviro Trips (clase CSS `kaviro-trips-workspace`: tokens navy en botones y acentos).
+- **`/agency/*`** (excepto `/agency/join`): panel Kaviro Trips solo si el usuario está en `agency_members` (o es `owner_id` de la agencia). Sin membresía → `/empresa?reason=no-membership` (middleware + `requireAgencyContext`).
 - **Login B2B**: `/auth/login?mode=agency` — panel izquierdo navy (no coral).
 - **Conmutador**: en el panel → «Modo personal»; en el dashboard → «Kaviro Trips» (si eres miembro).
-- **`localStorage` `kaviro_workspace_mode`**: recuerda el último contexto (`personal` | `agency`).
+- **`localStorage` `kaviro_workspace_mode`**: recuerda el último contexto (`personal` | `agency`) solo para miembros; en viajes B2C (`/trip/…`) la UI personal no usa el tema navy del panel.
 
 Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso** (`agency_members` + `trips.agency_id`).
 
@@ -54,6 +54,12 @@ Misma cuenta Supabase para ambos modos; lo que cambia es la **ruta y el permiso*
 - `app/api/agencies/me` — ¿tengo agencia?
 - `app/api/agencies/trips` — crear viaje con `agency_id`
 - `lib/require-agency.ts`, `lib/workspace-mode.ts`
+
+## Avisos a viajeros (app personal)
+
+1. Ejecutar [`kaviro_agency_announcements_participants.sql`](./kaviro_agency_announcements_participants.sql) (lectura de avisos para participantes del viaje).
+2. Al publicar un aviso en **Ajustes** del viaje (panel agencia), los participantes reciben notificación in-app (campana en Mis viajes) y pueden abrir **Avisos** en `/trip/{id}/announcements`.
+3. Viajeros sin cuenta de agencia usan solo Kaviro personal (`/dashboard?personal=1` si también son miembros del equipo).
 
 ## Portal cliente (Bloque 4)
 

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, MapPin, Pencil, Trash2, Star } from "lucide-react";
+import Link from "next/link";
+import { Copy, MapPin, Megaphone, Pencil, Trash2, Star } from "lucide-react";
+import { useTripAnnouncementUnreadCount } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 import { useToast } from "@/components/ui/toast";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import TripDashboardEditDialog from "@/components/dashboard/TripDashboardEditDialog";
@@ -17,6 +19,7 @@ type Trip = {
   end_date: string | null;
   base_currency: string | null;
   is_favorite?: boolean;
+  agency_id?: string | null;
 };
 
 function formatDate(value: string | null) {
@@ -56,6 +59,8 @@ export default function TripCardItem({
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(trip.is_favorite ?? false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const unreadAnnouncements = useTripAnnouncementUnreadCount(trip.id);
+  const isAgencyManaged = Boolean(trip.agency_id);
 
   async function onDelete() {
     setError(null);
@@ -212,6 +217,19 @@ export default function TripCardItem({
           </div>
         ) : null}
       </div>
+
+      {isAgencyManaged && unreadAnnouncements > 0 ? (
+        <Link
+          href={`/trip/${encodeURIComponent(trip.id)}/announcements`}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#1e3a5f]/25 bg-[#1e3a5f]/8 px-4 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#1e3a5f]/12 dark:border-sky-800/40 dark:bg-sky-950/30 dark:text-sky-200"
+        >
+          <Megaphone className="h-4 w-4 shrink-0" aria-hidden />
+          {unreadAnnouncements === 1
+            ? "1 aviso nuevo del organizador"
+            : `${unreadAnnouncements} avisos nuevos del organizador`}
+        </Link>
+      ) : null}
 
       {error ? (
         <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">

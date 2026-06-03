@@ -38,7 +38,11 @@ export default function AgencyTripAnnouncements({ tripId }: { tripId: string }) 
       if (!res.ok) throw new Error(data.error || "Error");
       setTitle("");
       setBody("");
-      toast.push({ kind: "success", title: "Aviso publicado en el portal" });
+      toast.push({
+        kind: "success",
+        title: "Aviso publicado",
+        description: "Los viajeros lo verán en Avisos y recibirán notificación en Mis viajes.",
+      });
       load();
     } catch (err) {
       toast.push({ kind: "error", title: err instanceof Error ? err.message : "Error" });

@@ -5,6 +5,7 @@ import { ExternalLink, Eye } from "lucide-react";
 import type { AgencyTripListRow as TripRow } from "@/lib/agency";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass } from "@/lib/agency-theme";
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
+import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
 
 function tripStatus(trip: TripRow): { label: string; className: string; dot: string } {
   const today = new Date().toISOString().slice(0, 10);
@@ -106,6 +107,7 @@ export default function AgencyTripRowItem({
               <ExternalLink className="h-3 w-3" aria-hidden />
             </Link>
           ) : null}
+          <AgencyTripDeleteButton tripId={trip.id} tripName={trip.name} compact />
         </div>
       </div>
       {!compact && trip.client_portal_slug ? (

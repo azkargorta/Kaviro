@@ -6,6 +6,7 @@ import { Search, X, Star, MapPin, Users, Sparkles, ArrowRight } from "lucide-rea
 import DashboardTripSection from "@/components/dashboard/DashboardTripSection";
 import DashboardFavoritesSection from "@/components/dashboard/DashboardFavoritesSection";
 import TripCardItem from "@/components/dashboard/TripCardItem";
+import { DashboardAnnouncementUnreadProvider } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ type Trip = {
   end_date: string | null;
   base_currency: string | null;
   is_favorite?: boolean;
+  agency_id?: string | null;
 };
 
 type FavoriteTrip = Trip & {
@@ -111,6 +113,7 @@ export default function DashboardTripsClient({
   unscheduled,
   favoriteTrips,
   lockedTripIds,
+  announcementUnreadByTripId = {},
 }: {
   current: Trip[];
   future: Trip[];
@@ -118,6 +121,7 @@ export default function DashboardTripsClient({
   unscheduled: Trip[];
   favoriteTrips: FavoriteTrip[];
   lockedTripIds: string[];
+  announcementUnreadByTripId?: Record<string, number>;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -178,6 +182,7 @@ export default function DashboardTripsClient({
   ];
 
   return (
+    <DashboardAnnouncementUnreadProvider unreadByTripId={announcementUnreadByTripId}>
     <div className="space-y-5">
       {/* ── Search bar ── */}
       <div className="mx-auto max-w-2xl">
@@ -325,5 +330,6 @@ export default function DashboardTripsClient({
         </>
       )}
     </div>
+    </DashboardAnnouncementUnreadProvider>
   );
 }

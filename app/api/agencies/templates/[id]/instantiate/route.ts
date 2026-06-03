@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
 import { duplicateTripForUser } from "@/lib/trips/duplicateTrip";
+import { parseTripTemplateIncludes } from "@/lib/trips/template-includes";
 import { slugifyForUrl } from "@/lib/agency-slug";
 
 export const runtime = "nodejs";
@@ -25,7 +26,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     const { data: template, error: tplErr } = await supabase
       .from("agency_templates")
-      .select("id, source_trip_id, agency_id, is_active")
+      .select("id, source_trip_id, agency_id, is_active, includes")
       .eq("id", templateId)
       .eq("agency_id", ctx.agency.id)
       .eq("is_active", true)
@@ -56,11 +57,16 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     const client_portal_slug = slugifyForUrl(portalSlugRaw || name);
 
+    const includes = parseTripTemplateIncludes(
+      (template as { includes?: unknown }).includes
+    );
+
     const dup = await duplicateTripForUser(supabase, user, template.source_trip_id, {
       customName: name,
       resetDates: false,
       agencyId: ctx.agency.id,
       clientPortalSlug: client_portal_slug,
+      includes,
     });
 
     if (!dup.ok) {

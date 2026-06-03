@@ -15,6 +15,7 @@ import {
 } from "@/lib/trip-weather-stays";
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import AgencyTripAnnouncements from "@/components/agency/AgencyTripAnnouncements";
+import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
 import { agencyCardClass } from "@/lib/agency-theme";
 
 type TripSettingsViewProps = {
@@ -543,6 +544,18 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           </div>
         </div>
       )}
+
+      {isAgencyTrip && !readOnly ? (
+        <div className={`${agencyCardClass} space-y-3 p-5`}>
+          <h3 className="text-sm font-extrabold uppercase tracking-[0.1em] text-red-700 dark:text-red-300">
+            Zona de peligro
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            Elimina este viaje de Kaviro Trips y todos sus datos. No se puede deshacer.
+          </p>
+          <AgencyTripDeleteButton tripId={tripId} tripName={name || "Viaje"} />
+        </div>
+      ) : null}
 
       <TripAnalyticsPanel tripId={tripId} />
     </div>

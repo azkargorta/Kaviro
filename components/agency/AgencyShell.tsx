@@ -48,7 +48,7 @@ export default function AgencyShell({
 
             <div className="flex items-center gap-2">
               <Link
-                href="/dashboard"
+                href="/dashboard?personal=1"
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
                 title="Ir a Kaviro personal"
               >

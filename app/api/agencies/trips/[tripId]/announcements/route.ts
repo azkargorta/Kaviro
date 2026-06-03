@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAgencyTripAccess } from "@/lib/require-agency-trip";
+import { notifyTripAnnouncement } from "@/lib/server/notify-trip-announcement";
 
 export const runtime = "nodejs";
 
@@ -53,6 +54,14 @@ export async function POST(req: Request, { params }: Params) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const organizerLabel = gate.ctx.agency.name?.trim() || "Tu organizador";
+  void notifyTripAnnouncement({
+    tripId: params.tripId,
+    actorUserId: gate.user.id,
+    title,
+    organizerLabel,
+  }).catch((e) => console.warn("notifyTripAnnouncement:", e));
 
   return NextResponse.json({ announcement: data }, { status: 201 });
 }

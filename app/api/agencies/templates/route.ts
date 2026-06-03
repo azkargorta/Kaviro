@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
+import {
+  normalizeTripTemplateIncludes,
+  parseTripTemplateIncludes,
+} from "@/lib/trips/template-includes";
 
 export const runtime = "nodejs";
 
@@ -22,7 +26,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("agency_templates")
       .select(
-        "id, name, description, category, is_active, created_at, source_trip_id, trips:source_trip_id ( id, name, destination )"
+        "id, name, description, category, is_active, created_at, source_trip_id, includes, trips:source_trip_id ( id, name, destination )"
       )
       .eq("agency_id", ctx.agency.id)
       .eq("is_active", true)
@@ -30,7 +34,12 @@ export async function GET() {
 
     if (error) throw new Error(error.message);
 
-    return NextResponse.json({ templates: data ?? [] });
+    const templates = (data ?? []).map((row) => ({
+      ...row,
+      includes: parseTripTemplateIncludes((row as { includes?: unknown }).includes),
+    }));
+
+    return NextResponse.json({ templates });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -58,6 +67,7 @@ export async function POST(req: Request) {
     const description =
       typeof body?.description === "string" ? body.description.trim() || null : null;
     const category = typeof body?.category === "string" ? body.category.trim() || null : null;
+    const includes = normalizeTripTemplateIncludes(body?.includes);
 
     if (!source_trip_id || !name) {
       return NextResponse.json(
@@ -76,21 +86,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Viaje no válido para esta agencia." }, { status: 400 });
     }
 
-    const { data: row, error } = await supabase
+    const basePayload = {
+      agency_id: ctx.agency.id,
+      source_trip_id,
+      name,
+      description,
+      category,
+    };
+
+    const withIncludes = await supabase
       .from("agency_templates")
-      .insert({
-        agency_id: ctx.agency.id,
-        source_trip_id,
-        name,
-        description,
-        category,
-      })
-      .select("id, name")
+      .insert({ ...basePayload, includes })
+      .select("id, name, includes")
       .single();
 
-    if (error) throw new Error(error.message);
+    let row = withIncludes.data;
+    let insertError = withIncludes.error;
+    let includesColumnMissing = false;
 
-    return NextResponse.json({ template: row }, { status: 201 });
+    if (insertError && (insertError.message ?? "").toLowerCase().includes("includes")) {
+      includesColumnMissing = true;
+      const retry = await supabase.from("agency_templates").insert(basePayload).select("id, name").single();
+      row = retry.data;
+      insertError = retry.error;
+    }
+
+    if (insertError) throw new Error(insertError.message);
+
+    return NextResponse.json(
+      {
+        template: row,
+        warning: includesColumnMissing
+          ? "Ejecuta docs/kaviro_agency_template_includes.sql en Supabase para guardar qué bloques incluye la plantilla."
+          : undefined,
+      },
+      { status: 201 }
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: msg }, { status: 500 });

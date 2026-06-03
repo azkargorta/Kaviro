@@ -1,11 +1,12 @@
+import { isAgencyPanelPath } from "@/lib/agency-access";
+
 /** Modo de aplicación: Kaviro personal (B2C) vs Kaviro Trips (B2B). */
 export type WorkspaceMode = "personal" | "agency";
 
 export const WORKSPACE_MODE_STORAGE_KEY = "kaviro_workspace_mode";
-
 export function isAgencyPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  return pathname === "/agency" || pathname.startsWith("/agency/");
+  return isAgencyPanelPath(pathname);
 }
 
 /** Rutas donde la UI y la pantalla de carga usan marca navy (Kaviro Trips). */
@@ -16,18 +17,9 @@ export function isKaviroTripsUiPath(pathname: string | null | undefined): boolea
   return false;
 }
 
-/** Marca de la pantalla de carga según ruta y modo guardado (panel agencia en viajes). */
+/** Marca de la pantalla de carga: navy solo en rutas Kaviro Trips (panel / empresa), no en viajes B2C. */
 export function loadingBrandForPath(pathname: string | null | undefined): "coral" | "navy" {
   if (isKaviroTripsUiPath(pathname)) return "navy";
-  if (pathname?.startsWith("/trip/")) {
-    try {
-      if (typeof localStorage !== "undefined" && localStorage.getItem(WORKSPACE_MODE_STORAGE_KEY) === "agency") {
-        return "navy";
-      }
-    } catch {
-      /* */
-    }
-  }
   return "coral";
 }
 

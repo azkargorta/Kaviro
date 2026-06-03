@@ -11,6 +11,7 @@ export type UserNotificationType =
   | "expense_added"
   | "participant_joined"
   | "trip_starts_tomorrow"
+  | "trip_announcement"
   | "generic";
 
 export async function createUserNotification(

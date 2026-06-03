@@ -21,7 +21,17 @@ export default function DashboardAgencyBanner() {
     fetch("/api/agencies/me", { credentials: "include", cache: "no-store" })
       .then((res) => res.json())
       .then((data: { agency?: { name?: string } | null }) => {
-        if (!cancelled && data.agency?.name) setAgencyName(data.agency.name);
+        if (cancelled) return;
+        if (data.agency?.name) {
+          setAgencyName(data.agency.name);
+        } else {
+          setAgencyName(null);
+          try {
+            localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, "personal");
+          } catch {
+            /* */
+          }
+        }
       })
       .catch(() => {});
     return () => {

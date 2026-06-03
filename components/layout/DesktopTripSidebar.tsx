@@ -20,15 +20,16 @@ function isActivePath(pathname: string, href: string, key: string) {
   if (pathname === href) return true;
   if (key === "map" && pathname.startsWith(`${href}/`)) return true;
   if (key === "settings" && pathname.startsWith(href)) return true;
+  if (key === "announcements" && pathname.startsWith(href)) return true;
   return false;
 }
 
 export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
-  const { isAgencyTrip } = useTripWorkspace();
+  const { isAgencyTrip, isAgencyManaged } = useTripWorkspace();
 
-  const visibleItems = getTripNavItems(isAgencyTrip).filter(
+  const visibleItems = getTripNavItems(isAgencyTrip, isAgencyManaged).filter(
     (item) => !item.isPremiumGated || isPremium
   );
 

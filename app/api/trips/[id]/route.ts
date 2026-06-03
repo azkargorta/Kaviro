@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePermissions, normalizeRole } from "@/lib/permissions";
 import { joinTripPlaces } from "@/lib/trip-places";
+import { canUserDeleteTrip } from "@/lib/trips/can-delete-trip";
 import { normalizeWeatherStays, validateWeatherStays } from "@/lib/trip-weather-stays";
 
 export const runtime = "nodejs";
@@ -55,31 +56,6 @@ async function requireCanManageTrip(tripId: string) {
 
   if (!canManageTripRow(participant)) {
     return { ok: false as const, status: 403, error: "No tienes permisos para editar el viaje." };
-  }
-
-  return { ok: true as const, supabase };
-}
-
-/** Eliminar viaje: owner activo o owner aunque conste removed (listados huérfanos). */
-async function requireCanDeleteTrip(tripId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError) throw new Error(userError.message);
-  if (!user) return { ok: false as const, status: 401, error: "No autenticado." };
-
-  const rows = await loadParticipantRowsForUser(supabase, tripId, user.id);
-  const participant =
-    pickParticipantRow(rows) ?? pickParticipantRow(rows, { allowRemovedOwner: true });
-
-  if (!participant) {
-    return { ok: false as const, status: 403, error: "Sin acceso al viaje." };
-  }
-
-  if (!canManageTripRow(participant)) {
-    return { ok: false as const, status: 403, error: "No tienes permisos para eliminar el viaje." };
   }
 
   return { ok: true as const, supabase };
@@ -273,9 +249,16 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     const { id: tripId } = await context.params;
     if (!tripId) return NextResponse.json({ error: "Falta id" }, { status: 400 });
 
-    const guard = await requireCanDeleteTrip(tripId);
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError) throw new Error(userError.message);
+    if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+
+    const guard = await canUserDeleteTrip(supabase, user.id, tripId);
     if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
-    const supabase = guard.supabase;
 
     const { data: deleted, error } = await supabase.from("trips").delete().eq("id", tripId).select("id");
     if (error) throw new Error(error.message);
@@ -288,6 +271,9 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
         { status: 403 }
       );
     }
+
+    revalidatePath("/agency");
+    revalidatePath("/agency/trips");
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {

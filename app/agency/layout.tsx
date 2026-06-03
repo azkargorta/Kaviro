@@ -1,13 +1,6 @@
-import type { Metadata } from "next";
-import AgencyShell from "@/components/agency/AgencyShell";
-import { requireAgencyContext } from "@/lib/require-agency";
-import { APP_NAME, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
+import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
-  title: `${KAVIRO_TRIPS_PRODUCT_NAME} | ${APP_NAME}`,
-};
-
-export default async function AgencyLayout({ children }: { children: React.ReactNode }) {
-  const { agency } = await requireAgencyContext();
-  return <AgencyShell agency={agency}>{children}</AgencyShell>;
+/** Layout raíz de /agency: el panel exige membresía en (workspace); /agency/join queda público (con sesión). */
+export default function AgencyRootLayout({ children }: { children: ReactNode }) {
+  return children;
 }

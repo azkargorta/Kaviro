@@ -14,6 +14,7 @@ type FavoriteTrip = {
   is_favorite: boolean;
   badge: string;
   accent: string;
+  agency_id?: string | null;
 };
 
 export default function DashboardFavoritesSection({

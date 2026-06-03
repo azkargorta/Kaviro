@@ -8,6 +8,14 @@ export type TripNavItem = {
   isPremiumGated?: boolean;
 };
 
+/** Avisos del organizador (viajes Kaviro Trips para viajeros). */
+export const TRAVELER_ANNOUNCEMENTS_NAV: TripNavItem = {
+  key: "announcements",
+  label: "Avisos",
+  sublabel: "Del organizador",
+  href: (id) => `/trip/${id}/announcements`,
+};
+
 /** Navegación B2C (viajero). */
 export const PERSONAL_TRIP_NAV: TripNavItem[] = [
   { key: "summary", label: "Resumen", sublabel: "Vista general", href: (id) => `/trip/${id}/summary` },
@@ -39,8 +47,18 @@ export const AGENCY_TRIP_BLOCKED_PATH_SUFFIXES = [
   "/today",
 ] as const;
 
-export function getTripNavItems(isAgencyTrip: boolean): TripNavItem[] {
-  return isAgencyTrip ? AGENCY_TRIP_NAV : PERSONAL_TRIP_NAV;
+export function getTripNavItems(isAgencyTrip: boolean, isAgencyManaged = false): TripNavItem[] {
+  if (isAgencyTrip) return AGENCY_TRIP_NAV;
+  if (!isAgencyManaged) return PERSONAL_TRIP_NAV;
+
+  const items = [...PERSONAL_TRIP_NAV];
+  const settingsIdx = items.findIndex((i) => i.key === "settings");
+  if (settingsIdx >= 0) {
+    items.splice(settingsIdx, 0, TRAVELER_ANNOUNCEMENTS_NAV);
+  } else {
+    items.push(TRAVELER_ANNOUNCEMENTS_NAV);
+  }
+  return items;
 }
 
 export function isAgencyTripBlockedPath(pathname: string | null): boolean {
