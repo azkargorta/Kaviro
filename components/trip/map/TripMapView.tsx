@@ -951,7 +951,7 @@ export default function TripMapView({
     if (routeError) setError(routeError);
   }, [routeError]);
 
-  const planSelectOptions = useMemo(() => {
+  const allPlanSelectOptions = useMemo(() => {
     const legacy = planSources?.legacyActivities ?? [];
     const list = [
       ...normalizePlanSelectOptions(liveTripActivities, "trip"),
@@ -963,6 +963,14 @@ export default function TripMapView({
     );
     return list;
   }, [liveTripActivities, planSources?.legacyActivities]);
+
+  const routeDayForPlans = normalizeIsoDate(form.routeDate);
+
+  /** Si hay día en el formulario de ruta, solo planes de esa fecha. */
+  const planSelectOptions = useMemo(() => {
+    if (!routeDayForPlans) return allPlanSelectOptions;
+    return allPlanSelectOptions.filter((p) => p.activityDate === routeDayForPlans);
+  }, [allPlanSelectOptions, routeDayForPlans]);
 
   const availablePlanKinds = useMemo(() => {
     const s = new Set<string>();
@@ -988,9 +996,16 @@ export default function TripMapView({
   }, [customKinds]);
 
   const findPlanOption = useCallback(
-    (planId: string) => planSelectOptions.find((p) => p.id === planId) || null,
-    [planSelectOptions]
+    (planId: string) => allPlanSelectOptions.find((p) => p.id === planId) || null,
+    [allPlanSelectOptions]
   );
+
+  useEffect(() => {
+    const validIds = new Set(planSelectOptions.map((p) => p.id));
+    if (originPlanId && !validIds.has(originPlanId)) setOriginPlanId("");
+    if (stopPlanId && !validIds.has(stopPlanId)) setStopPlanId("");
+    if (destinationPlanId && !validIds.has(destinationPlanId)) setDestinationPlanId("");
+  }, [planSelectOptions, originPlanId, stopPlanId, destinationPlanId]);
 
   const resolvePlanCoords = useCallback(
     async (opt: PlanSelectOption): Promise<{ address: string; latitude: number; longitude: number } | null> => {
@@ -2435,7 +2450,17 @@ export default function TripMapView({
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">2. Itinerario</div>
-                  <div className="mt-1 text-[11px] text-slate-500">Selecciona origen, parada opcional y destino usando planes o búsqueda.</div>
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    Selecciona origen, parada opcional y destino usando planes o búsqueda.
+                    {routeDayForPlans ? (
+                      <span className="mt-1 block font-semibold text-[var(--brand-text)]">
+                        Solo planes del día {routeDayForPlans}
+                        {planSelectOptions.length > 0
+                          ? ` (${planSelectOptions.length})`
+                          : " — ninguno con fecha en Plan; añade actividades ese día o cambia la fecha arriba."}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <div className="text-xs font-extrabold text-slate-900">Origen</div>
@@ -2444,12 +2469,14 @@ export default function TripMapView({
                     onChange={(e) => setOriginPlanId(e.target.value)}
                     className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
                   >
-                    <option value="">Elegir plan…</option>
+                    <option value="">
+                      {routeDayForPlans && !planSelectOptions.length
+                        ? "Sin planes este día"
+                        : "Elegir plan…"}
+                    </option>
                     {planSelectOptions.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {(p.activityDate ? `${p.activityDate} · ` : "") +
-                          p.title +
-                          (p.hasCoords ? "" : " (sin ubicación en mapa)")}
+                        {p.title + (p.hasCoords ? "" : " (sin ubicación en mapa)")}
                       </option>
                     ))}
                   </select>
@@ -2479,12 +2506,14 @@ export default function TripMapView({
                     className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
                     disabled={!form.stopEnabled}
                   >
-                    <option value="">Elegir plan…</option>
+                    <option value="">
+                      {routeDayForPlans && !planSelectOptions.length
+                        ? "Sin planes este día"
+                        : "Elegir plan…"}
+                    </option>
                     {planSelectOptions.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {(p.activityDate ? `${p.activityDate} · ` : "") +
-                          p.title +
-                          (p.hasCoords ? "" : " (sin ubicación en mapa)")}
+                        {p.title + (p.hasCoords ? "" : " (sin ubicación en mapa)")}
                       </option>
                     ))}
                   </select>
@@ -2505,12 +2534,14 @@ export default function TripMapView({
                     onChange={(e) => setDestinationPlanId(e.target.value)}
                     className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
                   >
-                    <option value="">Elegir plan…</option>
+                    <option value="">
+                      {routeDayForPlans && !planSelectOptions.length
+                        ? "Sin planes este día"
+                        : "Elegir plan…"}
+                    </option>
                     {planSelectOptions.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {(p.activityDate ? `${p.activityDate} · ` : "") +
-                          p.title +
-                          (p.hasCoords ? "" : " (sin ubicación en mapa)")}
+                        {p.title + (p.hasCoords ? "" : " (sin ubicación en mapa)")}
                       </option>
                     ))}
                   </select>
