@@ -14,6 +14,8 @@ type Props = {
   premiumEnabled: boolean;
   tripName?: string | null;
   selectedDate?: string | null;
+  /** Kaviro Trips: sin dock flotante; enlace a herramientas IA. */
+  isAgencyTrip?: boolean;
   /** En cabecera coral del itinerario: fondo blanco y texto coral */
   appearance?: "header" | "gradient";
 };
@@ -28,6 +30,7 @@ export default function PlanAiSuggestBadge({
   premiumEnabled,
   tripName,
   selectedDate,
+  isAgencyTrip = false,
   appearance = "gradient",
 }: Props) {
   const btnClass = appearance === "header" ? BTN_HEADER : BTN_GRADIENT;
@@ -42,6 +45,20 @@ export default function PlanAiSuggestBadge({
       }),
       mode: "optimizer",
     });
+  }
+
+  if (isAgencyTrip && premiumEnabled) {
+    return (
+      <Link
+        href={`/trip/${encodeURIComponent(tripId)}/ai-chat?modo=planificador`}
+        className={btnClass}
+        title="Importar dossier y organizar el plan con IA"
+        data-tour="plan-ai-suggest"
+      >
+        <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span className="text-[11px] font-bold leading-snug">Herramientas IA</span>
+      </Link>
+    );
   }
 
   if (!premiumEnabled) {

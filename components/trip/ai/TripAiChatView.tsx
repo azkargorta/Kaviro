@@ -523,6 +523,7 @@ export default function TripAiChatView({
   defaultAssistantMode = null,
   initialPrompt = null,
   initialPromptMode = null,
+  planImportOnly = false,
 }: {
   tripId: string;
   isPremium?: boolean;
@@ -543,6 +544,8 @@ export default function TripAiChatView({
   initialPrompt?: string | null;
   /** Modo forzado al enviar `initialPrompt` (p. ej. `actions` para parches del plan). */
   initialPromptMode?: TripAiMode | null;
+  /** Solo importación de dossier + revisión de tarjetas (Plan Kaviro Trips). */
+  planImportOnly?: boolean;
 }) {
   const ctxPreset = assistantContext ? assistantContextPreset(assistantContext) : null;
   const isMobileViewport = useMobileViewport();
@@ -2079,16 +2082,18 @@ export default function TripAiChatView({
     void sendMessage();
   }
 
-  const showPageHeader = layout === "page";
-  const showConvSidebar = layout === "page";
-  const Root = layout === "drawer" ? "div" : "main";
+  const showPageHeader = layout === "page" && !planImportOnly;
+  const showConvSidebar = layout === "page" && !planImportOnly;
+  const Root = layout === "drawer" || planImportOnly ? "div" : "main";
   /** En drawer el panel tiene altura fija: columna flex + scroll solo en mensajes para que el envío quede visible. */
   const rootClass =
-    layout === "drawer"
-      ? isMobileDrawer
-        ? "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden"
-        : "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-3 overflow-x-hidden overflow-y-hidden"
-      : "w-full min-w-0 max-w-full space-y-6 overflow-x-hidden";
+    planImportOnly
+      ? "w-full min-w-0 max-w-full space-y-4 overflow-x-hidden"
+      : layout === "drawer"
+        ? isMobileDrawer
+          ? "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden"
+          : "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col gap-3 overflow-x-hidden overflow-y-hidden"
+        : "w-full min-w-0 max-w-full space-y-6 overflow-x-hidden";
 
   const chatComposerForm = (
     <form
@@ -2167,7 +2172,9 @@ export default function TripAiChatView({
       tripId={tripId}
       disabled={loading || executingPlan}
       busy={importingItineraryCards}
-      defaultExpanded={mode === "planning" || layout === "drawer" || assistantContext === "plan"}
+      defaultExpanded={
+        planImportOnly || mode === "planning" || layout === "drawer" || assistantContext === "plan"
+      }
       onStatus={(msg) => setInfo(msg)}
       onGenerateFromText={async (sourceText, hint) => {
         const draft = await runImportItineraryCards(sourceText, hint);
@@ -2346,7 +2353,7 @@ export default function TripAiChatView({
         </div>
       ) : null}
 
-      {hideChatForItineraryCards ? documentImportSection : null}
+      {hideChatForItineraryCards && !planImportOnly ? documentImportSection : null}
 
       {importingItineraryCards ? (
         <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-4 py-3 text-sm font-semibold text-[var(--brand-text)]">
@@ -2403,9 +2410,11 @@ export default function TripAiChatView({
                 : isMobileDrawer
                   ? "flex min-h-[min(52dvh,560px)] shrink-0 flex-col overflow-hidden p-2 sm:p-4"
                   : "flex max-h-[min(44dvh,400px)] min-h-0 shrink-0 flex-col overflow-hidden p-3 sm:p-4"
-              : layout === "page"
-                ? "flex max-h-[min(82vh,860px)] min-h-[min(48vh,420px)] flex-col overflow-hidden p-4 sm:p-5 xl:max-h-[calc(100dvh-10rem)]"
-                : "flex max-h-[min(85vh,820px)] min-h-0 flex-col overflow-hidden p-5"
+              : planImportOnly
+                ? "flex min-h-[min(56vh,520px)] flex-col overflow-hidden p-4 sm:p-5"
+                : layout === "page"
+                  ? "flex max-h-[min(82vh,860px)] min-h-[min(48vh,420px)] flex-col overflow-hidden p-4 sm:p-5 xl:max-h-[calc(100dvh-10rem)]"
+                  : "flex max-h-[min(85vh,820px)] min-h-0 flex-col overflow-hidden p-5"
           }`}
         >
           <div
@@ -2668,6 +2677,14 @@ export default function TripAiChatView({
                             <div className="mt-0.5 text-xs text-slate-600">
                               {it.place_name || it.address || "Sin lugar"}
                             </div>
+                            {typeof it.latitude === "number" &&
+                            typeof it.longitude === "number" &&
+                            Number.isFinite(it.latitude) &&
+                            Number.isFinite(it.longitude) ? (
+                              <div className="mt-1 font-mono text-[10px] text-slate-500">
+                                {it.latitude.toFixed(5)}, {it.longitude.toFixed(5)}
+                              </div>
+                            ) : null}
                             <div className="mt-2 flex flex-wrap gap-1">
                               {it.requires_ticket === true ? (
                                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
@@ -2994,7 +3011,32 @@ export default function TripAiChatView({
         </section>
       ) : null}
 
-      {!hideChatForItineraryCards ? (
+      {planImportOnly && !reviewingItineraryDraft ? (
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)]/60 via-white to-slate-50 px-4 py-3 dark:from-[#1e3a5f]/15 dark:via-[#0F1623] dark:to-[#080C14]">
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)]">
+              Programa desde dossier
+            </p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Sube el PDF o una foto del itinerario de la agencia. La IA extrae horarios, lugares, coordenadas cuando
+              aparezcan y el tipo de cada actividad; luego revisas las tarjetas y las añades al plan.
+            </p>
+          </div>
+          {documentImportSection}
+          {error ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
+              {error}
+            </div>
+          ) : null}
+          {info ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {info}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!planImportOnly && !hideChatForItineraryCards ? (
       <section
         className={
           showConvSidebar

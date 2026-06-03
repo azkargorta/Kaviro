@@ -22,6 +22,8 @@ type Props = {
   tripId: string;
   children: React.ReactNode;
   expenseFooter?: React.ReactNode;
+  /** Sin barra de gastos (p. ej. Kaviro Trips). */
+  hideExpenseFooter?: boolean;
   aiSuggest?: React.ReactNode;
   canManagePlan?: boolean;
   onAddPlan?: () => void;
@@ -105,6 +107,7 @@ export default function PlanItineraryCard({
   tripId,
   children,
   expenseFooter,
+  hideExpenseFooter = false,
   aiSuggest,
   canManagePlan = false,
   onAddPlan,
@@ -262,17 +265,19 @@ export default function PlanItineraryCard({
 
       <div className="p-4">{children}</div>
 
-      {expenseFooter ?? (
-        <div className="border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
-          <Link
-            href={`/trip/${tripId}/expenses`}
-            className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            <span>Gastos del grupo</span>
-            <span className="text-[var(--brand)]">Ver gastos →</span>
-          </Link>
-        </div>
-      )}
+      {!hideExpenseFooter
+        ? expenseFooter ?? (
+            <div className="border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
+              <Link
+                href={`/trip/${tripId}/expenses`}
+                className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <span>Gastos del grupo</span>
+                <span className="text-[var(--brand)]">Ver gastos →</span>
+              </Link>
+            </div>
+          )
+        : null}
     </div>
   );
 }

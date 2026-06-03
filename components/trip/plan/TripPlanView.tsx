@@ -8,6 +8,7 @@ import { CSS } from "@dnd-kit/utilities";
 import PlanActivityRow from "@/components/trip/plan/PlanActivityRow";
 import PlanItineraryCard from "@/components/trip/plan/PlanItineraryCard";
 import PlanExpenseFooter from "@/components/trip/plan/PlanExpenseFooter";
+import PlanDocumentImportPanel from "@/components/trip/plan/PlanDocumentImportPanel";
 import PlanActivityDetailSheet from "@/components/trip/plan/PlanActivityDetailSheet";
 import PlanAiSuggestBadge from "@/components/trip/plan/PlanAiSuggestBadge";
 import { isLodgingPlanActivity } from "@/lib/plan-activity-meta";
@@ -292,7 +293,7 @@ export default function TripPlanView({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [exploreOpen, setExploreOpen] = useState(initialExploreOpen);
-  const { hideSocialFeatures } = useTripWorkspace();
+  const { hideSocialFeatures, isAgencyTrip } = useTripWorkspace();
   const [workspaceTab, setWorkspaceTab] = useState<"itinerary" | "notes" | "attendance">(() =>
     hideSocialFeatures && initialWorkspaceTab === "attendance" ? "itinerary" : initialWorkspaceTab
   );
@@ -1469,11 +1470,13 @@ export default function TripPlanView({
           tripId={tripId}
           canManagePlan={canManagePlan}
           onAddPlan={canManagePlan ? handleStartCreate : undefined}
-          expenseFooter={<PlanExpenseFooter tripId={tripId} />}
+          hideExpenseFooter={isAgencyTrip}
+          expenseFooter={isAgencyTrip ? undefined : <PlanExpenseFooter tripId={tripId} />}
           aiSuggest={
             <PlanAiSuggestBadge
               tripId={tripId}
               premiumEnabled={premiumEnabled}
+              isAgencyTrip={isAgencyTrip}
               tripName={trip?.name}
               selectedDate={selectedDate}
               appearance="header"
@@ -1498,13 +1501,23 @@ export default function TripPlanView({
                 ) : null}
               </div>
             ) : isEmpty ? (
-              <div className="py-8 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-[var(--brand-light)] text-3xl shadow-sm">
-                  🗺️
-                </div>
-                <p className="text-lg font-extrabold text-slate-900 dark:text-white">Empieza a planificar</p>
-                <p className="mx-auto mt-1.5 max-w-xs text-sm text-slate-500 leading-relaxed">
-                  Añade actividades manualmente, explora lugares en el mapa, o genera el plan completo con la IA.
+              <div className="py-6 text-center sm:py-8">
+                {isAgencyTrip && canManagePlan ? (
+                  <div className="mx-auto mb-6 max-w-lg text-left">
+                    <PlanDocumentImportPanel tripId={tripId} isPremium={premiumEnabled} compact />
+                  </div>
+                ) : (
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--brand-light)] to-[var(--brand-light)] text-3xl shadow-sm">
+                    🗺️
+                  </div>
+                )}
+                <p className="text-lg font-extrabold text-slate-900 dark:text-white">
+                  {isAgencyTrip ? "Monta el programa del viaje" : "Empieza a planificar"}
+                </p>
+                <p className="mx-auto mt-1.5 max-w-md text-sm text-slate-500 leading-relaxed">
+                  {isAgencyTrip
+                    ? "Importa el dossier de la agencia arriba o añade paradas a mano. Cada actividad llevará horario, ubicación y tipo."
+                    : "Añade actividades manualmente, explora lugares en el mapa, o genera el plan completo con la IA."}
                 </p>
                 {canManagePlan ? (
                   <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
