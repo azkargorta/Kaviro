@@ -100,28 +100,29 @@ export async function POST(req: Request) {
       .select("id, name, includes")
       .single();
 
-    let row = withIncludes.data;
-    let insertError = withIncludes.error;
-    let includesColumnMissing = false;
-
-    if (insertError && (insertError.message ?? "").toLowerCase().includes("includes")) {
-      includesColumnMissing = true;
-      const retry = await supabase.from("agency_templates").insert(basePayload).select("id, name").single();
-      row = retry.data;
-      insertError = retry.error;
+    if (
+      withIncludes.error &&
+      (withIncludes.error.message ?? "").toLowerCase().includes("includes")
+    ) {
+      const retry = await supabase
+        .from("agency_templates")
+        .insert(basePayload)
+        .select("id, name")
+        .single();
+      if (retry.error) throw new Error(retry.error.message);
+      return NextResponse.json(
+        {
+          template: retry.data,
+          warning:
+            "Ejecuta docs/kaviro_agency_template_includes.sql en Supabase para guardar qué bloques incluye la plantilla.",
+        },
+        { status: 201 }
+      );
     }
 
-    if (insertError) throw new Error(insertError.message);
+    if (withIncludes.error) throw new Error(withIncludes.error.message);
 
-    return NextResponse.json(
-      {
-        template: row,
-        warning: includesColumnMissing
-          ? "Ejecuta docs/kaviro_agency_template_includes.sql en Supabase para guardar qué bloques incluye la plantilla."
-          : undefined,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ template: withIncludes.data }, { status: 201 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -442,7 +442,7 @@ describe("resolveDayOfMonthInTripRange", () => {
 
   it("recorta un día hinchado tras fusionar importaciones duplicadas", () => {
     const bloated = {
-      version: 1,
+      version: 1 as const,
       days: [
         {
           day: 11,
