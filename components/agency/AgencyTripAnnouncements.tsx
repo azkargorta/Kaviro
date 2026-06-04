@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Megaphone } from "lucide-react";
+import { ChevronDown, Megaphone } from "lucide-react";
 import { agencyBtnPrimaryClass, agencyCardClass, agencyInputClass, agencyLabelClass } from "@/lib/agency-theme";
 import { useToast } from "@/components/ui/toast";
 
@@ -10,12 +10,18 @@ type Announcement = { id: string; title: string; body: string; created_at: strin
 export default function AgencyTripAnnouncements({
   tripId,
   embedded = false,
+  collapsible = false,
+  defaultOpen = false,
 }: {
   tripId: string;
-  /** Sin tarjeta duplicada cuando va dentro de Operaciones */
+  /** Sin tarjeta duplicada cuando va dentro de Operaciones o Plan */
   embedded?: boolean;
+  /** Cabecera clicable; contenido oculto hasta expandir (p. ej. en pestaña Plan) */
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
   const toast = useToast();
+  const [open, setOpen] = useState(defaultOpen);
   const [items, setItems] = useState<Announcement[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -60,9 +66,9 @@ export default function AgencyTripAnnouncements({
 
   const shellClass = embedded ? "space-y-4" : `${agencyCardClass} p-4 space-y-4`;
 
-  return (
-    <div className={shellClass}>
-      {!embedded ? (
+  const inner = (
+    <>
+      {!embedded && !collapsible ? (
         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
           <Megaphone className="h-4 w-4 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
           Avisos al grupo (portal)
@@ -100,6 +106,41 @@ export default function AgencyTripAnnouncements({
           ))}
         </ul>
       ) : null}
-    </div>
+    </>
   );
+
+  if (collapsible && embedded) {
+    return (
+      <section id="avisos-grupo" className="scroll-mt-4">
+        <div
+          className={`${agencyCardClass} overflow-hidden border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-white dark:border-amber-900/40 dark:from-amber-950/30 dark:to-[var(--surface-card)]`}
+        >
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-start gap-3 p-4 text-left hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
+            aria-expanded={open}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100">
+              <Megaphone className="h-4 w-4" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Avisos al grupo</h2>
+              <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                Publica novedades para viajeros (portal, pestaña Avisos y notificación en Mis viajes).
+                {items.length > 0 ? ` · ${items.length} publicado${items.length === 1 ? "" : "s"}` : ""}
+              </p>
+            </div>
+            <ChevronDown
+              className={`mt-1 h-5 w-5 shrink-0 text-slate-500 transition ${open ? "rotate-180" : ""}`}
+              aria-hidden
+            />
+          </button>
+          {open ? <div className="space-y-4 border-t border-amber-200/60 px-4 pb-4 pt-4 dark:border-amber-900/40">{inner}</div> : null}
+        </div>
+      </section>
+    );
+  }
+
+  return <div className={shellClass}>{inner}</div>;
 }

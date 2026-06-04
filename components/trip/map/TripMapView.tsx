@@ -826,11 +826,11 @@ export default function TripMapView({
 
   useEffect(() => {
     if (!isRouteFormOpen) return;
-    const mq = window.matchMedia("(max-width: 1279px)");
-    if (!mq.matches) return;
     const id = window.setTimeout(() => {
-      routeFormPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
+      const el = routeFormPanelRef.current;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    }, 180);
     return () => window.clearTimeout(id);
   }, [isRouteFormOpen]);
 
