@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2, UserPlus, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, ClipboardList, Loader2, UserPlus, Users } from "lucide-react";
+import AgencyTripPretravelSection from "@/components/agency/AgencyTripPretravelSection";
 import {
   agencyBtnPrimaryClass,
   agencyBtnSecondaryClass,
@@ -350,6 +351,15 @@ export default function AgencyTripOperationsClient({
             Reservado o Confirmado desde el desplegable.
           </p>
         ) : null}
+      </section>
+
+      {/* Encuesta pre-viaje */}
+      <section className={`${agencyCardClass} space-y-4 p-5`}>
+        <div className="flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Encuesta pre-viaje</h2>
+        </div>
+        <AgencyTripPretravelSection tripId={tripId} />
       </section>
 
       {/* Checklist */}

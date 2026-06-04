@@ -62,9 +62,9 @@
 
 ### Ahora mismo
 1. ~~Plazas y estados por participante~~ ✅ MVP junio 2026  
-2. Encuesta pre-viaje — **siguiente**  
+2. ~~Encuesta pre-viaje~~ ✅ MVP junio 2026 (`docs/kaviro_agency_pretravel_survey.sql`)  
 3. ~~Checklist pre-salida~~ ✅ MVP junio 2026  
-4. Calendario de operaciones — pendiente  
+4. ~~Calendario de operaciones~~ ✅ MVP (`/agency/calendar`)  
 
 ### Siguiente trimestre
 5. Cotizaciones → 6. Cobros Stripe → 7. Emails automáticos → 8. NPS → 9. Firma digital  
@@ -83,6 +83,7 @@
 |---|---|
 | Plazas y estados | `docs/kaviro_agency_capacity.sql` |
 | Checklist pre-salida | `docs/kaviro_agency_checklist.sql` |
+| Encuesta pre-viaje | `docs/kaviro_agency_pretravel_survey.sql` |
 
 Ejecutar en Supabase → SQL Editor tras `kaviro_agency_features.sql`.
 
