@@ -9,6 +9,8 @@ export type TripWorkspaceContextValue = TripWorkspaceMeta & {
   clientPortalHref: string | null;
   hideWeather: boolean;
   hideSocialFeatures: boolean;
+  /** Viaje de agencia visto como cliente (invitado o vista previa): colores y logo de la agencia. */
+  useAgencyBranding: boolean;
 };
 
 const TripWorkspaceContext = createContext<TripWorkspaceContextValue | null>(null);
@@ -27,12 +29,15 @@ export function TripWorkspaceProvider({
       ? clientPortalPath(meta.agencySlug, meta.clientPortalSlug)
       : null;
 
+  const useAgencyBranding = meta.isAgencyManaged && !meta.isAgencyTrip && Boolean(meta.agencyBranding);
+
   const value: TripWorkspaceContextValue = {
     ...meta,
     tripId,
     clientPortalHref,
     hideWeather: meta.isAgencyTrip,
     hideSocialFeatures: meta.isAgencyTrip,
+    useAgencyBranding,
   };
 
   return <TripWorkspaceContext.Provider value={value}>{children}</TripWorkspaceContext.Provider>;
@@ -51,6 +56,8 @@ export function useTripWorkspace() {
       clientPortalHref: null,
       hideWeather: false,
       hideSocialFeatures: false,
+      agencyBranding: null,
+      useAgencyBranding: false,
     }
   );
 }

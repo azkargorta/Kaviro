@@ -1,7 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import KaviroTripHeroLockup from "@/components/brand/KaviroTripHeroLockup";
 import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
+import type { AgencyBranding } from "@/lib/agency";
+import { agencyBrandedHeroGradientDiagonal } from "@/lib/agency-brand-tokens";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { agencyHeroGradient } from "@/lib/agency-theme";
 import { ExternalLink, Eye, Globe } from "lucide-react";
@@ -20,6 +23,8 @@ type Props = {
   destination: string | null;
   participants: string[];
   isAgencyTrip?: boolean;
+  useAgencyBranding?: boolean;
+  agencyBranding?: AgencyBranding | null;
   clientPortalHref?: string | null;
 };
 
@@ -36,20 +41,24 @@ export default function TripHeroCard({
   destination,
   participants,
   isAgencyTrip = false,
+  useAgencyBranding = false,
+  agencyBranding = null,
   clientPortalHref = null,
 }: Props) {
   const destLabel = formatDestination(destination);
   const shown = participants.slice(0, 5);
   const overflow = participants.length - shown.length;
+  const branded = useAgencyBranding && agencyBranding;
+  const heroBackground = isAgencyTrip
+    ? agencyHeroGradient
+    : branded
+      ? agencyBrandedHeroGradientDiagonal(agencyBranding.brandColor)
+      : "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)";
 
   return (
     <div
       className={`relative shadow-sm ${isAgencyTrip ? "rounded-lg" : "rounded-2xl"}`}
-      style={{
-        background: isAgencyTrip
-          ? agencyHeroGradient
-          : "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)",
-      }}
+      style={{ background: heroBackground }}
     >
       {!isAgencyTrip ? (
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
@@ -68,16 +77,48 @@ export default function TripHeroCard({
         data-tour="trip-hero-toolbar"
         className="flex items-center justify-between gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] max-md:pl-[max(1rem,var(--safe-area-left))] max-md:pr-[max(1rem,var(--safe-area-right))]"
       >
-        <KaviroTripHeroLockup
-          size="sm"
-          href={isAgencyTrip ? "/agency" : "/dashboard"}
-          className="shrink-0"
-        />
+        {branded ? (
+          <Link
+            href="/dashboard"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
+            aria-label={agencyBranding.name}
+          >
+            {agencyBranding.logoUrl ? (
+              <span className="relative h-9 w-9 overflow-hidden rounded-lg bg-white/15 ring-2 ring-white/25">
+                <Image
+                  src={agencyBranding.logoUrl}
+                  alt=""
+                  fill
+                  className="object-contain p-0.5"
+                  sizes="36px"
+                  unoptimized
+                />
+              </span>
+            ) : (
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 text-sm font-black text-white ring-2 ring-white/25">
+                {agencyBranding.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="max-w-[7rem] truncate text-sm font-bold text-white sm:max-w-[9rem]">
+              {agencyBranding.name}
+            </span>
+          </Link>
+        ) : (
+          <KaviroTripHeroLockup
+            size="sm"
+            href={isAgencyTrip ? "/agency" : "/dashboard"}
+            className="shrink-0"
+          />
+        )}
 
         <div className="min-w-0 flex-1 self-center">
           {isAgencyTrip ? (
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
               {KAVIRO_TRIPS_PRODUCT_NAME}
+            </p>
+          ) : branded ? (
+            <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
+              Tu viaje con {agencyBranding.name}
             </p>
           ) : null}
           {destLabel ? (

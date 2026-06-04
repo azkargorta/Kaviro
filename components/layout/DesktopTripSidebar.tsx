@@ -29,7 +29,7 @@ function isActivePath(pathname: string, href: string, key: string) {
 export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
-  const { isAgencyTrip, isAgencyManaged } = useTripWorkspace();
+  const { isAgencyTrip, isAgencyManaged, useAgencyBranding, agencyBranding } = useTripWorkspace();
 
   const visibleItems = getTripNavItems(isAgencyTrip, isAgencyManaged).filter(
     (item) => !item.isPremiumGated || isPremium
@@ -55,15 +55,25 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             className={`border-b px-4 py-3 ${
               isAgencyTrip
                 ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
-                : "border-[var(--border-default)]"
+                : useAgencyBranding
+                  ? "border-white/10 bg-[var(--brand)]"
+                  : "border-[var(--border-default)]"
             }`}
           >
             <p
-              className={`text-[10px] font-bold uppercase leading-normal tracking-[0.18em] ${
-                isAgencyTrip ? "text-slate-300" : "text-[var(--text-tertiary)]"
+              className={`truncate text-[10px] font-bold uppercase leading-normal tracking-[0.18em] ${
+                isAgencyTrip
+                  ? "text-slate-300"
+                  : useAgencyBranding
+                    ? "text-white/90"
+                    : "text-[var(--text-tertiary)]"
               }`}
             >
-              {isAgencyTrip ? KAVIRO_TRIPS_PRODUCT_NAME : "Tu viaje"}
+              {isAgencyTrip
+                ? KAVIRO_TRIPS_PRODUCT_NAME
+                : useAgencyBranding && agencyBranding
+                  ? agencyBranding.name
+                  : "Tu viaje"}
             </p>
           </div>
 
@@ -81,6 +91,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
                 active={isActivePath(pathname, item.href(tripId), item.key)}
                 isDark={isDark}
                 isAgencyTrip={isAgencyTrip}
+                useAgencyBranding={useAgencyBranding}
                 showHoyBadge={item.key === "plan" && isTripActiveToday}
               />
             ))}
@@ -112,6 +123,7 @@ function SidebarLink({
   active,
   isDark,
   isAgencyTrip,
+  useAgencyBranding,
   showHoyBadge,
 }: {
   item: TripNavItem;
@@ -119,6 +131,7 @@ function SidebarLink({
   active: boolean;
   isDark: boolean;
   isAgencyTrip: boolean;
+  useAgencyBranding: boolean;
   showHoyBadge: boolean;
 }) {
   const href = item.href(tripId);
@@ -136,8 +149,8 @@ function SidebarLink({
           active
             ? isAgencyTrip
               ? "bg-[#1e3a5f] text-white shadow-sm"
-              : isAI
-                ? "bg-[var(--brand)] shadow-md"
+              : useAgencyBranding || isAI
+                ? "bg-[var(--brand)] text-white shadow-md"
                 : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md dark:from-[#F87171] dark:to-[#EF4444]"
             : "hover:bg-slate-50 dark:hover:bg-slate-800"
         }
@@ -180,7 +193,7 @@ function SidebarLink({
       </div>
 
       {showHoyBadge && !active ? (
-        <span className="shrink-0 rounded-full bg-[#F87171]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#F87171]">
+        <span className="shrink-0 rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--brand-text)]">
           HOY
         </span>
       ) : null}

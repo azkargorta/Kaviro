@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { agencyBrandingFromRow, type AgencyBranding, type AgencyRow } from "@/lib/agency";
 
 export type TripWorkspaceMeta = {
   /** Vista operativa Kaviro Trips (solo personal de la agencia). */
@@ -8,6 +9,8 @@ export type TripWorkspaceMeta = {
   agencyId: string | null;
   agencySlug: string | null;
   clientPortalSlug: string | null;
+  /** Marca de la agencia (logo, color, nombre) para el viaje del cliente. */
+  agencyBranding: AgencyBranding | null;
 };
 
 async function userIsAgencyStaff(
@@ -52,6 +55,7 @@ export async function loadTripWorkspaceMeta(
       agencyId: null,
       agencySlug: null,
       clientPortalSlug: null,
+      agencyBranding: null,
     };
   }
 
@@ -65,11 +69,17 @@ export async function loadTripWorkspaceMeta(
       agencyId: null,
       agencySlug: null,
       clientPortalSlug,
+      agencyBranding: null,
     };
   }
 
-  const { data: agency } = await client.from("agencies").select("slug").eq("id", agencyId).maybeSingle();
+  const { data: agency } = await client
+    .from("agencies")
+    .select("id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members")
+    .eq("id", agencyId)
+    .maybeSingle();
   const agencySlug = (agency as { slug?: string } | null)?.slug ?? null;
+  const agencyBranding = agency ? agencyBrandingFromRow(agency as AgencyRow) : null;
   const isAgencyStaff = await userIsAgencyStaff(client, agencyId, userId);
 
   return {
@@ -78,5 +88,6 @@ export async function loadTripWorkspaceMeta(
     agencyId,
     agencySlug,
     clientPortalSlug,
+    agencyBranding,
   };
 }

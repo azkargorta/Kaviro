@@ -90,6 +90,15 @@ html:has(.kaviro-trips-workspace) body:not(.dark body) {
   background-image: none;
 }
 
+/* Viaje de agencia — experiencia cliente (tokens --brand desde layout) */
+.trip-agency-branded {
+  /* Hereda --brand del style inline; sin override navy de .kaviro-trips-workspace */
+}
+
+html:has(.trip-agency-branded) body:not(.dark body) {
+  background-image: none;
+}
+
 /* Menús Kaviro Trips: evita recorte de descendentes (g, p, y) por line-height demasiado bajo */
 .kaviro-trips-workspace aside nav a,
 .kaviro-trips-workspace [data-trip-sidebar-nav] a {

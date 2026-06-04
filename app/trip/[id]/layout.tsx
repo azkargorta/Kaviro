@@ -18,6 +18,7 @@ import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboar
 import { clientPortalPath } from "@/lib/agency";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
+import { agencyBrandingStyleVars } from "@/lib/agency-brand-tokens";
 import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
 import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
 
@@ -82,6 +83,13 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
 
   const showOnboarding = !displayWorkspace.isAgencyTrip && !isDemo;
   const showAssistantDock = !displayWorkspace.isAgencyTrip;
+  const useAgencyBranding =
+    displayWorkspace.isAgencyManaged &&
+    !displayWorkspace.isAgencyTrip &&
+    Boolean(displayWorkspace.agencyBranding);
+  const agencyBrandStyle = useAgencyBranding
+    ? agencyBrandingStyleVars(displayWorkspace.agencyBranding!.brandColor)
+    : undefined;
 
   return (
     <TripBoardHeaderProvider>
@@ -93,7 +101,8 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
           <div
             className={`pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
               displayWorkspace.isAgencyTrip ? KAVIRO_TRIPS_WORKSPACE_CLASS : ""
-            }`}
+            } ${useAgencyBranding ? "trip-agency-branded" : ""}`}
+            style={agencyBrandStyle}
           >
             <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
               <div className="mb-4 md:mb-5">
@@ -103,6 +112,8 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   destination={destination}
                   participants={participantNames}
                   isAgencyTrip={displayWorkspace.isAgencyTrip}
+                  useAgencyBranding={useAgencyBranding}
+                  agencyBranding={displayWorkspace.agencyBranding}
                   clientPortalHref={
                     workspace.isAgencyManaged && workspace.agencySlug && workspace.clientPortalSlug
                       ? clientPortalPath(workspace.agencySlug, workspace.clientPortalSlug)
