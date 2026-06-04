@@ -6,57 +6,125 @@ import {
   type PaymentPhase,
 } from "@/lib/agency/payments";
 
-export async function syncAgencyParticipantPayments(tripId: string, agencyId: string) {
+export type ApplyParticipantPricingResult = {
+  applied: number;
+  skipped: Array<{ participantId: string; reason: string }>;
+};
+
+/** Asigna precio y plazos solo a los viajeros indicados (cada uno puede tener otro importe). */
+export async function applyParticipantPaymentPricing(opts: {
+  tripId: string;
+  agencyId: string;
+  participantIds: string[];
+  pricePerPerson: number;
+  depositPercent: number;
+  depositDueDate: string | null;
+  finalDueDate: string | null;
+}): Promise<ApplyParticipantPricingResult> {
   const admin = createSupabaseAdmin();
+  const { deposit, final } = computePaymentAmounts(opts.pricePerPerson, opts.depositPercent);
+  const skipped: ApplyParticipantPricingResult["skipped"] = [];
+  let applied = 0;
 
-  const { data: trip } = await admin
-    .from("trips")
-    .select(
-      "agency_price_per_person, agency_deposit_percent, agency_deposit_due_date, agency_final_due_date"
-    )
-    .eq("id", tripId)
-    .maybeSingle();
-
-  const price = Number(trip?.agency_price_per_person);
-  if (!Number.isFinite(price) || price <= 0) return { created: 0, reason: "no_price" as const };
-
-  const depositPercent = Number(trip?.agency_deposit_percent ?? 30);
-  const { deposit, final } = computePaymentAmounts(price, depositPercent);
+  const uniqueIds = [...new Set(opts.participantIds.filter(Boolean))];
+  if (!uniqueIds.length) return { applied: 0, skipped };
 
   const { data: viewers } = await admin
     .from("trip_participants")
     .select("id")
-    .eq("trip_id", tripId)
+    .eq("trip_id", opts.tripId)
     .eq("role", "viewer")
-    .neq("status", "removed");
+    .neq("status", "removed")
+    .in("id", uniqueIds);
 
-  const { data: existing } = await admin
-    .from("agency_participant_payments")
-    .select("participant_id")
-    .eq("trip_id", tripId);
+  const validIds = new Set((viewers ?? []).map((v) => v.id as string));
 
-  const have = new Set((existing ?? []).map((r) => r.participant_id as string));
-  const toCreate = (viewers ?? []).filter((v) => !have.has(v.id as string));
+  for (const participantId of uniqueIds) {
+    if (!validIds.has(participantId)) {
+      skipped.push({ participantId, reason: "Viajero no encontrado en el viaje." });
+      continue;
+    }
 
-  if (!toCreate.length) return { created: 0, reason: "ok" as const };
+    const { data: existing } = await admin
+      .from("agency_participant_payments")
+      .select("id, deposit_status, final_status, pay_token_deposit, pay_token_final")
+      .eq("trip_id", opts.tripId)
+      .eq("participant_id", participantId)
+      .maybeSingle();
 
-  await admin.from("agency_participant_payments").insert(
-    toCreate.map((v) => ({
-      trip_id: tripId,
-      participant_id: v.id,
-      agency_id: agencyId,
-      price_per_person: price,
-      deposit_percent: depositPercent,
+    if (
+      existing &&
+      (existing.deposit_status !== "pending" || existing.final_status !== "pending")
+    ) {
+      skipped.push({
+        participantId,
+        reason: "Ya tiene pagos registrados; no se puede cambiar el precio.",
+      });
+      continue;
+    }
+
+    const row = {
+      price_per_person: opts.pricePerPerson,
+      deposit_percent: opts.depositPercent,
       deposit_amount: deposit,
       final_amount: final,
-      deposit_due_at: trip?.agency_deposit_due_date ?? null,
-      final_due_at: trip?.agency_final_due_date ?? null,
-      pay_token_deposit: generatePayToken(),
-      pay_token_final: generatePayToken(),
-    }))
-  );
+      deposit_due_at: opts.depositDueDate,
+      final_due_at: opts.finalDueDate,
+      pay_token_deposit: existing?.pay_token_deposit || generatePayToken(),
+      pay_token_final: existing?.pay_token_final || generatePayToken(),
+      updated_at: new Date().toISOString(),
+    };
 
-  return { created: toCreate.length, reason: "ok" as const };
+    if (existing) {
+      const { error } = await admin
+        .from("agency_participant_payments")
+        .update(row)
+        .eq("id", existing.id);
+      if (error) {
+        skipped.push({ participantId, reason: error.message });
+        continue;
+      }
+    } else {
+      const { error } = await admin.from("agency_participant_payments").insert({
+        trip_id: opts.tripId,
+        participant_id: participantId,
+        agency_id: opts.agencyId,
+        ...row,
+      });
+      if (error) {
+        skipped.push({ participantId, reason: error.message });
+        continue;
+      }
+    }
+    applied += 1;
+  }
+
+  return { applied, skipped };
+}
+
+/** Rellena tokens de pago en filas ya creadas (tras asignar precios por viajero). */
+export async function syncAgencyParticipantPayments(tripId: string, _agencyId: string) {
+  const admin = createSupabaseAdmin();
+
+  const { data: rows } = await admin
+    .from("agency_participant_payments")
+    .select("id, pay_token_deposit, pay_token_final, price_per_person")
+    .eq("trip_id", tripId);
+
+  if (!rows?.length) return { created: 0, reason: "no_rows" as const };
+
+  let created = 0;
+  for (const row of rows) {
+    const patch: Record<string, string> = {};
+    if (!row.pay_token_deposit) patch.pay_token_deposit = generatePayToken();
+    if (!row.pay_token_final) patch.pay_token_final = generatePayToken();
+    if (!Object.keys(patch).length) continue;
+    patch.updated_at = new Date().toISOString();
+    await admin.from("agency_participant_payments").update(patch).eq("id", row.id);
+    created += 1;
+  }
+
+  return { created, reason: "ok" as const };
 }
 
 export async function createAgencyTripCheckoutSession(opts: {

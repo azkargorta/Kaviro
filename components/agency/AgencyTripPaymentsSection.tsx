@@ -20,6 +20,7 @@ type RosterRow = {
   displayName: string | null;
   email: string | null;
   payment: {
+    pricePerPerson: number | null;
     depositPayUrl: string | null;
     finalPayUrl: string | null;
     summary: { overall: keyof typeof PAYMENT_OVERALL_LABELS };
@@ -52,6 +53,7 @@ export default function AgencyTripPaymentsSection({
   const [depositDue, setDepositDue] = useState("");
   const [finalDue, setFinalDue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,13 +85,24 @@ export default function AgencyTripPaymentsSection({
   }, [load]);
 
   async function saveSettings() {
+    const price = priceInput === "" ? null : Number(priceInput);
+    const assigningPrice = price != null && price > 0 && selectedIds.size > 0;
+    if (price != null && price > 0 && selectedIds.size === 0) {
+      toast.push({
+        kind: "error",
+        title: "Selecciona al menos un viajero",
+        description: "Marca quién debe recibir este precio.",
+      });
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await fetch(`/api/agencies/trips/${tripId}/payments`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pricePerPerson: priceInput === "" ? null : Number(priceInput),
+          ...(assigningPrice ? { pricePerPerson: price, participantIds: [...selectedIds] } : {}),
           depositPercent: Number(depositPct),
           depositDueDate: depositDue || null,
           finalDueDate: finalDue || null,
@@ -100,12 +113,42 @@ export default function AgencyTripPaymentsSection({
       setSettings(data.settings);
       setRoster(data.roster ?? []);
       setTotals(data.totals);
-      toast.push({ kind: "success", title: "Tarifas guardadas" });
+      const skipped = data.applyResult?.skipped?.length ?? 0;
+      const applied = data.applyResult?.applied ?? 0;
+      if (applied > 0) {
+        toast.push({
+          kind: "success",
+          title: "Tarifas guardadas",
+          description:
+            skipped > 0
+              ? `${applied} viajero(s) actualizado(s) · ${skipped} omitido(s)`
+              : `${applied} viajero(s) con este precio`,
+        });
+      } else {
+        toast.push({ kind: "success", title: "Plazos y señal guardados" });
+      }
     } catch (e) {
       toast.push({ kind: "error", title: e instanceof Error ? e.message : "Error" });
     } finally {
       setBusy(false);
     }
+  }
+
+  function toggleParticipant(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllParticipants() {
+    setSelectedIds(new Set(roster.map((r) => r.participantId)));
+  }
+
+  function clearParticipantSelection() {
+    setSelectedIds(new Set());
   }
 
   async function sendDueReminders() {
@@ -167,12 +210,15 @@ export default function AgencyTripPaymentsSection({
   }
 
   const currency = settings?.currency ?? "EUR";
-  const hasPrice = settings?.pricePerPerson != null && Number(settings.pricePerPerson) > 0;
+  const hasAssignedPayments = roster.some(
+    (r) => r.payment?.pricePerPerson != null && Number(r.payment.pricePerPerson) > 0
+  );
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Cobro en dos fases (señal + pago final) con Stripe Checkout. Los viajeros pagan desde un enlace único.
+        Cobro en dos fases (señal + pago final) con Stripe Checkout. Indica el precio, marca los viajeros a los que
+        aplica y guarda; puedes repetir con otro importe para el resto.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -223,14 +269,14 @@ export default function AgencyTripPaymentsSection({
         <button type="button" disabled={busy} onClick={() => void saveSettings()} className={agencyBtnPrimaryClass}>
           Guardar tarifas
         </button>
-        {hasPrice ? (
+        {hasAssignedPayments ? (
           <button type="button" disabled={busy} onClick={() => void syncPayments()} className={agencyBtnSecondaryClass}>
             Generar enlaces de pago
           </button>
         ) : null}
         <button
           type="button"
-          disabled={busy || !hasPrice}
+          disabled={busy || !hasAssignedPayments}
           onClick={() => void sendDueReminders()}
           className={agencyBtnSecondaryClass}
           title="Envía email a quienes vencen en 2 días (señal o pago final)"
@@ -253,7 +299,7 @@ export default function AgencyTripPaymentsSection({
         </p>
       ) : null}
 
-      {hasPrice ? (
+      {hasAssignedPayments ? (
         <p className="text-xs text-slate-500">
           Cobrado: <strong>{formatMoney(totals.collected, currency)}</strong> · Pendiente:{" "}
           <strong>{formatMoney(totals.pending, currency)}</strong> · Pagados: {totals.counts.paid} /{" "}
@@ -264,20 +310,49 @@ export default function AgencyTripPaymentsSection({
       {roster.length === 0 ? (
         <p className="text-sm text-slate-500">Añade viajeros en Plazas y viajeros, define el precio y genera enlaces.</p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Viajeros</p>
+            <div className="flex gap-2 text-xs">
+              <button type="button" className="text-[#0B5CFF] hover:underline" onClick={selectAllParticipants}>
+                Seleccionar todos
+              </button>
+              <button type="button" className="text-slate-500 hover:underline" onClick={clearParticipantSelection}>
+                Ninguno
+              </button>
+            </div>
+          </div>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {roster.map((r) => {
             const overall = r.payment?.summary.overall ?? "pending";
+            const assignedPrice = r.payment?.pricePerPerson;
+            const checked = selectedIds.has(r.participantId);
             return (
               <li key={r.participantId} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <div>
+                <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleParticipant(r.participantId)}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+                  />
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">{r.displayName ?? "Viajero"}</p>
                   {r.email ? <p className="text-xs text-slate-500">{r.email}</p> : null}
+                  {assignedPrice != null && Number(assignedPrice) > 0 ? (
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Precio asignado: {formatMoney(Number(assignedPrice), currency)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-700 dark:text-amber-300">Sin precio asignado</p>
+                  )}
                   <span
                     className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${PAYMENT_OVERALL_COLORS[overall]}`}
                   >
                     {PAYMENT_OVERALL_LABELS[overall]}
                   </span>
                 </div>
+                </label>
                 <div className="flex flex-wrap gap-1">
                   {r.payment?.depositPayUrl && overall !== "paid" && r.payment.summary.overall !== "deposit_paid" ? (
                     <button
@@ -307,6 +382,7 @@ export default function AgencyTripPaymentsSection({
             );
           })}
         </ul>
+        </>
       )}
 
       <p className="text-[10px] text-slate-400">

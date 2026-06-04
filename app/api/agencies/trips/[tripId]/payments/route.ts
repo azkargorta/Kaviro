@@ -6,7 +6,10 @@ import {
   summarizeParticipantPayment,
   tripPaymentsSummary,
 } from "@/lib/agency/payments";
-import { syncAgencyParticipantPayments } from "@/lib/server/agency-trip-payment";
+import {
+  applyParticipantPaymentPricing,
+  syncAgencyParticipantPayments,
+} from "@/lib/server/agency-trip-payment";
 
 type Params = { params: { tripId: string } };
 
@@ -67,6 +70,7 @@ export async function GET(_req: Request, { params }: Params) {
       payment: pay
         ? {
             id: pay.id,
+            pricePerPerson: pay.price_per_person,
             depositAmount: pay.deposit_amount,
             finalAmount: pay.final_amount,
             depositStatus: pay.deposit_status,
@@ -112,51 +116,108 @@ export async function PATCH(req: Request, { params }: Params) {
   if ("error" in gate) return gate.error;
 
   const body = await req.json().catch(() => ({}));
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const tripPatch: Record<string, unknown> = {};
 
+  let priceToAssign: number | null = null;
   if (body?.pricePerPerson !== undefined) {
     const n = body.pricePerPerson === null || body.pricePerPerson === "" ? null : Number(body.pricePerPerson);
     if (n !== null && (!Number.isFinite(n) || n <= 0)) {
       return NextResponse.json({ error: "Precio por persona no válido." }, { status: 400 });
     }
-    patch.agency_price_per_person = n;
+    if (n !== null) priceToAssign = n;
+    tripPatch.agency_price_per_person = n;
   }
+
+  let depositPercent = 30;
   if (body?.depositPercent !== undefined) {
     const pct = Number(body.depositPercent);
     if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
       return NextResponse.json({ error: "Porcentaje de señal: 0-100." }, { status: 400 });
     }
-    patch.agency_deposit_percent = pct;
-  }
-  if (body?.depositDueDate !== undefined) {
-    patch.agency_deposit_due_date = body.depositDueDate || null;
-  }
-  if (body?.finalDueDate !== undefined) {
-    patch.agency_final_due_date = body.finalDueDate || null;
-  }
-
-  const { error } = await gate.supabase.from("trips").update(patch).eq("id", params.tripId);
-  if (error) {
-    if (isMigration(error.message)) return migration();
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    depositPercent = pct;
+    tripPatch.agency_deposit_percent = pct;
+  } else {
+    const { data: tripRow } = await gate.supabase
+      .from("trips")
+      .select("agency_deposit_percent")
+      .eq("id", params.tripId)
+      .maybeSingle();
+    depositPercent = Number(tripRow?.agency_deposit_percent ?? 30);
   }
 
-  if (patch.agency_price_per_person != null) {
-    await syncAgencyParticipantPayments(params.tripId, gate.ctx.agency.id);
+  const depositDueDate =
+    body?.depositDueDate !== undefined ? body.depositDueDate || null : undefined;
+  const finalDueDate = body?.finalDueDate !== undefined ? body.finalDueDate || null : undefined;
+
+  if (depositDueDate !== undefined) tripPatch.agency_deposit_due_date = depositDueDate;
+  if (finalDueDate !== undefined) tripPatch.agency_final_due_date = finalDueDate;
+
+  if (Object.keys(tripPatch).length) {
+    const { error } = await gate.supabase.from("trips").update(tripPatch).eq("id", params.tripId);
+    if (error) {
+      if (isMigration(error.message)) return migration();
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  const participantIds = Array.isArray(body?.participantIds)
+    ? (body.participantIds as unknown[]).filter((id): id is string => typeof id === "string")
+    : [];
+
+  if (priceToAssign != null) {
+    if (!participantIds.length) {
+      return NextResponse.json(
+        { error: "Selecciona al menos un viajero para asignar este precio." },
+        { status: 400 }
+      );
+    }
+
+    const { data: tripDates } = await gate.supabase
+      .from("trips")
+      .select("agency_deposit_due_date, agency_final_due_date")
+      .eq("id", params.tripId)
+      .maybeSingle();
+
+    const applyResult = await applyParticipantPaymentPricing({
+      tripId: params.tripId,
+      agencyId: gate.ctx.agency.id,
+      participantIds,
+      pricePerPerson: priceToAssign,
+      depositPercent,
+      depositDueDate:
+        depositDueDate !== undefined
+          ? depositDueDate
+          : (tripDates?.agency_deposit_due_date as string | null) ?? null,
+      finalDueDate:
+        finalDueDate !== undefined
+          ? finalDueDate
+          : (tripDates?.agency_final_due_date as string | null) ?? null,
+    });
+
+    if (applyResult.applied === 0 && applyResult.skipped.length) {
+      return NextResponse.json(
+        { error: applyResult.skipped[0]?.reason ?? "No se pudo asignar el precio." },
+        { status: 400 }
+      );
+    }
+
+    const res = await GET(req, { params });
+    const json = await res.json();
+    return NextResponse.json({
+      ...json,
+      applyResult,
+    });
+  }
+
+  if (depositDueDate !== undefined || finalDueDate !== undefined || body?.depositPercent !== undefined) {
     const admin = (await import("@/lib/supabase-admin")).createSupabaseAdmin();
-    const price = Number(patch.agency_price_per_person);
-    const pct = Number(patch.agency_deposit_percent ?? 30);
-    const { computePaymentAmounts } = await import("@/lib/agency/payments");
-    const { deposit, final } = computePaymentAmounts(price, pct);
+    const duePatch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (body?.depositPercent !== undefined) duePatch.deposit_percent = depositPercent;
+    if (depositDueDate !== undefined) duePatch.deposit_due_at = depositDueDate;
+    if (finalDueDate !== undefined) duePatch.final_due_at = finalDueDate;
     await admin
       .from("agency_participant_payments")
-      .update({
-        price_per_person: price,
-        deposit_percent: pct,
-        deposit_amount: deposit,
-        final_amount: final,
-        updated_at: new Date().toISOString(),
-      })
+      .update(duePatch)
       .eq("trip_id", params.tripId)
       .eq("deposit_status", "pending")
       .eq("final_status", "pending");
