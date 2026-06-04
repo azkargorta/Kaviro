@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, ClipboardList, FileText, Loader2, Star, UserPlus, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, ClipboardList, CreditCard, FileText, Loader2, Star, UserPlus, Users } from "lucide-react";
 import AgencyTripPretravelSection from "@/components/agency/AgencyTripPretravelSection";
 import AgencyTripQuotesSection from "@/components/agency/AgencyTripQuotesSection";
+import AgencyTripPaymentsSection from "@/components/agency/AgencyTripPaymentsSection";
 import AgencyTripNpsSection from "@/components/agency/AgencyTripNpsSection";
 import {
   agencyBtnPrimaryClass,
@@ -252,6 +253,15 @@ export default function AgencyTripOperationsClient({
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Cotizaciones</h2>
         </div>
         <AgencyTripQuotesSection tripId={tripId} />
+      </section>
+
+      {/* Cobros */}
+      <section className={`${agencyCardClass} space-y-4 p-5`}>
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Cobros (Stripe)</h2>
+        </div>
+        <AgencyTripPaymentsSection tripId={tripId} />
       </section>
 
       {/* Plazas */}

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 import { buildUsernameFromEmail } from "@/lib/profile";
+import { markAgencyPaymentPaidFromSession } from "@/lib/server/agency-trip-payment";
 
 export const runtime = "nodejs";
 
@@ -77,6 +78,16 @@ export async function POST(req: Request) {
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
+
+      if (session.metadata?.type === "agency_trip_payment") {
+        await markAgencyPaymentPaidFromSession({
+          id: session.id,
+          metadata: session.metadata as Record<string, string>,
+          payment_status: session.payment_status,
+        });
+        return NextResponse.json({ received: true });
+      }
+
       const customer = session.customer as string | null;
       const subscription = session.subscription as string | null;
       const userId = (session.metadata?.supabase_user_id as string | undefined) || null;

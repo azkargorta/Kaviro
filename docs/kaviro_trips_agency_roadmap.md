@@ -24,7 +24,7 @@
 ## 🔴 Alta prioridad
 
 1. **Cotizaciones y presupuestos** — ✅ MVP (`docs/kaviro_agency_quotes.sql`, `/quote/[token]`)
-2. **Gestión de cobros** — pendiente (Stripe)
+2. **Gestión de cobros** — ✅ MVP (`docs/kaviro_agency_payments.sql`, `/pay/[token]`, operaciones)
 3. **Plazas, lista de espera y cancelaciones** — ✅ **MVP** (`/agency/trips/[id]/operaciones` + `docs/kaviro_agency_capacity.sql`)
 4. **CRM completo** — historial, tags, segmentación (2-3 semanas)
 5. **Comunicación automatizada** — secuencias Resend por evento (2-3 semanas)
@@ -67,7 +67,7 @@
 4. ~~Calendario de operaciones~~ ✅ MVP (`/agency/calendar`)  
 
 ### Siguiente trimestre
-5. ~~Cotizaciones~~ ✅ · 6. **Cobros Stripe** (siguiente) · 7. Emails automáticos · 8. ~~NPS~~ ✅ · 9. Firma digital  
+5. ~~Cotizaciones~~ ✅ · 6. ~~Cobros Stripe~~ ✅ · 7. **Emails automáticos** (siguiente) · 8. ~~NPS~~ ✅ · 9. Firma digital  
 
 ### Medio plazo
 10. Dossier IA → 11. CRM → 12. Informes → 13. Proveedores → 14. Dominio custom  
@@ -86,6 +86,7 @@
 | Encuesta pre-viaje | `docs/kaviro_agency_pretravel_survey.sql` |
 | Cotizaciones | `docs/kaviro_agency_quotes.sql` |
 | NPS post-viaje | `docs/kaviro_agency_nps.sql` |
+| Cobros Stripe | `docs/kaviro_agency_payments.sql` |
 
 Ejecutar en Supabase → SQL Editor tras `kaviro_agency_features.sql`.
 
