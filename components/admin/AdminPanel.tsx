@@ -145,6 +145,12 @@ export default function AdminPanel() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
+            href="/ops"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-100"
+          >
+            Kaviro Ops
+          </Link>
+          <Link
             href="/dashboard"
             className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >

@@ -133,12 +133,20 @@ export default function DashboardPageHeader({ isAdmin: isAdminProp, heroMode = f
           {hasAgency ? KAVIRO_TRIPS_PRODUCT_NAME : `${KAVIRO_TRIPS_PRODUCT_NAME} (contactar)`}
         </Link>
         {isAdmin ? (
-          <Link href="/dashboard/admin" role="menuitem" className={`${dropItem} text-amber-950 dark:text-amber-200`}>
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-700 text-white shadow-sm">
-              <Shield className={iconInline16} aria-hidden />
-            </span>
-            Admin
-          </Link>
+          <>
+            <Link href="/ops" role="menuitem" className={`${dropItem} text-amber-950 dark:text-amber-200`}>
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-700 text-white shadow-sm">
+                <Shield className={iconInline16} aria-hidden />
+              </span>
+              Kaviro Ops
+            </Link>
+            <Link href="/dashboard/admin" role="menuitem" className={`${dropItem} text-slate-700 dark:text-slate-300`}>
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 text-white shadow-sm">
+                <Shield className={iconInline16} aria-hidden />
+              </span>
+              Métricas
+            </Link>
+          </>
         ) : null}
         <Link href="/help" role="menuitem" className={dropItem}>
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-sm">

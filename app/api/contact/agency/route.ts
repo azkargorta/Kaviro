@@ -4,6 +4,7 @@ import {
   KAVIRO_TRIPS_PRODUCT_NAME,
 } from "@/lib/brand";
 import { buildAgencyAccessRequestEmailHtml, sendTransactionalEmail } from "@/lib/email/send-transactional-email";
+import { insertPlatformLead } from "@/lib/server/platform-ops-data";
 
 type Body = {
   name?: string;
@@ -59,6 +60,18 @@ export async function POST(request: Request) {
         { error: "No pudimos enviar la solicitud. Escríbenos a " + AGENCY_PARTNERSHIP_EMAIL },
         { status: 503 }
       );
+    }
+
+    try {
+      await insertPlatformLead({
+        contactName: name,
+        agencyName,
+        email,
+        groupsPerYear: groupsPerYear || null,
+        message: message || null,
+      });
+    } catch (leadErr) {
+      console.warn("platform_agency_leads insert:", leadErr);
     }
 
     return NextResponse.json({ ok: true });

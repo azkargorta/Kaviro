@@ -33,9 +33,22 @@ Un usuario **agencia** (aunque sea admin de su agencia) **no** entra en Ops salv
 
 El enlace «Admin» en el menú del dashboard solo aparece si `/api/admin/me` devuelve `admin: true`.
 
-## Roadmap Ops (resumen)
+## Ops 1 — implementado (MVP)
 
-1. CRM plataforma — agencias, leads `/empresa`, notas
+| Ruta | Función |
+|------|---------|
+| `/ops` | Resumen: agencias, leads nuevos, viajes B2B |
+| `/ops/agencies` | Listado de todas las agencias |
+| `/ops/agencies/[id]` | Ficha, plan, viajes, notas internas |
+| `/ops/leads` | Solicitudes de `/empresa` (estado CRM) |
+
+SQL: `docs/kaviro_platform_ops.sql` (`platform_agency_leads`, `platform_crm_notes`).
+
+Las nuevas solicitudes de `/api/contact/agency` se guardan en BD además del email.
+
+## Roadmap Ops (siguiente)
+
+1. ~~CRM plataforma~~ ✅ MVP Ops 1
 2. Comunicaciones — bandeja unificada de `agency_email_log` + más
 3. Salud operativa — alertas cobros, firmas, migraciones
 4. Soporte — vista read-only cross-tenant (con auditoría)
