@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, ClipboardList, Loader2, UserPlus, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, ClipboardList, FileText, Loader2, Star, UserPlus, Users } from "lucide-react";
 import AgencyTripPretravelSection from "@/components/agency/AgencyTripPretravelSection";
+import AgencyTripQuotesSection from "@/components/agency/AgencyTripQuotesSection";
+import AgencyTripNpsSection from "@/components/agency/AgencyTripNpsSection";
 import {
   agencyBtnPrimaryClass,
   agencyBtnSecondaryClass,
@@ -243,6 +245,15 @@ export default function AgencyTripOperationsClient({
         {occupancyLabel ? ` · ${occupancyLabel}` : ""}
       </p>
 
+      {/* Cotizaciones */}
+      <section className={`${agencyCardClass} space-y-4 p-5`}>
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Cotizaciones</h2>
+        </div>
+        <AgencyTripQuotesSection tripId={tripId} />
+      </section>
+
       {/* Plazas */}
       <section className={`${agencyCardClass} space-y-4 p-5`}>
         <div className="flex items-center gap-2">
@@ -401,6 +412,15 @@ export default function AgencyTripOperationsClient({
             ))}
           </ul>
         )}
+      </section>
+
+      {/* NPS post-viaje */}
+      <section className={`${agencyCardClass} space-y-4 p-5`}>
+        <div className="flex items-center gap-2">
+          <Star className="h-5 w-5 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Satisfacción (NPS)</h2>
+        </div>
+        <AgencyTripNpsSection tripId={tripId} />
       </section>
     </div>
   );

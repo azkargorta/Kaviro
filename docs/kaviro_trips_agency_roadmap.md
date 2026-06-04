@@ -23,8 +23,8 @@
 
 ## 🔴 Alta prioridad
 
-1. **Cotizaciones y presupuestos** — propuesta formal, PDF, aceptación online (2-3 semanas)
-2. **Gestión de cobros** — señal + pago final, Stripe, semáforo por viajero (2-3 semanas)
+1. **Cotizaciones y presupuestos** — ✅ MVP (`docs/kaviro_agency_quotes.sql`, `/quote/[token]`)
+2. **Gestión de cobros** — pendiente (Stripe)
 3. **Plazas, lista de espera y cancelaciones** — ✅ **MVP** (`/agency/trips/[id]/operaciones` + `docs/kaviro_agency_capacity.sql`)
 4. **CRM completo** — historial, tags, segmentación (2-3 semanas)
 5. **Comunicación automatizada** — secuencias Resend por evento (2-3 semanas)
@@ -33,10 +33,10 @@
 
 ## 🟣 Media prioridad
 
-6. Encuesta pre-viaje  
-7. NPS post-viaje  
+6. ~~Encuesta pre-viaje~~ ✅  
+7. ~~NPS post-viaje~~ ✅ MVP (`docs/kaviro_agency_nps.sql`)
 8. Directorio de proveedores  
-9. Calendario de operaciones  
+9. ~~Calendario de operaciones~~ ✅  
 10. Checklist pre-salida — ✅ **MVP** (misma página operaciones + `docs/kaviro_agency_checklist.sql`)  
 11. Firma digital de documentos  
 
@@ -67,7 +67,7 @@
 4. ~~Calendario de operaciones~~ ✅ MVP (`/agency/calendar`)  
 
 ### Siguiente trimestre
-5. Cotizaciones → 6. Cobros Stripe → 7. Emails automáticos → 8. NPS → 9. Firma digital  
+5. ~~Cotizaciones~~ ✅ · 6. **Cobros Stripe** (siguiente) · 7. Emails automáticos · 8. ~~NPS~~ ✅ · 9. Firma digital  
 
 ### Medio plazo
 10. Dossier IA → 11. CRM → 12. Informes → 13. Proveedores → 14. Dominio custom  
@@ -84,6 +84,8 @@
 | Plazas y estados | `docs/kaviro_agency_capacity.sql` |
 | Checklist pre-salida | `docs/kaviro_agency_checklist.sql` |
 | Encuesta pre-viaje | `docs/kaviro_agency_pretravel_survey.sql` |
+| Cotizaciones | `docs/kaviro_agency_quotes.sql` |
+| NPS post-viaje | `docs/kaviro_agency_nps.sql` |
 
 Ejecutar en Supabase → SQL Editor tras `kaviro_agency_features.sql`.
 
