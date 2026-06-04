@@ -15,6 +15,7 @@ describe("eventEnabledForSettings", () => {
         remindFinal: true,
         pretravelInvite: true,
         npsInvite: false,
+        signatureInvite: true,
       })
     ).toBe(false);
   });

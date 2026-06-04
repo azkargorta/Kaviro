@@ -95,7 +95,7 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return GET(_req, { params });
+    return GET(req, { params });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     if (isMigration(msg)) return migration();

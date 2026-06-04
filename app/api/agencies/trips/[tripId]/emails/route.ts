@@ -69,6 +69,7 @@ export async function PATCH(req: Request, { params }: Params) {
     remindFinal: boolean;
     pretravelInvite: boolean;
     npsInvite: boolean;
+    signatureInvite: boolean;
   }> = {};
   if (typeof body?.remindDeposit === "boolean") patch.remindDeposit = body.remindDeposit;
   if (typeof body?.remindFinal === "boolean") patch.remindFinal = body.remindFinal;

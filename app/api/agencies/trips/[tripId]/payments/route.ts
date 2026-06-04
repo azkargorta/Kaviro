@@ -162,7 +162,7 @@ export async function PATCH(req: Request, { params }: Params) {
       .eq("final_status", "pending");
   }
 
-  return GET(_req, { params });
+  return GET(req, { params });
 }
 
 export async function POST(req: Request, { params }: Params) {

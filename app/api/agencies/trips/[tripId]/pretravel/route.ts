@@ -138,5 +138,5 @@ export async function PATCH(req: Request, { params }: Params) {
       .eq("trip_id", params.tripId);
   }
 
-  return GET(_req, { params });
+  return GET(req, { params });
 }

@@ -92,7 +92,7 @@ export async function POST(req: Request, { params }: Params) {
       });
     }
 
-    return GET(_req, { params });
+    return GET(req, { params });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     if (msg.includes("agency_nps")) {

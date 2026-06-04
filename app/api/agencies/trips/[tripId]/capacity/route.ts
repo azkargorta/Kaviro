@@ -88,5 +88,5 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return GET(_req, { params });
+  return GET(req, { params });
 }
