@@ -21,9 +21,9 @@ export default function OpsAgenciesClient() {
 
   useEffect(() => {
     fetch("/api/ops/agencies", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!r.ok) throw new Error(data.error);
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
         setRows(data.agencies ?? []);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))

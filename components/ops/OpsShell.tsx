@@ -30,7 +30,9 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-3">
-          {NAV.map(({ href, label, icon: Icon, exact }) => {
+          {NAV.map((item) => {
+            const { href, label, icon: Icon } = item;
+            const exact = "exact" in item && item.exact;
             const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
