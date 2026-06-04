@@ -13,6 +13,7 @@ import { useTripRoutes, type RoutePoint, type SaveRouteInput } from "@/hooks/use
 import { useTripActivityKinds } from "@/hooks/useTripActivityKinds";
 import DuplicateRouteDialog from "@/components/trip/map/DuplicateRouteDialog";
 import RouteTravelModePicker from "@/components/trip/map/RouteTravelModePicker";
+import RouteEditorPanel from "@/components/trip/map/RouteEditorPanel";
 import {
   applyTravelModeToOsrmMetrics,
   normalizeTripRouteTravelMode,
@@ -648,6 +649,7 @@ function MapSurface({
   markers,
   onMapCreated,
   isDarkMap = false,
+  compact = false,
 }: {
   visible: boolean;
   bounds: L.LatLngBounds | null;
@@ -656,6 +658,8 @@ function MapSurface({
   markers: Array<{ key: string; lat: number; lng: number; title: string; icon: L.Icon | L.DivIcon; subtitle?: string }>;
   onMapCreated?: (map: L.Map) => void;
   isDarkMap?: boolean;
+  /** Mapa más bajo cuando el editor de ruta está abierto (caber formulario sin scroll). */
+  compact?: boolean;
 }) {
   if (!visible) return null;
 
@@ -670,7 +674,12 @@ function MapSurface({
           <StatusChip active>{lines.length ? `${lines.length} ruta${lines.length === 1 ? "" : "s"}` : "Sin rutas visibles"}</StatusChip>
         </div>
       </div>
-      <div data-tour="map-container" className="h-[640px] w-full bg-slate-100 lg:h-[calc(100vh-7.5rem)]">
+      <div
+        data-tour="map-container"
+        className={`h-[min(420px,55vh)] w-full bg-slate-100 sm:h-[min(480px,50vh)] ${
+          compact ? "lg:h-[min(340px,38vh)]" : "lg:h-[calc(100vh-7.5rem)]"
+        }`}
+      >
         <MapContainer center={DEFAULT_CENTER} zoom={4} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <TileLayer
             attribution={isDarkMap
@@ -817,6 +826,8 @@ export default function TripMapView({
 
   useEffect(() => {
     if (!isRouteFormOpen) return;
+    const mq = window.matchMedia("(max-width: 1279px)");
+    if (!mq.matches) return;
     const id = window.setTimeout(() => {
       routeFormPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
@@ -2708,374 +2719,44 @@ export default function TripMapView({
           markers={mapEntities.markers}
           onMapCreated={(m) => setMapRef(m)}
           isDarkMap={typeof document !== "undefined" && document.documentElement.classList.contains("dark")}
+          compact={isRouteFormOpen}
         />
       </div>
       {canManageMap && isRouteFormOpen ? (
-        <section
+        <RouteEditorPanel
           ref={routeFormPanelRef}
-          data-route-form-panel
-          className="scroll-mt-6 w-full overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
-        >
-          <div className="px-4 py-4 md:px-6 md:py-5">
-
-            <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">
-              {form.editingRouteId ? "Editor de ruta" : "Nueva ruta"}
-            </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2 xl:col-span-3">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">1. Datos básicos</div>
-                  <div className="mt-1 text-[11px] text-slate-500">Nombre, fecha, hora y color con el que se mostrará la ruta.</div>
-                </div>
-                <label className="text-xs font-semibold text-slate-700">
-                  Nombre
-                  <input
-                    value={form.routeName}
-                    onChange={(e) => setForm((prev) => ({ ...prev, routeName: e.target.value }))}
-                    className="mt-2 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-                    placeholder="Ruta día 1"
-                  />
-                </label>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="text-xs font-semibold text-slate-700">
-                    Día
-                    <input
-                      type="date"
-                      value={form.routeDate}
-                      onChange={(e) => setForm((prev) => ({ ...prev, routeDate: e.target.value }))}
-                      className="mt-2 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-                    />
-                  </label>
-                  <label className="text-xs font-semibold text-slate-700">
-                    Hora
-                    <input
-                      type="time"
-                      value={form.departureTime}
-                      onChange={(e) => setForm((prev) => ({ ...prev, departureTime: e.target.value }))}
-                      className="mt-2 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-                    />
-                  </label>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">
-                    Modo de transporte
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Elige cómo se recorre el trayecto. Al calcular la ruta, distancia, camino y duración usan este modo.
-                  </p>
-                  <div className="mt-3">
-                    <RouteTravelModePicker
-                      value={travelMode}
-                      onChange={(m) => {
-                        setTravelMode(m);
-                        setRoutePreview(null);
-                      }}
-                      disabled={calculatingRoute || saving || savingRoute}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-extrabold text-slate-900">Color de la ruta</div>
-                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <input
-                      type="color"
-                      value={form.autoColor ? effectiveRouteColor : form.color}
-                      onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value, autoColor: false }))}
-                      className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-2 sm:w-24"
-                      title="Elegir color de la ruta"
-                      disabled={form.autoColor}
-                      aria-label="Elegir color de la ruta"
-                    />
-                    <label className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-xs font-extrabold text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={form.autoColor}
-                        onChange={(e) => setForm((prev) => ({ ...prev, autoColor: e.target.checked }))}
-                      />
-                      Color auto
-                    </label>
-                    <div className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      <span className="inline-block h-4 w-4 rounded-full border border-slate-300" style={{ backgroundColor: effectiveRouteColor }} />
-                      {form.autoColor ? "Se asignará un color libre automáticamente." : "Color manual seleccionado."}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2 xl:col-span-3">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">2. Itinerario</div>
-                  <div className="mt-1 text-[11px] text-slate-500">
-                    Selecciona origen, parada opcional y destino usando planes o búsqueda.
-                    {routeDayForPlans ? (
-                      <span className="mt-1 block font-semibold text-[var(--brand-text)]">
-                        Solo planes del día {routeDayForPlans}
-                        {planSelectOptions.length > 0
-                          ? ` (${planSelectOptions.length})`
-                          : " — ninguno con fecha en Plan; añade actividades ese día o cambia la fecha arriba."}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-extrabold text-slate-900">Origen</div>
-                  <select
-                    value={originPlanId}
-                    onChange={(e) => setOriginPlanId(e.target.value)}
-                    className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                  >
-                    <option value="">
-                      {routeDayForPlans && !planSelectOptions.length
-                        ? "Sin planes este día"
-                        : "Elegir plan…"}
-                    </option>
-                    {planSelectOptions.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title + (p.hasCoords ? "" : " (sin ubicación en mapa)")}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="mt-2">
-                    <PlaceAutocompleteInput
-                      value={origin.address}
-                      onChange={(v) => setOrigin((s) => ({ ...s, address: v }))}
-                      onPlaceSelect={(payload) => onSelectPlace((v) => setOrigin(v), payload)}
-                      placeholder="Buscar origen…"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-extrabold text-slate-900">Parada (opcional)</div>
-                  <label className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={form.stopEnabled}
-                      onChange={(e) => setForm((prev) => ({ ...prev, stopEnabled: e.target.checked }))}
-                    />
-                    Activar parada
-                  </label>
-                  <select
-                    value={stopPlanId}
-                    onChange={(e) => setStopPlanId(e.target.value)}
-                    className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                    disabled={!form.stopEnabled}
-                  >
-                    <option value="">
-                      {routeDayForPlans && !planSelectOptions.length
-                        ? "Sin planes este día"
-                        : "Elegir plan…"}
-                    </option>
-                    {planSelectOptions.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title + (p.hasCoords ? "" : " (sin ubicación en mapa)")}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="mt-2">
-                    <PlaceAutocompleteInput
-                      value={stop.address}
-                      onChange={(v) => setStop((s) => ({ ...s, address: v }))}
-                      onPlaceSelect={(payload) => onSelectPlace((v) => setStop(v), payload)}
-                      placeholder="Buscar parada…"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-extrabold text-slate-900">Destino</div>
-                  <select
-                    value={destinationPlanId}
-                    onChange={(e) => setDestinationPlanId(e.target.value)}
-                    className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                  >
-                    <option value="">
-                      {routeDayForPlans && !planSelectOptions.length
-                        ? "Sin planes este día"
-                        : "Elegir plan…"}
-                    </option>
-                    {planSelectOptions.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title + (p.hasCoords ? "" : " (sin ubicación en mapa)")}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="mt-2">
-                    <PlaceAutocompleteInput
-                      value={destination.address}
-                      onChange={(v) => setDestination((s) => ({ ...s, address: v }))}
-                      onPlaceSelect={(payload) => onSelectPlace((v) => setDestination(v), payload)}
-                      placeholder="Buscar destino…"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2 xl:col-span-3">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">3. Opciones y notas</div>
-                  <div className="mt-1 text-[11px] text-slate-500">Añade checklist, comentarios y paradas de descanso informativas.</div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2 xl:col-span-3">
-                  <div className="text-xs font-extrabold text-slate-900">Notas y checklist</div>
-                  <textarea
-                    value={form.noteText}
-                    onChange={(e) => setForm((prev) => ({ ...prev, noteText: e.target.value }))}
-                    rows={3}
-                    placeholder="Notas para esta ruta…"
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
-                  />
-
-                  <div className="mt-3">
-                    <div className="text-xs font-semibold text-slate-700">Checklist</div>
-                    {form.checklist.length ? (
-                      <div className="mt-2 space-y-2">
-                        {form.checklist.map((item) => (
-                          <div key={item.id} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={item.done}
-                              onChange={(e) =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  checklist: prev.checklist.map((x) => (x.id === item.id ? { ...x, done: e.target.checked } : x)),
-                                }))
-                              }
-                            />
-                            <input
-                              value={item.text}
-                              onChange={(e) =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  checklist: prev.checklist.map((x) => (x.id === item.id ? { ...x, text: e.target.value } : x)),
-                                }))
-                              }
-                              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
-                              placeholder="Elemento…"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setForm((prev) => ({ ...prev, checklist: prev.checklist.filter((x) => x.id !== item.id) }))}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              Quitar
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="mt-2 text-xs text-slate-500">Aún no hay checklist.</div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, checklist: [...prev.checklist, { id: randomId(), text: "", done: false }] }))}
-                      className="mt-2 inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Añadir item
-                    </button>
-                  </div>
-
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={form.restStopsEnabled}
-                        onChange={(e) => setForm((prev) => ({ ...prev, restStopsEnabled: e.target.checked }))}
-                      />
-                      Paradas de descanso (informativo)
-                    </label>
-                    {form.restStopsEnabled ? (
-                      <div className="mt-3 grid grid-cols-2 gap-3">
-                        <label className="text-xs font-semibold text-slate-700">
-                          Nº paradas
-                          <input
-                            type="number"
-                            min={0}
-                            value={form.restStopsCount}
-                            onChange={(e) => setForm((prev) => ({ ...prev, restStopsCount: Number(e.target.value || 0) }))}
-                            className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-                          />
-                        </label>
-                        <label className="text-xs font-semibold text-slate-700">
-                          Minutos cada una
-                          <input
-                            type="number"
-                            min={0}
-                            value={form.restStopMinutes}
-                            onChange={(e) => setForm((prev) => ({ ...prev, restStopMinutes: Number(e.target.value || 0) }))}
-                            className="mt-2 min-h-[40px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900"
-                          />
-                        </label>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2 xl:col-span-3">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-600">4. Previsualización y guardado</div>
-                  <div className="mt-1 text-[11px] text-slate-500">Calcula la ruta, revisa el resultado y guarda solo cuando esté correcta.</div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="flex flex-col gap-3">
-                    <button
-                      type="button"
-                      disabled={calculatingRoute || saving || savingRoute}
-                      onClick={() => void calculateRoutePreview()}
-                      className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${calculatingRoute ? "animate-spin" : ""}`} aria-hidden />
-                      {calculatingRoute ? "Calculando ruta…" : "Calcular ruta"}
-                    </button>
-
-                    {routePreview ? (
-                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
-                        <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-emerald-800">Ruta calculada</div>
-                        <p className="mt-1 text-xs font-semibold text-emerald-900">
-                          Modo: {travelModeLabel(routePreview.calculatedTravelMode)}
-                          {routePreview.calculatedTravelMode === "TRANSIT" ? " · tiempo estimado" : null}
-                          {routePreview.durationAdjusted ? " · duración ajustada al modo" : null}
-                        </p>
-                        {routePreview.calculatedTravelMode !== travelMode ? (
-                          <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-900">
-                            Has cambiado el modo de transporte. Pulsa «Calcular ruta» de nuevo para actualizar distancia y tiempo.
-                          </p>
-                        ) : null}
-                        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div className="rounded-xl bg-white px-3 py-2">
-                            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">Distancia</div>
-                            <div className="mt-1 text-sm font-semibold text-slate-900">{routePreview.distanceText || "No disponible"}</div>
-                          </div>
-                          <div className="rounded-xl bg-white px-3 py-2">
-                            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">Duración</div>
-                            <div className="mt-1 text-sm font-semibold text-slate-900">{routePreview.durationText || "No disponible"}</div>
-                          </div>
-                          <div className="rounded-xl bg-white px-3 py-2">
-                            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">Llegada aprox.</div>
-                            <div className="mt-1 text-sm font-semibold text-slate-900">{routePreview.arrivalTime || "No disponible"}</div>
-                          </div>
-                        </div>
-                        <div className="mt-2 text-xs text-emerald-900">La previsualización ya está dibujada en el mapa.</div>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                        Calcula la ruta para ver el trazado en el mapa antes de guardarla.
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      disabled={saving || savingRoute || calculatingRoute}
-                      onClick={() => void createOrUpdateRoute()}
-                      className={`${btnPrimary} inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm disabled:opacity-60`}
-                    >
-                      <Save className="h-4 w-4" aria-hidden />
-                      {saving || savingRoute ? "Guardando…" : form.editingRouteId ? "Guardar cambios" : "Guardar ruta"}
-                    </button>
-                  </div>
-                </div>
-            </div>
-
-          </div>
-        </section>
+          editing={!!form.editingRouteId}
+          form={form}
+          setForm={setForm}
+          travelMode={travelMode}
+          onTravelModeChange={(m) => {
+            setTravelMode(m);
+            setRoutePreview(null);
+          }}
+          effectiveRouteColor={effectiveRouteColor}
+          routeDayForPlans={routeDayForPlans}
+          planSelectOptions={planSelectOptions}
+          origin={origin}
+          setOrigin={setOrigin}
+          stop={stop}
+          setStop={setStop}
+          destination={destination}
+          setDestination={setDestination}
+          originPlanId={originPlanId}
+          setOriginPlanId={setOriginPlanId}
+          stopPlanId={stopPlanId}
+          setStopPlanId={setStopPlanId}
+          destinationPlanId={destinationPlanId}
+          setDestinationPlanId={setDestinationPlanId}
+          onSelectPlace={onSelectPlace}
+          routePreview={routePreview}
+          calculatingRoute={calculatingRoute}
+          saving={saving}
+          savingRoute={savingRoute}
+          onCalculate={() => void calculateRoutePreview()}
+          onSave={() => void createOrUpdateRoute()}
+          saveButtonClass={btnPrimary}
+        />
       ) : null}
       </div>
 
