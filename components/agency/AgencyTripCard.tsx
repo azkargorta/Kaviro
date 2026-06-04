@@ -75,6 +75,9 @@ export default function AgencyTripCard({
         <Link href={`/trip/${trip.id}/plan`} className={agencyBtnPrimaryClass}>
           Gestionar plan
         </Link>
+        <Link href={`/agency/trips/${trip.id}/operaciones`} className={agencyBtnSecondaryClass}>
+          Operaciones
+        </Link>
         <AgencyFillTripFromTemplateButton tripId={trip.id} tripName={trip.name} />
         <Link href={`/trip/${trip.id}/settings`} className={agencyBtnSecondaryClass}>
           Ajustes y avisos

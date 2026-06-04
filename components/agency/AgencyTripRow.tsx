@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Eye } from "lucide-react";
+import { ClipboardList, ExternalLink, Eye } from "lucide-react";
 import type { AgencyTripListRow as TripRow } from "@/lib/agency";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass } from "@/lib/agency-theme";
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
@@ -58,10 +58,12 @@ export default function AgencyTripRowItem({
   trip,
   agencySlug,
   compact = false,
+  capacityLabel,
 }: {
   trip: TripRow;
   agencySlug: string;
   compact?: boolean;
+  capacityLabel?: string;
 }) {
   const status = tripStatus(trip);
 
@@ -80,7 +82,10 @@ export default function AgencyTripRowItem({
             </p>
           ) : null}
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{trip.name}</p>
-          <p className="text-xs text-slate-500">{formatRange(trip.start_date, trip.end_date)}</p>
+          <p className="text-xs text-slate-500">
+            {formatRange(trip.start_date, trip.end_date)}
+            {capacityLabel ? ` · ${capacityLabel}` : ""}
+          </p>
         </div>
         <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase ${status.className}`}>
           {status.label}
@@ -88,6 +93,14 @@ export default function AgencyTripRowItem({
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           <Link href={`/trip/${trip.id}/plan`} className={`${agencyBtnPrimaryClass} text-xs`}>
             Gestionar
+          </Link>
+          <Link
+            href={`/agency/trips/${trip.id}/operaciones`}
+            className={`${agencyBtnSecondaryClass} gap-1 text-xs`}
+            title="Plazas, viajeros y checklist pre-salida"
+          >
+            <ClipboardList className="h-3.5 w-3.5" aria-hidden />
+            Operaciones
           </Link>
           <AgencyFillTripFromTemplateButton tripId={trip.id} tripName={trip.name} />
           <Link

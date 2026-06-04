@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AgencyTripListRow } from "@/lib/agency";
 import AgencyTripRowItem from "@/components/agency/AgencyTripRow";
 import AgencyCreateTripForm from "@/components/agency/AgencyCreateTripForm";
@@ -38,7 +38,23 @@ export default function AgencyTripsPageClient({ agencySlug, trips }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const [showFromTemplate, setShowFromTemplate] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "upcoming" | "past">("all");
+  const [capacityByTrip, setCapacityByTrip] = useState<
+    Record<string, { label: string }>
+  >({});
   const buckets = useMemo(() => categorize(trips), [trips]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/agencies/trips/capacity-summary", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { summaries?: Record<string, { label: string }> }) => {
+        if (!cancelled && data.summaries) setCapacityByTrip(data.summaries);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [trips.length]);
 
   const filtered = useMemo(() => {
     if (filter === "active") return buckets.active;
@@ -114,7 +130,12 @@ export default function AgencyTripsPageClient({ agencySlug, trips }: Props) {
       ) : (
         <div className="space-y-3">
           {filtered.map((trip) => (
-            <AgencyTripRowItem key={trip.id} trip={trip} agencySlug={agencySlug} />
+            <AgencyTripRowItem
+              key={trip.id}
+              trip={trip}
+              agencySlug={agencySlug}
+              capacityLabel={capacityByTrip[trip.id]?.label}
+            />
           ))}
         </div>
       )}
