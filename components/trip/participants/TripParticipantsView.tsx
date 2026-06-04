@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import ParticipantLinkProfilePanel from "./ParticipantLinkProfilePanel";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import LongTextSheet from "@/components/ui/LongTextSheet";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
 import { btnPrimary } from "@/components/ui/brandStyles";
@@ -178,6 +179,7 @@ function ActionMenu({
 }
 
 export default function TripParticipantsView({ tripId, mapFlow = false }: TripParticipantsViewProps) {
+  const { isAgencyTrip } = useTripWorkspace();
   const {
     participants,
     loading,
@@ -778,19 +780,21 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
         </section>
 
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-4 shadow-sm dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)]">
-            <p className="text-sm font-extrabold text-[var(--brand-text)]">Chat del grupo</p>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-              Coordina con el resto sin depender de WhatsApp.
-            </p>
-            <Link
-              href={`/trip/${tripId}/messages`}
-              className="btn-press mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
-            >
-              <MessageCircle className="h-4 w-4" aria-hidden />
-              Abrir mensajes
-            </Link>
-          </div>
+          {!isAgencyTrip ? (
+            <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-4 shadow-sm dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)]">
+              <p className="text-sm font-extrabold text-[var(--brand-text)]">Chat del grupo</p>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                Coordina con el resto sin depender de WhatsApp.
+              </p>
+              <Link
+                href={`/trip/${tripId}/messages`}
+                className="btn-press mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                Abrir mensajes
+              </Link>
+            </div>
+          ) : null}
 
           {canManageParticipants ? (
             <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm">

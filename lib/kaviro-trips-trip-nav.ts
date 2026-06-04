@@ -31,6 +31,7 @@ export const PERSONAL_TRIP_NAV: TripNavItem[] = [
 /** Navegación Kaviro Trips (agencia) — sin resumen, gastos ni recap social. */
 export const AGENCY_TRIP_NAV: TripNavItem[] = [
   { key: "plan", label: "Plan", sublabel: "Itinerario", href: (id) => `/trip/${id}/plan` },
+  { key: "payments", label: "Pagos", sublabel: "Cobros viajeros", href: (id) => `/trip/${id}/payments` },
   { key: "map", label: "Rutas", sublabel: "Logística", href: (id) => `/trip/${id}/map` },
   { key: "resources", label: "Docs", sublabel: "Dossier", href: (id) => `/trip/${id}/resources` },
   { key: "participants", label: "Equipo", sublabel: "Coordinación", href: (id) => `/trip/${id}/participants` },

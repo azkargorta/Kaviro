@@ -9,6 +9,7 @@ export type TripTabKey =
   | "recap"
   | "messages"
   | "announcements"
+  | "payments"
   | "settings";
 
 /** PNG de documentos suele llevar más margen interno: escala para igualar peso visual al resto de pestañas. */
@@ -25,6 +26,7 @@ const tabToBaseName: Record<TripTabKey, string> = {
   recap: "recap",
   messages: "participants",
   announcements: "participants",
+  payments: "expenses",
   settings: "settings",
 };
 

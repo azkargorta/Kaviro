@@ -12,6 +12,7 @@ import {
   Palette,
   BarChart3,
   CalendarDays,
+  CreditCard,
   Users,
 } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
@@ -35,6 +36,7 @@ const NAV: Array<{
   { href: "/agency/calendar", label: "Calendario", icon: CalendarDays },
   { href: "/agency/templates", label: "Plantillas", icon: Layers },
   { href: "/agency/clients", label: "Clientes", icon: Building2 },
+  { href: "/agency/finance", label: "Cobros", icon: CreditCard },
   { href: "/agency/portals", label: "Portales", icon: Globe },
   { href: "/agency/reports", label: "Informes", icon: BarChart3 },
   { href: "/agency/team", label: "Equipo", icon: Users },

@@ -221,8 +221,8 @@ const RouteEditorPanel = forwardRef<HTMLElement, RouteEditorPanelProps>(function
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="space-y-4">
           <SectionShell num="1" title="Datos básicos" subtitle="Nombre, fecha, hora y transporte">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className={labelClass}>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+              <label className={`${labelClass} md:col-span-5`}>
                 Nombre de la ruta
                 <input
                   value={form.routeName}
@@ -231,18 +231,20 @@ const RouteEditorPanel = forwardRef<HTMLElement, RouteEditorPanelProps>(function
                   placeholder="Ruta día 1"
                 />
               </label>
-              <label className={labelClass}>
+              <label className={`${labelClass} min-w-0 md:col-span-4`}>
                 Fecha
-                <input
-                  type="date"
-                  value={form.routeDate}
-                  onChange={(e) => setForm((prev) => ({ ...prev, routeDate: e.target.value }))}
-                  className={inputClass}
-                />
+                <div className="relative mt-1.5">
+                  <input
+                    type="date"
+                    value={form.routeDate}
+                    onChange={(e) => setForm((prev) => ({ ...prev, routeDate: e.target.value }))}
+                    className="min-h-[40px] w-full min-w-[10.5rem] rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-10 text-sm font-medium text-slate-900 shadow-sm focus:border-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/15 dark:border-[#334155] dark:bg-[#0F1623] dark:text-white [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  />
+                </div>
               </label>
-              <label className={labelClass}>
+              <label className={`${labelClass} md:col-span-3`}>
                 Hora de salida
-                <div className="relative">
+                <div className="relative mt-1.5">
                   <Clock
                     className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                     aria-hidden
@@ -251,7 +253,7 @@ const RouteEditorPanel = forwardRef<HTMLElement, RouteEditorPanelProps>(function
                     type="time"
                     value={form.departureTime}
                     onChange={(e) => setForm((prev) => ({ ...prev, departureTime: e.target.value }))}
-                    className={`${inputClass} pl-9`}
+                    className={`${inputClass} mt-0 pl-9`}
                   />
                 </div>
               </label>

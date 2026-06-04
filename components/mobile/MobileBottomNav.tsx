@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal, X, Settings, Map, Users, FileText, Star, MessageCircle, Megaphone } from "lucide-react";
+import { MoreHorizontal, X, Settings, Map, Users, FileText, Star, MessageCircle, Megaphone, CreditCard } from "lucide-react";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -31,6 +31,7 @@ const SECONDARY_META: Record<
   map: { label: "Rutas", icon: <Map className="h-5 w-5" /> },
   participants: { label: "Equipo", icon: <Users className="h-5 w-5" /> },
   messages: { label: "Mensajes", icon: <MessageCircle className="h-5 w-5" /> },
+  payments: { label: "Pagos", icon: <CreditCard className="h-5 w-5" /> },
   resources: { label: "Documentos", icon: <FileText className="h-5 w-5" /> },
   settings: { label: "Ajustes", icon: <Settings className="h-5 w-5" /> },
   announcements: { label: "Avisos", icon: <Megaphone className="h-5 w-5" /> },

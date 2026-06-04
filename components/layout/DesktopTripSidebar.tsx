@@ -22,6 +22,7 @@ function isActivePath(pathname: string, href: string, key: string) {
   if (key === "settings" && pathname.startsWith(href)) return true;
   if (key === "announcements" && pathname.startsWith(href)) return true;
   if (key === "messages" && pathname.startsWith(href)) return true;
+  if (key === "payments" && pathname.startsWith(href)) return true;
   return false;
 }
 

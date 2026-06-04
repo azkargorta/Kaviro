@@ -41,6 +41,9 @@ import TripPlanExploreDrawer, { type ExploreCreatePlanPayload } from "@/componen
 import TripPlanNotesPanel from "@/components/trip/plan/TripPlanNotesPanel";
 import PlanAttendanceSummary from "@/components/trip/plan/PlanAttendanceSummary";
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
+import AgencyTripAnnouncements from "@/components/agency/AgencyTripAnnouncements";
+import { Megaphone } from "lucide-react";
+import { agencyCardClass } from "@/lib/agency-theme";
 import { SortableRow } from "@/components/trip/plan/SortableRow";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { activityLikelyNeedsTicket } from "@/lib/trip-plan-ticket-hints";
@@ -679,6 +682,27 @@ export default function TripPlanView({
         </div>
       ) : null}
       {!canManagePlan ? <TripReadOnlyBanner moduleLabel="el plan del viaje" /> : null}
+
+      {isAgencyTrip && canManagePlan ? (
+        <section id="avisos-grupo" className="scroll-mt-4">
+          <div
+            className={`${agencyCardClass} border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-white p-4 dark:border-amber-900/40 dark:from-amber-950/30 dark:to-[var(--surface-card)]`}
+          >
+            <div className="mb-3 flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100">
+                <Megaphone className="h-4 w-4" aria-hidden />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Avisos al grupo</h2>
+                <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                  Publica novedades para viajeros (portal, pestaña Avisos y notificación en Mis viajes).
+                </p>
+              </div>
+            </div>
+            <AgencyTripAnnouncements tripId={tripId} embedded />
+          </div>
+        </section>
+      ) : null}
 
       <div
         role="tablist"

@@ -34,7 +34,13 @@ type Settings = {
   currency: string;
 };
 
-export default function AgencyTripPaymentsSection({ tripId }: { tripId: string }) {
+export default function AgencyTripPaymentsSection({
+  tripId,
+  showEmailHint = false,
+}: {
+  tripId: string;
+  showEmailHint?: boolean;
+}) {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -95,6 +101,28 @@ export default function AgencyTripPaymentsSection({ tripId }: { tripId: string }
       setRoster(data.roster ?? []);
       setTotals(data.totals);
       toast.push({ kind: "success", title: "Tarifas guardadas" });
+    } catch (e) {
+      toast.push({ kind: "error", title: e instanceof Error ? e.message : "Error" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendDueReminders() {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/agencies/trips/${tripId}/payments/remind-due`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ daysBefore: 2 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.push({
+        kind: "success",
+        title: "Recordatorios enviados",
+        description: `${data.sent ?? 0} correo(s) · ${data.skipped ?? 0} omitido(s)`,
+      });
     } catch (e) {
       toast.push({ kind: "error", title: e instanceof Error ? e.message : "Error" });
     } finally {
@@ -200,6 +228,15 @@ export default function AgencyTripPaymentsSection({ tripId }: { tripId: string }
             Generar enlaces de pago
           </button>
         ) : null}
+        <button
+          type="button"
+          disabled={busy || !hasPrice}
+          onClick={() => void sendDueReminders()}
+          className={agencyBtnSecondaryClass}
+          title="Envía email a quienes vencen en 2 días (señal o pago final)"
+        >
+          Recordatorio (−2 días)
+        </button>
         <a
           href={`/api/agencies/trips/${tripId}/payments/export`}
           className={`${agencyBtnSecondaryClass} inline-flex items-center gap-1`}
@@ -208,6 +245,13 @@ export default function AgencyTripPaymentsSection({ tripId }: { tripId: string }
           Exportar CSV
         </a>
       </div>
+
+      {showEmailHint ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
+          Define las fechas de vencimiento arriba. El botón «Recordatorio (−2 días)» avisa por correo a quienes
+          deben pagar dentro de dos días. Para automatizar más eventos, usa Operaciones → Emails.
+        </p>
+      ) : null}
 
       {hasPrice ? (
         <p className="text-xs text-slate-500">
