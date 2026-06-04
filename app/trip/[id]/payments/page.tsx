@@ -1,10 +1,9 @@
 import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import AgencyTripPaymentsSection from "@/components/agency/AgencyTripPaymentsSection";
-import Link from "next/link";
 
 type Props = { params: { id: string } };
 
