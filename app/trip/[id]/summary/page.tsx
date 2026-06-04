@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
@@ -16,6 +17,7 @@ import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
 import { loadTripExpenseAmountRows } from "@/lib/load-trip-expense-amounts";
 import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
+import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +134,10 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
   const workspace = await loadTripWorkspaceMeta(supabase, tripId, access.userId);
-  if (workspace.isAgencyTrip) {
+  const previewCookie = (await cookies()).get(TRAVELER_PREVIEW_COOKIE)?.value;
+  const travelerPreview =
+    workspace.isAgencyManaged && isTravelerPreviewActive(previewCookie, tripId);
+  if (workspace.isAgencyTrip && !travelerPreview) {
     redirect(`/trip/${tripId}/plan`);
   }
   const isPremium = await getCachedTripPremium(tripId, access.userId);

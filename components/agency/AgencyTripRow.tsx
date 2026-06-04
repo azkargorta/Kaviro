@@ -7,6 +7,7 @@ import { agencyBtnPrimaryClass, agencyBtnSecondaryClass } from "@/lib/agency-the
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
 import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
 import AgencyFillTripFromTemplateButton from "@/components/agency/AgencyFillTripFromTemplateButton";
+import { travelerPreviewEntryHref } from "@/lib/trip-traveler-preview";
 
 function tripStatus(trip: TripRow): { label: string; className: string; dot: string } {
   const today = new Date().toISOString().slice(0, 10);
@@ -104,9 +105,9 @@ export default function AgencyTripRowItem({
           </Link>
           <AgencyFillTripFromTemplateButton tripId={trip.id} tripName={trip.name} />
           <Link
-            href={`/trip/${trip.id}/client-preview`}
+            href={travelerPreviewEntryHref(trip.id)}
             className={`${agencyBtnSecondaryClass} gap-1 text-xs`}
-            title="Vista previa como cliente"
+            title="Kaviro como lo ve un viajero invitado"
           >
             <Eye className="h-3.5 w-3.5" aria-hidden />
             Vista cliente

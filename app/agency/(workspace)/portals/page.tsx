@@ -4,6 +4,7 @@ import { requireAgencyContext } from "@/lib/require-agency";
 import AgencyPortalControls from "@/components/agency/AgencyPortalControls";
 import { agencyCardClass, agencyPageSubtitleClass, agencyPageTitleClass } from "@/lib/agency-theme";
 import { clientPortalPath } from "@/lib/agency";
+import { travelerPreviewEntryHref } from "@/lib/trip-traveler-preview";
 
 export default async function AgencyPortalsPage() {
   const { supabase, agency } = await requireAgencyContext("/agency/portals");
@@ -47,10 +48,16 @@ export default async function AgencyPortalsPage() {
                 />
               </div>
               <Link
-                href={`/trip/${trip.id}/client-preview`}
+                href={travelerPreviewEntryHref(trip.id)}
                 className="mt-3 inline-block text-xs font-semibold text-[#1e3a5f] underline dark:text-sky-300"
               >
-                Vista previa como cliente
+                Vista Kaviro (viajero)
+              </Link>
+              <Link
+                href={`/trip/${trip.id}/client-preview`}
+                className="mt-1 block text-xs text-slate-500 underline dark:text-slate-400"
+              >
+                Vista portal web publicado
               </Link>
             </div>
           ))}

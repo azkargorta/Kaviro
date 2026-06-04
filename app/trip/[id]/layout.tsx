@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
+import { cookies } from "next/headers";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import { createClient } from "@/lib/supabase/server";
@@ -16,7 +17,9 @@ import TripAgencyRouteGuard from "@/components/trip/TripAgencyRouteGuard";
 import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
 import { clientPortalPath } from "@/lib/agency";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
+import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
+import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -56,8 +59,16 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
       loadTripWorkspaceMeta(supabase, params.id, access.userId),
     ]);
 
+  const previewCookie = (await cookies()).get(TRAVELER_PREVIEW_COOKIE)?.value;
+  const isTravelerPreview =
+    workspace.isAgencyManaged &&
+    isTravelerPreviewActive(previewCookie, params.id);
+  const displayWorkspace = isTravelerPreview
+    ? { ...workspace, isAgencyTrip: false }
+    : workspace;
+
   const isDemo =
-    !workspace.isAgencyTrip &&
+    !displayWorkspace.isAgencyTrip &&
     (Boolean((tripMeta as { is_demo?: boolean } | null)?.is_demo) ||
       String((profileRow as { demo_trip_id?: string } | null)?.demo_trip_id || "") === params.id);
   const tripName = (tripMeta?.name && String(tripMeta.name).trim()) || "Viaje";
@@ -69,19 +80,19 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
     })
     .filter((n): n is string => Boolean(n));
 
-  const showOnboarding = !workspace.isAgencyTrip && !isDemo;
-  const showAssistantDock = !workspace.isAgencyTrip;
+  const showOnboarding = !displayWorkspace.isAgencyTrip && !isDemo;
+  const showAssistantDock = !displayWorkspace.isAgencyTrip;
 
   return (
     <TripBoardHeaderProvider>
-      <TripWorkspaceProvider tripId={params.id} meta={workspace}>
+      <TripWorkspaceProvider tripId={params.id} meta={displayWorkspace}>
         <TripDemoProvider isDemo={isDemo}>
           <LoggedInRoutePrefetch />
           <TripAgencyRouteGuard />
           <TripOfflineSync tripId={params.id} />
           <div
             className={`pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
-              workspace.isAgencyTrip ? KAVIRO_TRIPS_WORKSPACE_CLASS : ""
+              displayWorkspace.isAgencyTrip ? KAVIRO_TRIPS_WORKSPACE_CLASS : ""
             }`}
           >
             <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
@@ -91,9 +102,9 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   tripName={tripName}
                   destination={destination}
                   participants={participantNames}
-                  isAgencyTrip={workspace.isAgencyTrip}
+                  isAgencyTrip={displayWorkspace.isAgencyTrip}
                   clientPortalHref={
-                    workspace.isAgencyTrip && workspace.agencySlug && workspace.clientPortalSlug
+                    workspace.isAgencyManaged && workspace.agencySlug && workspace.clientPortalSlug
                       ? clientPortalPath(workspace.agencySlug, workspace.clientPortalSlug)
                       : null
                   }
@@ -108,6 +119,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   endDate={tripMeta?.end_date ?? null}
                 />
                 <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:space-y-8">
+                  {isTravelerPreview ? <TripTravelerPreviewBanner tripId={params.id} /> : null}
                   {isDemo ? <DemoTripBanner /> : null}
                   {showOnboarding ? (
                     <TripOnboardingChecklistGate

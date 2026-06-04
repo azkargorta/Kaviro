@@ -6,7 +6,38 @@ import { getAgencyForUser } from "@/lib/agency";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { isPlatformOpsPath } from "@/lib/platform-ops-paths";
 import { applyRateLimit } from "@/lib/rate-limit-middleware";
+import { TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 import { updateSession } from "@/lib/supabase/middleware";
+
+/** Activa o desactiva la previsualización Kaviro viajero para staff de agencia. */
+function travelerPreviewMiddleware(request: NextRequest): NextResponse | null {
+  const { pathname, searchParams } = request.nextUrl;
+  const tripMatch = pathname.match(/^\/trip\/([^/]+)/);
+  if (!tripMatch) return null;
+  const tripId = tripMatch[1];
+
+  if (searchParams.get("exitTravelerPreview") === "1") {
+    const clean = request.nextUrl.clone();
+    clean.searchParams.delete("exitTravelerPreview");
+    const res = NextResponse.redirect(clean);
+    res.cookies.delete(TRAVELER_PREVIEW_COOKIE);
+    return res;
+  }
+
+  if (searchParams.get("asTraveler") === "1") {
+    const clean = request.nextUrl.clone();
+    clean.searchParams.delete("asTraveler");
+    const res = NextResponse.redirect(clean);
+    res.cookies.set(TRAVELER_PREVIEW_COOKIE, tripId, {
+      path: "/",
+      maxAge: 60 * 60 * 24,
+      sameSite: "lax",
+    });
+    return res;
+  }
+
+  return null;
+}
 
 /** Evita getUser() en Supabase antes de login/signup (doble llamada y más latencia). */
 function skipsSessionRefresh(pathname: string): boolean {
@@ -14,6 +45,9 @@ function skipsSessionRefresh(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const previewRedirect = travelerPreviewMiddleware(request);
+  if (previewRedirect) return previewRedirect;
+
   const rateLimit = applyRateLimit(request);
   if (rateLimit?.blocked) return rateLimit.response;
 

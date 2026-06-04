@@ -4,7 +4,8 @@ import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { agencyHeroGradient } from "@/lib/agency-theme";
-import { ExternalLink, Eye } from "lucide-react";
+import { ExternalLink, Eye, Globe } from "lucide-react";
+import { travelerPreviewEntryHref } from "@/lib/trip-traveler-preview";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -129,11 +130,20 @@ export default function TripHeroCard({
           </Link>
           <div className="flex flex-wrap gap-2">
             <Link
-              href={`/trip/${tripId}/client-preview`}
+              href={travelerPreviewEntryHref(tripId)}
               className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
+              title="Menú Kaviro del viajero invitado (resumen, gastos, avisos…)"
             >
               <Eye className="h-3.5 w-3.5" aria-hidden />
               Vista como cliente
+            </Link>
+            <Link
+              href={`/trip/${tripId}/client-preview`}
+              className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/90 transition hover:bg-white/20 hover:text-white"
+              title="Página pública del portal (solo itinerario publicado)"
+            >
+              <Globe className="h-3.5 w-3.5" aria-hidden />
+              Portal web
             </Link>
             {clientPortalHref ? (
               <Link
