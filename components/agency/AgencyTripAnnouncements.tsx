@@ -7,7 +7,14 @@ import { useToast } from "@/components/ui/toast";
 
 type Announcement = { id: string; title: string; body: string; created_at: string };
 
-export default function AgencyTripAnnouncements({ tripId }: { tripId: string }) {
+export default function AgencyTripAnnouncements({
+  tripId,
+  embedded = false,
+}: {
+  tripId: string;
+  /** Sin tarjeta duplicada cuando va dentro de Operaciones */
+  embedded?: boolean;
+}) {
   const toast = useToast();
   const [items, setItems] = useState<Announcement[]>([]);
   const [title, setTitle] = useState("");
@@ -51,19 +58,23 @@ export default function AgencyTripAnnouncements({ tripId }: { tripId: string }) 
     }
   }
 
-  return (
-    <div className={`${agencyCardClass} p-4 space-y-4`}>
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-        <Megaphone className="h-4 w-4 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
-        Avisos al grupo (portal)
-      </h3>
+  const shellClass = embedded ? "space-y-4" : `${agencyCardClass} p-4 space-y-4`;
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+  return (
+    <div className={shellClass}>
+      {!embedded ? (
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+          <Megaphone className="h-4 w-4 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
+          Avisos al grupo (portal)
+        </h3>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
         <div>
           <label className={agencyLabelClass}>Título</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={agencyInputClass} />
         </div>
-        <div>
+        <div className="md:col-span-2">
           <label className={agencyLabelClass}>Mensaje</label>
           <textarea
             value={body}
@@ -72,9 +83,11 @@ export default function AgencyTripAnnouncements({ tripId }: { tripId: string }) 
             className={agencyInputClass}
           />
         </div>
-        <button type="submit" disabled={saving} className={agencyBtnPrimaryClass}>
-          {saving ? "Enviando…" : "Publicar aviso"}
-        </button>
+        <div className="md:col-span-2">
+          <button type="submit" disabled={saving} className={agencyBtnPrimaryClass}>
+            {saving ? "Enviando…" : "Publicar aviso"}
+          </button>
+        </div>
       </form>
 
       {items.length > 0 ? (

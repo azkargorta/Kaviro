@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, ClipboardList, CreditCard, FileSignature, FileText, Loader2, Mail, Star, UserPlus, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, ClipboardList, CreditCard, FileSignature, FileText, Loader2, Mail, Megaphone, Star, UserPlus, Users } from "lucide-react";
+import AgencyTripAnnouncements from "@/components/agency/AgencyTripAnnouncements";
 import AgencyTripSignaturesSection from "@/components/agency/AgencyTripSignaturesSection";
 import AgencyTripPretravelSection from "@/components/agency/AgencyTripPretravelSection";
 import AgencyTripQuotesSection from "@/components/agency/AgencyTripQuotesSection";
@@ -247,6 +248,24 @@ export default function AgencyTripOperationsClient({
         {tripName}
         {occupancyLabel ? ` · ${occupancyLabel}` : ""}
       </p>
+
+      <section id="avisos" className="scroll-mt-6">
+        <div className={`${agencyCardClass} border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-white p-5 dark:border-amber-900/40 dark:from-amber-950/30 dark:to-[var(--surface-card)]`}>
+          <div className="mb-4 flex flex-wrap items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100">
+              <Megaphone className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Avisos al grupo</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Publica novedades para viajeros. Aparecen en el portal, en la pestaña Avisos del viaje y generan
+                notificación en Mis viajes.
+              </p>
+            </div>
+          </div>
+          <AgencyTripAnnouncements tripId={tripId} embedded />
+        </div>
+      </section>
 
       {/* Cotizaciones */}
       <section className={`${agencyCardClass} space-y-4 p-5`}>

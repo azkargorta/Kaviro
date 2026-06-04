@@ -28,12 +28,13 @@ export const PERSONAL_TRIP_NAV: TripNavItem[] = [
   { key: "settings", label: "Ajustes", sublabel: "Datos del viaje", href: (id) => `/trip/${id}/settings` },
 ];
 
-/** Navegación Kaviro Trips (agencia) — sin resumen, gastos, mensajes ni recap social. */
+/** Navegación Kaviro Trips (agencia) — sin resumen, gastos ni recap social. */
 export const AGENCY_TRIP_NAV: TripNavItem[] = [
   { key: "plan", label: "Plan", sublabel: "Itinerario", href: (id) => `/trip/${id}/plan` },
   { key: "map", label: "Rutas", sublabel: "Logística", href: (id) => `/trip/${id}/map` },
   { key: "resources", label: "Docs", sublabel: "Dossier", href: (id) => `/trip/${id}/resources` },
   { key: "participants", label: "Equipo", sublabel: "Coordinación", href: (id) => `/trip/${id}/participants` },
+  { key: "messages", label: "Mensajes", sublabel: "Chat del grupo", href: (id) => `/trip/${id}/messages` },
   { key: "chat", label: "Herramientas IA", sublabel: "Importar y organizar", href: (id) => `/trip/${id}/ai-chat` },
   { key: "settings", label: "Ajustes", sublabel: "Programa y portal", href: (id) => `/trip/${id}/settings` },
 ];
@@ -41,7 +42,6 @@ export const AGENCY_TRIP_NAV: TripNavItem[] = [
 export const AGENCY_TRIP_BLOCKED_PATH_SUFFIXES = [
   "/summary",
   "/expenses",
-  "/messages",
   "/recap",
   "/overview",
   "/today",

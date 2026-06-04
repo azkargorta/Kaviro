@@ -14,7 +14,8 @@ import {
   validateWeatherStays,
 } from "@/lib/trip-weather-stays";
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
-import AgencyTripAnnouncements from "@/components/agency/AgencyTripAnnouncements";
+import Link from "next/link";
+import { Megaphone } from "lucide-react";
 import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
 import { agencyCardClass } from "@/lib/agency-theme";
 
@@ -342,8 +343,22 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       </div>
 
       {isAgencyTrip ? (
-        <div className="mt-6">
-          <AgencyTripAnnouncements tripId={tripId} />
+        <div className={`${agencyCardClass} mt-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}>
+          <div className="flex min-w-0 items-start gap-3">
+            <Megaphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Avisos al grupo</p>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                Publica avisos desde Operaciones en el panel de agencia (más visible para el equipo).
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/agency/trips/${tripId}/operaciones#avisos`}
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#1e3a5f] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#152a47] dark:bg-sky-600 dark:hover:bg-sky-500"
+          >
+            Ir a avisos
+          </Link>
         </div>
       ) : null}
 
