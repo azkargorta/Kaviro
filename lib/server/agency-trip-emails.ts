@@ -8,6 +8,7 @@ import {
 } from "@/lib/agency/email-events";
 import { payPublicPath } from "@/lib/agency/payments";
 import { pretravelPublicPath } from "@/lib/agency/pretravel-defaults";
+import { signPublicPath } from "@/lib/agency/signatures";
 import {
   agencyTravelerEmailSubject,
   buildAgencyTravelerEmailHtml,
@@ -31,7 +32,7 @@ export async function getTripEmailAutomation(tripId: string, agencyId: string): 
   const admin = createSupabaseAdmin();
   const { data } = await admin
     .from("agency_trip_email_automation")
-    .select("remind_deposit, remind_final, pretravel_invite, nps_invite")
+    .select("remind_deposit, remind_final, pretravel_invite, nps_invite, signature_invite")
     .eq("trip_id", tripId)
     .maybeSingle();
 
@@ -42,6 +43,7 @@ export async function getTripEmailAutomation(tripId: string, agencyId: string): 
     remindFinal: Boolean(data.remind_final),
     pretravelInvite: Boolean(data.pretravel_invite),
     npsInvite: Boolean(data.nps_invite),
+    signatureInvite: data.signature_invite !== false,
   };
 }
 
@@ -61,6 +63,7 @@ export async function upsertTripEmailAutomation(
     remind_final: next.remindFinal,
     pretravel_invite: next.pretravelInvite,
     nps_invite: next.npsInvite,
+    signature_invite: next.signatureInvite,
     updated_at: new Date().toISOString(),
   });
 
@@ -217,6 +220,45 @@ async function resolveRecipients(
     return out;
   }
 
+  if (event === "signature_invite") {
+    const { data: pack } = await admin
+      .from("agency_trip_signature_packs")
+      .select("is_active")
+      .eq("trip_id", tripId)
+      .maybeSingle();
+
+    if (!pack?.is_active) return [];
+
+    const { data: rows } = await admin
+      .from("agency_signature_requests")
+      .select("participant_id, token, signed_at")
+      .eq("trip_id", tripId)
+      .is("signed_at", null);
+
+    const out: Recipient[] = [];
+    for (const row of rows ?? []) {
+      if (!row.token) continue;
+      if (filterIds && row.participant_id && !filterIds.has(row.participant_id as string)) continue;
+
+      const { data: p } = await admin
+        .from("trip_participants")
+        .select("id, email, display_name")
+        .eq("id", row.participant_id)
+        .maybeSingle();
+
+      const email = (p?.email as string)?.trim();
+      if (!email?.includes("@")) continue;
+
+      out.push({
+        participantId: p!.id as string,
+        email,
+        displayName: (p?.display_name as string) || "Viajero",
+        actionUrl: `${origin}${signPublicPath(row.token as string)}`,
+      });
+    }
+    return out;
+  }
+
   return [];
 }
 
@@ -326,7 +368,13 @@ export async function sendAllEnabledTripReminders(opts: {
   const settings = await getTripEmailAutomation(opts.tripId, opts.agencyId);
   const summary: Record<string, Awaited<ReturnType<typeof sendAgencyTripEmailBatch>>> = {};
 
-  for (const event of ["deposit_reminder", "final_reminder", "pretravel_invite", "nps_invite"] as const) {
+  for (const event of [
+    "deposit_reminder",
+    "final_reminder",
+    "pretravel_invite",
+    "nps_invite",
+    "signature_invite",
+  ] as const) {
     if (!eventEnabledForSettings(event, settings)) continue;
     summary[event] = await sendAgencyTripEmailBatch({
       tripId: opts.tripId,

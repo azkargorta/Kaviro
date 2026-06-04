@@ -74,6 +74,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (typeof body?.remindFinal === "boolean") patch.remindFinal = body.remindFinal;
   if (typeof body?.pretravelInvite === "boolean") patch.pretravelInvite = body.pretravelInvite;
   if (typeof body?.npsInvite === "boolean") patch.npsInvite = body.npsInvite;
+  if (typeof body?.signatureInvite === "boolean") patch.signatureInvite = body.signatureInvite;
 
   try {
     const settings = await upsertTripEmailAutomation(params.tripId, gate.ctx.agency.id, patch);

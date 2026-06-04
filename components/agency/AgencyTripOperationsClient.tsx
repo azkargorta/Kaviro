@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, ClipboardList, CreditCard, FileText, Loader2, Mail, Star, UserPlus, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, ClipboardList, CreditCard, FileSignature, FileText, Loader2, Mail, Star, UserPlus, Users } from "lucide-react";
+import AgencyTripSignaturesSection from "@/components/agency/AgencyTripSignaturesSection";
 import AgencyTripPretravelSection from "@/components/agency/AgencyTripPretravelSection";
 import AgencyTripQuotesSection from "@/components/agency/AgencyTripQuotesSection";
 import AgencyTripPaymentsSection from "@/components/agency/AgencyTripPaymentsSection";
@@ -272,6 +273,15 @@ export default function AgencyTripOperationsClient({
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Emails automáticos</h2>
         </div>
         <AgencyTripEmailsSection tripId={tripId} />
+      </section>
+
+      {/* Firma digital */}
+      <section className={`${agencyCardClass} space-y-4 p-5`}>
+        <div className="flex items-center gap-2">
+          <FileSignature className="h-5 w-5 text-[#1e3a5f] dark:text-sky-300" aria-hidden />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Firma digital</h2>
+        </div>
+        <AgencyTripSignaturesSection tripId={tripId} />
       </section>
 
       {/* Plazas */}

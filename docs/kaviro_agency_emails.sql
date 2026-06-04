@@ -9,6 +9,7 @@ create table if not exists public.agency_trip_email_automation (
   remind_final boolean not null default true,
   pretravel_invite boolean not null default true,
   nps_invite boolean not null default false,
+  signature_invite boolean not null default true,
   updated_at timestamptz not null default now()
 );
 

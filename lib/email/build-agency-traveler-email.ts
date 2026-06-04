@@ -29,7 +29,9 @@ export function buildAgencyTravelerEmailHtml(params: {
         ? `Ya tienes la señal registrada. Puedes completar el pago final del viaje <strong>${escapeHtml(params.tripName)}</strong>:`
         : params.event === "pretravel_invite"
           ? `Antes del viaje <strong>${escapeHtml(params.tripName)}</strong>, ${escapeHtml(params.agencyName)} necesita algunos datos tuyos:`
-          : `Tu opinión ayuda a ${escapeHtml(params.agencyName)}. Cuéntanos cómo fue <strong>${escapeHtml(params.tripName)}</strong>:`;
+          : params.event === "signature_invite"
+            ? `Debes firmar el documento del viaje <strong>${escapeHtml(params.tripName)}</strong> con ${escapeHtml(params.agencyName)}:`
+            : `Tu opinión ayuda a ${escapeHtml(params.agencyName)}. Cuéntanos cómo fue <strong>${escapeHtml(params.tripName)}</strong>:`;
 
   return `
 <!DOCTYPE html>

@@ -134,6 +134,7 @@ export default function AgencyTripEmailsSection({ tripId }: { tripId: string }) 
     { key: "remindFinal", event: "final_reminder", label: "Recordatorio pago final" },
     { key: "pretravelInvite", event: "pretravel_invite", label: "Encuesta pre-viaje" },
     { key: "npsInvite", event: "nps_invite", label: "NPS post-viaje" },
+    { key: "signatureInvite", event: "signature_invite", label: "Firma de documento" },
   ];
 
   return (

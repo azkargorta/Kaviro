@@ -3,6 +3,7 @@ export const AGENCY_EMAIL_EVENTS = [
   "final_reminder",
   "pretravel_invite",
   "nps_invite",
+  "signature_invite",
 ] as const;
 
 export type AgencyEmailEvent = (typeof AGENCY_EMAIL_EVENTS)[number];
@@ -12,6 +13,7 @@ export const AGENCY_EMAIL_EVENT_LABELS: Record<AgencyEmailEvent, string> = {
   final_reminder: "Recordatorio de pago final",
   pretravel_invite: "Encuesta pre-viaje",
   nps_invite: "Encuesta NPS post-viaje",
+  signature_invite: "Firma de documento",
 };
 
 export const AGENCY_EMAIL_EVENT_DESCRIPTIONS: Record<AgencyEmailEvent, string> = {
@@ -19,6 +21,7 @@ export const AGENCY_EMAIL_EVENT_DESCRIPTIONS: Record<AgencyEmailEvent, string> =
   final_reminder: "Enlace del pago final (solo si la señal ya está pagada).",
   pretravel_invite: "Formulario pre-viaje pendiente de completar.",
   nps_invite: "Encuesta de satisfacción tras el viaje.",
+  signature_invite: "Enlace para firmar contrato o documento pendiente.",
 };
 
 export function isAgencyEmailEvent(value: unknown): value is AgencyEmailEvent {
@@ -30,6 +33,7 @@ export type EmailAutomationSettings = {
   remindFinal: boolean;
   pretravelInvite: boolean;
   npsInvite: boolean;
+  signatureInvite: boolean;
 };
 
 export const DEFAULT_EMAIL_AUTOMATION: EmailAutomationSettings = {
@@ -37,6 +41,7 @@ export const DEFAULT_EMAIL_AUTOMATION: EmailAutomationSettings = {
   remindFinal: true,
   pretravelInvite: true,
   npsInvite: false,
+  signatureInvite: true,
 };
 
 export function eventEnabledForSettings(
@@ -52,6 +57,8 @@ export function eventEnabledForSettings(
       return settings.pretravelInvite;
     case "nps_invite":
       return settings.npsInvite;
+    case "signature_invite":
+      return settings.signatureInvite;
     default:
       return false;
   }

@@ -38,7 +38,7 @@
 8. Directorio de proveedores  
 9. ~~Calendario de operaciones~~ ✅  
 10. Checklist pre-salida — ✅ **MVP** (misma página operaciones + `docs/kaviro_agency_checklist.sql`)  
-11. Firma digital de documentos  
+11. Firma digital de documentos — ✅ MVP (`docs/kaviro_agency_signatures.sql`, `/sign/[token]`)  
 
 ---
 
@@ -67,7 +67,9 @@
 4. ~~Calendario de operaciones~~ ✅ MVP (`/agency/calendar`)  
 
 ### Siguiente trimestre
-5. ~~Cotizaciones~~ ✅ · 6. ~~Cobros Stripe~~ ✅ · 7. ~~Emails automáticos~~ ✅ · 8. ~~NPS~~ ✅ · 9. **Firma digital** (siguiente)  
+5. ~~Cotizaciones~~ ✅ · 6. ~~Cobros Stripe~~ ✅ · 7. ~~Emails automáticos~~ ✅ · 8. ~~NPS~~ ✅ · 9. ~~Firma digital~~ ✅  
+
+**Siguiente trimestre cerrado.** Medio plazo: dossier IA, CRM, informes…  
 
 ### Medio plazo
 10. Dossier IA → 11. CRM → 12. Informes → 13. Proveedores → 14. Dominio custom  
@@ -88,6 +90,7 @@
 | NPS post-viaje | `docs/kaviro_agency_nps.sql` |
 | Cobros Stripe | `docs/kaviro_agency_payments.sql` |
 | Emails Resend | `docs/kaviro_agency_emails.sql` |
+| Firma digital | `docs/kaviro_agency_signatures.sql` |
 
 Ejecutar en Supabase → SQL Editor tras `kaviro_agency_features.sql`.
 
