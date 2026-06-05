@@ -12,32 +12,17 @@ import {
   requireTripAccessApi,
 } from "@/lib/trip-access-api";
 import { notifyTripMembers } from "@/lib/server/notify-trip-members";
+import {
+  isLodgingActivityRow,
+  lodgingReservationPatchFromActivity,
+} from "@/lib/trip-activities/lodging-sync";
+import {
+  activityTitle,
+  asTripActivityRow,
+  linkedReservationId,
+  type TripActivityRow,
+} from "@/lib/trip-activities/types";
 
- function calculateNights(checkInDate?: string | null, checkOutDate?: string | null) {
-   if (!checkInDate || !checkOutDate) return null;
-   const start = new Date(checkInDate);
-   const end = new Date(checkOutDate);
-   const diffMs = end.getTime() - start.getTime();
-   if (Number.isNaN(diffMs) || diffMs < 0) return null;
-   return Math.round(diffMs / (1000 * 60 * 60 * 24));
- }
-
- function isLodgingActivityRow(row: { activity_type?: string | null; activity_kind?: string | null }) {
-   const t = String(row.activity_type || "").toLowerCase();
-   const k = String(row.activity_kind || "").toLowerCase();
-   return t === "lodging" || k === "lodging" || k === "hotel";
- }
-
- function lodgingReservationNameFromActivity(row: {
-   title?: string | null;
-   place_name?: string | null;
- }) {
-   const place = typeof row.place_name === "string" ? row.place_name.trim() : "";
-   if (place) return place;
-   const title = typeof row.title === "string" ? row.title.trim() : "";
-   return title.replace(/^Check-in\s*·\s*/i, "").trim() || title;
- }
- 
  export async function PATCH(request: Request, { params }: { params: { activityId: string } }) {
    try {
      const body = await request.json();
@@ -151,18 +136,23 @@ import { notifyTripMembers } from "@/lib/server/notify-trip-members";
       if (!syncResult.ok) inviteWarning = syncResult.warning;
     }
 
+    const activityRow = asTripActivityRow(data);
+    if (!activityRow) throw new Error("Respuesta de actividad inválida.");
     const activityPayload = {
       ...data,
       invite_scope:
-        (data as { invite_scope?: string }).invite_scope ??
+        activityRow.invite_scope ??
         inviteFields?.invite_scope ??
-        normalizeInviteScope((row as { invite_scope?: string }).invite_scope),
+        normalizeInviteScope(
+          typeof (row as { invite_scope?: string }).invite_scope === "string"
+            ? (row as { invite_scope: string }).invite_scope
+            : undefined
+        ),
       invited_participant_ids: inviteFields?.invited_participant_ids,
     };
 
-    const linkedId =
-      typeof (data as any)?.linked_reservation_id === "string" ? String((data as any).linked_reservation_id) : null;
-    if (linkedId && isLodgingActivityRow(data as any)) {
+    const linkedId = linkedReservationId(activityRow);
+    if (linkedId && isLodgingActivityRow(activityRow)) {
       if (!access.can_manage_resources) {
         return NextResponse.json({
           activity: activityPayload,
@@ -182,18 +172,7 @@ import { notifyTripMembers } from "@/lib/server/notify-trip-members";
       const checkOutDate = typeof resRow?.check_out_date === "string" ? resRow.check_out_date : null;
       const checkOutTime = typeof resRow?.check_out_time === "string" ? resRow.check_out_time : null;
 
-      const resPatch: Record<string, unknown> = {
-        reservation_name: lodgingReservationNameFromActivity(data as any),
-        notes: (data as any).description ?? null,
-        check_in_date: (data as any).activity_date ?? null,
-        check_in_time: (data as any).activity_time ?? null,
-        check_out_date: checkOutDate,
-        check_out_time: checkOutTime,
-        address: (data as any).address ?? null,
-        latitude: typeof (data as any).latitude === "number" ? (data as any).latitude : null,
-        longitude: typeof (data as any).longitude === "number" ? (data as any).longitude : null,
-        nights: calculateNights((data as any).activity_date ?? null, checkOutDate),
-      };
+      const resPatch = lodgingReservationPatchFromActivity(activityRow, checkOutDate, checkOutTime);
 
       const { error: updResErr } = await supabase.from("trip_reservations").update(resPatch).eq("id", linkedId);
       if (updResErr) throw new Error(updResErr.message);
@@ -241,10 +220,10 @@ import { notifyTripMembers } from "@/lib/server/notify-trip-members";
      if (forbidden) return forbidden;
      const access = gate.access;
 
-    const linkedReservationId =
-      typeof (row as any)?.linked_reservation_id === "string" ? String((row as any).linked_reservation_id) : null;
+    const activityRow = asTripActivityRow(row);
+    const reservationId = activityRow ? linkedReservationId(activityRow) : null;
 
-    if (linkedReservationId && isLodgingActivityRow(row as any)) {
+    if (reservationId && activityRow && isLodgingActivityRow(activityRow)) {
       if (!access.can_manage_resources) {
         return NextResponse.json(
           {
@@ -255,10 +234,10 @@ import { notifyTripMembers } from "@/lib/server/notify-trip-members";
         );
       }
 
-      const { error: delActErr } = await supabase.from("trip_activities").delete().eq("linked_reservation_id", linkedReservationId);
+      const { error: delActErr } = await supabase.from("trip_activities").delete().eq("linked_reservation_id", reservationId);
       if (delActErr) throw new Error(delActErr.message);
 
-      const { error: delResErr } = await supabase.from("trip_reservations").delete().eq("id", linkedReservationId);
+      const { error: delResErr } = await supabase.from("trip_reservations").delete().eq("id", reservationId);
       if (delResErr) throw new Error(delResErr.message);
     } else {
       const { error } = await supabase.from("trip_activities").delete().eq("id", params.activityId);
@@ -270,7 +249,7 @@ import { notifyTripMembers } from "@/lib/server/notify-trip-members";
       entity_type: "activity",
       entity_id: String(row.id),
       action: "delete",
-      summary: `Eliminó plan: ${String((row as any).title || "").trim() || "Sin título"}`,
+      summary: `Eliminó plan: ${activityRow ? activityTitle(activityRow) : "Sin título"}`,
       diff: { before: row },
       actor_user_id: actor?.user?.id ?? null,
       actor_email: actor?.user?.email ?? null,

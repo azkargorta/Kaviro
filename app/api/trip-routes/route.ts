@@ -5,43 +5,11 @@ import {
   forbidUnlessCanManageMap,
   requireTripAccessApi,
 } from "@/lib/trip-access-api";
-
-function buildPayload(body: any) {
-  return {
-    trip_id: body?.tripId || body?.trip_id || null,
-    route_day: body?.route_day || body?.route_date || body?.day_date || null,
-    route_date: body?.route_date || body?.route_day || body?.day_date || null,
-    day_date: body?.day_date || body?.route_date || body?.route_day || null,
-    title: body?.title || body?.route_name || body?.name || null,
-    route_name: body?.route_name || body?.title || body?.name || null,
-    name: body?.name || body?.route_name || body?.title || null,
-    departure_time: body?.departure_time || body?.start_time || null,
-    start_time: body?.start_time || body?.departure_time || null,
-    travel_mode: body?.travel_mode || body?.mode || "driving",
-    mode: body?.mode || body?.travel_mode || "driving",
-    notes: body?.notes || null,
-    color: body?.color || null,
-    route_order: typeof body?.route_order === "number" ? body.route_order : null,
-    origin_name: body?.origin_name || null,
-    origin_address: body?.origin_address || body?.origin_name || null,
-    origin_latitude: body?.origin_latitude ?? null,
-    origin_longitude: body?.origin_longitude ?? null,
-    stop_name: body?.stop_name || null,
-    stop_address: body?.stop_address || body?.stop_name || null,
-    stop_latitude: body?.stop_latitude ?? null,
-    stop_longitude: body?.stop_longitude ?? null,
-    destination_name: body?.destination_name || null,
-    destination_address: body?.destination_address || body?.destination_name || null,
-    destination_latitude: body?.destination_latitude ?? null,
-    destination_longitude: body?.destination_longitude ?? null,
-    waypoints: Array.isArray(body?.waypoints) ? body.waypoints : [],
-    path_points: Array.isArray(body?.path_points) ? body.path_points : [],
-    route_points: Array.isArray(body?.route_points) ? body.route_points : [],
-    distance_text: body?.distance_text || null,
-    duration_text: body?.duration_text || null,
-    arrival_time: body?.arrival_time || null,
-  };
-}
+import {
+  buildTripRoutePayload,
+  omitPayloadKey,
+  routeDisplayTitle,
+} from "@/lib/trip-routes/payload";
 
 async function insertWithFallback(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -52,20 +20,29 @@ async function insertWithFallback(
 
   const message = response.error.message.toLowerCase();
   if (message.includes("color") && message.includes("schema cache")) {
-    const { color, ...fallbackPayload } = payload as any;
-    response = await supabase.from("trip_routes").insert(fallbackPayload).select("*").single();
+    response = await supabase
+      .from("trip_routes")
+      .insert(omitPayloadKey(payload, "color"))
+      .select("*")
+      .single();
     return response;
   }
   if (message.includes("notes") && message.includes("schema cache")) {
-    const { notes, ...fallbackPayload } = payload as any;
-    response = await supabase.from("trip_routes").insert(fallbackPayload).select("*").single();
+    response = await supabase
+      .from("trip_routes")
+      .insert(omitPayloadKey(payload, "notes"))
+      .select("*")
+      .single();
     return response;
   }
 
   if (!message.includes("route_order")) return response;
 
-  const { route_order, ...fallbackPayload } = payload;
-  response = await supabase.from("trip_routes").insert(fallbackPayload).select("*").single();
+  response = await supabase
+    .from("trip_routes")
+    .insert(omitPayloadKey(payload, "route_order"))
+    .select("*")
+    .single();
   return response;
 }
 
@@ -86,7 +63,7 @@ export async function POST(request: Request) {
 
     const { supabase } = gate;
     const { data: actor } = await supabase.auth.getUser();
-    const payload = buildPayload(body);
+    const payload = buildTripRoutePayload(body);
     const response = await insertWithFallback(supabase, payload);
 
     if (response.error) throw new Error(response.error.message);
@@ -96,7 +73,7 @@ export async function POST(request: Request) {
       entity_type: "route",
       entity_id: String(response.data.id),
       action: "create",
-      summary: `Creó ruta: ${String(response.data.title || response.data.route_name || response.data.name || "").trim() || "Ruta"}`,
+      summary: `Creó ruta: ${routeDisplayTitle(response.data)}`,
       diff: { after: response.data },
       actor_user_id: actor?.user?.id ?? null,
       actor_email: actor?.user?.email ?? null,

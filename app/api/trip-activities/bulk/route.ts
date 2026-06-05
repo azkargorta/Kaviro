@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 import { safeInsertAudit } from "@/lib/audit";
 import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
+import { isLodgingActivityRow } from "@/lib/trip-activities/lodging-sync";
+import type { BulkActivityInput, BulkActivityInsertRow } from "@/lib/trip-activities/types";
+import { linkedReservationId } from "@/lib/trip-activities/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -25,20 +28,6 @@ function coordsValid(lat: number | null, lng: number | null): boolean {
     Math.abs(lng) <= 180
   );
 }
-
-type BulkActivityInput = {
-  title: string;
-  description?: string | null;
-  activity_date?: string | null;
-  activity_time?: string | null;
-  place_name?: string | null;
-  address?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  activity_type?: string | null;
-  activity_kind?: string | null;
-  source?: string | null;
-};
 
 export async function POST(request: Request) {
   try {
@@ -69,26 +58,26 @@ export async function POST(request: Request) {
 
     // Build initial rows
     const rows = activities
-      .map((a) => {
-        const title = cleanString((a as any)?.title);
+      .map((a): BulkActivityInsertRow | null => {
+        const title = cleanString(a.title);
         if (!title) return null;
         return {
           trip_id: tripId,
           title,
-          description: cleanString((a as any)?.description),
-          activity_date: cleanString((a as any)?.activity_date),
-          activity_time: cleanString((a as any)?.activity_time),
-          place_name: cleanString((a as any)?.place_name),
-          address: cleanString((a as any)?.address),
-          latitude: numOrNull((a as any)?.latitude),
-          longitude: numOrNull((a as any)?.longitude),
-          activity_type: cleanString((a as any)?.activity_type) ?? "general",
-          activity_kind: cleanString((a as any)?.activity_kind) ?? "visit",
-          source: cleanString((a as any)?.source) ?? "ai_planner",
+          description: cleanString(a.description),
+          activity_date: cleanString(a.activity_date),
+          activity_time: cleanString(a.activity_time),
+          place_name: cleanString(a.place_name),
+          address: cleanString(a.address),
+          latitude: numOrNull(a.latitude),
+          longitude: numOrNull(a.longitude),
+          activity_type: cleanString(a.activity_type) ?? "general",
+          activity_kind: cleanString(a.activity_kind) ?? "visit",
+          source: cleanString(a.source) ?? "ai_planner",
           created_by_user_id: access.userId,
         };
       })
-      .filter(Boolean) as any[];
+      .filter((row): row is BulkActivityInsertRow => row !== null);
 
     if (!rows.length) return NextResponse.json({ error: "No hay filas válidas para insertar." }, { status: 400 });
 
@@ -100,7 +89,7 @@ export async function POST(request: Request) {
     // o si son muchas actividades del planificador IA (suelen traer coords o se rellenan en mapa después).
     if (!skipGeocode && !bulkFromAiPlanner) {
       await Promise.all(
-        rows.map(async (row: any) => {
+        rows.map(async (row) => {
           if (coordsValid(row.latitude, row.longitude)) return;
           if (row.activity_kind === "transport") return;
 
@@ -145,12 +134,6 @@ export async function POST(request: Request) {
   }
 }
 
-function isLodgingActivityRow(row: { activity_type?: string | null; activity_kind?: string | null }) {
-  const t = String(row.activity_type || "").toLowerCase();
-  const k = String(row.activity_kind || "").toLowerCase();
-  return t === "lodging" || k === "lodging" || k === "hotel";
-}
-
 /** Borra muchos planes en una sola operación (más fiable que N DELETEs secuenciales). */
 export async function DELETE(request: Request) {
   try {
@@ -187,13 +170,10 @@ export async function DELETE(request: Request) {
     const directDeleteIds = new Set<string>();
 
     for (const row of found) {
-      const id = String((row as { id: string }).id);
-      const linkedReservationId =
-        typeof (row as { linked_reservation_id?: string | null }).linked_reservation_id === "string"
-          ? String((row as { linked_reservation_id: string }).linked_reservation_id)
-          : null;
+      const id = String(row.id);
+      const reservationId = linkedReservationId(row);
 
-      if (linkedReservationId && isLodgingActivityRow(row as { activity_type?: string | null; activity_kind?: string | null })) {
+      if (reservationId && isLodgingActivityRow(row)) {
         if (!access.can_manage_resources) {
           skipped.push({
             id,
@@ -201,7 +181,7 @@ export async function DELETE(request: Request) {
           });
           continue;
         }
-        reservationIdsToDelete.add(linkedReservationId);
+        reservationIdsToDelete.add(reservationId);
       } else {
         directDeleteIds.add(id);
       }

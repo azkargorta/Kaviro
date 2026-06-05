@@ -24,6 +24,7 @@ Valoración documento: **8,2 / 10**
 | Tipos Stripe billing | ✅ webhook `Stripe.Event` / `Checkout.Session`; portal sin `any` |
 | Tests notificaciones + webhook | ✅ + `trip-shares`, `auth.signup` |
 | Utilidades tipadas geo/OSM | ✅ `lib/geo/lat-lng`, `lib/osm/overpass-types`, `ApiHttpError` |
+| Tipos actividades/rutas | ✅ `lib/trip-activities/*`, `lib/trip-routes/payload` + tests |
 
 ## Crítico — SQL en Supabase
 
@@ -57,7 +58,7 @@ Comprobar en [/ops/migrations](/ops/migrations). Ejecutar lo que salga en rojo:
 |-------|-----------|-------|
 | Travel mates UI | Alta | SQL `kaviro_social_features.sql` |
 | Tests API (ampliar) | Media | 6 suites en `app/api/__tests__` (auth, leads, invites, gastos…) |
-| Reducir `any` en APIs críticas | Media | geo/OSM/shares/analytics; quedan rutas IA grandes |
+| Reducir `any` en APIs críticas | Media | actividades/rutas/geo hechos; quedan rutas IA grandes |
 | Rate limit Redis/Upstash | ✅ opcional | `UPSTASH_REDIS_REST_URL` + `TOKEN` en Vercel |
 | Refactor `TripAiChatView` / `TripMapView` | Baja | >2.700 líneas |
 
