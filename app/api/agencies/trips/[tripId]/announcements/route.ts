@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { requireAgencyTripAccess } from "@/lib/require-agency-trip";
 import { notifyTripAnnouncement } from "@/lib/server/notify-trip-announcement";
 
@@ -61,7 +62,7 @@ export async function POST(req: Request, { params }: Params) {
     actorUserId: gate.user.id,
     title,
     organizerLabel,
-  }).catch((e) => console.warn("notifyTripAnnouncement:", e));
+  }).catch((e) => logger.warn("notifyTripAnnouncement:", e));
 
   return NextResponse.json({ announcement: data }, { status: 201 });
 }

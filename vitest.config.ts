@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),
+      "next/cache": path.resolve(__dirname, "test-mocks/next-cache.ts"),
     },
   },
 });

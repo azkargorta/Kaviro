@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser, isAgencyPlanActive } from "@/lib/agency";
 import { createTripWithOwner } from "@/lib/trips/createTripWithOwner";
@@ -100,7 +101,7 @@ export async function POST(req: Request) {
         client_portal_slug
       );
     } catch (e) {
-      console.warn("bootstrapAgencyTripForTravelers:", e);
+      logger.warn("bootstrapAgencyTripForTravelers:", e);
     }
 
     return NextResponse.json(

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import {
   AGENCY_PARTNERSHIP_EMAIL,
   KAVIRO_TRIPS_PRODUCT_NAME,
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     });
 
     if (!result.sent) {
-      console.error("agency contact email:", result.error);
+      logger.error("agency contact email:", result.error);
       return NextResponse.json(
         { error: "No pudimos enviar la solicitud. Escríbenos a " + AGENCY_PARTNERSHIP_EMAIL },
         { status: 503 }
@@ -71,12 +72,12 @@ export async function POST(request: Request) {
         message: message || null,
       });
     } catch (leadErr) {
-      console.warn("platform_agency_leads insert:", leadErr);
+      logger.warn("platform_agency_leads insert:", leadErr);
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("POST /api/contact/agency:", err);
+    logger.error("POST /api/contact/agency:", err);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

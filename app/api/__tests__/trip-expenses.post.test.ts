@@ -1,30 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Minimal NextResponse mock for route handlers.
-vi.mock("next/server", () => {
+const mocks = vi.hoisted(() => ({
+  safeInsertAudit: vi.fn(async () => undefined),
+  requireTripAccessApi: vi.fn(),
+}));
+
+vi.mock("next/server", () => ({
+  NextResponse: {
+    json: (data: unknown, init?: ResponseInit) =>
+      new Response(JSON.stringify(data), {
+        status: init?.status ?? 200,
+        headers: { "content-type": "application/json" },
+      }),
+  },
+}));
+
+vi.mock("@/lib/audit", () => ({ safeInsertAudit: mocks.safeInsertAudit }));
+vi.mock("@/lib/server/notify-trip-members", () => ({ notifyTripMembers: vi.fn() }));
+
+vi.mock("@/lib/trip-access-api", async () => {
+  const { NextResponse } = await import("next/server");
   return {
-    NextResponse: {
-      json: (data: any, init?: ResponseInit) =>
-        new Response(JSON.stringify(data), {
-          status: init?.status ?? 200,
-          headers: { "content-type": "application/json" },
-        }),
+    requireTripAccessApi: mocks.requireTripAccessApi,
+    forbidUnlessCanManageExpenses: (
+      access: { can_manage_expenses?: boolean },
+      message = "No tienes permisos para gestionar gastos."
+    ) => {
+      if (access.can_manage_expenses) return null;
+      return NextResponse.json({ error: message, code: "FORBIDDEN" }, { status: 403 });
     },
   };
 });
 
-const safeInsertAudit = vi.fn(async () => undefined);
-vi.mock("@/lib/audit", () => ({ safeInsertAudit }));
-
-const requireTripAccessApi = vi.fn();
-vi.mock("@/lib/trip-access-api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/trip-access-api")>();
-  return { ...actual, requireTripAccessApi };
-});
-
-function makeSupabaseMock(params: {
-  insertOk?: boolean;
-}) {
+function makeSupabaseMock(params: { insertOk?: boolean }) {
   const insertOk = params.insertOk ?? true;
   const from = vi.fn((table: string) => {
     if (table === "trip_expenses") {
@@ -33,7 +41,7 @@ function makeSupabaseMock(params: {
           select: vi.fn(() => ({
             single: vi.fn(async () =>
               insertOk
-                ? { data: { id: "e1", title: "Comida" }, error: null }
+                ? { data: { id: "e1", title: "Comida", amount: 10, currency: "EUR" }, error: null }
                 : { data: null, error: { message: "insert failed" } }
             ),
           })),
@@ -67,7 +75,7 @@ describe("POST /api/trip-expenses", () => {
   });
 
   it("devuelve 403 si no tiene can_manage_expenses", async () => {
-    requireTripAccessApi.mockResolvedValueOnce(
+    mocks.requireTripAccessApi.mockResolvedValueOnce(
       gateWithAccess({
         userId: "u1",
         participantId: "p1",
@@ -93,11 +101,11 @@ describe("POST /api/trip-expenses", () => {
     expect(resp.status).toBe(403);
     const payload = await readJson(resp);
     expect(String(payload?.error || "")).toMatch(/permisos/i);
-    expect(safeInsertAudit).not.toHaveBeenCalled();
+    expect(mocks.safeInsertAudit).not.toHaveBeenCalled();
   });
 
   it("inserta gasto y llama a safeInsertAudit cuando hay permisos", async () => {
-    requireTripAccessApi.mockResolvedValueOnce(
+    mocks.requireTripAccessApi.mockResolvedValueOnce(
       gateWithAccess({
         userId: "u1",
         participantId: "p1",
@@ -123,7 +131,6 @@ describe("POST /api/trip-expenses", () => {
     expect(resp.status).toBe(201);
     const payload = await readJson(resp);
     expect(payload?.expense?.id).toBe("e1");
-    expect(safeInsertAudit).toHaveBeenCalledTimes(1);
+    expect(mocks.safeInsertAudit).toHaveBeenCalledTimes(1);
   });
 });
-

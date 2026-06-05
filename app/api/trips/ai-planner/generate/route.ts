@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import {
   geocodePhotonPreferred,
@@ -426,7 +427,7 @@ async function generateCityItinerary(
       });
       chunkResults.push({ days, prompt, rawOutput: raw });
     } catch (e) {
-      console.error(`[ai-planner] chunk ${ci} failed for "${city}":`, e);
+      logger.error(`[ai-planner] chunk ${ci} failed for "${city}":`, e);
       chunkResults.push({ days: [], prompt, rawOutput: raw || String(e) });
     }
   }
@@ -439,7 +440,7 @@ async function generateCityItinerary(
   const finalDays = await Promise.all(
     allDays.map(async (d: any) => {
       if ((d.items?.length ?? 0) >= 3) return d;
-      console.warn(`[ai-planner] Retrying sparse day ${d.day} in "${city}" (${d.items?.length ?? 0} items)...`);
+      logger.warn(`[ai-planner] Retrying sparse day ${d.day} in "${city}" (${d.items?.length ?? 0} items)...`);
       const priorUsed = allDays
         .filter((x: any) => x.day < d.day)
         .flatMap((x: any) => (x.items || []).map((it: any) => String(it.title || "")));
@@ -488,7 +489,7 @@ async function generateCityItinerary(
       inCityPool,
     });
   } catch (e) {
-    console.error(`[ai-planner] fillSparse failed for "${city}":`, e);
+    logger.error(`[ai-planner] fillSparse failed for "${city}":`, e);
   }
 
   if (countRealItems(plannerDays) < nights * 2) {
@@ -838,7 +839,7 @@ export async function POST(req: Request) {
         if (!result) return null;
         const emptyDays = result.days.filter((d: any) => !d.items || d.items.length === 0);
         if (emptyDays.length === 0) return result.days;
-        console.warn(`[ai-planner] Block "${blocks[bi]!.city}" had ${emptyDays.length} empty days, retrying...`);
+        logger.warn(`[ai-planner] Block "${blocks[bi]!.city}" had ${emptyDays.length} empty days, retrying...`);
         const retry = await generateCityItinerary(
           blocks[bi]!.city,
           blocks[bi]!.nights,
@@ -957,7 +958,7 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "No se pudo generar el borrador.";
-    console.error("[ai-planner] POST failed:", e);
+    logger.error("[ai-planner] POST failed:", e);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

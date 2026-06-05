@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -137,7 +138,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error("Calendar export error:", err);
+    logger.error("Calendar export error:", err);
     return NextResponse.json({ error: "Error al generar el calendario" }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Push subscribe error:", err);
+    logger.error("Push subscribe error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

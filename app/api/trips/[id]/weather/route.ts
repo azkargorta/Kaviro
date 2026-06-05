@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { getTripWeatherByDestination } from "@/lib/trip-weather";
 import { primaryTripPlace } from "@/lib/trip-places";
@@ -27,7 +28,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
     return NextResponse.json(result);
   } catch (fetchError) {
-    console.error("Error cargando clima del viaje:", fetchError);
+    logger.error("Error cargando clima del viaje:", fetchError);
     return NextResponse.json({ error: "No se pudo consultar el clima ahora mismo." }, { status: 500 });
   }
 }

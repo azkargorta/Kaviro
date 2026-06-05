@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -100,7 +101,7 @@ export async function GET(
       since: since.toISOString().slice(0, 10),
     });
   } catch (err) {
-    console.error("Trip analytics error:", err);
+    logger.error("Trip analytics error:", err);
     return NextResponse.json({ error: "Error al cargar analytics." }, { status: 500 });
   }
 }

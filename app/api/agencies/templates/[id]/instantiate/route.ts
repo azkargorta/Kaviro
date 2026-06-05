@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
 import { duplicateTripForUser } from "@/lib/trips/duplicateTrip";
@@ -91,7 +92,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       const { bootstrapAgencyTripForTravelers } = await import("@/lib/agency/bootstrap-agency-trip");
       await bootstrapAgencyTripForTravelers(supabase, dup.tripId, ctx.agency.id, portalSlug);
     } catch (e) {
-      console.warn("bootstrapAgencyTripForTravelers:", e);
+      logger.warn("bootstrapAgencyTripForTravelers:", e);
     }
 
     const activitiesCopied = dup.stats?.activities ?? 0;

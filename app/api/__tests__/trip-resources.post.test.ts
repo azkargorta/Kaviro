@@ -1,21 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/server", () => {
+const mocks = vi.hoisted(() => ({
+  requireTripAccessApi: vi.fn(),
+}));
+
+vi.mock("next/server", () => ({
+  NextResponse: {
+    json: (data: unknown, init?: ResponseInit) =>
+      new Response(JSON.stringify(data), {
+        status: init?.status ?? 200,
+        headers: { "content-type": "application/json" },
+      }),
+  },
+}));
+
+vi.mock("@/lib/trip-access-api", async () => {
+  const { NextResponse } = await import("next/server");
   return {
-    NextResponse: {
-      json: (data: any, init?: ResponseInit) =>
-        new Response(JSON.stringify(data), {
-          status: init?.status ?? 200,
-          headers: { "content-type": "application/json" },
-        }),
+    requireTripAccessApi: mocks.requireTripAccessApi,
+    forbidUnlessCanManageResources: (
+      access: { can_manage_resources?: boolean },
+      message = "No tienes permisos para gestionar recursos y documentos."
+    ) => {
+      if (access.can_manage_resources) return null;
+      return NextResponse.json({ error: message, code: "FORBIDDEN" }, { status: 403 });
     },
   };
-});
-
-const requireTripAccessApi = vi.fn();
-vi.mock("@/lib/trip-access-api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/trip-access-api")>();
-  return { ...actual, requireTripAccessApi };
 });
 
 function makeSupabaseMock() {
@@ -29,10 +39,26 @@ function makeSupabaseMock() {
         })),
       };
     }
+    if (table === "trip_participants") {
+      return {
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            neq: vi.fn(async () => ({ data: [{ user_id: "u1", role: "owner" }], error: null })),
+          })),
+        })),
+      };
+    }
     return {};
   });
 
-  return { from };
+  return {
+    from,
+    storage: {
+      from: vi.fn(() => ({
+        createSignedUrl: vi.fn(async () => ({ data: null, error: { message: "no file" } })),
+      })),
+    },
+  };
 }
 
 function gateWithAccess(access: Record<string, unknown>) {
@@ -54,7 +80,7 @@ describe("POST /api/trip-resources", () => {
   });
 
   it("devuelve 403 si no tiene can_manage_resources", async () => {
-    requireTripAccessApi.mockResolvedValueOnce(
+    mocks.requireTripAccessApi.mockResolvedValueOnce(
       gateWithAccess({
         userId: "u1",
         participantId: "p1",
@@ -83,7 +109,7 @@ describe("POST /api/trip-resources", () => {
   });
 
   it("inserta recurso cuando hay permisos", async () => {
-    requireTripAccessApi.mockResolvedValueOnce(
+    mocks.requireTripAccessApi.mockResolvedValueOnce(
       gateWithAccess({
         userId: "u1",
         participantId: "p1",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import type { PushNotifyEvent } from "@/lib/push-notification-preferences";
 import { notifyTripMembers } from "@/lib/server/notify-trip-members";
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ sent: result.push, inApp: result.inApp, push: result.push });
   } catch (err) {
-    console.error("Push notify error:", err);
+    logger.error("Push notify error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

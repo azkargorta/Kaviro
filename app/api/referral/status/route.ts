@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -47,7 +48,7 @@ export async function GET() {
       inviteUrl: p.referral_code && siteUrl ? `${siteUrl.replace(/\/$/, "")}/invite/${p.referral_code}` : null,
     });
   } catch (err) {
-    console.error("Referral status error:", err);
+    logger.error("Referral status error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

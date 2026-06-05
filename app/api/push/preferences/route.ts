@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_PUSH_NOTIFICATION_PREFERENCES,
@@ -36,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json({ preferences: toResponse(data) });
   } catch (err) {
-    console.error("Push preferences GET:", err);
+    logger.error("Push preferences GET:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -91,7 +92,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ preferences: toResponse(data) });
   } catch (err) {
-    console.error("Push preferences PATCH:", err);
+    logger.error("Push preferences PATCH:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -40,14 +40,26 @@ export default async function TripOverviewPage({ params }: Props) {
     { count: participantsCount },
     { count: resourcesCount },
   ] = await Promise.all([
-    supabase.from("trips").select("id, name, destination, start_date, end_date, base_currency").eq("id", tripId).maybeSingle(),
+    supabase
+      .from("trips")
+      .select("id, name, destination, start_date, end_date, base_currency, budget_target")
+      .eq("id", tripId)
+      .maybeSingle(),
     supabase.from("trip_activities").select("id, title, activity_date, activity_time, place_name, address, activity_kind, latitude, longitude", { count: "exact" }).eq("trip_id", tripId),
     supabase.from("trip_expenses").select("amount, currency", { count: "exact" }).eq("trip_id", tripId),
     supabase.from("trip_participants").select("id", { count: "exact" }).eq("trip_id", tripId).neq("status", "removed"),
     supabase.from("trip_resources").select("id", { count: "exact" }).eq("trip_id", tripId),
   ]);
 
-  const trip = tripRow as { id: string; name: string; destination: string | null; start_date: string | null; end_date: string | null; base_currency: string | null } | null;
+  const trip = tripRow as {
+    id: string;
+    name: string;
+    destination: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    base_currency: string | null;
+    budget_target?: number | null;
+  } | null;
   if (!trip) return <div className="p-8 text-slate-500">Viaje no encontrado.</div>;
 
   const today = todayYMD();
@@ -140,6 +152,9 @@ export default async function TripOverviewPage({ params }: Props) {
         completionPct={completionPct}
         expensesCount={expensesCount ?? 0}
         totalExpenses={totalExpenses}
+        budgetTarget={
+          typeof trip.budget_target === "number" && trip.budget_target > 0 ? trip.budget_target : null
+        }
         currency={currency}
         participantsCount={participantsCount ?? 0}
         resourcesCount={resourcesCount ?? 0}

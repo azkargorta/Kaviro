@@ -12,6 +12,7 @@ import {
 import type { TripWeatherResult } from "@/lib/trip-weather";
 import TripAiInsights from "@/components/trip/overview/TripAiInsights";
 import Reveal from "@/components/ui/Reveal";
+import { getBudgetProgress } from "@/lib/trip-budget-progress";
 
 type Activity = {
   id: string;
@@ -38,6 +39,7 @@ type Props = {
   completionPct: number;
   expensesCount: number;
   totalExpenses: number;
+  budgetTarget?: number | null;
   currency: string;
   participantsCount: number;
   resourcesCount: number;
@@ -97,7 +99,7 @@ export default function TripOverviewClient({
   tripId, tripName, destination, startDate, endDate, phase,
   daysUntilStart, daysUntilEnd, daysElapsed, totalTripDays,
   activitiesCount, completedActivities, completionPct,
-  expensesCount, totalExpenses, currency,
+  expensesCount, totalExpenses, budgetTarget = null, currency,
   participantsCount, resourcesCount,
   nextActivity, todayActivities, weather, isPremium, canEdit,
 }: Props) {
@@ -122,6 +124,11 @@ export default function TripOverviewClient({
   // Today's weather
   const todayStr = new Intl.DateTimeFormat("en-CA").format(new Date());
   const todayWeather = weather?.days.find((d) => d.date === todayStr) ?? null;
+
+  const budgetProgress = useMemo(() => {
+    if (budgetTarget == null || budgetTarget <= 0) return null;
+    return getBudgetProgress(totalExpenses, budgetTarget);
+  }, [budgetTarget, totalExpenses]);
 
   return (
     <div className="space-y-5">
@@ -229,6 +236,54 @@ export default function TripOverviewClient({
           <p className="text-xs font-semibold text-slate-500">Documentos</p>
         </Link>
       </div>
+
+      {budgetTarget != null && budgetTarget > 0 ? (
+        <Link
+          href={`/trip/${tripId}/expenses`}
+          className="card-soft block p-5 transition-colors hover:border-emerald-200 dark:hover:border-emerald-800"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-emerald-500" aria-hidden />
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white">Presupuesto del viaje</span>
+            </div>
+            <span
+              className={`text-xs font-bold tabular-nums ${
+                budgetProgress?.tone === "over"
+                  ? "text-rose-600"
+                  : budgetProgress?.tone === "warning"
+                    ? "text-amber-600"
+                    : "text-emerald-600"
+              }`}
+            >
+              {formatMoney(totalExpenses, currency)} / {formatMoney(budgetTarget, currency)}
+            </span>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${budgetProgress?.barWidthPct ?? 0}%`,
+                backgroundColor: budgetProgress?.barColor,
+              }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            {budgetProgress?.overBudget
+              ? "Habéis superado el presupuesto objetivo."
+              : `Lleváis el ${budgetProgress?.pct ?? 0}% del objetivo.`}{" "}
+            <span className="font-semibold text-emerald-600">Ver gastos →</span>
+          </p>
+        </Link>
+      ) : canEdit ? (
+        <Link
+          href={`/trip/${tripId}/settings`}
+          className="card-soft block border-dashed p-4 text-sm text-slate-600 transition hover:border-slate-300 dark:text-slate-400"
+        >
+          <Wallet className="mr-1.5 inline h-4 w-4 text-slate-400" aria-hidden />
+          Define un <strong>presupuesto objetivo</strong> en Ajustes para seguirlo desde el resumen.
+        </Link>
+      ) : null}
 
       {/* ── Today's activities (during phase) ───────────────────────────── */}
       {phase === "during" && todayActivities.length > 0 && (

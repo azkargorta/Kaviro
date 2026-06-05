@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { upsertTravelMatePair } from "@/lib/travel-mates";
@@ -114,7 +115,7 @@ export async function POST(
     try {
       await upsertTravelMatePair(admin, row.inviter_user_id, user.id);
     } catch (mateErr) {
-      console.warn("user_travel_mates no actualizado:", mateErr);
+      logger.warn("user_travel_mates no actualizado:", mateErr);
     }
 
     try {

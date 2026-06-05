@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { requireAgencyTripAccess } from "@/lib/require-agency-trip";
 import {
   BOOKING_STATUS_LABELS,
@@ -217,6 +218,6 @@ async function logBookingEvent(
     created_by: gate.user.id,
   });
   if (error && !error.message.includes("agency_trip_booking_events")) {
-    console.warn("booking event log:", error.message);
+    logger.warn("booking event log:", error.message);
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { duplicateTripForUser } from "@/lib/trips/duplicateTrip";
 
@@ -55,7 +56,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, tripId: result.tripId });
   } catch (err) {
-    console.error("Duplicate trip error:", err);
+    logger.error("Duplicate trip error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "No se pudo duplicar el viaje." },
       { status: 500 }
