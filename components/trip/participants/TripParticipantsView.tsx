@@ -216,12 +216,12 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const showParticipantForm = Boolean(isCreating || editingParticipant);
 
   useEffect(() => {
-    if (!isCreating) return;
+    if (!showParticipantForm) return;
     const t = window.setTimeout(() => {
       participantFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
+    }, 120);
     return () => window.clearTimeout(t);
-  }, [isCreating]);
+  }, [showParticipantForm, editingParticipant?.id]);
 
   useEffect(() => {
     if (asidePanel === "none") return;
