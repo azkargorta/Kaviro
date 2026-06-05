@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AgencyRegisterError, registerAgencyForUser } from "@/lib/server/agency-register";
 import { linkPlatformLeadsToAgency } from "@/lib/server/link-agency-lead";
+import { notifyPlatformAdminsNewAgency } from "@/lib/server/platform-ops-notify";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { logger } from "@/lib/logger";
 
@@ -29,15 +30,23 @@ export async function POST(req: Request) {
       contactEmail,
     });
 
+    const admin = createSupabaseAdmin();
     const linkEmail = (user.email || contactEmail || "").trim();
     if (linkEmail) {
       try {
-        const admin = createSupabaseAdmin();
         await linkPlatformLeadsToAgency(admin, { agencyId: agency.id, email: linkEmail });
       } catch (linkErr) {
         logger.warn("linkPlatformLeadsToAgency:", linkErr);
       }
     }
+
+    void notifyPlatformAdminsNewAgency(admin, {
+      agencyId: agency.id,
+      agencyName: agency.name,
+      slug: agency.slug,
+      contactEmail: contactEmail || null,
+      ownerEmail: user.email || null,
+    });
 
     return NextResponse.json({ ok: true, agency });
   } catch (error) {

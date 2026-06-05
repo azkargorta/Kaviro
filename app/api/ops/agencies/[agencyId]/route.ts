@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/require-platform-admin";
 import { getPlatformAgencyDetail } from "@/lib/server/platform-ops-data";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
-import { createAgencyMonthlyStripePrice } from "@/lib/server/agency-custom-pricing";
+import { createAgencyMonthlyStripePrice, formatAgencyQuoteLabel } from "@/lib/server/agency-custom-pricing";
+import { notifyAgencyOwnerPricingReady } from "@/lib/server/platform-ops-notify";
 type Params = { params: { agencyId: string } };
 
 function migration() {
@@ -49,6 +50,8 @@ export async function PATCH(req: Request, { params }: Params) {
         ? Number.parseFloat(body.billingMonthlyEur)
         : null;
 
+  let pricingNotify: { ownerId: string; agencyName: string; quoteLabel: string } | null = null;
+
   if (billingMonthlyEur != null && Number.isFinite(billingMonthlyEur)) {
     const cents = Math.round(billingMonthlyEur * 100);
     if (cents < 100) {
@@ -57,7 +60,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
     const { data: agencyRow } = await admin
       .from("agencies")
-      .select("id, name, billing_currency")
+      .select("id, name, owner_id, billing_currency, stripe_price_id_monthly")
       .eq("id", params.agencyId)
       .maybeSingle();
 
@@ -74,6 +77,15 @@ export async function PATCH(req: Request, { params }: Params) {
       });
       patch.billing_monthly_amount_cents = cents;
       patch.stripe_price_id_monthly = priceId;
+
+      const quoteLabel = formatAgencyQuoteLabel(cents, (agencyRow.billing_currency as string) || "eur");
+      if (quoteLabel && agencyRow.owner_id) {
+        pricingNotify = {
+          ownerId: agencyRow.owner_id as string,
+          agencyName: (agencyRow.name as string) || "Tu agencia",
+          quoteLabel,
+        };
+      }
     } catch (e) {
       return NextResponse.json(
         { error: e instanceof Error ? e.message : "No se pudo crear el precio en Stripe." },
@@ -88,6 +100,10 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const { error } = await admin.from("agencies").update(patch).eq("id", params.agencyId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (pricingNotify) {
+    void notifyAgencyOwnerPricingReady(admin, pricingNotify);
+  }
 
   return GET(req, { params });
 }
