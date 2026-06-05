@@ -43,7 +43,7 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 
 | Ítem | Estado |
 |------|--------|
-| Stripe **Agency Pro** (checkout B2B autónomo) | Hecho: checkout + webhook; configurar `STRIPE_AGENCY_PRODUCT_ID` en Vercel |
+| Stripe **Agency Pro** (checkout B2B autónomo) | Hecho: checkout + webhook; **prueba E2E:** `docs/AGENCY_PRO_STRIPE_E2E.md` |
 | Tarifa personalizada por agencia | Hecho: Ops fija precio → Price Stripe → checkout en `/agency/plan` |
 | Registro self-service de agencia | Hecho: `/agency/setup` + trial 14 días; auto-vincula leads `/empresa` por email |
 | Panel `AgencyDashboardHome` ampliado | Hecho: métricas, checklist, cobros, invitaciones |
