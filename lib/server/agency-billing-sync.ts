@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { AGENCY_PRO_MAX_MEMBERS } from "@/lib/agency-plan";
+import { subscriptionPeriodEndIso } from "@/lib/stripe-subscription-utils";
 import { logger } from "@/lib/logger";
 
 type Admin = ReturnType<typeof createSupabaseAdmin>;
@@ -22,9 +23,7 @@ export async function syncAgencyPlanFromSubscription(
   if (!agencyId) return false;
 
   const active = isActiveSubscriptionStatus(sub.status);
-  const periodEnd = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000).toISOString()
-    : null;
+  const periodEnd = subscriptionPeriodEndIso(sub);
 
   const { error } = await admin
     .from("agencies")

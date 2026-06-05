@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import type Stripe from "stripe";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
+import { subscriptionPeriodEndIso } from "@/lib/stripe-subscription-utils";
 import { buildUsernameFromEmail } from "@/lib/profile";
 import { markAgencyPaymentPaidFromSession } from "@/lib/server/agency-trip-payment";
 import {
@@ -95,8 +97,7 @@ export async function POST(req: Request) {
       if (isAgencyProSubscriptionMetadata(session.metadata as Record<string, string>)) {
         const subscriptionId = session.subscription as string | null;
         if (subscriptionId) {
-          const subRes = await stripe.subscriptions.retrieve(subscriptionId);
-          const sub = (subRes as { data?: unknown }).data ?? subRes;
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
           await syncAgencyPlanFromSubscription(
             admin,
             sub,
@@ -122,17 +123,14 @@ export async function POST(req: Request) {
       }
 
       if (userId && subscription) {
-        const subRes = await stripe.subscriptions.retrieve(subscription);
-        const sub = (subRes as any)?.data ? (subRes as any).data : subRes;
+        const sub = await stripe.subscriptions.retrieve(subscription);
         const priceId = sub?.items?.data?.[0]?.price?.id ?? null;
         await admin.from("billing_subscriptions").upsert({
           user_id: userId,
           stripe_subscription_id: sub.id,
           status: sub.status,
           price_id: priceId,
-          current_period_end: sub.current_period_end
-            ? new Date(sub.current_period_end * 1000).toISOString()
-            : null,
+          current_period_end: subscriptionPeriodEndIso(sub),
           cancel_at_period_end: Boolean(sub.cancel_at_period_end),
           updated_at: new Date().toISOString(),
         });
@@ -142,10 +140,14 @@ export async function POST(req: Request) {
     }
 
     if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
-      const sub = event.data.object as any;
+      const sub = event.data.object as Stripe.Subscription;
 
-      if (isAgencyProSubscriptionMetadata(sub.metadata)) {
-        await syncAgencyPlanFromSubscription(admin, sub, sub.metadata.agency_id);
+      if (isAgencyProSubscriptionMetadata(sub.metadata as Record<string, string>)) {
+        await syncAgencyPlanFromSubscription(
+          admin,
+          sub,
+          (sub.metadata as Record<string, string>).agency_id
+        );
         return NextResponse.json({ received: true });
       }
 
@@ -168,9 +170,7 @@ export async function POST(req: Request) {
           stripe_subscription_id: sub.id,
           status: sub.status,
           price_id: priceId,
-          current_period_end: sub.current_period_end
-            ? new Date(sub.current_period_end * 1000).toISOString()
-            : null,
+          current_period_end: subscriptionPeriodEndIso(sub),
           cancel_at_period_end: Boolean(sub.cancel_at_period_end),
           updated_at: new Date().toISOString(),
         });
@@ -179,10 +179,14 @@ export async function POST(req: Request) {
     }
 
     if (event.type === "customer.subscription.deleted") {
-      const sub = event.data.object as any;
+      const sub = event.data.object as Stripe.Subscription;
 
-      if (isAgencyProSubscriptionMetadata(sub.metadata)) {
-        await syncAgencyPlanFromSubscription(admin, { ...sub, status: "canceled" }, sub.metadata.agency_id);
+      if (isAgencyProSubscriptionMetadata(sub.metadata as Record<string, string>)) {
+        await syncAgencyPlanFromSubscription(
+          admin,
+          { ...sub, status: "canceled" },
+          (sub.metadata as Record<string, string>).agency_id
+        );
         return NextResponse.json({ received: true });
       }
 
