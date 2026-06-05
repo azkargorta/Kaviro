@@ -90,7 +90,7 @@ export default async function TripMapPage({ params }: Props) {
       <TripMapView
         tripId={tripId}
         points={points}
-        routes={(routes as any[]) || []}
+        routes={routes ?? []}
         selectedDate="all"
         availableDates={availableDates}
       />

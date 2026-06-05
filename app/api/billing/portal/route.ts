@@ -23,10 +23,8 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const customerId =
-      typeof (customerRow as any)?.stripe_customer_id === "string"
-        ? String((customerRow as any).stripe_customer_id)
-        : null;
+    const stripeCustomerId = customerRow?.stripe_customer_id;
+    const customerId = typeof stripeCustomerId === "string" ? stripeCustomerId : null;
     if (!customerId) {
       return NextResponse.json({ error: "No hay cliente Stripe para este usuario." }, { status: 400 });
     }

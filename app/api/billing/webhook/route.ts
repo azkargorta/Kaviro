@@ -72,10 +72,10 @@ export async function POST(req: Request) {
   const body = await req.text();
   const sig = (await headers()).get("stripe-signature") || "";
 
-  let event: any;
+  let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Firma inválida." }, { status: 400 });
   }
 
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
   try {
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as any;
+      const session = event.data.object as Stripe.Checkout.Session;
 
       if (session.metadata?.type === "agency_trip_payment") {
         await markAgencyPaymentPaidFromSession({

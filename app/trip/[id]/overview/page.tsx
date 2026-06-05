@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import { getCachedTripPremium } from "@/lib/entitlements";
 import { getTripWeatherByDestination } from "@/lib/trip-weather";
-import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
+import { parseActivityLocalMoment, type ActivityDateTimeInput } from "@/lib/trip-activity-moment";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripOverviewClient from "@/components/trip/overview/TripOverviewClient";
@@ -89,10 +89,16 @@ export default async function TripOverviewPage({ params }: Props) {
   }
 
   // Next activity
-  const activities = Array.isArray(activitiesData) ? activitiesData : [];
+  type OverviewActivity = ActivityDateTimeInput & {
+    id: string;
+    title: string | null;
+    place_name: string | null;
+    activity_kind: string | null;
+  };
+  const activities = (Array.isArray(activitiesData) ? activitiesData : []) as OverviewActivity[];
   const now = new Date();
   const upcomingActivities = activities
-    .map((a) => ({ a, when: parseActivityLocalMoment(a as any) }))
+    .map((a) => ({ a, when: parseActivityLocalMoment(a) }))
     .filter((x): x is { a: typeof activities[0]; when: Date } => x.when !== null && x.when.getTime() >= now.getTime())
     .sort((x, y) => x.when.getTime() - y.when.getTime());
 
@@ -160,7 +166,7 @@ export default async function TripOverviewPage({ params }: Props) {
         resourcesCount={resourcesCount ?? 0}
         nextActivity={nextActivity ? {
           id: nextActivity.id,
-          title: nextActivity.title,
+          title: nextActivity.title ?? "",
           activity_date: nextActivity.activity_date,
           activity_time: nextActivity.activity_time,
           place_name: nextActivity.place_name,
@@ -168,7 +174,7 @@ export default async function TripOverviewPage({ params }: Props) {
         } : null}
         todayActivities={todayActivities.map((a) => ({
           id: a.id,
-          title: a.title,
+          title: a.title ?? "",
           activity_time: a.activity_time,
           activity_kind: a.activity_kind,
           place_name: a.place_name,
