@@ -42,12 +42,24 @@ export async function PATCH(request: Request, { params }: { params: { participan
 
     const nextRole = (typeof body?.role === "string" ? body.role : current.role) as TripRole;
     const permissions = normalizePermissions(nextRole, {
-      can_manage_trip: body?.can_manage_trip ?? current.can_manage_trip,
-      can_manage_participants: body?.can_manage_participants ?? current.can_manage_participants,
-      can_manage_expenses: body?.can_manage_expenses ?? current.can_manage_expenses,
-      can_manage_plan: body?.can_manage_plan ?? current.can_manage_plan,
-      can_manage_map: body?.can_manage_map ?? current.can_manage_map,
-      can_manage_resources: body?.can_manage_resources ?? current.can_manage_resources,
+      can_manage_trip:
+        body?.can_manage_trip !== undefined ? body.can_manage_trip : current.can_manage_trip,
+      can_manage_participants:
+        body?.can_manage_participants !== undefined
+          ? body.can_manage_participants
+          : current.can_manage_participants,
+      can_manage_expenses:
+        body?.can_manage_expenses !== undefined
+          ? body.can_manage_expenses
+          : current.can_manage_expenses,
+      can_manage_plan:
+        body?.can_manage_plan !== undefined ? body.can_manage_plan : current.can_manage_plan,
+      can_manage_map:
+        body?.can_manage_map !== undefined ? body.can_manage_map : current.can_manage_map,
+      can_manage_resources:
+        body?.can_manage_resources !== undefined
+          ? body.can_manage_resources
+          : current.can_manage_resources,
     });
 
     const patch: Record<string, unknown> = {

@@ -174,15 +174,24 @@ export function useTripParticipants(
 
       const nextRole = input.role ?? current.role;
       const permissions = normalizePermissions(nextRole, {
-        can_manage_trip: input.can_manage_trip ?? current.can_manage_trip,
+        can_manage_trip:
+          input.can_manage_trip !== undefined ? input.can_manage_trip : current.can_manage_trip,
         can_manage_participants:
-          input.can_manage_participants ?? current.can_manage_participants,
+          input.can_manage_participants !== undefined
+            ? input.can_manage_participants
+            : current.can_manage_participants,
         can_manage_expenses:
-          input.can_manage_expenses ?? current.can_manage_expenses,
-        can_manage_plan: input.can_manage_plan ?? current.can_manage_plan,
-        can_manage_map: input.can_manage_map ?? current.can_manage_map,
+          input.can_manage_expenses !== undefined
+            ? input.can_manage_expenses
+            : current.can_manage_expenses,
+        can_manage_plan:
+          input.can_manage_plan !== undefined ? input.can_manage_plan : current.can_manage_plan,
+        can_manage_map:
+          input.can_manage_map !== undefined ? input.can_manage_map : current.can_manage_map,
         can_manage_resources:
-          input.can_manage_resources ?? current.can_manage_resources,
+          input.can_manage_resources !== undefined
+            ? input.can_manage_resources
+            : current.can_manage_resources,
       });
 
       const payload: Record<string, unknown> = {

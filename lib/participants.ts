@@ -92,6 +92,15 @@ export function getDefaultPermissionsByRole(
   };
 }
 
+function resolvePermission(
+  key: keyof ParticipantPermissions,
+  overrides: Partial<ParticipantPermissions> | undefined,
+  defaults: ParticipantPermissions
+): boolean {
+  const value = overrides?.[key];
+  return value !== undefined ? value : defaults[key];
+}
+
 export function normalizePermissions(
   role: TripRole,
   overrides?: Partial<ParticipantPermissions>
@@ -105,15 +114,12 @@ export function normalizePermissions(
   }
 
   return {
-    can_manage_trip: overrides?.can_manage_trip ?? defaults.can_manage_trip,
-    can_manage_participants:
-      overrides?.can_manage_participants ?? defaults.can_manage_participants,
-    can_manage_expenses:
-      overrides?.can_manage_expenses ?? defaults.can_manage_expenses,
-    can_manage_plan: overrides?.can_manage_plan ?? defaults.can_manage_plan,
-    can_manage_map: overrides?.can_manage_map ?? defaults.can_manage_map,
-    can_manage_resources:
-      overrides?.can_manage_resources ?? defaults.can_manage_resources,
+    can_manage_trip: resolvePermission("can_manage_trip", overrides, defaults),
+    can_manage_participants: resolvePermission("can_manage_participants", overrides, defaults),
+    can_manage_expenses: resolvePermission("can_manage_expenses", overrides, defaults),
+    can_manage_plan: resolvePermission("can_manage_plan", overrides, defaults),
+    can_manage_map: resolvePermission("can_manage_map", overrides, defaults),
+    can_manage_resources: resolvePermission("can_manage_resources", overrides, defaults),
   };
 }
 

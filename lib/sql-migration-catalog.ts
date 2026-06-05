@@ -114,6 +114,14 @@ export const SQL_MIGRATION_CATALOG: SqlMigrationDefinition[] = [
     check: { kind: "table", table: "agency_participant_payments" },
   },
   {
+    id: "agency_payment_receipts",
+    file: "kaviro_agency_payment_receipts.sql",
+    label: "Justificantes y cobros manuales (transferencia)",
+    group: "b2b",
+    order: 14.5,
+    check: { kind: "column", table: "agency_participant_payments", column: "deposit_receipt_path" },
+  },
+  {
     id: "agency_emails",
     file: "kaviro_agency_emails.sql",
     label: "Emails automatizados de agencia",

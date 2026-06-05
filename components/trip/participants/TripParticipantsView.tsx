@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import ParticipantForm from "./ParticipantForm";
+import ParticipantForm, { type ParticipantFormValues } from "./ParticipantForm";
 import InviteParticipantPanel from "./InviteParticipantPanel";
 import TravelMatesInvitePanel from "./TravelMatesInvitePanel";
 import UsernameInvitePanel from "./UsernameInvitePanel";
@@ -364,43 +364,45 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     });
   }, [sortedParticipants, query, linkFilter, roleFilter]);
 
-  async function handleCreate(input: {
-    trip_id: string;
-    display_name?: string;
-    username?: string | null;
-    phone?: string | null;
-    joined_via?: string | null;
-    role?: TripRole;
-  }) {
+  async function handleCreate(input: ParticipantFormValues) {
     setActionError(null);
     await addParticipant({
       trip_id: input.trip_id,
       display_name: input.display_name || "",
       username: input.username ?? null,
+      email: input.email ?? null,
       phone: input.phone ?? null,
       joined_via: input.joined_via ?? "manual",
       user_id: null,
       role: input.role ?? "viewer",
+      status: input.status,
+      can_manage_trip: input.can_manage_trip,
+      can_manage_participants: input.can_manage_participants,
+      can_manage_expenses: input.can_manage_expenses,
+      can_manage_plan: input.can_manage_plan,
+      can_manage_map: input.can_manage_map,
+      can_manage_resources: input.can_manage_resources,
     });
     closeCreateParticipant();
   }
 
-  async function handleUpdate(input: {
-    trip_id: string;
-    display_name?: string;
-    username?: string | null;
-    phone?: string | null;
-    joined_via?: string | null;
-    role?: TripRole;
-  }) {
+  async function handleUpdate(input: ParticipantFormValues) {
     if (!editingParticipant) return;
     setActionError(null);
     await updateParticipant(editingParticipant.id, {
       display_name: input.display_name,
       username: input.username ?? null,
+      email: input.email ?? null,
       phone: input.phone ?? null,
       joined_via: input.joined_via ?? null,
       role: input.role,
+      status: input.status,
+      can_manage_trip: input.can_manage_trip,
+      can_manage_participants: input.can_manage_participants,
+      can_manage_expenses: input.can_manage_expenses,
+      can_manage_plan: input.can_manage_plan,
+      can_manage_map: input.can_manage_map,
+      can_manage_resources: input.can_manage_resources,
     });
     closeEditParticipant();
   }

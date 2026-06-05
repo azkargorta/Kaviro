@@ -56,15 +56,17 @@ export function normalizePermissions(
     return { ...DEFAULT_PERMISSIONS_BY_ROLE.owner };
   }
 
+  const resolve = (key: keyof ParticipantPermissions) => {
+    const value = overrides?.[key];
+    return value !== undefined ? value : base[key];
+  };
+
   return {
-    can_manage_trip: overrides?.can_manage_trip ?? base.can_manage_trip,
-    can_manage_participants:
-      overrides?.can_manage_participants ?? base.can_manage_participants,
-    can_manage_expenses:
-      overrides?.can_manage_expenses ?? base.can_manage_expenses,
-    can_manage_plan: overrides?.can_manage_plan ?? base.can_manage_plan,
-    can_manage_map: overrides?.can_manage_map ?? base.can_manage_map,
-    can_manage_resources:
-      overrides?.can_manage_resources ?? base.can_manage_resources,
+    can_manage_trip: resolve("can_manage_trip"),
+    can_manage_participants: resolve("can_manage_participants"),
+    can_manage_expenses: resolve("can_manage_expenses"),
+    can_manage_plan: resolve("can_manage_plan"),
+    can_manage_map: resolve("can_manage_map"),
+    can_manage_resources: resolve("can_manage_resources"),
   };
 }

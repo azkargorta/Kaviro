@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ClipboardCopy, CreditCard, Download, Loader2 } from "lucide-react";
+import { ClipboardCopy, CreditCard, Download, FileText, Loader2 } from "lucide-react";
 import {
   agencyBtnPrimaryClass,
   agencyBtnSecondaryClass,
@@ -12,19 +12,39 @@ import {
   PAYMENT_OVERALL_COLORS,
   PAYMENT_OVERALL_LABELS,
   formatMoney,
+  type PaymentPhase,
 } from "@/lib/agency/payments";
+import type { AgencyPaymentReceiptInfo } from "@/lib/agency/payment-record";
+import { AGENCY_PAYMENT_METHOD_LABELS } from "@/lib/agency/payment-record";
+import AgencyPaymentCharts from "@/components/agency/AgencyPaymentCharts";
+import AgencyPaymentRecordDialog from "@/components/agency/AgencyPaymentRecordDialog";
 import { useToast } from "@/components/ui/toast";
+
+type PaymentPhaseInfo = {
+  id?: string;
+  pricePerPerson: number | null;
+  depositAmount?: number;
+  finalAmount?: number;
+  depositStatus?: string;
+  finalStatus?: string;
+  depositPayUrl: string | null;
+  finalPayUrl: string | null;
+  deposit?: AgencyPaymentReceiptInfo;
+  final?: AgencyPaymentReceiptInfo;
+  summary: { overall: keyof typeof PAYMENT_OVERALL_LABELS };
+};
 
 type RosterRow = {
   participantId: string;
   displayName: string | null;
   email: string | null;
-  payment: {
-    pricePerPerson: number | null;
-    depositPayUrl: string | null;
-    finalPayUrl: string | null;
-    summary: { overall: keyof typeof PAYMENT_OVERALL_LABELS };
-  } | null;
+  payment: PaymentPhaseInfo | null;
+};
+
+type ChartsData = {
+  statusCounts: { pending: number; deposit_paid: number; paid: number; cancelled: number };
+  travelers: Array<{ name: string; collected: number; pending: number; overall: string }>;
+  currency: string;
 };
 
 type Settings = {
@@ -54,6 +74,15 @@ export default function AgencyTripPaymentsSection({
   const [finalDue, setFinalDue] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [charts, setCharts] = useState<ChartsData | null>(null);
+  const [recordDialog, setRecordDialog] = useState<{
+    participantId: string;
+    displayName: string;
+    phase: PaymentPhase;
+    amount: number;
+    currentStatus: string;
+    receipt: AgencyPaymentReceiptInfo;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,6 +98,7 @@ export default function AgencyTripPaymentsSection({
       setSettings(s);
       setRoster(data.roster ?? []);
       setTotals(data.totals ?? { collected: 0, pending: 0, counts: {} });
+      setCharts(data.charts ?? null);
       setPriceInput(s.pricePerPerson != null ? String(s.pricePerPerson) : "");
       setDepositPct(String(s.depositPercent ?? 30));
       setDepositDue(s.depositDueDate?.slice(0, 10) ?? "");
@@ -217,8 +247,8 @@ export default function AgencyTripPaymentsSection({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Cobro en dos fases (señal + pago final) con Stripe Checkout. Indica el precio, marca los viajeros a los que
-        aplica y guarda; puedes repetir con otro importe para el resto.
+        Cobro en dos fases (señal + pago final): enlaces Stripe o registro manual con justificante (transferencia,
+        Bizum, efectivo). Indica el precio, marca los viajeros y guarda.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -300,11 +330,20 @@ export default function AgencyTripPaymentsSection({
       ) : null}
 
       {hasAssignedPayments ? (
-        <p className="text-xs text-slate-500">
-          Cobrado: <strong>{formatMoney(totals.collected, currency)}</strong> · Pendiente:{" "}
-          <strong>{formatMoney(totals.pending, currency)}</strong> · Pagados: {totals.counts.paid} /{" "}
-          {roster.length}
-        </p>
+        <>
+          <p className="text-xs text-slate-500">
+            Cobrado: <strong>{formatMoney(totals.collected, currency)}</strong> · Pendiente:{" "}
+            <strong>{formatMoney(totals.pending, currency)}</strong> · Pagados: {totals.counts.paid} /{" "}
+            {roster.length}
+          </p>
+          {charts ? (
+            <AgencyPaymentCharts
+              statusCounts={charts.statusCounts}
+              travelers={charts.travelers}
+              currency={charts.currency || currency}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {roster.length === 0 ? (
@@ -353,7 +392,121 @@ export default function AgencyTripPaymentsSection({
                   </span>
                 </div>
                 </label>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap items-center gap-1">
+                  {r.payment && Number(r.payment.pricePerPerson) > 0 ? (
+                    <>
+                      {r.payment.depositStatus !== "paid" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRecordDialog({
+                              participantId: r.participantId,
+                              displayName: r.displayName ?? "Viajero",
+                              phase: "deposit",
+                              amount: Number(r.payment!.depositAmount ?? 0),
+                              currentStatus: r.payment!.depositStatus ?? "pending",
+                              receipt: r.payment!.deposit ?? {
+                                paymentMethod: null,
+                                receiptPath: null,
+                                receiptName: null,
+                                receiptMime: null,
+                                receiptUrl: null,
+                                manualNotes: null,
+                                paidAt: null,
+                                recordedBy: null,
+                              },
+                            })
+                          }
+                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                        >
+                          Registrar señal
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRecordDialog({
+                              participantId: r.participantId,
+                              displayName: r.displayName ?? "Viajero",
+                              phase: "deposit",
+                              amount: Number(r.payment!.depositAmount ?? 0),
+                              currentStatus: "paid",
+                              receipt: r.payment!.deposit ?? {
+                                paymentMethod: null,
+                                receiptPath: null,
+                                receiptName: null,
+                                receiptMime: null,
+                                receiptUrl: null,
+                                manualNotes: null,
+                                paidAt: null,
+                                recordedBy: null,
+                              },
+                            })
+                          }
+                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                          title="Ver o editar justificante de señal"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Señal ✓
+                        </button>
+                      )}
+                      {r.payment.depositStatus === "paid" && r.payment.finalStatus !== "paid" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRecordDialog({
+                              participantId: r.participantId,
+                              displayName: r.displayName ?? "Viajero",
+                              phase: "final",
+                              amount: Number(r.payment!.finalAmount ?? 0),
+                              currentStatus: r.payment!.finalStatus ?? "pending",
+                              receipt: r.payment!.final ?? {
+                                paymentMethod: null,
+                                receiptPath: null,
+                                receiptName: null,
+                                receiptMime: null,
+                                receiptUrl: null,
+                                manualNotes: null,
+                                paidAt: null,
+                                recordedBy: null,
+                              },
+                            })
+                          }
+                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                        >
+                          Registrar final
+                        </button>
+                      ) : null}
+                      {r.payment.finalStatus === "paid" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRecordDialog({
+                              participantId: r.participantId,
+                              displayName: r.displayName ?? "Viajero",
+                              phase: "final",
+                              amount: Number(r.payment!.finalAmount ?? 0),
+                              currentStatus: "paid",
+                              receipt: r.payment!.final ?? {
+                                paymentMethod: null,
+                                receiptPath: null,
+                                receiptName: null,
+                                receiptMime: null,
+                                receiptUrl: null,
+                                manualNotes: null,
+                                paidAt: null,
+                                recordedBy: null,
+                              },
+                            })
+                          }
+                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                        >
+                          <FileText className="h-3 w-3" />
+                          Final ✓
+                        </button>
+                      ) : null}
+                    </>
+                  ) : null}
                   {r.payment?.depositPayUrl && overall !== "paid" && r.payment.summary.overall !== "deposit_paid" ? (
                     <button
                       type="button"
@@ -361,7 +514,7 @@ export default function AgencyTripPaymentsSection({
                       className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
                     >
                       <ClipboardCopy className="h-3 w-3" />
-                      Señal
+                      Link señal
                     </button>
                   ) : null}
                   {r.payment?.finalPayUrl && overall === "deposit_paid" ? (
@@ -371,13 +524,19 @@ export default function AgencyTripPaymentsSection({
                       className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
                     >
                       <ClipboardCopy className="h-3 w-3" />
-                      Final
+                      Link final
                     </button>
                   ) : null}
                   {!r.payment ? (
-                    <span className="text-[10px] text-amber-700">Sin enlace — genera enlaces</span>
+                    <span className="text-[10px] text-amber-700">Sin cobro — asigna precio</span>
                   ) : null}
                 </div>
+                {r.payment?.deposit?.paymentMethod && r.payment.depositStatus === "paid" ? (
+                  <p className="w-full text-[10px] text-slate-500">
+                    Señal: {AGENCY_PAYMENT_METHOD_LABELS[r.payment.deposit.paymentMethod] ?? r.payment.deposit.paymentMethod}
+                    {r.payment.deposit.paidAt ? ` · ${r.payment.deposit.paidAt.slice(0, 10)}` : ""}
+                  </p>
+                ) : null}
               </li>
             );
           })}
@@ -387,8 +546,24 @@ export default function AgencyTripPaymentsSection({
 
       <p className="text-[10px] text-slate-400">
         <CreditCard className="mr-1 inline h-3 w-3" />
-        Los pagos van a la cuenta Stripe de la plataforma (MVP). Webhook: evento checkout.session.completed.
+        Stripe Checkout para tarjeta; transferencias y otros métodos se registran manualmente con justificante.
       </p>
+
+      {recordDialog ? (
+        <AgencyPaymentRecordDialog
+          open
+          onClose={() => setRecordDialog(null)}
+          tripId={tripId}
+          participantId={recordDialog.participantId}
+          displayName={recordDialog.displayName}
+          phase={recordDialog.phase}
+          amount={recordDialog.amount}
+          currency={currency}
+          currentStatus={recordDialog.currentStatus}
+          receipt={recordDialog.receipt}
+          onSaved={load}
+        />
+      ) : null}
     </div>
   );
 }

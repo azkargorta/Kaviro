@@ -10,7 +10,7 @@ import {
   type TripRole,
 } from "@/lib/participants";
 
-type ParticipantFormValues = {
+export type ParticipantFormValues = {
   trip_id: string;
   display_name?: string;
   username?: string | null;
@@ -69,17 +69,29 @@ export default function ParticipantForm({
     setJoinedVia(initialData?.joined_via ?? "manual");
     setRole(nextRole);
     setStatus(initialData?.status ?? (initialData?.user_id ? "active" : "pending"));
-    setCanManageTrip(initialData?.can_manage_trip ?? defaults.can_manage_trip);
+    setCanManageTrip(
+      initialData?.can_manage_trip !== undefined ? initialData.can_manage_trip : defaults.can_manage_trip
+    );
     setCanManageParticipants(
-      initialData?.can_manage_participants ?? defaults.can_manage_participants
+      initialData?.can_manage_participants !== undefined
+        ? initialData.can_manage_participants
+        : defaults.can_manage_participants
     );
     setCanManageExpenses(
-      initialData?.can_manage_expenses ?? defaults.can_manage_expenses
+      initialData?.can_manage_expenses !== undefined
+        ? initialData.can_manage_expenses
+        : defaults.can_manage_expenses
     );
-    setCanManagePlan(initialData?.can_manage_plan ?? defaults.can_manage_plan);
-    setCanManageMap(initialData?.can_manage_map ?? defaults.can_manage_map);
+    setCanManagePlan(
+      initialData?.can_manage_plan !== undefined ? initialData.can_manage_plan : defaults.can_manage_plan
+    );
+    setCanManageMap(
+      initialData?.can_manage_map !== undefined ? initialData.can_manage_map : defaults.can_manage_map
+    );
     setCanManageResources(
-      initialData?.can_manage_resources ?? defaults.can_manage_resources
+      initialData?.can_manage_resources !== undefined
+        ? initialData.can_manage_resources
+        : defaults.can_manage_resources
     );
   }, [initialData]);
 
