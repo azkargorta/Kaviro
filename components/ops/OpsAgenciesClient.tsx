@@ -12,6 +12,8 @@ type Row = {
   tripCount: number;
   memberCount: number;
   ownerLabel: string;
+  needsPricing?: boolean;
+  quoteLabel?: string | null;
 };
 
 export default function OpsAgenciesClient() {
@@ -40,6 +42,7 @@ export default function OpsAgenciesClient() {
           <tr>
             <th className="px-4 py-3">Agencia</th>
             <th className="px-4 py-3">Plan</th>
+            <th className="px-4 py-3">Tarifa</th>
             <th className="px-4 py-3">Viajes</th>
             <th className="px-4 py-3">Equipo</th>
             <th className="px-4 py-3">Owner</th>
@@ -49,12 +52,29 @@ export default function OpsAgenciesClient() {
           {rows.map((a) => (
             <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
               <td className="px-4 py-3">
-                <Link href={`/ops/agencies/${a.id}`} className="font-semibold text-[#1e3a5f] hover:underline dark:text-sky-300">
+                <Link
+                  href={`/ops/agencies/${a.id}`}
+                  className="font-semibold text-[#1e3a5f] hover:underline dark:text-sky-300"
+                >
                   {a.name}
                 </Link>
                 <p className="text-xs text-slate-500">{a.slug}</p>
               </td>
               <td className="px-4 py-3">{a.plan}</td>
+              <td className="px-4 py-3">
+                {a.quoteLabel ? (
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-300">{a.quoteLabel}/mes</span>
+                ) : a.needsPricing ? (
+                  <Link
+                    href={`/ops/agencies/${a.id}`}
+                    className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                  >
+                    Asignar tarifa
+                  </Link>
+                ) : (
+                  <span className="text-slate-400">—</span>
+                )}
+              </td>
               <td className="px-4 py-3">{a.tripCount}</td>
               <td className="px-4 py-3">{a.memberCount}</td>
               <td className="px-4 py-3 text-slate-600">{a.ownerLabel}</td>

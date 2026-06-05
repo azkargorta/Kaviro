@@ -15,7 +15,11 @@ export async function GET() {
   try {
     const overview = await opsOverviewCounts();
     const { needsMigration, ...counts } = overview;
-    return NextResponse.json({ counts, needsMigration: needsMigration || undefined });
+    return NextResponse.json({
+      counts,
+      pricingPending: overview.pricingPending ?? 0,
+      needsMigration: needsMigration || undefined,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     if (msg.includes("platform_agency_leads")) return migration();

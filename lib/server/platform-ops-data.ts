@@ -1,10 +1,14 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { agencyNeedsPricingSetup } from "@/lib/server/link-agency-lead";
+import { formatAgencyQuoteLabel } from "@/lib/server/agency-custom-pricing";
 
 export async function listPlatformAgencies() {
   const admin = createSupabaseAdmin();
   const { data: agencies, error } = await admin
     .from("agencies")
-    .select("id, name, slug, plan, contact_email, max_members, created_at, owner_id")
+    .select(
+      "id, name, slug, plan, contact_email, max_members, created_at, owner_id, billing_monthly_amount_cents, billing_currency, stripe_price_id_monthly"
+    )
     .order("name", { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -50,20 +54,32 @@ export async function listPlatformAgencies() {
     }
   }
 
-  return rows.map((a) => ({
-    id: a.id,
-    name: a.name,
-    slug: a.slug,
-    plan: a.plan,
-    contactEmail: a.contact_email,
-    maxMembers: a.max_members,
-    createdAt: a.created_at,
-    ownerId: a.owner_id,
-    ownerLabel: ownerLabel[a.owner_id as string] ?? "—",
-    tripCount: tripCount[a.id as string] ?? 0,
-    memberCount: (memberCount[a.id as string] ?? 0) + 1,
-    clientCount: clientCount[a.id as string] ?? 0,
-  }));
+  return rows.map((a) => {
+    const needsPricing = agencyNeedsPricingSetup({
+      plan: a.plan as string,
+      stripe_price_id_monthly: a.stripe_price_id_monthly as string | null,
+      billing_monthly_amount_cents: a.billing_monthly_amount_cents as number | null,
+    });
+    return {
+      id: a.id,
+      name: a.name,
+      slug: a.slug,
+      plan: a.plan,
+      contactEmail: a.contact_email,
+      maxMembers: a.max_members,
+      createdAt: a.created_at,
+      ownerId: a.owner_id,
+      ownerLabel: ownerLabel[a.owner_id as string] ?? "—",
+      tripCount: tripCount[a.id as string] ?? 0,
+      memberCount: (memberCount[a.id as string] ?? 0) + 1,
+      clientCount: clientCount[a.id as string] ?? 0,
+      needsPricing,
+      quoteLabel: formatAgencyQuoteLabel(
+        a.billing_monthly_amount_cents as number | null,
+        (a.billing_currency as string) || "eur"
+      ),
+    };
+  });
 }
 
 export async function getPlatformAgencyDetail(agencyId: string) {
@@ -157,7 +173,50 @@ export async function listPlatformLeads(statusFilter?: string) {
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return data ?? [];
+
+  const leads = data ?? [];
+  const agencyIds = [...new Set(leads.map((l) => l.agency_id as string | null).filter(Boolean))] as string[];
+
+  const agencyById = new Map<
+    string,
+    { name: string; plan: string; needsPricing: boolean; quoteLabel: string | null }
+  >();
+
+  if (agencyIds.length) {
+    const { data: agencies } = await admin
+      .from("agencies")
+      .select("id, name, plan, billing_monthly_amount_cents, billing_currency, stripe_price_id_monthly")
+      .in("id", agencyIds);
+
+    for (const a of agencies ?? []) {
+      agencyById.set(a.id as string, {
+        name: a.name as string,
+        plan: a.plan as string,
+        needsPricing: agencyNeedsPricingSetup({
+          plan: a.plan as string,
+          stripe_price_id_monthly: a.stripe_price_id_monthly as string | null,
+          billing_monthly_amount_cents: a.billing_monthly_amount_cents as number | null,
+        }),
+        quoteLabel: formatAgencyQuoteLabel(
+          a.billing_monthly_amount_cents as number | null,
+          (a.billing_currency as string) || "eur"
+        ),
+      });
+    }
+  }
+
+  return leads.map((l) => {
+    const agencyId = l.agency_id as string | null;
+    const agency = agencyId ? agencyById.get(agencyId) : null;
+    return {
+      ...l,
+      agencyId,
+      linkedAgencyName: agency?.name ?? null,
+      linkedAgencyPlan: agency?.plan ?? null,
+      linkedAgencyNeedsPricing: agency?.needsPricing ?? false,
+      linkedAgencyQuoteLabel: agency?.quoteLabel ?? null,
+    };
+  });
 }
 
 export async function insertPlatformLead(input: {
@@ -187,18 +246,31 @@ export async function insertPlatformLead(input: {
 
 export async function opsOverviewCounts() {
   const admin = createSupabaseAdmin();
-  const [{ count: agencies }, { count: tripsB2b }, leadsResult] = await Promise.all([
+  const [{ count: agencies }, { count: tripsB2b }, leadsResult, { data: trialAgencies }] = await Promise.all([
     admin.from("agencies").select("id", { count: "exact", head: true }),
     admin.from("trips").select("id", { count: "exact", head: true }).not("agency_id", "is", null),
     admin.from("platform_agency_leads").select("id", { count: "exact", head: true }).eq("status", "new"),
+    admin
+      .from("agencies")
+      .select("plan, stripe_price_id_monthly, billing_monthly_amount_cents")
+      .in("plan", ["trial", "free"]),
   ]);
 
   const leadsMigration = Boolean(leadsResult.error?.message.includes("platform_agency_leads"));
+
+  const pricingPending = (trialAgencies ?? []).filter((a) =>
+    agencyNeedsPricingSetup({
+      plan: a.plan as string,
+      stripe_price_id_monthly: a.stripe_price_id_monthly as string | null,
+      billing_monthly_amount_cents: a.billing_monthly_amount_cents as number | null,
+    })
+  ).length;
 
   return {
     agencies: agencies ?? 0,
     leadsNew: leadsMigration ? 0 : leadsResult.count ?? 0,
     tripsB2b: tripsB2b ?? 0,
+    pricingPending,
     needsMigration: leadsMigration,
   };
 }

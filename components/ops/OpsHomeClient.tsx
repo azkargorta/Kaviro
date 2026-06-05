@@ -5,7 +5,13 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
 export default function OpsHomeClient() {
-  const [counts, setCounts] = useState<{ agencies: number; leadsNew: number; tripsB2b: number } | null>(null);
+  const [counts, setCounts] = useState<{
+    agencies: number;
+    leadsNew: number;
+    tripsB2b: number;
+    pricingPending?: number;
+  } | null>(null);
+  const [pricingPending, setPricingPending] = useState(0);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,6 +25,7 @@ export default function OpsHomeClient() {
         }
         if (data.error) throw new Error(data.error);
         setCounts(data.counts);
+        setPricingPending(data.pricingPending ?? 0);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"));
   }, []);
@@ -48,6 +55,15 @@ export default function OpsHomeClient() {
           Comprobar migraciones SQL →
         </Link>
       </p>
+      {pricingPending > 0 ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30">
+          <strong>{pricingPending}</strong> agencia{pricingPending === 1 ? "" : "s"} en prueba sin tarifa asignada.{" "}
+          <Link href="/ops/agencies" className="font-bold underline">
+            Configurar en Agencias →
+          </Link>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-3">
         <Link
           href="/ops/agencies"
