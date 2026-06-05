@@ -17,6 +17,7 @@ import {
   mergePlannerDaysWithFallback,
   type NearbyPoi,
   type PlannerDay,
+  type PlannerDayItem,
 } from "@/lib/trip-ai/itineraryDedup";
 import {
   allowsNearbyExcursions,
@@ -71,8 +72,14 @@ function cacheSet(c: LatLng, r: number, pools: Record<Category, Poi[]>) {
   if (POI_CACHE.size > 200) { const now = Date.now(); for (const [k, v] of POI_CACHE) if (now > v.expiresAt) POI_CACHE.delete(k); }
 }
 
+type PlannerDayWithMeta = PlannerDay & { _raw_item_count?: number; _filtered_count?: number };
+
+function emptyCategoryPools(): Record<Category, Poi[]> {
+  return Object.fromEntries(ALL_CATEGORIES.map((cat) => [cat, []])) as unknown as Record<Category, Poi[]>;
+}
+
 // Itinerary cache — keyed by city + nights + notes hash
-const ITIN_CACHE = new Map<string, { days: any[]; expiresAt: number }>();
+const ITIN_CACHE = new Map<string, { days: PlannerDayWithMeta[]; expiresAt: number }>();
 
 function itinKey(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
   return `v4:${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 50)}:${prefs.nearbyExcursions}:${prefs.suggestRestaurants}:${prefs.restaurantBudget}`;
@@ -83,7 +90,7 @@ function itinCacheGet(city: string, nights: number, notes: string, prefs: Planne
   if (!e || Date.now() > e.expiresAt) { if (e) ITIN_CACHE.delete(key); return null; }
   return e.days;
 }
-function itinCacheSet(city: string, nights: number, notes: string, prefs: PlannerPreferences, days: any[]) {
+function itinCacheSet(city: string, nights: number, notes: string, prefs: PlannerPreferences, days: PlannerDayWithMeta[]) {
   ITIN_CACHE.set(itinKey(city, nights, notes, prefs), { days, expiresAt: Date.now() + CACHE_TTL_MS });
   if (ITIN_CACHE.size > 80) { const now = Date.now(); for (const [k, v] of ITIN_CACHE) if (now > v.expiresAt) ITIN_CACHE.delete(k); }
 }
@@ -113,7 +120,7 @@ function proposeRadiusMeters(count: number) {
 
 function mergeNotes(freeText: string, rulesRaw: unknown): string {
   const rules = Array.isArray(rulesRaw)
-    ? (rulesRaw as any[]).map((x) => cleanString(x)).filter(Boolean)
+    ? rulesRaw.map((x) => cleanString(x)).filter(Boolean)
     : [];
   return [cleanString(freeText), ...rules].filter(Boolean).join(" | ");
 }
@@ -333,7 +340,7 @@ async function generateCityItinerary(
   inCityPool: NearbyPoi[] = [],
   gastroPool: NearbyPoi[] = [],
   plannerPrefs: PlannerPreferences = parsePlannerPreferences(null)
-): Promise<{ days: any[]; prompt: string; rawOutput: string } | null> {
+): Promise<{ days: PlannerDayWithMeta[]; prompt: string; rawOutput: string } | null> {
   if (!forceRegen) {
     const cached = itinCacheGet(city, nights, notes, plannerPrefs);
     if (cached) return { days: cached, prompt: "(from cache)", rawOutput: "(from cache)" };
@@ -356,38 +363,46 @@ async function generateCityItinerary(
   const isGeneric = (t: string) => /\b(paseo por|zona hist|tiempo libre|explorar el|visita panor)/i.test(t);
 
   // Parser: expand compact keys → full activity object
-  function parseItems(rawItems: any[], date: string): any[] {
-    return rawItems.map((it: any) => {
-      // Support both compact (t/d/h/k/lt/lg) and verbose (title/description/...) keys
-      // so the parser works even if Gemini occasionally uses long names
-      const title = cleanString(it?.t || it?.title || "");
-      if (!title || isGeneric(title) || isMeal(title)) return null;
-      const tip = cleanString(it?.d || it?.description || "") || null;
-      const time = cleanString(it?.h || it?.activity_time || "") || null;
-      const kind = normalizeKind(cleanString(it?.k || it?.activity_kind || "culture"));
-      const lat = (() => { const v = it?.lt ?? it?.latitude; return typeof v === "number" && Math.abs(v) <= 90 && v !== 0 ? v : null; })();
-      const lng = (() => { const v = it?.lg ?? it?.longitude; return typeof v === "number" && Math.abs(v) <= 180 && v !== 0 ? v : null; })();
-      return {
+  function parseItems(rawItems: unknown[], date: string): PlannerDayItem[] {
+    const out: PlannerDayItem[] = [];
+    for (const raw of rawItems) {
+      const it = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+      if (!it) continue;
+      const title = cleanString(it.t || it.title || "");
+      if (!title || isGeneric(title) || isMeal(title)) continue;
+      const tip = cleanString(it.d || it.description || "") || null;
+      const time = cleanString(it.h || it.activity_time || "") || null;
+      const kind = normalizeKind(cleanString(it.k || it.activity_kind || "culture"));
+      const lat = (() => {
+        const v = it.lt ?? it.latitude;
+        return typeof v === "number" && Math.abs(v) <= 90 && v !== 0 ? v : null;
+      })();
+      const lng = (() => {
+        const v = it.lg ?? it.longitude;
+        return typeof v === "number" && Math.abs(v) <= 180 && v !== 0 ? v : null;
+      })();
+      out.push({
         title,
         description: tip,
         activity_date: date,
         activity_time: time,
-        place_name: title,                    // address not requested — built locally
+        place_name: title,
         address: `${title}, ${city}`,
         latitude: lat,
         longitude: lng,
         activity_kind: kind,
         activity_type: "visit",
         source: "ai_planner",
-      };
-    }).filter(Boolean);
+      });
+    }
+    return out;
   }
 
   const nearbyHints = allowsNearbyExcursions(plannerPrefs)
     ? excursionPool.map((p) => p.name).filter(Boolean)
     : [];
   const usedPlaces: string[] = [];
-  const chunkResults: Array<{ days: any[]; prompt: string; rawOutput: string }> = [];
+  const chunkResults: Array<{ days: PlannerDayWithMeta[]; prompt: string; rawOutput: string }> = [];
 
   // Secuencial: cada día conoce lo ya programado → menos repeticiones
   for (let ci = 0; ci < chunks.length; ci++) {
@@ -402,18 +417,18 @@ async function generateCityItinerary(
     let raw = "";
     try {
       raw = await askGemini(prompt, "planning", { maxOutputTokens: 8192 });
-      const parsed = extractJsonObject(raw) as any;
+      const parsed = extractJsonObject(raw) as { days?: Array<{ items?: unknown[] }> } | null;
       if (!parsed?.days || !Array.isArray(parsed.days)) {
         chunkResults.push({ days: [], prompt, rawOutput: raw });
         continue;
       }
 
-      const days = parsed.days.map((d: any, idx: number) => {
+      const days: PlannerDayWithMeta[] = parsed.days.map((d, idx) => {
         const date = chunk[idx]?.date ?? chunk[0]!.date;
-        const rawItems: any[] = Array.isArray(d.items) ? d.items : [];
+        const rawItems = Array.isArray(d.items) ? d.items : [];
         const items = parseItems(rawItems, date);
         for (const it of items) {
-          const t = String(it?.title || "").trim();
+          const t = String(it.title || "").trim();
           if (t) usedPlaces.push(t);
         }
         return {
@@ -438,12 +453,12 @@ async function generateCityItinerary(
 
   // Retry individual days with fewer than 3 activities (con memoria de usados)
   const finalDays = await Promise.all(
-    allDays.map(async (d: any) => {
+    allDays.map(async (d) => {
       if ((d.items?.length ?? 0) >= 3) return d;
       logger.warn(`[ai-planner] Retrying sparse day ${d.day} in "${city}" (${d.items?.length ?? 0} items)...`);
       const priorUsed = allDays
-        .filter((x: any) => x.day < d.day)
-        .flatMap((x: any) => (x.items || []).map((it: any) => String(it.title || "")));
+        .filter((x) => x.day < d.day)
+        .flatMap((x) => (x.items || []).map((it) => String(it.title || "")));
       const retryPrompt = buildCityItineraryPrompt(city, [{ dayNum: d.day, date: d.date }], notes, null, {
         usedPlaces: priorUsed,
         dayIndexInBlock: d.day,
@@ -453,7 +468,7 @@ async function generateCityItinerary(
       });
       try {
         const raw2 = await askGemini(retryPrompt, "planning", { maxOutputTokens: 8192 });
-        const p2 = extractJsonObject(raw2) as any;
+        const p2 = extractJsonObject(raw2) as { days?: Array<{ items?: unknown[] }> } | null;
         const retryItems = parseItems(Array.isArray(p2?.days?.[0]?.items) ? p2.days[0].items : [], d.date);
         if (retryItems.length > (d.items?.length ?? 0)) return { ...d, items: retryItems };
       } catch { /* keep original */ }
@@ -473,7 +488,7 @@ async function generateCityItinerary(
 
   let plannerDays: PlannerDay[] =
     finalDays.length > 0
-      ? finalDays.map((d: any) => ({
+      ? finalDays.map((d) => ({
           day: d.day,
           date: d.date,
           base: city,
@@ -539,15 +554,23 @@ async function fetchPoisFromGemini(cityLabel: string, totalDays: number): Promis
   const minPerCategory = Math.max(15, Math.ceil((totalDays * 4) / ALL_CATEGORIES.length) + 8);
   try {
     const raw = await askGemini(buildGeminiPoiPrompt(cityLabel, minPerCategory), "planning", { maxOutputTokens: Math.min(8192, 2048 + minPerCategory * 60) });
-    const parsed = extractJsonObject(raw) as any;
+    const parsed = extractJsonObject(raw) as Partial<Record<Category, unknown[]>> | null;
     if (!parsed || typeof parsed !== "object") return null;
-    const pools: Record<Category, Poi[]> = {} as any;
+    const pools = emptyCategoryPools();
     for (const cat of ALL_CATEGORIES) {
-      pools[cat] = dedupeByName((Array.isArray(parsed[cat]) ? parsed[cat] : []).map((item: any) => {
-        const name = cleanString(item?.name || ""), lat = typeof item?.lat === "number" ? item.lat : null, lng = typeof item?.lng === "number" ? item.lng : null;
-        if (!name || lat === null || lng === null || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-        return { name, lat, lng } as Poi;
-      }).filter(Boolean) as Poi[]);
+      pools[cat] = dedupeByName(
+        (Array.isArray(parsed[cat]) ? parsed[cat] : [])
+          .map((raw) => {
+            const item = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+            if (!item) return null;
+            const name = cleanString(item.name || "");
+            const lat = typeof item.lat === "number" ? item.lat : null;
+            const lng = typeof item.lng === "number" ? item.lng : null;
+            if (!name || lat === null || lng === null || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+            return { name, lat, lng } satisfies Poi;
+          })
+          .filter((row): row is Poi => row !== null)
+      );
     }
     if ((pools.excursion || []).length < 3) pools.excursion = dedupeByName([...(pools.nature || []), ...(pools.culture || [])]).slice(0, minPerCategory);
     return sumPools(pools) >= 4 ? pools : null;
@@ -585,18 +608,29 @@ function tagToCategory(tags: Record<string, string>): Category | null {
   return null;
 }
 
-function parseOverpassResponse(payload: any, limit: number): Record<Category, Poi[]> {
-  const pools: Record<Category, Poi[]> = {} as any, seen: Record<Category, Set<string>> = {} as any;
-  for (const cat of ALL_CATEGORIES) { pools[cat] = []; seen[cat] = new Set(); }
-  for (const el of (Array.isArray(payload?.elements) ? payload.elements : [])) {
-    const tags = el?.tags || {}, name = typeof tags?.name === "string" ? tags.name.trim() : "", lat = typeof el?.lat === "number" ? el.lat : (el?.center?.lat ?? null), lng = typeof el?.lon === "number" ? el.lon : (el?.center?.lon ?? null);
+function parseOverpassResponse(payload: unknown, limit: number): Record<Category, Poi[]> {
+  const pools = emptyCategoryPools();
+  const seen = Object.fromEntries(ALL_CATEGORIES.map((cat) => [cat, new Set<string>()])) as Record<Category, Set<string>>;
+  const elements =
+    payload && typeof payload === "object" && Array.isArray((payload as { elements?: unknown[] }).elements)
+      ? (payload as { elements: unknown[] }).elements
+      : [];
+  for (const raw of elements) {
+    const el = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+    if (!el) continue;
+    const tags =
+      el.tags && typeof el.tags === "object" ? (el.tags as Record<string, string>) : {};
+    const name = typeof tags.name === "string" ? tags.name.trim() : "";
+    const center = el.center && typeof el.center === "object" ? (el.center as { lat?: number; lon?: number }) : null;
+    const lat = typeof el.lat === "number" ? el.lat : (center?.lat ?? null);
+    const lng = typeof el.lon === "number" ? el.lon : (center?.lon ?? null);
     if (!name || lat == null || lng == null) continue;
     const cat = tagToCategory(tags); if (!cat) continue;
     const key = name.toLowerCase(); if (seen[cat].has(key) || pools[cat].length >= limit) continue;
     seen[cat].add(key);
     const tagRecord: Record<string, string> = {};
     for (const [k2, v2] of Object.entries(tags)) if (typeof v2 === "string" && v2.trim()) tagRecord[k2] = v2;
-    pools[cat].push({ name, lat, lng, osm: { type: String(el?.type || "node"), id: String(el?.id || "") }, tags: tagRecord });
+    pools[cat].push({ name, lat, lng, osm: { type: String(el.type || "node"), id: String(el.id || "") }, tags: tagRecord });
   }
   const excSeen = new Set<string>(); pools.excursion = [];
   for (const poi of [...(pools.nature || []), ...(pools.culture || [])]) { const k = poi.name.toLowerCase(); if (excSeen.has(k)) continue; excSeen.add(k); pools.excursion.push(poi); if (pools.excursion.length >= limit) break; }
@@ -626,7 +660,12 @@ async function fetchAllPoisFromOverpass(center: LatLng, radiusMeters: number): P
 
 type PoiLoadResult = { pools: Record<Category, Poi[]>; source: "overpass" | "gemini" } | { pools: null; err: string };
 
-async function loadPoisForStop(stop: { label: string; center: LatLng }, anchor: any, regionHints: any, totalDays: number): Promise<PoiLoadResult> {
+async function loadPoisForStop(
+  stop: { label: string; center: LatLng },
+  anchor: { lat: number; lng: number } | null,
+  regionHints: string[],
+  totalDays: number
+): Promise<PoiLoadResult> {
   let center: LatLng = stop.center;
   const rough = await fetchAllPoisFromOverpass(center, 3500);
   if (rough !== null) {
@@ -666,7 +705,7 @@ function geoDistKm(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
   return R * 2 * Math.asin(Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2));
 }
 
-function sortItemsByProximity(items: any[]): any[] {
+function sortItemsByProximity(items: PlannerDayItem[]): PlannerDayItem[] {
   if (items.length <= 2) return items;
 
   // Separate items with and without valid coords
@@ -676,7 +715,7 @@ function sortItemsByProximity(items: any[]): any[] {
   if (withCoords.length <= 1) return items;
 
   // Greedy nearest-neighbor starting from the first item (usually morning)
-  const sorted: any[] = [withCoords[0]!];
+  const sorted: PlannerDayItem[] = [withCoords[0]!];
   const remaining = withCoords.slice(1);
 
   while (remaining.length) {
@@ -706,9 +745,13 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
 
-    const body = await req.json().catch(() => null);
-    const destinationsRaw = Array.isArray(body?.destinations) ? body.destinations : Array.isArray(body?.places) ? body.places : [];
-    const destinations = (destinationsRaw as any[]).map((x) => cleanString(x)).filter(Boolean).slice(0, 10);
+    const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+    const destinationsRaw: unknown[] = Array.isArray(body?.destinations)
+      ? body.destinations
+      : Array.isArray(body?.places)
+        ? body.places
+        : [];
+    const destinations = destinationsRaw.map((x: unknown) => cleanString(x)).filter(Boolean).slice(0, 10);
     const startDate = cleanString(body?.start_date || body?.startDate);
     const endDate = cleanString(body?.end_date || body?.endDate);
     const freeText = cleanString(body?.freeText || "");
@@ -722,7 +765,9 @@ export async function POST(req: Request) {
     const selectedByStop = (body?.selectedPoisByStop && typeof body.selectedPoisByStop === "object") ? body.selectedPoisByStop : null;
     const staysInput = Array.isArray(body?.stays) ? body.stays : null;
     const planOnly = Boolean(body?.planOnly);
-    const targetDayNums: number[] | null = Array.isArray(body?.targetDayNums) ? body.targetDayNums.map((x: any) => Number(x)).filter((n: number) => Number.isFinite(n) && n >= 1) : null;
+    const targetDayNums: number[] | null = Array.isArray(body?.targetDayNums)
+      ? body.targetDayNums.map((x: unknown) => Number(x)).filter((n: number) => Number.isFinite(n) && n >= 1)
+      : null;
 
     if (!destinations.length) return NextResponse.json({ error: "Faltan destinos." }, { status: 400 });
     if (!isoOk(startDate) || !isoOk(endDate)) return NextResponse.json({ error: "Fechas inválidas." }, { status: 400 });
@@ -733,7 +778,7 @@ export async function POST(req: Request) {
     const regionHints = regionHintsFromDestination(destinationLabel);
 
     // ── 1. Geocode stops ──────────────────────────────────────────────────────
-    const stopGeo = await Promise.all(destinations.map(async (label) => {
+    const stopGeo = await Promise.all(destinations.map(async (label: string) => {
       const g = await geocodePhotonPreferred(label, { anchor, regionHints, maxDistanceKm: 50000 });
       return { label, geo: g };
     }));
@@ -745,7 +790,7 @@ export async function POST(req: Request) {
     const poisByStop: Record<string, Record<Category, Poi[]>> = {};
     for (let i = 0; i < stops.length; i++) {
       const result = stopResults[i]!;
-      if (!result.pools) return NextResponse.json({ error: (result as any).err }, { status: 400 });
+      if (!result.pools) return NextResponse.json({ error: result.err }, { status: 400 });
       poisByStop[stops[i]!.label] = result.pools;
     }
 
@@ -755,7 +800,19 @@ export async function POST(req: Request) {
     // ── 4. Stay distribution ──────────────────────────────────────────────────
     let stays: Array<{ stop: string; nights: number; reason?: string }>;
     if (staysInput?.length) {
-      stays = staysInput.map((x: any) => ({ stop: cleanString(x?.stop), nights: clamp(Number(x?.nights) || 1, 1, 60), reason: x?.reason })).filter((x: any) => Boolean(x.stop));
+      const parsedStays: Array<{ stop: string; nights: number; reason?: string }> = [];
+      for (const x of staysInput) {
+        const row = x && typeof x === "object" ? (x as Record<string, unknown>) : null;
+        if (!row) continue;
+        const stop = cleanString(row.stop);
+        if (!stop) continue;
+        parsedStays.push({
+          stop,
+          nights: clamp(Number(row.nights) || 1, 1, 60),
+          reason: typeof row.reason === "string" ? row.reason : undefined,
+        });
+      }
+      stays = parsedStays;
     } else {
       stays = distributeNightsSmart(stops, poisByStop, totalDays, mergedNotes);
     }
@@ -828,16 +885,16 @@ export async function POST(req: Request) {
       startDate: block.startDateIso,
       prompt: blockResults[bi]?.prompt ?? null,
       rawOutput: blockResults[bi]?.rawOutput ?? null,
-      itemsGenerated: (blockResults[bi]?.days ?? []).reduce((n: number, d: any) => n + (d._raw_item_count || d.items?.length || 0), 0),
-      itemsFiltered: (blockResults[bi]?.days ?? []).reduce((n: number, d: any) => n + (d._filtered_count || 0), 0),
-      emptyDays: (blockResults[bi]?.days ?? []).filter((d: any) => !d.items?.length).length,
+      itemsGenerated: (blockResults[bi]?.days ?? []).reduce((n, d) => n + (d._raw_item_count || d.items?.length || 0), 0),
+      itemsFiltered: (blockResults[bi]?.days ?? []).reduce((n, d) => n + (d._filtered_count || 0), 0),
+      emptyDays: (blockResults[bi]?.days ?? []).filter((d) => !d.items?.length).length,
     }));
 
     // Retry blocks that came back with empty days (Gemini only produced meals/generics)
     const blockResultsFinal = await Promise.all(
       blockResults.map(async (result, bi) => {
         if (!result) return null;
-        const emptyDays = result.days.filter((d: any) => !d.items || d.items.length === 0);
+        const emptyDays = result.days.filter((d) => !d.items || d.items.length === 0);
         if (emptyDays.length === 0) return result.days;
         logger.warn(`[ai-planner] Block "${blocks[bi]!.city}" had ${emptyDays.length} empty days, retrying...`);
         const retry = await generateCityItinerary(
@@ -857,11 +914,22 @@ export async function POST(req: Request) {
     );
 
     // Existing days map (for partial regeneration)
-    const existingDaysMap = new Map<number, any>();
-    if (Array.isArray(body?.days)) for (const d of body.days) if (typeof d?.day === "number") existingDaysMap.set(d.day, d);
+    const existingDaysMap = new Map<number, PlannerDay>();
+    if (Array.isArray(body?.days)) {
+      for (const raw of body.days) {
+        const d = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+        if (!d || typeof d.day !== "number") continue;
+        existingDaysMap.set(d.day, {
+          day: d.day,
+          date: typeof d.date === "string" ? d.date : "",
+          base: typeof d.base === "string" ? d.base : undefined,
+          items: Array.isArray(d.items) ? (d.items as PlannerDayItem[]) : [],
+        });
+      }
+    }
 
     // ── 8. Merge blocks into flat days array ──────────────────────────────────
-    const daysOut: any[] = [];
+    const daysOut: PlannerDay[] = [];
 
     for (let bi = 0; bi < blocks.length; bi++) {
       const block = blocks[bi]!;
@@ -875,9 +943,9 @@ export async function POST(req: Request) {
         const hasContent = gemDay && Array.isArray(gemDay.items) && gemDay.items.length > 0;
 
         if (hasContent) {
-          let items: any[] = (gemDay.items || []).map((it: any) => ({ ...it, activity_date: dayDate }));
+          let items: PlannerDayItem[] = (gemDay.items || []).map((it) => ({ ...it, activity_date: dayDate }));
           if (di === 0 && block.prevCity) {
-            const transitItem = {
+            const transitItem: PlannerDayItem = {
               title: `Traslado ${block.prevCity} → ${block.city}`,
               description: "Traslado entre ciudades. Ajusta el medio de transporte según tu viaje.",
               activity_date: dayDate, activity_time: "08:30",
@@ -902,9 +970,10 @@ export async function POST(req: Request) {
           });
           daysOut.push({ day: globalDayNum, date: dayDate, base: block.city, items });
         } else if (existingDaysMap.has(globalDayNum)) {
-          daysOut.push({ ...existingDaysMap.get(globalDayNum), day: globalDayNum, date: dayDate });
+          const existing = existingDaysMap.get(globalDayNum)!;
+          daysOut.push({ ...existing, day: globalDayNum, date: dayDate });
         } else {
-          const items: any[] = [];
+          const items: PlannerDayItem[] = [];
           if (di === 0 && block.prevCity) {
             items.push({ title: `Traslado ${block.prevCity} → ${block.city}`, description: "Traslado entre ciudades.", activity_date: dayDate, activity_time: "08:30", place_name: `${block.prevCity} → ${block.city}`, address: `${block.prevCity} → ${block.city}`, latitude: null, longitude: null, activity_kind: "transport", activity_type: "general", source: "ai_planner" });
           }

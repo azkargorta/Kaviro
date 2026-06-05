@@ -10,6 +10,7 @@ import {
   osrmProfileForTravelMode,
   type TripRouteTravelMode,
 } from "@/lib/route-travel-mode";
+import { asPlanActivities, type PlanActivityForRoutes } from "@/lib/trip-ai/plan-activity-row";
 
 type DraftTravelMode = TripRouteTravelMode;
 
@@ -71,7 +72,7 @@ function formatDuration(seconds: number) {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => null)) as any;
+    const body = await request.json().catch(() => null);
     const tripId = typeof body?.tripId === "string" ? body.tripId : typeof body?.trip_id === "string" ? body.trip_id : "";
     const date = typeof body?.date === "string" ? body.date : "";
     const startDate = typeof body?.startDate === "string" ? body.startDate : typeof body?.start_date === "string" ? body.start_date : "";
@@ -130,9 +131,9 @@ export async function POST(request: Request) {
       .eq("trip_id", tripId)
       .in("activity_date", resolvedDates);
     if (actsErr) throw new Error(actsErr.message);
-    const acts = Array.isArray(rawActs) ? rawActs : [];
+    const acts = asPlanActivities(rawActs);
 
-    const byDate = new Map<string, any[]>();
+    const byDate = new Map<string, PlanActivityForRoutes[]>();
     for (const a of acts) {
       const d = typeof a?.activity_date === "string" ? a.activity_date : null;
       if (!d) continue;

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
+import { enforceAiMonthlyBudgetOrThrow, resolveAiBudgetGateError, trackAiUsage } from "@/lib/ai-budget";
+import { parseOverpassElements } from "@/lib/osm/overpass-types";
+import { type TripAiDiffOperation } from "@/lib/trip-ai/diff-types";
+import { asPlanActivities, type PlanActivityForRoutes } from "@/lib/trip-ai/plan-activity-row";
+import { asRoutePathPoints, type RoutePathPoint } from "@/lib/trip-ai/route-points";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { buildTripContext } from "@/lib/trip-ai/buildTripContext";
@@ -68,8 +72,8 @@ type RouteDraftPayload = {
     destination_address: string | null;
     destination_latitude: number | null;
     destination_longitude: number | null;
-    path_points: any[];
-    route_points: any[];
+    path_points: RoutePathPoint[];
+    route_points: RoutePathPoint[];
     distance_text: string | null;
     duration_text: string | null;
     notes: string | null;
@@ -581,7 +585,7 @@ async function wikidataOfficialWebsite(query: string): Promise<string | null> {
   searchUrl.searchParams.set("limit", "1");
   searchUrl.searchParams.set("search", query);
   const searchResp = await fetch(searchUrl.toString(), { method: "GET", cache: "no-store" });
-  const searchPayload: any = await searchResp.json().catch(() => null);
+  const searchPayload = (await searchResp.json().catch(() => null)) as { search?: Array<{ id?: string }> } | null;
   const id = Array.isArray(searchPayload?.search) ? String(searchPayload.search?.[0]?.id || "") : "";
   if (!id) return null;
 
@@ -592,7 +596,9 @@ async function wikidataOfficialWebsite(query: string): Promise<string | null> {
   entityUrl.searchParams.set("ids", id);
   entityUrl.searchParams.set("props", "claims");
   const entityResp = await fetch(entityUrl.toString(), { method: "GET", cache: "no-store" });
-  const entityPayload: any = await entityResp.json().catch(() => null);
+  const entityPayload = (await entityResp.json().catch(() => null)) as {
+    entities?: Record<string, { claims?: Record<string, Array<{ mainsnak?: { datavalue?: { value?: unknown } } }>> }>;
+  } | null;
   const claims = entityPayload?.entities?.[id]?.claims;
   const p856 = claims?.P856;
   const value =
@@ -623,9 +629,9 @@ async function osrmRoute(params: {
     cache: "no-store",
   });
   const payload = await resp.json().catch(() => null);
-  if (!resp.ok) return { points: [], distanceMeters: null as number | null, durationSeconds: null as number | null };
+  if (!resp.ok) return { points: [] as RoutePathPoint[], distanceMeters: null as number | null, durationSeconds: null as number | null };
   return {
-    points: Array.isArray(payload?.points) ? payload.points : [],
+    points: asRoutePathPoints(payload?.points),
     distanceMeters: typeof payload?.distanceMeters === "number" ? payload.distanceMeters : null,
     durationSeconds: typeof payload?.durationSeconds === "number" ? payload.durationSeconds : null,
   };
@@ -650,18 +656,17 @@ out center tags 40;
     cache: "no-store",
   });
   const payload = await resp.json().catch(() => null);
-  const elements = Array.isArray(payload?.elements) ? payload.elements : [];
-  const rows = elements
-    .map((el: any) => {
-      const tags = el?.tags && typeof el.tags === "object" ? el.tags : {};
-      const name = typeof tags?.name === "string" ? tags.name.trim() : "";
-      const website = typeof tags?.website === "string" ? tags.website.trim() : null;
-      const lat = typeof el?.lat === "number" ? el.lat : typeof el?.center?.lat === "number" ? el.center.lat : null;
-      const lng = typeof el?.lon === "number" ? el.lon : typeof el?.center?.lon === "number" ? el.center.lon : null;
+  const rows = parseOverpassElements(payload)
+    .map((el) => {
+      const tags = el.tags || {};
+      const name = typeof tags.name === "string" ? tags.name.trim() : "";
+      const website = typeof tags.website === "string" ? tags.website.trim() : null;
+      const lat = typeof el.lat === "number" ? el.lat : typeof el.center?.lat === "number" ? el.center.lat : null;
+      const lng = typeof el.lon === "number" ? el.lon : typeof el.center?.lon === "number" ? el.center.lon : null;
       if (!name || lat == null || lng == null) return null;
       return { name, website, lat, lng };
     })
-    .filter(Boolean) as Array<{ name: string; website: string | null; lat: number; lng: number }>;
+    .filter((row): row is { name: string; website: string | null; lat: number; lng: number } => row !== null);
   return rows[0] || null;
 }
 
@@ -719,10 +724,10 @@ export async function POST(req: Request) {
       .select("start_date,end_date,destination")
       .eq("id", tripId)
       .maybeSingle();
-    const tripStart = typeof (tripRow as any)?.start_date === "string" ? String((tripRow as any).start_date) : null;
-    const tripEnd = typeof (tripRow as any)?.end_date === "string" ? String((tripRow as any).end_date) : null;
+    const tripStart = typeof tripRow?.start_date === "string" ? tripRow.start_date : null;
+    const tripEnd = typeof tripRow?.end_date === "string" ? tripRow.end_date : null;
     const tripDestination =
-      typeof (tripRow as any)?.destination === "string" ? String((tripRow as any).destination).trim() || null : null;
+      typeof tripRow?.destination === "string" ? tripRow.destination.trim() || null : null;
     const regionHints = regionHintsFromDestination(tripDestination);
     const anchor = await geocodeTripAnchor(tripDestination);
     const historyBlock =
@@ -875,8 +880,8 @@ export async function POST(req: Request) {
         });
       };
 
-      const acts = Array.isArray(rawActs) ? rawActs : [];
-      const byDate = new Map<string, any[]>();
+      const acts = asPlanActivities(rawActs);
+      const byDate = new Map<string, PlanActivityForRoutes[]>();
       for (const a of acts) {
         const d = typeof a?.activity_date === "string" ? a.activity_date : null;
         if (!d) continue;
@@ -885,7 +890,7 @@ export async function POST(req: Request) {
         byDate.set(d, arr);
       }
 
-      const operations: any[] = [];
+      const operations: TripAiDiffOperation[] = [];
       const draftRoutes: RouteDraftPayload["routes"] = [];
       const missingCoords: Array<{ date: string; id: string; title: string }> = [];
 
@@ -1118,7 +1123,7 @@ export async function POST(req: Request) {
     }
 
     // Construimos un diff aplicable (create_activity + create_route)
-    const operations: any[] = [];
+    const operations: TripAiDiffOperation[] = [];
     for (const it of enrichedItems) {
       operations.push({
         op: "create_activity",
@@ -1200,8 +1205,8 @@ export async function POST(req: Request) {
       date: plan.date,
       travelMode,
       routes: operations
-        .filter((op: any) => op && op.op === "create_route" && op.fields && typeof op.fields === "object")
-        .map((op: any) => {
+        .filter((op) => op.op === "create_route" && op.fields && typeof op.fields === "object")
+        .map((op) => {
           const f = op.fields || {};
           return {
             title: String(f.title || "").trim(),
@@ -1216,14 +1221,14 @@ export async function POST(req: Request) {
             destination_address: typeof f.destination_address === "string" ? f.destination_address : null,
             destination_latitude: typeof f.destination_latitude === "number" ? f.destination_latitude : null,
             destination_longitude: typeof f.destination_longitude === "number" ? f.destination_longitude : null,
-            path_points: Array.isArray(f.path_points) ? f.path_points : [],
-            route_points: Array.isArray(f.route_points) ? f.route_points : [],
+            path_points: asRoutePathPoints(f.path_points),
+            route_points: asRoutePathPoints(f.route_points),
             distance_text: typeof f.distance_text === "string" ? f.distance_text : null,
             duration_text: typeof f.duration_text === "string" ? f.duration_text : null,
             notes: typeof f.notes === "string" ? f.notes : null,
           };
         })
-        .filter((r: any) => r.title && r.origin_name && r.destination_name),
+        .filter((r) => r.title && r.origin_name && r.destination_name),
     };
 
     // Audit: guardamos una entrada resumen (no crea nada todavía; solo registra generación).
@@ -1239,10 +1244,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ answer, plan, diff, routesDraft });
-  } catch (e: any) {
-    const status = typeof e?.httpStatus === "number" ? e.httpStatus : 500;
+  } catch (e) {
+    const gate = resolveAiBudgetGateError(e);
+    const status = gate.status === 401 || gate.status === 402 ? gate.status : 500;
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "No se pudo organizar el día." },
+      { error: e instanceof Error ? e.message : "No se pudo organizar el día.", code: gate.body.code, budget: gate.body.budget },
       { status }
     );
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
+import { enforceAiMonthlyBudgetOrThrow, resolveAiBudgetGateError, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { buildTripContext } from "@/lib/trip-ai/buildTripContext";
@@ -90,28 +90,15 @@ export async function POST(req: Request) {
     if (!prompt) return NextResponse.json({ error: "Falta prompt" }, { status: 400 });
 
     const monthKey = monthKeyUtc();
-    let supabase: any;
+    let supabase: Awaited<ReturnType<typeof enforceAiMonthlyBudgetOrThrow>>["supabase"];
     let userId = "";
     try {
       const res = await enforceAiMonthlyBudgetOrThrow({ providerId: provider, tripId });
       supabase = res.supabase;
       userId = res.userId;
     } catch (e) {
-      const err: any = e;
-      const status =
-        typeof err?.httpStatus === "number"
-          ? err.httpStatus
-          : err?.code === "AI_BUDGET_EXCEEDED"
-            ? 402
-            : 401;
-      return NextResponse.json(
-        {
-          error: err instanceof Error ? err.message : "No autenticado.",
-          code: err?.code || null,
-          budget: err?.budget || null,
-        },
-        { status }
-      );
+      const gate = resolveAiBudgetGateError(e);
+      return NextResponse.json(gate.body, { status: gate.status });
     }
 
     const { data: participant, error: participantError } = await supabase

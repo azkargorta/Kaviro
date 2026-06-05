@@ -6,7 +6,7 @@ import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { appendMessage, createConversation, getConversation, getCachedResponse, setCachedResponse } from "@/lib/trip-ai/chatStore";
 import { inferAIActionFromQuestion, parseClientAIAction, resolveEffectiveTripAiMode, type AIActionId } from "@/lib/trip-ai/aiActions";
 import { actionPromptHint, handleAIAction } from "@/lib/trip-ai/handleAIAction";
-import { enforceAiMonthlyBudgetOrThrow, trackAiUsage } from "@/lib/ai-budget";
+import { enforceAiMonthlyBudgetOrThrow, resolveAiBudgetGateError, trackAiUsage } from "@/lib/ai-budget";
 import { monthKeyUtc } from "@/lib/ai-usage";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 
@@ -42,19 +42,15 @@ export async function POST(req: Request) {
 
     // Auth + presupuesto IA (global por usuario/mes)
     const monthKey = monthKeyUtc();
-    let supabase: any;
+    let supabase: Awaited<ReturnType<typeof enforceAiMonthlyBudgetOrThrow>>["supabase"];
     let userId = "";
     try {
       const res = await enforceAiMonthlyBudgetOrThrow({ providerId: provider, tripId });
       supabase = res.supabase;
       userId = res.userId;
     } catch (e) {
-      const err: any = e;
-      const status = typeof err?.httpStatus === "number" ? err.httpStatus : err?.code === "AI_BUDGET_EXCEEDED" ? 402 : 401;
-      return NextResponse.json(
-        { error: err instanceof Error ? err.message : "No autenticado.", code: err?.code || null, budget: err?.budget || null },
-        { status }
-      );
+      const gate = resolveAiBudgetGateError(e);
+      return NextResponse.json(gate.body, { status: gate.status });
     }
 
     const { data: participant, error: participantError } = await supabase

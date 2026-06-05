@@ -2,15 +2,10 @@ import { NextResponse } from "next/server";
 import { insertTripRouteRow } from "@/lib/server/trip-routes-insert";
 import { forbidUnlessCanManagePlan, requireTripAccessApi } from "@/lib/trip-access-api";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
+import { diffNeedsMapPermission, type TripAiDiffPayload } from "@/lib/trip-ai/diff-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-type DiffPayload = {
-  version: 1;
-  title?: string;
-  operations: any[];
-};
 
 function asIsoDate(value: unknown) {
   const s = typeof value === "string" ? value.trim() : "";
@@ -52,7 +47,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
     const tripId = typeof body?.tripId === "string" ? body.tripId : "";
-    const diff = body?.diff as DiffPayload | null;
+    const diff = body?.diff as TripAiDiffPayload | null;
 
     if (!tripId) return NextResponse.json({ error: "Falta tripId" }, { status: 400 });
     if (!diff || diff.version !== 1 || !Array.isArray(diff.operations)) {
@@ -66,10 +61,7 @@ export async function POST(req: Request) {
 
     const { access, supabase } = gate;
 
-    const needsMap = diff.operations.some((opRaw: any) => {
-      const op = typeof opRaw?.op === "string" ? opRaw.op : "";
-      return op === "create_route" || op === "update_route";
-    });
+    const needsMap = diffNeedsMapPermission(diff.operations);
     if (needsMap && !access.can_manage_map) {
       return NextResponse.json(
         {

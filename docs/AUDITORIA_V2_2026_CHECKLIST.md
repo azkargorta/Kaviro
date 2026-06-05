@@ -58,7 +58,7 @@ Comprobar en [/ops/migrations](/ops/migrations). Ejecutar lo que salga en rojo:
 |-------|-----------|-------|
 | Travel mates UI | Alta | SQL `kaviro_social_features.sql` |
 | Tests API (ampliar) | Media | 6 suites en `app/api/__tests__` (auth, leads, invites, gastos…) |
-| Reducir `any` en APIs críticas | Media | actividades/rutas/geo hechos; quedan rutas IA grandes |
+| Reducir `any` en APIs críticas | ✅ IA hecho | `trip-ai/*`, `ai-planner/generate`; tipos en `lib/trip-ai/diff-types`, `route-points`, `plan-activity-row`; `AiBudgetExceededError` |
 | Rate limit Redis/Upstash | ✅ opcional | `UPSTASH_REDIS_REST_URL` + `TOKEN` en Vercel |
 | Refactor `TripAiChatView` / `TripMapView` | Baja | >2.700 líneas |
 

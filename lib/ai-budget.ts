@@ -3,11 +3,51 @@ import { estimateGemini25FlashCostEur, getMonthlyAiBudgetEur, monthKeyUtc } from
 import { isKaviroTripsUnlimitedTrip } from "@/lib/kaviro-trips-entitlements";
 import type { TripAiUsage } from "@/lib/trip-ai/providers";
 
-type BudgetInfo = {
+export type BudgetInfo = {
   monthKey: string;
   monthlyBudgetEur: number;
   currentEstimatedEur: number;
 };
+
+export class AiBudgetExceededError extends Error {
+  readonly code = "AI_BUDGET_EXCEEDED" as const;
+  readonly httpStatus = 402;
+  readonly budget: BudgetInfo;
+
+  constructor(message: string, budget: BudgetInfo) {
+    super(message);
+    this.name = "AiBudgetExceededError";
+    this.budget = budget;
+  }
+}
+
+export function resolveAiBudgetGateError(error: unknown): {
+  status: number;
+  body: { error: string; code: string | null; budget: BudgetInfo | null };
+} {
+  if (error instanceof AiBudgetExceededError) {
+    return { status: 402, body: { error: error.message, code: error.code, budget: error.budget } };
+  }
+  const httpStatus =
+    error &&
+    typeof error === "object" &&
+    "httpStatus" in error &&
+    typeof (error as { httpStatus: unknown }).httpStatus === "number"
+      ? (error as { httpStatus: number }).httpStatus
+      : 401;
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String((error as { code: unknown }).code || "") || null
+      : null;
+  const budget =
+    error && typeof error === "object" && "budget" in error
+      ? ((error as { budget: unknown }).budget as BudgetInfo | null)
+      : null;
+  return {
+    status: httpStatus,
+    body: { error: error instanceof Error ? error.message : "No autenticado.", code, budget },
+  };
+}
 
 export async function enforceAiMonthlyBudgetOrThrow(params: {
   providerId: string | null;
@@ -49,14 +89,11 @@ export async function enforceAiMonthlyBudgetOrThrow(params: {
     if (usageErr) throw usageErr;
     currentEstimatedEur = usageRow?.estimated_cost_eur != null ? Number(usageRow.estimated_cost_eur) : 0;
     if (Number.isFinite(currentEstimatedEur) && currentEstimatedEur >= monthlyBudgetEur) {
-      const err: any = new Error(
+      throw new AiBudgetExceededError(
         `Has alcanzado tu límite mensual del asistente personal (${monthlyBudgetEur.toFixed(2)}€). ` +
-          `Para seguir usando el asistente personal este mes, sube el límite o espera al próximo mes.`
+          `Para seguir usando el asistente personal este mes, sube el límite o espera al próximo mes.`,
+        { monthKey, monthlyBudgetEur, currentEstimatedEur }
       );
-      err.code = "AI_BUDGET_EXCEEDED";
-      err.httpStatus = 402;
-      err.budget = { monthKey, monthlyBudgetEur, currentEstimatedEur };
-      throw err;
     }
   }
 
