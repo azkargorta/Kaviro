@@ -31,6 +31,18 @@ async function runCheck(
   check: SqlMigrationCheck
 ): Promise<{ status: SqlMigrationStatus; detail?: string }> {
   try {
+    if (check.kind === "bucket") {
+      const { data, error } = await admin.storage.listBuckets();
+      if (error) {
+        return { status: "error", detail: error.message };
+      }
+      const exists = (data ?? []).some((b) => b.id === check.bucket || b.name === check.bucket);
+      if (!exists) {
+        return { status: "missing", detail: `Bucket ${check.bucket} no encontrado` };
+      }
+      return { status: "ok" };
+    }
+
     if (check.kind === "table") {
       const { error } = await admin.from(check.table).select("id", { head: true, count: "exact" }).limit(0);
       if (!error) return { status: "ok" };

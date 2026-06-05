@@ -42,6 +42,47 @@ export async function linkPlatformLeadsToAgency(
   return { linked };
 }
 
+/** Vincula leads históricos sin agency_id (mismo email que contact_email de la agencia). */
+export async function backfillPlatformLeadLinks(
+  admin: Admin
+): Promise<{ scanned: number; linked: number }> {
+  const { data: leads, error } = await admin
+    .from("platform_agency_leads")
+    .select("id, email, status")
+    .is("agency_id", null);
+
+  if (error) {
+    if (error.message.includes("platform_agency_leads")) return { scanned: 0, linked: 0 };
+    throw new Error(error.message);
+  }
+
+  if (!leads?.length) return { scanned: 0, linked: 0 };
+
+  let linked = 0;
+  for (const lead of leads) {
+    const email = (lead.email as string).trim().toLowerCase();
+    if (!email) continue;
+
+    const { data: agency } = await admin
+      .from("agencies")
+      .select("id")
+      .ilike("contact_email", email)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!agency?.id) continue;
+
+    const result = await linkPlatformLeadsToAgency(admin, {
+      agencyId: agency.id as string,
+      email,
+    });
+    linked += result.linked;
+  }
+
+  return { scanned: leads.length, linked };
+}
+
 export function agencyNeedsPricingSetup(agency: {
   plan?: string | null;
   stripe_price_id_monthly?: string | null;

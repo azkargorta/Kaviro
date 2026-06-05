@@ -24,12 +24,13 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 
 11. `docs/kaviro_agency_mode.sql`
 12. `docs/kaviro_agency_features.sql`
-13. `docs/kaviro_agency_logos_storage.sql`
+13. `docs/kaviro_agency_logos_storage.sql` — bucket `agency-logos` (subida logo en `/agency/branding`)
 14. `docs/kaviro_agency_payments.sql`
 15. `docs/kaviro_agency_emails.sql`
 16. `docs/kaviro_agency_signatures.sql`
 17. `docs/kaviro_platform_ops.sql`
-18. `docs/kaviro_agency_branding_trip_read.sql` (opcional: lectura branding en viajeros)
+18. `docs/kaviro_agency_branding_trip_read.sql` (opcional: lectura branding en viajeros vía RLS)
+19. `docs/kaviro_agency_custom_pricing.sql` — tarifa Agency Pro personalizada por agencia
 
 ## Verificación rápida post-SQL
 
@@ -42,9 +43,11 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 
 | Ítem | Estado |
 |------|--------|
-| Stripe **Agency Pro** (checkout B2B autónomo) | Hecho: `/api/agencies/billing/checkout` + webhook; configurar `STRIPE_AGENCY_PRICE_ID_MONTHLY` |
-| Registro self-service de agencia | Hecho: `/agency/setup` + `POST /api/agencies/register` (trial 14 días) |
+| Stripe **Agency Pro** (checkout B2B autónomo) | Hecho: checkout + webhook; configurar `STRIPE_AGENCY_PRODUCT_ID` en Vercel |
+| Tarifa personalizada por agencia | Hecho: Ops fija precio → Price Stripe → checkout en `/agency/plan` |
+| Registro self-service de agencia | Hecho: `/agency/setup` + trial 14 días; auto-vincula leads `/empresa` por email |
 | Panel `AgencyDashboardHome` ampliado | Hecho: métricas, checklist, cobros, invitaciones |
+| Ops leads ↔ agencias | Hecho: badges tarifa; backfill histórico en `/ops/leads` |
 
 ## Cambios de código aplicados (esta ronda)
 
@@ -55,3 +58,6 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 - `lib/logger.ts` para nuevos logs (migrar `console.log` gradualmente)
 - Bloqueo de panel si trial/plan inactivo → `/agency/plan`
 - Portal Stripe agencia: `POST /api/agencies/billing/portal`
+- Precio Agency Pro por agencia: `lib/server/agency-custom-pricing.ts` + Ops
+- Vinculación leads `/empresa`: `lib/server/link-agency-lead.ts`
+- Catálogo migraciones ampliado: logos storage + custom pricing en `/ops/migrations`

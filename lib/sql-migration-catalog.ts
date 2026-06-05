@@ -2,7 +2,8 @@ export type SqlMigrationGroup = "b2c" | "b2b" | "ops" | "extra";
 
 export type SqlMigrationCheck =
   | { kind: "table"; table: string }
-  | { kind: "column"; table: string; column: string };
+  | { kind: "column"; table: string; column: string }
+  | { kind: "bucket"; bucket: string };
 
 export type SqlMigrationDefinition = {
   id: string;
@@ -95,6 +96,14 @@ export const SQL_MIGRATION_CATALOG: SqlMigrationDefinition[] = [
     group: "b2b",
     order: 12,
     check: { kind: "table", table: "agency_clients" },
+  },
+  {
+    id: "agency_logos_storage",
+    file: "kaviro_agency_logos_storage.sql",
+    label: "Bucket Storage logos de agencia",
+    group: "b2b",
+    order: 13,
+    check: { kind: "bucket", bucket: "agency-logos" },
   },
   {
     id: "agency_payments",

@@ -27,6 +27,8 @@ export default function OpsLeadsClient() {
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState("");
+  const [backfillBusy, setBackfillBusy] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,6 +52,28 @@ export default function OpsLeadsClient() {
     void load();
   }, [load]);
 
+  async function runBackfill() {
+    setBackfillBusy(true);
+    setBackfillMsg("");
+    try {
+      const res = await fetch("/api/ops/leads/backfill-links", { method: "POST" });
+      const data = await res.json();
+      if (data.needsMigration) {
+        setNeedsMigration(true);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "Error");
+      setBackfillMsg(
+        `Revisados ${data.scanned ?? 0} leads sin vincular · ${data.linked ?? 0} enlazados por email.`
+      );
+      await load();
+    } catch (e) {
+      setBackfillMsg(e instanceof Error ? e.message : "Error al vincular");
+    } finally {
+      setBackfillBusy(false);
+    }
+  }
+
   async function setStatus(id: string, status: LeadStatus) {
     const res = await fetch(`/api/ops/leads/${id}`, {
       method: "PATCH",
@@ -70,7 +94,8 @@ export default function OpsLeadsClient() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
         {["all", "new", "contacted", "qualified", "converted", "rejected"].map((s) => (
           <button
             key={s}
@@ -83,7 +108,18 @@ export default function OpsLeadsClient() {
             {s === "all" ? "Todos" : LEAD_STATUS_LABELS[s as LeadStatus]}
           </button>
         ))}
+        </div>
+        <button
+          type="button"
+          disabled={backfillBusy}
+          onClick={() => void runBackfill()}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+        >
+          {backfillBusy ? "Vinculando…" : "Vincular leads históricos"}
+        </button>
       </div>
+
+      {backfillMsg ? <p className="text-xs text-slate-600 dark:text-slate-400">{backfillMsg}</p> : null}
 
       {loading ? (
         <Loader2 className="mx-auto h-6 w-6 animate-spin text-slate-400" />
