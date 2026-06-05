@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
+import { buildParticipantPaymentBreakdown } from "@/lib/agency/payment-breakdown";
 import {
   PAYMENT_OVERALL_LABELS,
   formatMoney,
@@ -47,7 +48,7 @@ export async function GET() {
   const { data: payments, error: pErr } = await supabase
     .from("agency_participant_payments")
     .select(
-      "trip_id, participant_id, deposit_amount, final_amount, deposit_status, final_status, deposit_due_at, final_due_at"
+      "trip_id, participant_id, deposit_amount, final_amount, deposit_status, final_status, deposit_due_at, final_due_at, deposit_paid_at, final_paid_at, deposit_payment_method, final_payment_method, deposit_stripe_session_id, final_stripe_session_id"
     )
     .in("trip_id", tripIds);
 
@@ -103,6 +104,9 @@ export async function GET() {
         tripName: string;
         overall: keyof typeof PAYMENT_OVERALL_LABELS;
         overallLabel: string;
+        collected: number;
+        collectedLabel: string;
+        pending: number;
         depositDueAt: string | null;
         finalDueAt: string | null;
       }>;
@@ -126,11 +130,16 @@ export async function GET() {
       trips: [],
     };
     if (!entry.displayName && p.display_name) entry.displayName = p.display_name as string;
+    const currency = (trip?.agency_payment_currency as string) || "EUR";
+    const breakdown = pay ? buildParticipantPaymentBreakdown(pay) : { collected: 0, pending: 0, lines: [] };
     entry.trips.push({
       tripId: p.trip_id as string,
       tripName: (trip?.name as string) || "Viaje",
       overall: summary.overall,
       overallLabel: PAYMENT_OVERALL_LABELS[summary.overall],
+      collected: breakdown.collected,
+      collectedLabel: formatMoney(breakdown.collected, currency),
+      pending: breakdown.pending,
       depositDueAt: (pay?.deposit_due_at as string | null)?.slice(0, 10) ?? null,
       finalDueAt: (pay?.final_due_at as string | null)?.slice(0, 10) ?? null,
     });

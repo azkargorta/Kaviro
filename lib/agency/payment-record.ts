@@ -46,6 +46,30 @@ export function receiptFieldsForPhase(phase: PaymentPhase) {
   } as const;
 }
 
+export function installmentToReceiptInfo(
+  inst: {
+    paymentMethod?: AgencyPaymentMethod | null;
+    receiptPath?: string | null;
+    receiptName?: string | null;
+    receiptMime?: string | null;
+    manualNotes?: string | null;
+    paidAt?: string | null;
+    recordedBy?: string | null;
+  },
+  receiptUrl?: string | null
+): AgencyPaymentReceiptInfo {
+  return {
+    paymentMethod: inst.paymentMethod ?? null,
+    receiptPath: inst.receiptPath ?? null,
+    receiptName: inst.receiptName ?? null,
+    receiptMime: inst.receiptMime ?? null,
+    receiptUrl: receiptUrl ?? null,
+    manualNotes: inst.manualNotes ?? null,
+    paidAt: inst.paidAt ?? null,
+    recordedBy: inst.recordedBy ?? null,
+  };
+}
+
 export function extractReceiptInfo(
   row: Record<string, unknown>,
   phase: PaymentPhase,

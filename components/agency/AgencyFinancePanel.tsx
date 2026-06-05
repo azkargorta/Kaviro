@@ -33,6 +33,9 @@ type TravelerRow = {
     tripName: string;
     overall: string;
     overallLabel: string;
+    collected: number;
+    collectedLabel: string;
+    pending: number;
     depositDueAt: string | null;
     finalDueAt: string | null;
   }>;
@@ -188,6 +191,16 @@ export default function AgencyFinancePanel() {
                       >
                         {t.overallLabel}
                       </span>
+                      {t.collected > 0 ? (
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                          Cobrado {t.collectedLabel}
+                        </span>
+                      ) : null}
+                      {t.pending > 0 ? (
+                        <span className="text-amber-700 dark:text-amber-300">
+                          Pendiente {formatMoney(t.pending, "EUR")}
+                        </span>
+                      ) : null}
                       {t.depositDueAt ? <span className="text-slate-500">Señal: {t.depositDueAt}</span> : null}
                       {t.finalDueAt ? <span className="text-slate-500">Final: {t.finalDueAt}</span> : null}
                     </li>

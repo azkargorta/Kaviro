@@ -1,9 +1,13 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
-import {
-  receiptFieldsForPhase,
-  type AgencyPaymentMethod,
-} from "@/lib/agency/payment-record";
+import type { AgencyPaymentMethod } from "@/lib/agency/payment-record";
 import type { PaymentPhase } from "@/lib/agency/payments";
+import {
+  findInstallment,
+  getPaymentInstallments,
+  legacyPatchFromInstallments,
+  mergePlanWithExisting,
+  type PaymentInstallment,
+} from "@/lib/agency/payment-schedule";
 
 const RECEIPT_BUCKET = "agency-payment-receipts";
 const MAX_RECEIPT_BYTES = 12 * 1024 * 1024;
@@ -20,7 +24,7 @@ const ALLOWED_MIME = new Set([
 export async function uploadAgencyPaymentReceipt(opts: {
   tripId: string;
   paymentRowId: string;
-  phase: PaymentPhase;
+  installmentId: string;
   file: File;
 }) {
   if (opts.file.size > MAX_RECEIPT_BYTES) {
@@ -32,7 +36,7 @@ export async function uploadAgencyPaymentReceipt(opts: {
   }
 
   const ext = opts.file.name.includes(".") ? opts.file.name.split(".").pop() : "bin";
-  const safeName = `${opts.phase}-${crypto.randomUUID()}.${ext}`;
+  const safeName = `${opts.installmentId}-${crypto.randomUUID()}.${ext}`;
   const path = `${opts.tripId}/${opts.paymentRowId}/${safeName}`;
 
   const admin = createSupabaseAdmin();
@@ -49,23 +53,20 @@ export async function uploadAgencyPaymentReceipt(opts: {
 async function syncParticipantBookingStatus(
   admin: ReturnType<typeof createSupabaseAdmin>,
   tripId: string,
-  participantId: string
+  participantId: string,
+  installments: PaymentInstallment[]
 ) {
-  const { data: row } = await admin
-    .from("agency_participant_payments")
-    .select("deposit_status, final_status")
-    .eq("trip_id", tripId)
-    .eq("participant_id", participantId)
-    .maybeSingle();
-
   const now = new Date().toISOString();
-  if (row?.deposit_status === "paid" && row.final_status === "paid") {
+  const allPaid = installments.length > 0 && installments.every((i) => i.status === "paid");
+  const firstPaid = installments[0]?.status === "paid";
+
+  if (allPaid) {
     await admin
       .from("trip_participants")
       .update({ booking_status: "confirmed", updated_at: now })
       .eq("id", participantId)
       .eq("trip_id", tripId);
-  } else if (row?.deposit_status === "paid") {
+  } else if (firstPaid) {
     await admin
       .from("trip_participants")
       .update({ booking_status: "deposit_paid", updated_at: now })
@@ -80,11 +81,22 @@ async function syncParticipantBookingStatus(
   }
 }
 
+function assertPriorInstallmentsPaid(installments: PaymentInstallment[], index: number) {
+  for (let i = 0; i < index; i++) {
+    if (installments[i]?.status !== "paid") {
+      throw new Error(`Registra primero la cuota «${installments[i]?.label}».`);
+    }
+  }
+}
+
 export async function recordAgencyParticipantPayment(opts: {
   tripId: string;
   participantId: string;
-  phase: PaymentPhase;
+  installmentId?: string;
+  phase?: PaymentPhase;
   status: "paid" | "pending";
+  amount?: number | null;
+  dueAt?: string | null;
   paymentMethod?: AgencyPaymentMethod;
   paidAt?: string | null;
   notes?: string | null;
@@ -102,35 +114,64 @@ export async function recordAgencyParticipantPayment(opts: {
   if (rowErr) throw new Error(rowErr.message);
   if (!row) throw new Error("Este viajero no tiene cobro configurado.");
 
-  if (opts.phase === "final" && opts.status === "paid" && row.deposit_status !== "paid") {
-    throw new Error("Registra primero la señal como pagada.");
-  }
+  const installments = getPaymentInstallments(row);
+  const target = findInstallment(installments, {
+    installmentId: opts.installmentId,
+    phase: opts.phase,
+  });
+  if (!target) throw new Error("Cuota no encontrada.");
 
-  const fields = receiptFieldsForPhase(opts.phase);
-  const now = new Date().toISOString();
-  const patch: Record<string, unknown> = { updated_at: now };
+  const index = installments.findIndex((i) => i.id === target.id);
+  if (index < 0) throw new Error("Cuota no encontrada.");
 
   if (opts.status === "paid") {
-    patch[fields.status] = "paid";
-    patch[fields.paidAt] = opts.paidAt || now;
-    patch[fields.method] = opts.paymentMethod || "transfer";
-    patch[fields.recordedBy] = opts.recordedByUserId;
-    patch[fields.notes] = opts.notes?.trim() || null;
-    if (opts.receipt) {
-      patch[fields.path] = opts.receipt.path;
-      patch[fields.name] = opts.receipt.name;
-      patch[fields.mime] = opts.receipt.mime;
-    }
-  } else {
-    patch[fields.status] = "pending";
-    patch[fields.paidAt] = null;
-    patch[fields.method] = null;
-    patch[fields.recordedBy] = null;
-    patch[fields.notes] = null;
-    patch[fields.path] = null;
-    patch[fields.name] = null;
-    patch[fields.mime] = null;
+    assertPriorInstallmentsPaid(installments, index);
   }
+
+  const now = new Date().toISOString();
+  const next = installments.map((inst) => ({ ...inst }));
+
+  if (opts.amount != null && Number.isFinite(opts.amount) && opts.amount >= 0) {
+    next[index]!.amount = Math.round(opts.amount * 100) / 100;
+  }
+  if (opts.dueAt !== undefined) {
+    next[index]!.dueAt = opts.dueAt?.slice(0, 10) ?? null;
+  }
+
+  if (opts.status === "paid") {
+    next[index] = {
+      ...next[index]!,
+      status: "paid",
+      paidAt: opts.paidAt || now,
+      paymentMethod: opts.paymentMethod || "transfer",
+      recordedBy: opts.recordedByUserId,
+      manualNotes: opts.notes?.trim() || null,
+      ...(opts.receipt
+        ? {
+            receiptPath: opts.receipt.path,
+            receiptName: opts.receipt.name,
+            receiptMime: opts.receipt.mime,
+          }
+        : {}),
+    };
+  } else {
+    next[index] = {
+      ...next[index]!,
+      status: "pending",
+      paidAt: null,
+      paymentMethod: null,
+      recordedBy: null,
+      manualNotes: null,
+      receiptPath: null,
+      receiptName: null,
+      receiptMime: null,
+    };
+  }
+
+  const patch = {
+    ...legacyPatchFromInstallments(next),
+    updated_at: now,
+  };
 
   const { error: updErr } = await admin
     .from("agency_participant_payments")
@@ -138,7 +179,45 @@ export async function recordAgencyParticipantPayment(opts: {
     .eq("id", row.id);
   if (updErr) throw new Error(updErr.message);
 
-  await syncParticipantBookingStatus(admin, opts.tripId, opts.participantId);
+  await syncParticipantBookingStatus(admin, opts.tripId, opts.participantId, next);
+
+  return { paymentRowId: row.id as string };
+}
+
+export async function saveAgencyParticipantPaymentSchedule(opts: {
+  tripId: string;
+  participantId: string;
+  installments: Array<{ id?: string; label: string; amount: number; dueAt?: string | null }>;
+}) {
+  const admin = createSupabaseAdmin();
+  const { data: row, error: rowErr } = await admin
+    .from("agency_participant_payments")
+    .select("*")
+    .eq("trip_id", opts.tripId)
+    .eq("participant_id", opts.participantId)
+    .maybeSingle();
+
+  if (rowErr) throw new Error(rowErr.message);
+  if (!row) throw new Error("Este viajero no tiene cobro configurado.");
+
+  const existing = getPaymentInstallments(row);
+  const merged = mergePlanWithExisting(existing, opts.installments);
+
+  if (!merged.length) throw new Error("Añade al menos una cuota.");
+  if (merged.some((i) => !Number.isFinite(i.amount) || i.amount < 0)) {
+    throw new Error("Importe de cuota no válido.");
+  }
+
+  const patch = {
+    ...legacyPatchFromInstallments(merged),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error: updErr } = await admin
+    .from("agency_participant_payments")
+    .update(patch)
+    .eq("id", row.id);
+  if (updErr) throw new Error(updErr.message);
 
   return { paymentRowId: row.id as string };
 }

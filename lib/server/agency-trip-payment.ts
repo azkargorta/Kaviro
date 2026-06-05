@@ -5,6 +5,11 @@ import {
   generatePayToken,
   type PaymentPhase,
 } from "@/lib/agency/payments";
+import {
+  defaultInstallmentsFromAmounts,
+  getPaymentInstallments,
+  legacyPatchFromInstallments,
+} from "@/lib/agency/payment-schedule";
 
 export type ApplyParticipantPricingResult = {
   applied: number;
@@ -63,13 +68,15 @@ export async function applyParticipantPaymentPricing(opts: {
       continue;
     }
 
+    const installments = defaultInstallmentsFromAmounts({
+      pricePerPerson: opts.pricePerPerson,
+      depositPercent: opts.depositPercent,
+      depositDueAt: opts.depositDueDate,
+      finalDueAt: opts.finalDueDate,
+    });
     const row = {
-      price_per_person: opts.pricePerPerson,
+      ...legacyPatchFromInstallments(installments),
       deposit_percent: opts.depositPercent,
-      deposit_amount: deposit,
-      final_amount: final,
-      deposit_due_at: opts.depositDueDate,
-      final_due_at: opts.finalDueDate,
       pay_token_deposit: existing?.pay_token_deposit || generatePayToken(),
       pay_token_final: existing?.pay_token_final || generatePayToken(),
       updated_at: new Date().toISOString(),
@@ -241,18 +248,52 @@ export async function markAgencyPaymentPaidFromSession(session: {
   const admin = createSupabaseAdmin();
   const now = new Date().toISOString();
 
-  const patch =
-    phase === "deposit"
+  const { data: payRow } = await admin
+    .from("agency_participant_payments")
+    .select("*")
+    .eq("id", paymentRowId)
+    .maybeSingle();
+
+  const installments = payRow ? getPaymentInstallments(payRow) : [];
+  const next = installments.map((inst) => ({ ...inst }));
+
+  if (phase === "deposit" && next[0]) {
+    next[0] = {
+      ...next[0],
+      status: "paid",
+      paidAt: now,
+      paymentMethod: "stripe",
+      stripeSessionId: session.id,
+    };
+  } else if (phase === "final") {
+    for (let i = 1; i < next.length; i++) {
+      if (next[i]!.status !== "paid") {
+        next[i] = {
+          ...next[i]!,
+          status: "paid",
+          paidAt: now,
+          paymentMethod: "stripe",
+          stripeSessionId: i === 1 ? session.id : next[i]!.stripeSessionId ?? null,
+        };
+      }
+    }
+  }
+
+  const patch = payRow
+    ? { ...legacyPatchFromInstallments(next), updated_at: now }
+    : phase === "deposit"
       ? {
           deposit_status: "paid",
           deposit_paid_at: now,
           deposit_stripe_session_id: session.id,
+          deposit_payment_method: "stripe",
           updated_at: now,
         }
       : {
           final_status: "paid",
           final_paid_at: now,
           final_stripe_session_id: session.id,
+          final_payment_method: "stripe",
           updated_at: now,
         };
 

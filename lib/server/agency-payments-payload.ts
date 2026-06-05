@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { extractReceiptInfo } from "@/lib/agency/payment-record";
+import { buildParticipantPaymentBreakdown } from "@/lib/agency/payment-breakdown";
 import {
   formatMoney,
   payPublicPath,
-  summarizeParticipantPayment,
   tripPaymentsSummary,
 } from "@/lib/agency/payments";
+import { getPaymentInstallments, summarizeInstallments } from "@/lib/agency/payment-schedule";
 import { signedAgencyReceiptUrl } from "@/lib/server/record-agency-payment";
 import type { requireAgencyTripAccess } from "@/lib/require-agency-trip";
 
@@ -33,6 +34,17 @@ function isReceiptsMigration(msg: string) {
   return msg.includes("deposit_receipt_path") || msg.includes("deposit_payment_method");
 }
 
+function scheduleMigration() {
+  return NextResponse.json({
+    needsMigration: true,
+    migration: "kaviro_agency_payment_schedule.sql",
+  });
+}
+
+function isScheduleMigration(msg: string) {
+  return msg.includes("payment_schedule");
+}
+
 export async function buildAgencyTripPaymentsPayload(gate: AgencyTripGate, tripId: string) {
   const { data: trip, error: tErr } = await gate.supabase
     .from("trips")
@@ -45,7 +57,7 @@ export async function buildAgencyTripPaymentsPayload(gate: AgencyTripGate, tripI
   if (tErr && isMigration(tErr.message)) return { error: migration() };
 
   const paymentSelect =
-    "id, participant_id, price_per_person, deposit_amount, final_amount, deposit_status, final_status, deposit_due_at, final_due_at, pay_token_deposit, pay_token_final, deposit_paid_at, final_paid_at, deposit_payment_method, final_payment_method, deposit_receipt_path, deposit_receipt_name, deposit_receipt_mime, final_receipt_path, final_receipt_name, final_receipt_mime, deposit_manual_notes, final_manual_notes";
+    "id, participant_id, price_per_person, deposit_percent, deposit_amount, final_amount, deposit_status, final_status, deposit_due_at, final_due_at, pay_token_deposit, pay_token_final, deposit_paid_at, final_paid_at, deposit_payment_method, final_payment_method, deposit_stripe_session_id, final_stripe_session_id, deposit_receipt_path, deposit_receipt_name, deposit_receipt_mime, final_receipt_path, final_receipt_name, final_receipt_mime, deposit_manual_notes, final_manual_notes, payment_schedule";
 
   const { data: payments, error } = await gate.supabase
     .from("agency_participant_payments")
@@ -55,6 +67,7 @@ export async function buildAgencyTripPaymentsPayload(gate: AgencyTripGate, tripI
   if (error) {
     if (isMigration(error.message)) return { error: migration() };
     if (isReceiptsMigration(error.message)) return { error: receiptsMigration() };
+    if (isScheduleMigration(error.message)) return { error: scheduleMigration() };
     return { error: NextResponse.json({ error: error.message }, { status: 500 }) };
   }
 
@@ -71,8 +84,17 @@ export async function buildAgencyTripPaymentsPayload(gate: AgencyTripGate, tripI
   const roster = await Promise.all(
     (participants ?? []).map(async (p) => {
       const pay = payByParticipant.get(p.id as string);
+      const installments = pay ? getPaymentInstallments(pay) : [];
+      const schedule = await Promise.all(
+        installments.map(async (inst) => ({
+          ...inst,
+          receiptUrl: inst.receiptPath
+            ? await signedAgencyReceiptUrl(inst.receiptPath)
+            : null,
+        }))
+      );
       const summary = pay
-        ? summarizeParticipantPayment(pay)
+        ? summarizeInstallments(installments)
         : {
             overall: "pending" as const,
             depositStatus: "pending" as const,
@@ -107,6 +129,8 @@ export async function buildAgencyTripPaymentsPayload(gate: AgencyTripGate, tripI
               finalPayUrl: pay.pay_token_final ? payPublicPath(pay.pay_token_final as string) : null,
               deposit: extractReceiptInfo(pay as Record<string, unknown>, "deposit", depositReceiptUrl),
               final: extractReceiptInfo(pay as Record<string, unknown>, "final", finalReceiptUrl),
+              breakdown: buildParticipantPaymentBreakdown(pay),
+              schedule,
               summary,
             }
           : null,

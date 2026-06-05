@@ -12,12 +12,15 @@ import {
   PAYMENT_OVERALL_COLORS,
   PAYMENT_OVERALL_LABELS,
   formatMoney,
-  type PaymentPhase,
 } from "@/lib/agency/payments";
+import { installmentToReceiptInfo } from "@/lib/agency/payment-record";
 import type { AgencyPaymentReceiptInfo } from "@/lib/agency/payment-record";
-import { AGENCY_PAYMENT_METHOD_LABELS } from "@/lib/agency/payment-record";
+import type { PaymentInstallment } from "@/lib/agency/payment-schedule";
+import AgencyParticipantPaymentSummary from "@/components/agency/AgencyParticipantPaymentSummary";
 import AgencyPaymentCharts from "@/components/agency/AgencyPaymentCharts";
 import AgencyPaymentRecordDialog from "@/components/agency/AgencyPaymentRecordDialog";
+import AgencyPaymentPlanDialog from "@/components/agency/AgencyPaymentPlanDialog";
+import type { ParticipantPaymentBreakdown } from "@/lib/agency/payment-breakdown";
 import { useToast } from "@/components/ui/toast";
 
 type PaymentPhaseInfo = {
@@ -31,6 +34,8 @@ type PaymentPhaseInfo = {
   finalPayUrl: string | null;
   deposit?: AgencyPaymentReceiptInfo;
   final?: AgencyPaymentReceiptInfo;
+  breakdown?: ParticipantPaymentBreakdown;
+  schedule?: Array<PaymentInstallment & { receiptUrl?: string | null }>;
   summary: { overall: keyof typeof PAYMENT_OVERALL_LABELS };
 };
 
@@ -78,10 +83,17 @@ export default function AgencyTripPaymentsSection({
   const [recordDialog, setRecordDialog] = useState<{
     participantId: string;
     displayName: string;
-    phase: PaymentPhase;
+    installmentId: string;
+    label: string;
     amount: number;
+    dueAt: string | null;
     currentStatus: string;
     receipt: AgencyPaymentReceiptInfo;
+  } | null>(null);
+  const [planDialog, setPlanDialog] = useState<{
+    participantId: string;
+    displayName: string;
+    schedule: Array<PaymentInstallment & { receiptUrl?: string | null }>;
   } | null>(null);
 
   const load = useCallback(async () => {
@@ -247,8 +259,8 @@ export default function AgencyTripPaymentsSection({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Cobro en dos fases (señal + pago final): enlaces Stripe o registro manual con justificante (transferencia,
-        Bizum, efectivo). Indica el precio, marca los viajeros y guarda.
+        Configura precio y cuotas por viajero (señal, pagos parciales o pago único). Enlaces Stripe o registro manual
+        con justificante. Puedes ajustar importes al registrar cada cobro y editar el plan de cuotas en cualquier momento.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -389,122 +401,92 @@ export default function AgencyTripPaymentsSection({
                     className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${PAYMENT_OVERALL_COLORS[overall]}`}
                   >
                     {PAYMENT_OVERALL_LABELS[overall]}
+                    {r.payment?.breakdown && r.payment.breakdown.collected > 0
+                      ? ` · ${formatMoney(r.payment.breakdown.collected, currency)}`
+                      : ""}
                   </span>
+                  {r.payment?.breakdown ? (
+                    <AgencyParticipantPaymentSummary
+                      breakdown={r.payment.breakdown}
+                      currency={currency}
+                    />
+                  ) : null}
                 </div>
                 </label>
                 <div className="flex flex-wrap items-center gap-1">
                   {r.payment && Number(r.payment.pricePerPerson) > 0 ? (
                     <>
-                      {r.payment.depositStatus !== "paid" ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRecordDialog({
-                              participantId: r.participantId,
-                              displayName: r.displayName ?? "Viajero",
-                              phase: "deposit",
-                              amount: Number(r.payment!.depositAmount ?? 0),
-                              currentStatus: r.payment!.depositStatus ?? "pending",
-                              receipt: r.payment!.deposit ?? {
-                                paymentMethod: null,
-                                receiptPath: null,
-                                receiptName: null,
-                                receiptMime: null,
-                                receiptUrl: null,
-                                manualNotes: null,
-                                paidAt: null,
-                                recordedBy: null,
-                              },
-                            })
-                          }
-                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
-                        >
-                          Registrar señal
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRecordDialog({
-                              participantId: r.participantId,
-                              displayName: r.displayName ?? "Viajero",
-                              phase: "deposit",
-                              amount: Number(r.payment!.depositAmount ?? 0),
-                              currentStatus: "paid",
-                              receipt: r.payment!.deposit ?? {
-                                paymentMethod: null,
-                                receiptPath: null,
-                                receiptName: null,
-                                receiptMime: null,
-                                receiptUrl: null,
-                                manualNotes: null,
-                                paidAt: null,
-                                recordedBy: null,
-                              },
-                            })
-                          }
-                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
-                          title="Ver o editar justificante de señal"
-                        >
-                          <FileText className="h-3 w-3" />
-                          Señal ✓
-                        </button>
-                      )}
-                      {r.payment.depositStatus === "paid" && r.payment.finalStatus !== "paid" ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRecordDialog({
-                              participantId: r.participantId,
-                              displayName: r.displayName ?? "Viajero",
-                              phase: "final",
-                              amount: Number(r.payment!.finalAmount ?? 0),
-                              currentStatus: r.payment!.finalStatus ?? "pending",
-                              receipt: r.payment!.final ?? {
-                                paymentMethod: null,
-                                receiptPath: null,
-                                receiptName: null,
-                                receiptMime: null,
-                                receiptUrl: null,
-                                manualNotes: null,
-                                paidAt: null,
-                                recordedBy: null,
-                              },
-                            })
-                          }
-                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
-                        >
-                          Registrar final
-                        </button>
-                      ) : null}
-                      {r.payment.finalStatus === "paid" ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRecordDialog({
-                              participantId: r.participantId,
-                              displayName: r.displayName ?? "Viajero",
-                              phase: "final",
-                              amount: Number(r.payment!.finalAmount ?? 0),
-                              currentStatus: "paid",
-                              receipt: r.payment!.final ?? {
-                                paymentMethod: null,
-                                receiptPath: null,
-                                receiptName: null,
-                                receiptMime: null,
-                                receiptUrl: null,
-                                manualNotes: null,
-                                paidAt: null,
-                                recordedBy: null,
-                              },
-                            })
-                          }
-                          className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
-                        >
-                          <FileText className="h-3 w-3" />
-                          Final ✓
-                        </button>
-                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPlanDialog({
+                            participantId: r.participantId,
+                            displayName: r.displayName ?? "Viajero",
+                            schedule: r.payment!.schedule ?? [],
+                          })
+                        }
+                        className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                      >
+                        Editar plan
+                      </button>
+                      {(r.payment.schedule ?? []).map((inst, instIndex) => {
+                        const priorUnpaid = (r.payment!.schedule ?? [])
+                          .slice(0, instIndex)
+                          .some((p) => p.status !== "paid");
+                        const receipt = installmentToReceiptInfo(inst, inst.receiptUrl ?? null);
+                        const shortLabel =
+                          inst.label.length > 14 ? `${inst.label.slice(0, 12)}…` : inst.label;
+
+                        if (inst.status === "paid") {
+                          return (
+                            <button
+                              key={inst.id}
+                              type="button"
+                              onClick={() =>
+                                setRecordDialog({
+                                  participantId: r.participantId,
+                                  displayName: r.displayName ?? "Viajero",
+                                  installmentId: inst.id,
+                                  label: inst.label,
+                                  amount: inst.amount,
+                                  dueAt: inst.dueAt,
+                                  currentStatus: "paid",
+                                  receipt,
+                                })
+                              }
+                              className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                              title={`Ver cobro de ${inst.label}`}
+                            >
+                              <FileText className="h-3 w-3" />
+                              {shortLabel} ✓
+                            </button>
+                          );
+                        }
+
+                        if (priorUnpaid) return null;
+
+                        return (
+                          <button
+                            key={inst.id}
+                            type="button"
+                            onClick={() =>
+                              setRecordDialog({
+                                participantId: r.participantId,
+                                displayName: r.displayName ?? "Viajero",
+                                installmentId: inst.id,
+                                label: inst.label,
+                                amount: inst.amount,
+                                dueAt: inst.dueAt,
+                                currentStatus: inst.status,
+                                receipt,
+                              })
+                            }
+                            className={`${agencyBtnSecondaryClass} gap-1 px-2 py-1 text-[10px]`}
+                          >
+                            Registrar {shortLabel}
+                          </button>
+                        );
+                      })}
                     </>
                   ) : null}
                   {r.payment?.depositPayUrl && overall !== "paid" && r.payment.summary.overall !== "deposit_paid" ? (
@@ -531,12 +513,6 @@ export default function AgencyTripPaymentsSection({
                     <span className="text-[10px] text-amber-700">Sin cobro — asigna precio</span>
                   ) : null}
                 </div>
-                {r.payment?.deposit?.paymentMethod && r.payment.depositStatus === "paid" ? (
-                  <p className="w-full text-[10px] text-slate-500">
-                    Señal: {AGENCY_PAYMENT_METHOD_LABELS[r.payment.deposit.paymentMethod] ?? r.payment.deposit.paymentMethod}
-                    {r.payment.deposit.paidAt ? ` · ${r.payment.deposit.paidAt.slice(0, 10)}` : ""}
-                  </p>
-                ) : null}
               </li>
             );
           })}
@@ -556,11 +532,26 @@ export default function AgencyTripPaymentsSection({
           tripId={tripId}
           participantId={recordDialog.participantId}
           displayName={recordDialog.displayName}
-          phase={recordDialog.phase}
+          installmentId={recordDialog.installmentId}
+          label={recordDialog.label}
           amount={recordDialog.amount}
+          dueAt={recordDialog.dueAt}
           currency={currency}
           currentStatus={recordDialog.currentStatus}
           receipt={recordDialog.receipt}
+          onSaved={load}
+        />
+      ) : null}
+
+      {planDialog ? (
+        <AgencyPaymentPlanDialog
+          open
+          onClose={() => setPlanDialog(null)}
+          tripId={tripId}
+          participantId={planDialog.participantId}
+          displayName={planDialog.displayName}
+          currency={currency}
+          schedule={planDialog.schedule}
           onSaved={load}
         />
       ) : null}

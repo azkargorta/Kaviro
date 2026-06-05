@@ -7,7 +7,6 @@ import {
   type AgencyPaymentMethod,
 } from "@/lib/agency/payment-record";
 import type { AgencyPaymentReceiptInfo } from "@/lib/agency/payment-record";
-import type { PaymentPhase } from "@/lib/agency/payments";
 import { formatMoney } from "@/lib/agency/payments";
 import { agencyBtnPrimaryClass, agencyBtnSecondaryClass, agencyInputClass, agencyLabelClass } from "@/lib/agency-theme";
 
@@ -17,8 +16,10 @@ type Props = {
   tripId: string;
   participantId: string;
   displayName: string;
-  phase: PaymentPhase;
+  installmentId: string;
+  label: string;
   amount: number;
+  dueAt: string | null;
   currency: string;
   currentStatus: string;
   receipt: AgencyPaymentReceiptInfo;
@@ -33,13 +34,17 @@ export default function AgencyPaymentRecordDialog({
   tripId,
   participantId,
   displayName,
-  phase,
-  amount,
+  installmentId,
+  label,
+  amount: initialAmount,
+  dueAt: initialDueAt,
   currency,
   currentStatus,
   receipt,
   onSaved,
 }: Props) {
+  const [amountInput, setAmountInput] = useState("");
+  const [dueAt, setDueAt] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<AgencyPaymentMethod>("transfer");
   const [paidAt, setPaidAt] = useState("");
   const [notes, setNotes] = useState("");
@@ -49,6 +54,8 @@ export default function AgencyPaymentRecordDialog({
 
   useEffect(() => {
     if (!open) return;
+    setAmountInput(String(initialAmount));
+    setDueAt(initialDueAt?.slice(0, 10) ?? "");
     setPaymentMethod(
       receipt.paymentMethod && receipt.paymentMethod !== "stripe"
         ? receipt.paymentMethod
@@ -58,21 +65,28 @@ export default function AgencyPaymentRecordDialog({
     setNotes(receipt.manualNotes ?? "");
     setFile(null);
     setError(null);
-  }, [open, receipt]);
+  }, [open, receipt, initialAmount, initialDueAt]);
 
   if (!open) return null;
 
-  const phaseLabel = phase === "deposit" ? "Señal" : "Pago final";
   const isPaid = currentStatus === "paid";
 
   async function submit(status: "paid" | "pending") {
+    const amount = Number(amountInput);
+    if (!Number.isFinite(amount) || amount < 0) {
+      setError("Indica un importe válido.");
+      return;
+    }
+
     setBusy(true);
     setError(null);
     try {
       const form = new FormData();
       form.set("participantId", participantId);
-      form.set("phase", phase);
+      form.set("installmentId", installmentId);
       form.set("status", status);
+      form.set("amount", String(amount));
+      if (dueAt) form.set("dueAt", dueAt);
       form.set("paymentMethod", paymentMethod);
       if (paidAt) form.set("paidAt", `${paidAt}T12:00:00.000Z`);
       if (notes.trim()) form.set("notes", notes.trim());
@@ -104,11 +118,9 @@ export default function AgencyPaymentRecordDialog({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 id="payment-record-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-              Registrar cobro — {phaseLabel}
+              Registrar cobro — {label}
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              {displayName} · {formatMoney(amount, currency)}
-            </p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{displayName}</p>
           </div>
           <button
             type="button"
@@ -125,12 +137,39 @@ export default function AgencyPaymentRecordDialog({
         ) : null}
 
         <div className="mt-4 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className={agencyLabelClass}>Importe cobrado ({currency})</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={amountInput}
+                onChange={(e) => setAmountInput(e.target.value)}
+                className={`${agencyInputClass} mt-1`}
+              />
+              <p className="mt-0.5 text-[10px] text-slate-500">
+                Puedes ajustar si pagó más o menos que lo previsto.
+              </p>
+            </label>
+            <label className="block">
+              <span className={agencyLabelClass}>Vencimiento de la cuota</span>
+              <input
+                type="date"
+                value={dueAt}
+                onChange={(e) => setDueAt(e.target.value)}
+                className={`${agencyInputClass} mt-1`}
+              />
+            </label>
+          </div>
+
           <label className="block">
             <span className={agencyLabelClass}>Forma de pago</span>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as AgencyPaymentMethod)}
               className={`${agencyInputClass} mt-1`}
+              disabled={receipt.paymentMethod === "stripe"}
             >
               {METHOD_OPTIONS.map((m) => (
                 <option key={m} value={m}>
@@ -138,6 +177,9 @@ export default function AgencyPaymentRecordDialog({
                 </option>
               ))}
             </select>
+            {receipt.paymentMethod === "stripe" ? (
+              <p className="mt-0.5 text-[10px] text-slate-500">Pagado con Stripe; el método no se puede cambiar.</p>
+            ) : null}
           </label>
 
           <label className="block">
@@ -181,19 +223,25 @@ export default function AgencyPaymentRecordDialog({
               className={`${agencyInputClass} mt-1`}
             />
           </label>
+
+          {amountInput ? (
+            <p className="text-xs text-slate-500">
+              Total de esta cuota: <strong>{formatMoney(Number(amountInput) || 0, currency)}</strong>
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || receipt.paymentMethod === "stripe"}
             onClick={() => void submit("paid")}
             className={agencyBtnPrimaryClass}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {isPaid ? "Actualizar cobro" : "Marcar como pagado"}
           </button>
-          {isPaid ? (
+          {isPaid && receipt.paymentMethod !== "stripe" ? (
             <button
               type="button"
               disabled={busy}
