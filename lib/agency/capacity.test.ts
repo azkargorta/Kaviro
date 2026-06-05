@@ -43,7 +43,7 @@ describe("canSetBookingStatus", () => {
   it("blocks new occupied slot when full", () => {
     const r = canSetBookingStatus(
       { maxCapacity: 2, waitlistEnabled: true },
-      { occupied: 2, interested: 0, waitlist: 0, cancelled: 0, totalTravelers: 2, available: 0, isFull: true },
+      { occupied: 2, interested: 0, waitlist: 0, cancelled: 0, totalTravelers: 2 },
       "confirmed",
       "waitlist"
     );

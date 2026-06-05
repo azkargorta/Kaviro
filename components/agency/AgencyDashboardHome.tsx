@@ -11,8 +11,8 @@ import {
   agencyBtnSecondaryClass,
   agencyCardClass,
 } from "@/lib/agency-theme";
-import { AGENCY_PARTNERSHIP_EMAIL } from "@/lib/brand";
-import { ArrowRight, CheckCircle2, Circle, CreditCard, Layers, UserPlus } from "lucide-react";
+import { AGENCY_PARTNERSHIP_EMAIL, agencyPartnershipMailto } from "@/lib/brand";
+import { AlertTriangle, ArrowRight, CheckCircle2, Circle, CreditCard, Layers, UserPlus } from "lucide-react";
 
 type Props = {
   agencyName: string;
@@ -84,6 +84,9 @@ export default function AgencyDashboardHome({
     active: boolean;
     trialEndsAt: string | null;
     canUpgrade: boolean;
+    canCheckout: boolean;
+    hasCustomQuote: boolean;
+    quoteLabel: string | null;
   } | null>(null);
 
   const buckets = useMemo(() => categorize(trips), [trips]);
@@ -100,8 +103,26 @@ export default function AgencyDashboardHome({
       { href: "/agency/templates", label: "Guarda una plantilla de viaje", done: templateCount > 0 },
       { href: "/agency/portals", label: "Publica el portal de un programa", done: publishedPortals > 0 },
       { href: "/agency", label: "Crea tu primer programa", done: trips.length > 0 },
+      {
+        href: "/agency/plan",
+        label:
+          planStatus?.quoteLabel && planStatus.canCheckout
+            ? `Activa Agency Pro (${planStatus.quoteLabel}/mes)`
+            : "Activa Agency Pro cuando tengas tarifa",
+        done: planStatus?.plan === "agency_pro" || planStatus?.plan === "partnership",
+      },
     ],
-    [hasBranding, clientCount, memberCount, templateCount, publishedPortals, trips.length]
+    [
+      hasBranding,
+      clientCount,
+      memberCount,
+      templateCount,
+      publishedPortals,
+      trips.length,
+      planStatus?.plan,
+      planStatus?.quoteLabel,
+      planStatus?.canCheckout,
+    ]
   );
 
   const checklistDone = checklist.filter((c) => c.done).length;
@@ -123,6 +144,9 @@ export default function AgencyDashboardHome({
             active: Boolean(json.active),
             trialEndsAt: json.trialEndsAt ?? null,
             canUpgrade: Boolean(json.canUpgrade),
+            canCheckout: Boolean(json.canCheckout),
+            hasCustomQuote: Boolean(json.hasCustomQuote),
+            quoteLabel: json.quoteLabel ?? null,
           });
         }
       })
@@ -169,7 +193,21 @@ export default function AgencyDashboardHome({
         </div>
       </div>
 
-      {planStatus?.plan === "trial" && planStatus.trialEndsAt ? (
+      {planStatus && !planStatus.active && planStatus.plan !== "partnership" ? (
+        <div
+          className={`${agencyCardClass} flex flex-wrap items-center justify-between gap-3 border-amber-300/80 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30`}
+        >
+          <p className="text-sm text-amber-950 dark:text-amber-100">
+            <AlertTriangle className="mr-1.5 inline h-4 w-4 shrink-0" aria-hidden />
+            Tu plan no está activo. El panel puede estar limitado hasta que actives Agency Pro.
+          </p>
+          <Link href="/agency/plan" className={`${agencyBtnSecondaryClass} text-xs`}>
+            Ver plan y facturación
+          </Link>
+        </div>
+      ) : null}
+
+      {planStatus?.plan === "trial" && planStatus.active && planStatus.trialEndsAt ? (
         <div
           className={`${agencyCardClass} flex flex-wrap items-center justify-between gap-3 border-sky-200/80 bg-sky-50/60 px-4 py-3 dark:border-sky-900/40 dark:bg-sky-950/20`}
         >
@@ -181,13 +219,35 @@ export default function AgencyDashboardHome({
                 month: "long",
               })}
             </strong>
-            {!planStatus.active ? " · expirada" : ""}
+            {planStatus.hasCustomQuote && planStatus.quoteLabel ? (
+              <>
+                {" "}
+                · Tarifa acordada: <strong>{planStatus.quoteLabel}/mes</strong>
+              </>
+            ) : null}
           </p>
           {planStatus.canUpgrade ? (
             <Link href="/agency/plan" className={`${agencyBtnSecondaryClass} text-xs`}>
               Pasar a Agency Pro
             </Link>
           ) : null}
+        </div>
+      ) : null}
+
+      {planStatus?.plan === "trial" && planStatus.active && !planStatus.canCheckout ? (
+        <div
+          className={`${agencyCardClass} px-4 py-3 text-sm text-slate-600 dark:text-slate-300`}
+        >
+          Tu tarifa mensual se configura tras el acuerdo inicial con Kaviro. Cuando esté lista, podrás activar Agency
+          Pro desde{" "}
+          <Link href="/agency/plan" className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
+            Plan y facturación
+          </Link>{" "}
+          o escríbenos en{" "}
+          <a href={agencyPartnershipMailto()} className="font-semibold text-[#1e3a5f] underline dark:text-sky-300">
+            {AGENCY_PARTNERSHIP_EMAIL}
+          </a>
+          .
         </div>
       ) : null}
 

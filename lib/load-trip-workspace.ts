@@ -75,14 +75,26 @@ export async function loadTripWorkspaceMeta(
 
   const isAgencyStaff = await userIsAgencyStaff(client, agencyId, userId);
 
-  // Branding público del viaje: service role (el viajero no es miembro de agency_members).
-  const { createSupabaseAdmin } = await import("@/lib/supabase-admin");
-  const admin = createSupabaseAdmin();
-  const { data: agency } = await admin
+  const agencySelect =
+    "id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members";
+
+  // Staff: RLS agency_members. Viajeros: RLS opcional (kaviro_agency_branding_trip_read.sql).
+  let { data: agency } = await client
     .from("agencies")
-    .select("id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members")
+    .select(agencySelect)
     .eq("id", agencyId)
     .maybeSingle();
+
+  if (!agency) {
+    const { createSupabaseAdmin } = await import("@/lib/supabase-admin");
+    const admin = createSupabaseAdmin();
+    const { data: adminAgency } = await admin
+      .from("agencies")
+      .select(agencySelect)
+      .eq("id", agencyId)
+      .maybeSingle();
+    agency = adminAgency;
+  }
   const agencySlug = (agency as { slug?: string } | null)?.slug ?? null;
   const agencyBranding = agency ? agencyBrandingFromRow(agency as AgencyRow) : null;
 

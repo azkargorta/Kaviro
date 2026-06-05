@@ -22,6 +22,13 @@ type Detail = {
   members: Array<{ userId: string; role: string; label: string }>;
   notes: Array<{ id: string; body: string; authorLabel: string; createdAt: string }>;
   stats: { tripCount: number; emailLogCount: number };
+  linkedLeads?: Array<{
+    id: string;
+    contact_name: string;
+    email: string;
+    status: string;
+    created_at: string;
+  }>;
 };
 
 export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }) {
@@ -215,6 +222,28 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
           </div>
         </form>
       </section>
+
+      {data.linkedLeads && data.linkedLeads.length > 0 ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Leads de /empresa vinculados</h3>
+            <Link href="/ops/leads" className="text-xs font-semibold text-[#1e3a5f] underline dark:text-sky-300">
+              Ver todos los leads
+            </Link>
+          </div>
+          <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+            {data.linkedLeads.map((l) => (
+              <li key={l.id} className="py-2 text-sm">
+                <p className="font-medium text-slate-900 dark:text-white">{l.contact_name}</p>
+                <p className="text-slate-600">
+                  {l.email} · <span className="text-xs uppercase text-slate-500">{l.status}</span>
+                </p>
+                <p className="text-xs text-slate-400">{new Date(l.created_at).toLocaleString("es-ES")}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notas internas</h3>

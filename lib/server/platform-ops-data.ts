@@ -134,6 +134,21 @@ export async function getPlatformAgencyDetail(agencyId: string) {
     .eq("agency_id", agencyId);
   if (!emailRes.error) emailLogCount = emailRes.count ?? 0;
 
+  let linkedLeads: Array<{
+    id: string;
+    contact_name: string;
+    email: string;
+    status: string;
+    created_at: string;
+  }> = [];
+  const leadsRes = await admin
+    .from("platform_agency_leads")
+    .select("id, contact_name, email, status, created_at")
+    .eq("agency_id", agencyId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (!leadsRes.error) linkedLeads = leadsRes.data ?? [];
+
   return {
     agency: {
       ...agency,
@@ -156,6 +171,7 @@ export async function getPlatformAgencyDetail(agencyId: string) {
       tripCount: trips?.length ?? 0,
       emailLogCount,
     },
+    linkedLeads,
   };
 }
 

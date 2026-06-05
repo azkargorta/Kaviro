@@ -61,3 +61,6 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 - Precio Agency Pro por agencia: `lib/server/agency-custom-pricing.ts` + Ops
 - Vinculación leads `/empresa`: `lib/server/link-agency-lead.ts`
 - Catálogo migraciones ampliado: logos storage + custom pricing en `/ops/migrations`
+- Dashboard agencia: alertas de plan/tarifa y checklist Agency Pro
+- Branding viajeros: lectura RLS primero, fallback service role (`load-trip-workspace.ts`)
+- Ops ficha agencia: leads `/empresa` vinculados por email
