@@ -15,6 +15,10 @@ export type AgencyRow = {
   plan_active_until?: string | null;
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+  billing_monthly_amount_cents?: number | null;
+  billing_currency?: string | null;
+  stripe_price_id_monthly?: string | null;
+  billing_quote_notes?: string | null;
 };
 
 export type AgencyMemberRow = {
@@ -66,7 +70,7 @@ export async function getAgencyForUser(
   const { data: agency, error: agencyErr } = await client
     .from("agencies")
     .select(
-      "id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members, plan_active_until, stripe_customer_id, stripe_subscription_id"
+      "id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members, plan_active_until, stripe_customer_id, stripe_subscription_id, billing_monthly_amount_cents, billing_currency, stripe_price_id_monthly, billing_quote_notes"
     )
     .eq("id", agencyId)
     .maybeSingle();

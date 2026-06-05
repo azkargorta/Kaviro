@@ -13,6 +13,10 @@ type Detail = {
     contact_email: string | null;
     max_members: number;
     ownerLabel: string;
+    billing_monthly_amount_cents?: number | null;
+    billing_currency?: string | null;
+    stripe_price_id_monthly?: string | null;
+    billing_quote_notes?: string | null;
   };
   trips: Array<{ id: string; name: string; destination: string | null }>;
   members: Array<{ userId: string; role: string; label: string }>;
@@ -24,6 +28,8 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
   const [data, setData] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
+  const [billingMonthlyEur, setBillingMonthlyEur] = useState("");
+  const [billingQuoteNotes, setBillingQuoteNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,6 +41,11 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
       if (json.needsMigration) throw new Error("Ejecuta docs/kaviro_platform_ops.sql");
       if (!res.ok) throw new Error(json.error);
       setData(json);
+      const cents = json?.agency?.billing_monthly_amount_cents;
+      setBillingMonthlyEur(
+        typeof cents === "number" && cents > 0 ? String(cents / 100) : ""
+      );
+      setBillingQuoteNotes(json?.agency?.billing_quote_notes ?? "");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
@@ -135,6 +146,75 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
           </a>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Tarifa Agency Pro (por agencia)</h3>
+        <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+          Fija el precio mensual acordado al inicio. Se crea un Price en Stripe y la agencia lo verá en{" "}
+          <code>/agency/plan</code> antes de pagar.
+        </p>
+        <form
+          className="mt-4 grid gap-3 sm:grid-cols-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const amount = Number.parseFloat(billingMonthlyEur.replace(",", "."));
+            if (!Number.isFinite(amount)) {
+              setError("Indica un importe mensual válido.");
+              return;
+            }
+            void savePlan({
+              billingMonthlyEur: amount,
+              maxMembers: a.max_members,
+              billingQuoteNotes,
+            });
+          }}
+        >
+          <label className="block text-sm">
+            <span className="font-medium text-slate-700 dark:text-slate-300">Importe mensual (EUR)</span>
+            <input
+              type="number"
+              min={1}
+              step={0.01}
+              value={billingMonthlyEur}
+              onChange={(e) => setBillingMonthlyEur(e.target.value)}
+              placeholder="89"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700 dark:bg-slate-800"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-medium text-slate-700 dark:text-slate-300">Miembros incluidos</span>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={a.max_members}
+              onChange={(e) => void savePlan({ maxMembers: Number(e.target.value) })}
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700 dark:bg-slate-800"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-2">
+            <span className="font-medium text-slate-700 dark:text-slate-300">Notas del acuerdo (interno)</span>
+            <input
+              value={billingQuoteNotes}
+              onChange={(e) => setBillingQuoteNotes(e.target.value)}
+              placeholder="Ej. 12 grupos/año, onboarding incluido"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700 dark:bg-slate-800"
+            />
+          </label>
+          <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={busy}
+              className="rounded-lg bg-[#1e3a5f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Guardar tarifa y crear en Stripe
+            </button>
+            {a.stripe_price_id_monthly ? (
+              <span className="font-mono text-xs text-slate-500">Price: {a.stripe_price_id_monthly}</span>
+            ) : null}
+          </div>
+        </form>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notas internas</h3>

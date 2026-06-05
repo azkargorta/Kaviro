@@ -14,7 +14,9 @@ type Status = {
   active: boolean;
   trialEndsAt: string | null;
   maxMembers: number;
-  selfServeCheckout: boolean;
+  canCheckout: boolean;
+  hasCustomQuote?: boolean;
+  quoteLabel?: string | null;
   canUpgrade: boolean;
   canManageBilling?: boolean;
 };
@@ -165,17 +167,37 @@ export default function AgencyPlanPanel() {
         </div>
       ) : null}
 
-      {status.canUpgrade || !status.active ? (
+      {!status.canCheckout && status.plan !== "partnership" && status.plan !== "agency_pro" ? (
+        <div className={`${agencyCardClass} p-6 text-sm text-slate-600 dark:text-slate-300`}>
+          Tu tarifa mensual aún no está configurada. Tras el acuerdo inicial con Kaviro verás aquí el importe y podrás
+          activar Agency Pro. Mientras tanto:{" "}
+          <a href={agencyPartnershipMailto()} className="font-semibold text-[#1e3a5f] dark:text-sky-300">
+            {AGENCY_PARTNERSHIP_EMAIL}
+          </a>
+        </div>
+      ) : null}
+
+      {status.canUpgrade || (!status.active && status.canCheckout) ? (
         <div className={`${agencyCardClass} grid gap-6 p-6 md:grid-cols-2`}>
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">Agency Pro</p>
-            <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">Suscripción mensual</p>
+            <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+              {status.quoteLabel ? (
+                <>
+                  Tu tarifa: <span className="text-[#1e3a5f] dark:text-sky-300">{status.quoteLabel}</span>
+                  <span className="text-base font-semibold text-slate-500"> / mes</span>
+                </>
+              ) : (
+                "Suscripción mensual"
+              )}
+            </p>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Hasta {AGENCY_PRO_MAX_MEMBERS} miembros, portales ilimitados y todas las funciones del panel.
+              Hasta {status.maxMembers || AGENCY_PRO_MAX_MEMBERS} miembros, portales ilimitados y todas las funciones del
+              panel.
             </p>
             <button
               type="button"
-              disabled={checkoutBusy || !status.selfServeCheckout}
+              disabled={checkoutBusy || !status.canCheckout}
               onClick={() => void startCheckout()}
               className={`${agencyBtnPrimaryClass} mt-5 gap-2`}
             >
@@ -186,9 +208,6 @@ export default function AgencyPlanPanel() {
               )}
               {status.active ? "Pasar a Agency Pro" : "Activar Agency Pro"}
             </button>
-            {!status.selfServeCheckout ? (
-              <p className="mt-2 text-xs text-slate-500">Pago online en configuración. Usa el contacto de partnership.</p>
-            ) : null}
           </div>
           <div className="border-t border-slate-100 pt-6 md:border-l md:border-t-0 md:pl-6 dark:border-[#334155]">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Partnership</p>

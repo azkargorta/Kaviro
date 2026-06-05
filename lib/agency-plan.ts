@@ -42,6 +42,7 @@ export function agencyPlanLabel(plan: string): string {
   }
 }
 
-export function isAgencySelfServeCheckoutConfigured(): boolean {
+/** Hay precio global por env (legacy) o el flujo por agencia vía Ops. */
+export function isAgencyGlobalCheckoutConfigured(): boolean {
   return Boolean(process.env.STRIPE_AGENCY_PRICE_ID_MONTHLY?.trim());
 }

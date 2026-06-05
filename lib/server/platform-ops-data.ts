@@ -70,7 +70,9 @@ export async function getPlatformAgencyDetail(agencyId: string) {
   const admin = createSupabaseAdmin();
   const { data: agency, error } = await admin
     .from("agencies")
-    .select("id, name, slug, plan, contact_email, logo_url, brand_color, max_members, created_at, owner_id")
+    .select(
+      "id, name, slug, plan, contact_email, logo_url, brand_color, max_members, created_at, owner_id, billing_monthly_amount_cents, billing_currency, stripe_price_id_monthly, billing_quote_notes"
+    )
     .eq("id", agencyId)
     .maybeSingle();
 

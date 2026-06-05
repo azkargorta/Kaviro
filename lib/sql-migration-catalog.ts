@@ -129,6 +129,14 @@ export const SQL_MIGRATION_CATALOG: SqlMigrationDefinition[] = [
     check: { kind: "table", table: "platform_agency_leads" },
   },
   {
+    id: "agency_custom_pricing",
+    file: "kaviro_agency_custom_pricing.sql",
+    label: "Tarifa Agency Pro personalizada por agencia",
+    group: "b2b",
+    order: 19,
+    check: { kind: "column", table: "agencies", column: "stripe_price_id_monthly" },
+  },
+  {
     id: "agency_branding_read",
     file: "kaviro_agency_branding_trip_read.sql",
     label: "RLS branding agencia para viajeros",

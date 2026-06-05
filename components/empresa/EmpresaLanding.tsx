@@ -675,7 +675,7 @@ function Pricing({ isLoggedIn }: { isLoggedIn: boolean }) {
                   <div className="mt-4 flex items-baseline gap-2">
                     <span className="text-4xl font-black text-white">Mensual</span>
                   </div>
-                  <p className="mt-1 text-sm text-slate-400">Hasta 5 miembros · pago con Stripe</p>
+                  <p className="mt-1 text-sm text-slate-400">Tarifa mensual acordada por agencia · pago con Stripe</p>
                   <ul className="mt-5 space-y-2">
                     {features.map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm text-slate-300">

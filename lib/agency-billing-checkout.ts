@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser } from "@/lib/agency";
 import { getStripe } from "@/lib/stripe";
-import { isAgencySelfServeCheckoutConfigured } from "@/lib/agency-plan";
+import { agencyHasCheckoutPrice, resolveAgencyCheckoutPriceId } from "@/lib/server/agency-custom-pricing";
 
 export class AgencyBillingAuthError extends Error {
   constructor(message = "No autenticado.") {
@@ -17,18 +17,8 @@ export class AgencyBillingConfigError extends Error {
   }
 }
 
-function getAgencyPriceId() {
-  const id = process.env.STRIPE_AGENCY_PRICE_ID_MONTHLY?.trim();
-  if (!id) throw new AgencyBillingConfigError("Falta STRIPE_AGENCY_PRICE_ID_MONTHLY.");
-  return id;
-}
-
-/** Crea sesión Stripe Checkout para suscripción Agency Pro. */
+/** Crea sesión Stripe Checkout para suscripción Agency Pro (precio por agencia). */
 export async function createAgencyProCheckoutSession(params: { origin: string }): Promise<string> {
-  if (!isAgencySelfServeCheckoutConfigured()) {
-    throw new AgencyBillingConfigError();
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -42,7 +32,13 @@ export async function createAgencyProCheckoutSession(params: { origin: string })
   if (!ctx) throw new AgencyBillingAuthError("Necesitas crear tu agencia primero.");
 
   const agency = ctx.agency;
-  const priceId = getAgencyPriceId();
+  if (!agencyHasCheckoutPrice(agency)) {
+    throw new AgencyBillingConfigError(
+      "Tu agencia aún no tiene tarifa asignada. Contacta con Kaviro para acordar el importe mensual."
+    );
+  }
+
+  const priceId = await resolveAgencyCheckoutPriceId(agency);
   const stripe = getStripe();
 
   let customerId = agency.stripe_customer_id || null;
