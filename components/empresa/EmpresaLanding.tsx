@@ -75,17 +75,17 @@ function NavBar({ hasAgency, isLoggedIn }: { hasAgency: boolean; isLoggedIn: boo
           ) : (
             <>
               <Link
-                href="/auth/login?mode=agency&next=/agency"
+                href="/auth/login?mode=agency&next=/agency/setup"
                 className="text-sm font-medium text-white/70 transition hover:text-white"
               >
                 Iniciar sesión
               </Link>
-              <a
-                href="#contact"
+              <Link
+                href={isLoggedIn ? "/agency/setup" : "/auth/login?mode=agency&next=/agency/setup"}
                 className="inline-flex min-h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#1e3a5f] transition hover:bg-slate-100"
               >
-                Solicitar acceso
-              </a>
+                Crear agencia
+              </Link>
             </>
           )}
           <Link
@@ -100,7 +100,7 @@ function NavBar({ hasAgency, isLoggedIn }: { hasAgency: boolean; isLoggedIn: boo
   );
 }
 
-function Hero({ hasAgency }: { hasAgency: boolean }) {
+function Hero({ hasAgency, isLoggedIn }: { hasAgency: boolean; isLoggedIn: boolean }) {
   const [parallaxY, setParallaxY] = useState(0);
 
   useEffect(() => {
@@ -167,12 +167,12 @@ function Hero({ hasAgency }: { hasAgency: boolean }) {
               </Link>
             ) : (
               <>
-                <a
-                  href="#contact"
+                <Link
+                  href={isLoggedIn ? "/agency/setup" : "/auth/login?mode=agency&next=/agency/setup"}
                   className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-white px-7 py-3 text-base font-bold text-[#1e3a5f] shadow-lg transition hover:bg-slate-100"
                 >
-                  Solicitar acceso gratuito <ArrowRight className="h-4 w-4" aria-hidden />
-                </a>
+                  Crear agencia gratis <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
                 <a
                   href="#how"
                   className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/25 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -614,7 +614,7 @@ function CaseStudy() {
   );
 }
 
-function Pricing() {
+function Pricing({ isLoggedIn }: { isLoggedIn: boolean }) {
   const features = [
     "Panel centralizado de todos los viajes",
     "Plantillas operativas reutilizables",
@@ -636,54 +636,68 @@ function Pricing() {
               Simple y sin sorpresas
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-slate-400">
-              Actualmente Kaviro Trips se activa con un acuerdo directo. Sin contratos anuales ni
-              costes de implantación.
+              Empieza con 14 días de prueba gratis. Agency Pro por suscripción o partnership para
+              operaciones grandes.
             </p>
           </div>
         </Reveal>
 
         <Reveal variant="scale" delay={1}>
-          <div className="overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-[#1e3a5f] to-[#162d4d] shadow-xl">
-            <div className="grid md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[#1e3a5f] to-[#162d4d] shadow-xl">
               <div className="p-8 sm:p-10">
-                <p className="text-xs font-bold uppercase tracking-widest text-sky-400">
-                  Kaviro Trips — Partnership
-                </p>
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-300">Prueba gratuita</p>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-black text-white">Precio</span>
+                  <span className="text-5xl font-black text-white">14 días</span>
                 </div>
-                <p className="mt-1 text-sm text-slate-400">
-                  Personalizado según volumen de grupos y equipo
-                </p>
-                <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                  El acceso incluye viajes ilimitados, el portal cliente y todas las
-                  funcionalidades del panel de agencia. El precio se adapta al tamaño de tu
-                  operación.
-                </p>
-                <a
-                  href={agencyPartnershipMailto()}
-                  className="mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold text-[#1e3a5f] shadow-md transition hover:bg-slate-100"
-                >
-                  <Mail className="h-4 w-4" aria-hidden />
-                  Solicitar acceso
-                </a>
-                <p className="mt-3 text-center text-xs text-slate-500">
-                  Respondemos en menos de 24 horas
-                </p>
-              </div>
-
-              <div className="border-t border-white/10 px-8 py-8 md:border-l md:border-t-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-sky-400">
-                  Incluido
-                </p>
-                <ul className="mt-4 space-y-3">
-                  {features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-slate-300">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-400" aria-hidden />
+                <p className="mt-1 text-sm text-slate-400">2 miembros · sin tarjeta</p>
+                <ul className="mt-5 space-y-2">
+                  {features.slice(0, 4).map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden />
                       {f}
                     </li>
                   ))}
                 </ul>
+                <Link
+                  href={isLoggedIn ? "/agency/setup" : "/auth/login?mode=agency&next=/agency/setup"}
+                  className="mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-bold text-[#1e3a5f] shadow-md transition hover:bg-slate-100"
+                >
+                  Crear agencia <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-[#1e3a5f] to-[#162d4d] shadow-xl">
+              <div className="grid h-full md:grid-cols-1">
+                <div className="p-8 sm:p-10">
+                  <p className="text-xs font-bold uppercase tracking-widest text-sky-400">Agency Pro</p>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-white">Mensual</span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-400">Hasta 5 miembros · pago con Stripe</p>
+                  <ul className="mt-5 space-y-2">
+                    {features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" aria-hidden />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={isLoggedIn ? "/agency/plan" : "/auth/login?mode=agency&next=/agency/plan"}
+                    className="mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/15"
+                  >
+                    Ver plan y pagar
+                  </Link>
+                  <a
+                    href={agencyPartnershipMailto()}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 text-xs font-semibold text-slate-400 underline hover:text-slate-200"
+                  >
+                    <Mail className="h-3.5 w-3.5" aria-hidden />
+                    Partnership para volumen alto
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -843,21 +857,24 @@ export default function EmpresaLanding({ hasAgency, isLoggedIn, reason }: Props)
     <div className={`${KAVIRO_TRIPS_WORKSPACE_CLASS}`}>
       {reason === "no-membership" && isLoggedIn && (
         <div className="border-b border-amber-500/30 bg-amber-500/10 px-5 py-2.5 text-center text-sm text-amber-200">
-          Tu cuenta aún no tiene acceso a {KAVIRO_TRIPS_PRODUCT_NAME}. Escríbenos a{" "}
+          Crea tu agencia en un minuto o{" "}
+          <Link href="/agency/setup" className="font-bold underline">
+            continúa el registro
+          </Link>
+          . ¿Volumen alto?{" "}
           <a href={agencyPartnershipMailto()} className="font-bold underline">
             {AGENCY_PARTNERSHIP_EMAIL}
           </a>
-          .
         </div>
       )}
       <NavBar hasAgency={hasAgency} isLoggedIn={isLoggedIn} />
-      <Hero hasAgency={hasAgency} />
+      <Hero hasAgency={hasAgency} isLoggedIn={isLoggedIn} />
       <ProductComparison />
       <Features />
       <HowItWorks />
       <WhoIsItFor />
       <CaseStudy />
-      <Pricing />
+      <Pricing isLoggedIn={isLoggedIn} />
       <FAQ />
       <Contact hasAgency={hasAgency} />
       <Footer isLoggedIn={isLoggedIn} />

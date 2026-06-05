@@ -33,7 +33,7 @@ export async function getDefaultHomePathForUser(
 
   if (requestedNext && isSafeRelativePath(requestedNext)) {
     if (isAgencyPanelPath(requestedNext)) {
-      return "/empresa?reason=no-membership";
+      return "/agency/setup";
     }
     return requestedNext;
   }

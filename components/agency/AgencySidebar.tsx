@@ -14,6 +14,7 @@ import {
   CalendarDays,
   CreditCard,
   Users,
+  Sparkles,
 } from "lucide-react";
 import type { AgencyRow } from "@/lib/agency";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
@@ -41,6 +42,7 @@ const NAV: Array<{
   { href: "/agency/reports", label: "Informes", icon: BarChart3 },
   { href: "/agency/team", label: "Equipo", icon: Users },
   { href: "/agency/branding", label: "Branding", icon: Palette },
+  { href: "/agency/plan", label: "Plan", icon: Sparkles },
 ];
 
 export default function AgencySidebar({

@@ -13,6 +13,8 @@ export type AgencyRow = {
   plan: string;
   max_members: number;
   plan_active_until?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
 };
 
 export type AgencyMemberRow = {
@@ -43,7 +45,7 @@ export async function getAgencyForUser(
     .maybeSingle();
 
   if (memberErr) {
-    console.warn("getAgencyForUser members:", memberErr.message);
+    // Sin fila en agency_members: el owner puede seguir accediendo vía owner_id.
     return null;
   }
 
@@ -64,7 +66,7 @@ export async function getAgencyForUser(
   const { data: agency, error: agencyErr } = await client
     .from("agencies")
     .select(
-      "id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members"
+      "id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members, plan_active_until, stripe_customer_id, stripe_subscription_id"
     )
     .eq("id", agencyId)
     .maybeSingle();
@@ -176,11 +178,4 @@ export function clientPortalPath(agencySlug: string, tripSlug: string) {
   return `/client/${encodeURIComponent(agencySlug)}/${encodeURIComponent(tripSlug)}`;
 }
 
-/**
- * Agencias onboarded por acuerdo comercial (sin checkout público).
- * Límites de miembros y precio se negocian manualmente; `max_members` es referencia en BD.
- */
-export function isAgencyPlanActive(agency: Pick<AgencyRow, "plan" | "plan_active_until">): boolean {
-  if (agency.plan === "suspended") return false;
-  return true;
-}
+export { isAgencyPlanActive, agencyPlanLabel } from "@/lib/agency-plan";

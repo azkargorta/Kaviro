@@ -22,7 +22,7 @@ export async function requireAgencyContext(loginNext = "/agency"): Promise<Agenc
 
   const ctx = await getAgencyForUser(supabase, user.id);
   if (!ctx) {
-    redirect("/empresa?reason=no-membership");
+    redirect("/agency/setup");
   }
 
   return {

@@ -37,8 +37,8 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 
 | Ítem | Estado |
 |------|--------|
-| Stripe **Agency Pro** (checkout B2B autónomo) | Por diseñar |
-| Registro self-service de agencia | Solo contacto en `/empresa` + invitaciones `/agency/join` |
+| Stripe **Agency Pro** (checkout B2B autónomo) | Hecho: `/api/agencies/billing/checkout` + webhook; configurar `STRIPE_AGENCY_PRICE_ID_MONTHLY` |
+| Registro self-service de agencia | Hecho: `/agency/setup` + `POST /api/agencies/register` (trial 14 días) |
 | Panel `AgencyDashboardHome` ampliado | Hecho: métricas, checklist, cobros, invitaciones |
 
 ## Cambios de código aplicados (esta ronda)

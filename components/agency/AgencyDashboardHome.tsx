@@ -79,6 +79,12 @@ export default function AgencyDashboardHome({
   const [showCreate, setShowCreate] = useState(false);
   const [showFromTemplate, setShowFromTemplate] = useState(false);
   const [payments, setPayments] = useState<PaymentOverview | null>(null);
+  const [planStatus, setPlanStatus] = useState<{
+    plan: string;
+    active: boolean;
+    trialEndsAt: string | null;
+    canUpgrade: boolean;
+  } | null>(null);
 
   const buckets = useMemo(() => categorize(trips), [trips]);
   const recent = useMemo(
@@ -106,6 +112,19 @@ export default function AgencyDashboardHome({
       .then((r) => r.json())
       .then((json) => {
         if (json && !json.error) setPayments(json as PaymentOverview);
+      })
+      .catch(() => {});
+    fetch("/api/agencies/billing/status", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.plan) {
+          setPlanStatus({
+            plan: json.plan,
+            active: Boolean(json.active),
+            trialEndsAt: json.trialEndsAt ?? null,
+            canUpgrade: Boolean(json.canUpgrade),
+          });
+        }
       })
       .catch(() => {});
   }, []);
@@ -149,6 +168,28 @@ export default function AgencyDashboardHome({
           </button>
         </div>
       </div>
+
+      {planStatus?.plan === "trial" && planStatus.trialEndsAt ? (
+        <div
+          className={`${agencyCardClass} flex flex-wrap items-center justify-between gap-3 border-sky-200/80 bg-sky-50/60 px-4 py-3 dark:border-sky-900/40 dark:bg-sky-950/20`}
+        >
+          <p className="text-sm text-sky-950 dark:text-sky-100">
+            Prueba gratuita hasta{" "}
+            <strong>
+              {new Date(planStatus.trialEndsAt).toLocaleDateString("es-ES", {
+                day: "numeric",
+                month: "long",
+              })}
+            </strong>
+            {!planStatus.active ? " · expirada" : ""}
+          </p>
+          {planStatus.canUpgrade ? (
+            <Link href="/agency/plan" className={`${agencyBtnSecondaryClass} text-xs`}>
+              Pasar a Agency Pro
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
 
       {pendingInvites > 0 ? (
         <div

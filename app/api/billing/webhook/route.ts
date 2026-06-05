@@ -4,6 +4,10 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 import { buildUsernameFromEmail } from "@/lib/profile";
 import { markAgencyPaymentPaidFromSession } from "@/lib/server/agency-trip-payment";
+import {
+  isAgencyProSubscriptionMetadata,
+  syncAgencyPlanFromSubscription,
+} from "@/lib/server/agency-billing-sync";
 
 export const runtime = "nodejs";
 
@@ -88,6 +92,20 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
       }
 
+      if (isAgencyProSubscriptionMetadata(session.metadata as Record<string, string>)) {
+        const subscriptionId = session.subscription as string | null;
+        if (subscriptionId) {
+          const subRes = await stripe.subscriptions.retrieve(subscriptionId);
+          const sub = (subRes as { data?: unknown }).data ?? subRes;
+          await syncAgencyPlanFromSubscription(
+            admin,
+            sub,
+            (session.metadata as Record<string, string>).agency_id
+          );
+        }
+        return NextResponse.json({ received: true });
+      }
+
       const customer = session.customer as string | null;
       const subscription = session.subscription as string | null;
       const userId = (session.metadata?.supabase_user_id as string | undefined) || null;
@@ -125,6 +143,12 @@ export async function POST(req: Request) {
 
     if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
       const sub = event.data.object as any;
+
+      if (isAgencyProSubscriptionMetadata(sub.metadata)) {
+        await syncAgencyPlanFromSubscription(admin, sub, sub.metadata.agency_id);
+        return NextResponse.json({ received: true });
+      }
+
       let userId = (sub.metadata?.supabase_user_id as string | undefined) || null;
 
       // Fallback robusto: si el subscription no trae metadata, mapeamos por customer -> user.
@@ -156,6 +180,12 @@ export async function POST(req: Request) {
 
     if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object as any;
+
+      if (isAgencyProSubscriptionMetadata(sub.metadata)) {
+        await syncAgencyPlanFromSubscription(admin, { ...sub, status: "canceled" }, sub.metadata.agency_id);
+        return NextResponse.json({ received: true });
+      }
+
       let userId = (sub.metadata?.supabase_user_id as string | undefined) || null;
       if (!userId && sub.customer) {
         const { data: row } = await admin
