@@ -50,7 +50,7 @@ export default function MobileBottomNav({
 }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
-  const { isAgencyTrip, isAgencyManaged } = useTripWorkspace();
+  const { isAgencyTrip, isAgencyManaged, useAgencyBranding } = useTripWorkspace();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const navItems = getTripNavItems(isAgencyTrip, isAgencyManaged).filter(
@@ -80,9 +80,12 @@ export default function MobileBottomNav({
     return today >= startDate && today <= endDate;
   })();
 
-  const activeSheetClass = isAgencyTrip
-    ? "border-[#1e3a5f]/30 bg-[#1e3a5f]/8 text-[#1e3a5f] dark:border-[#3d6a9e]/40 dark:bg-[#3d6a9e]/12 dark:text-[#93c5fd]"
-    : "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand)]";
+  const activeSheetClass =
+    isAgencyTrip && !useAgencyBranding
+      ? "border-[#1e3a5f]/30 bg-[#1e3a5f]/8 text-[#1e3a5f] dark:border-[#3d6a9e]/40 dark:bg-[#3d6a9e]/12 dark:text-[#93c5fd]"
+      : "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand)]";
+
+  const accentDotClass = useAgencyBranding || !isAgencyTrip ? "bg-[var(--brand)]" : "bg-[#1e3a5f]";
 
 
   function isActivePath(href: string, key: string) {
@@ -147,7 +150,7 @@ export default function MobileBottomNav({
                   {item.key === "participants" && newParticipantCount > 0 && (
                     <span
                       className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${
-                        isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                        accentDotClass
                       }`}
                     >
                       {newParticipantCount}
@@ -217,7 +220,7 @@ export default function MobileBottomNav({
                   {item.key === "plan" && isTripActiveToday && !active && (
                     <span
                       className={`absolute top-1.5 right-2.5 h-2 w-2 rounded-full ring-1 ring-white dark:ring-[#080C14] ${
-                        isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                        accentDotClass
                       }`}
                       aria-hidden
                     />
@@ -227,7 +230,7 @@ export default function MobileBottomNav({
                   {item.key === "plan" && unseenCount > 0 && !active && !isTripActiveToday && (
                     <span
                       className={`absolute top-1.5 right-2.5 h-2 w-2 rounded-full animate-pulse ring-1 ring-white dark:ring-[#080C14] ${
-                        isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                        accentDotClass
                       }`}
                       aria-hidden
                     />
@@ -270,7 +273,7 @@ export default function MobileBottomNav({
               {newParticipantCount > 0 && (
                 <span
                   className={`absolute top-1.5 right-2.5 h-2 w-2 rounded-full ring-1 ring-white dark:ring-[#080C14] ${
-                    isAgencyTrip ? "bg-[#1e3a5f]" : "bg-[#F87171]"
+                    accentDotClass
                   }`}
                   aria-hidden
                 />

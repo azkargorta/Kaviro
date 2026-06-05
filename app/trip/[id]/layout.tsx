@@ -19,7 +19,7 @@ import { clientPortalPath } from "@/lib/agency";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 import { agencyBrandingStyleVars } from "@/lib/agency-brand-tokens";
-import { KAVIRO_TRIPS_WORKSPACE_CLASS } from "@/lib/agency-theme";
+import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
 import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
 
 const TripPageAssistantDock = dynamic(
@@ -83,10 +83,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
 
   const showOnboarding = !displayWorkspace.isAgencyTrip && !isDemo;
   const showAssistantDock = !displayWorkspace.isAgencyTrip;
-  const useAgencyBranding =
-    displayWorkspace.isAgencyManaged &&
-    !displayWorkspace.isAgencyTrip &&
-    Boolean(displayWorkspace.agencyBranding);
+  const useAgencyBranding = shouldUseAgencyBranding(displayWorkspace);
   const agencyBrandStyle = useAgencyBranding
     ? agencyBrandingStyleVars(displayWorkspace.agencyBranding!.brandColor)
     : undefined;
@@ -100,8 +97,8 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
           <TripOfflineSync tripId={params.id} />
           <div
             className={`pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
-              displayWorkspace.isAgencyTrip ? KAVIRO_TRIPS_WORKSPACE_CLASS : ""
-            } ${useAgencyBranding ? "trip-agency-branded" : ""}`}
+              useAgencyBranding ? "trip-agency-branded" : ""
+            }`}
             style={agencyBrandStyle}
           >
             <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">

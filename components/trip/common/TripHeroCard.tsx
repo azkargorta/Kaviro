@@ -49,10 +49,10 @@ export default function TripHeroCard({
   const shown = participants.slice(0, 5);
   const overflow = participants.length - shown.length;
   const branded = useAgencyBranding && agencyBranding;
-  const heroBackground = isAgencyTrip
-    ? agencyHeroGradient
-    : branded
-      ? agencyBrandedHeroGradientDiagonal(agencyBranding.brandColor)
+  const heroBackground = branded
+    ? agencyBrandedHeroGradientDiagonal(agencyBranding.brandColor)
+    : isAgencyTrip
+      ? agencyHeroGradient
       : "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)";
 
   return (
@@ -79,7 +79,7 @@ export default function TripHeroCard({
       >
         {branded ? (
           <Link
-            href="/dashboard"
+            href={isAgencyTrip ? "/agency" : "/dashboard"}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
             aria-label={agencyBranding.name}
           >
@@ -112,13 +112,13 @@ export default function TripHeroCard({
         )}
 
         <div className="min-w-0 flex-1 self-center">
-          {isAgencyTrip ? (
+          {branded ? (
+            <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
+              {isAgencyTrip ? `${KAVIRO_TRIPS_PRODUCT_NAME} · ${agencyBranding.name}` : `Tu viaje con ${agencyBranding.name}`}
+            </p>
+          ) : isAgencyTrip ? (
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
               {KAVIRO_TRIPS_PRODUCT_NAME}
-            </p>
-          ) : branded ? (
-            <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
-              Tu viaje con {agencyBranding.name}
             </p>
           ) : null}
           {destLabel ? (

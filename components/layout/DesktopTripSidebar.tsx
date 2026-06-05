@@ -45,34 +45,34 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
     <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">
       <div className="sticky top-24 space-y-2">
         <div
-          className={`shadow-sm ${
-            isAgencyTrip
-              ? "overflow-visible rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
-              : "overflow-hidden rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)] dark:border-[#1E293B]"
+            className={`shadow-sm ${
+            useAgencyBranding || !isAgencyTrip
+              ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)] dark:border-[#1E293B]"
+              : "overflow-visible rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
           }`}
         >
           <div
             className={`border-b px-4 py-3 ${
-              isAgencyTrip
-                ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
-                : useAgencyBranding
-                  ? "border-white/10 bg-[var(--brand)]"
+              useAgencyBranding
+                ? "border-white/10 bg-[var(--brand)]"
+                : isAgencyTrip
+                  ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
                   : "border-[var(--border-default)]"
             }`}
           >
             <p
               className={`truncate text-[10px] font-bold uppercase leading-normal tracking-[0.18em] ${
-                isAgencyTrip
-                  ? "text-slate-300"
-                  : useAgencyBranding
-                    ? "text-white/90"
+                useAgencyBranding
+                  ? "text-white/90"
+                  : isAgencyTrip
+                    ? "text-slate-300"
                     : "text-[var(--text-tertiary)]"
               }`}
             >
-              {isAgencyTrip
-                ? KAVIRO_TRIPS_PRODUCT_NAME
-                : useAgencyBranding && agencyBranding
-                  ? agencyBranding.name
+              {useAgencyBranding && agencyBranding
+                ? agencyBranding.name
+                : isAgencyTrip
+                  ? KAVIRO_TRIPS_PRODUCT_NAME
                   : "Tu viaje"}
             </p>
           </div>
@@ -147,10 +147,10 @@ function SidebarLink({
         transition-all duration-150
         ${
           active
-            ? isAgencyTrip
-              ? "bg-[#1e3a5f] text-white shadow-sm"
-              : useAgencyBranding || isAI
-                ? "bg-[var(--brand)] text-white shadow-md"
+            ? useAgencyBranding || isAI
+              ? "bg-[var(--brand)] text-white shadow-md"
+              : isAgencyTrip
+                ? "bg-[#1e3a5f] text-white shadow-sm"
                 : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md dark:from-[#F87171] dark:to-[#EF4444]"
             : "hover:bg-slate-50 dark:hover:bg-slate-800"
         }

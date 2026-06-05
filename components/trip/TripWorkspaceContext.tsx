@@ -3,6 +3,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { TripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import { clientPortalPath } from "@/lib/agency";
+import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
 
 export type TripWorkspaceContextValue = TripWorkspaceMeta & {
   tripId: string;
@@ -29,7 +30,7 @@ export function TripWorkspaceProvider({
       ? clientPortalPath(meta.agencySlug, meta.clientPortalSlug)
       : null;
 
-  const useAgencyBranding = meta.isAgencyManaged && !meta.isAgencyTrip && Boolean(meta.agencyBranding);
+  const useAgencyBranding = shouldUseAgencyBranding(meta);
 
   const value: TripWorkspaceContextValue = {
     ...meta,

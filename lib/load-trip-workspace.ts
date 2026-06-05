@@ -73,14 +73,18 @@ export async function loadTripWorkspaceMeta(
     };
   }
 
-  const { data: agency } = await client
+  const isAgencyStaff = await userIsAgencyStaff(client, agencyId, userId);
+
+  // Branding público del viaje: service role (el viajero no es miembro de agency_members).
+  const { createSupabaseAdmin } = await import("@/lib/supabase-admin");
+  const admin = createSupabaseAdmin();
+  const { data: agency } = await admin
     .from("agencies")
     .select("id, name, slug, logo_url, brand_color, contact_email, owner_id, plan, max_members")
     .eq("id", agencyId)
     .maybeSingle();
   const agencySlug = (agency as { slug?: string } | null)?.slug ?? null;
   const agencyBranding = agency ? agencyBrandingFromRow(agency as AgencyRow) : null;
-  const isAgencyStaff = await userIsAgencyStaff(client, agencyId, userId);
 
   return {
     isAgencyTrip: isAgencyStaff,
