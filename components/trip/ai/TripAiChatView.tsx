@@ -86,15 +86,36 @@ import {
 
 import { extractItineraryFromAnswer } from "@/lib/trip-ai/extractItineraryFromAnswer";
 import {
-  DIFF_JSON_END_ALIASES,
-  DIFF_JSON_START_ALIASES,
-  extractJsonBetweenMarkers,
   findItineraryJsonEnd,
   findItineraryJsonStart,
   stripAllKaviroJsonBlocksForDisplay,
 } from "@/lib/trip-ai/kaviroJsonMarkers";
-
-type TripAiChatLayout = "page" | "drawer";
+import { fetchJsonWithTimeout } from "@/lib/trip-ai/fetchJsonWithTimeout";
+import {
+  extractDiff,
+  tryExtractMissingCoords,
+  tryExtractRoutesDraft,
+  type DiffPayload,
+  type MissingCoordsItem,
+} from "@/lib/trip-ai/chatResponseExtractors";
+import type { RoutesDraftPayload } from "@/lib/trip-ai/routesDraftTypes";
+import { diffOpDisplay, diffOpKey, type DiffOpDisplay } from "@/lib/trip-ai/diffDisplay";
+import type { TripAiDiffOperation } from "@/lib/trip-ai/diff-types";
+import {
+  ASSISTANT_FOCUS_PRESETS,
+  assistantContextPreset,
+  buildInitialWelcomeMessages,
+  coerceTripAiMode,
+  DEFAULT_PAGE_WELCOME,
+  getManualModeWelcome,
+  MODE_LABELS,
+  MODE_OPTIONS,
+  OPENING_TRAVEL_DOCS,
+  PLACEHOLDERS,
+  type Conversation,
+  type Message,
+  type TripAiChatLayout,
+} from "@/components/trip/ai/tripAiModeConfig";
 
 const IMPORT_FULL_TIMEOUT_MS = 300_000;
 const IMPORT_CHUNK_TIMEOUT_MS = 180_000;
@@ -116,324 +137,7 @@ function useMobileViewport(maxWidthPx = 767) {
   return isMobile;
 }
 
-async function fetchJsonWithTimeout(
-  url: string,
-  init: RequestInit,
-  timeoutMs: number
-): Promise<{ res: Response; payload: Record<string, unknown> | null }> {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
-    const payload = (await res.json().catch(() => null)) as Record<string, unknown> | null;
-    return { res, payload };
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
-
-type AssistantContextPreset = {
-  mode: TripAiMode;
-  modeSource: "auto" | "manual";
-  welcome: string;
-};
-
-function assistantContextPreset(surface: TripAssistantSurface): AssistantContextPreset {
-  switch (surface) {
-    case "plan":
-      return {
-        mode: "planning",
-        modeSource: "manual",
-        welcome:
-          "Estás en **Planificación profesional**.\n\n" +
-          "Puedes **adjuntar el dossier** (PDF o imagen del calendario de la agencia): leemos vuelos, hoteles, excursiones y horarios, y generamos **tarjetas por día** para que las revises antes de añadirlas.\n\n" +
-          "También puedes **pegar la agenda** en el chat o pedir un borrador desde cero. Comprueba que las **fechas del viaje** en ajustes coinciden con el calendario.",
-      };
-    case "routes":
-      return {
-        mode: "day_planner",
-        modeSource: "manual",
-        welcome:
-          "Estás en Rutas: me centro en **desplazamientos** (trayectos entre paradas), a qué hora salir para llegar a tiempo y cómo moveros (andando, bici, coche o transporte público).\n\n" +
-          "Dime el día o rango (p. ej. “día 2 del viaje” o “del 10 al 12”) y el modo de transporte, y preparo rutas para revisarlas en la pestaña de Rutas.",
-      };
-    case "expenses":
-      return {
-        mode: "expenses",
-        modeSource: "manual",
-        welcome:
-          "Estás en Gastos: repasemos balances, quién debe a quién, ideas para repartir pagos y presupuesto del grupo.",
-      };
-    case "resources":
-      return {
-        mode: "travel_docs",
-        modeSource: "manual",
-        welcome:
-          OPENING_TRAVEL_DOCS,
-      };
-    case "participants":
-      return {
-        mode: "general",
-        modeSource: "manual",
-        welcome:
-          "Estás en Gente: conviene aclarar invitaciones, permisos (quién edita plan, rutas o gastos) y cómo presentar el viaje al grupo.",
-      };
-    case "summary":
-      return {
-        mode: "general",
-        modeSource: "manual",
-        welcome:
-          "Estás en Resumen: puedo darte una visión general del viaje (fechas, destino, qué falta por preparar) y sugerirte los siguientes pasos.",
-      };
-    default:
-      return {
-        mode: "general",
-        modeSource: "auto",
-        welcome: "",
-      };
-  }
-}
-
-const DEFAULT_PAGE_WELCOME =
-  "Bienvenido ✈️\n\n" +
-  "Elige abajo el **foco** del asistente (planificador, desplazamientos, buscar alojamiento/transporte, chat general o documentos). Escribe con naturalidad o pulsa «Sugerir itinerario» si el plan está vacío.\n\n" +
-  "Cuando salga el itinerario en formato ejecutable, «Ejecutar plan» lo vuelca al mapa y al plan; los retoques puntuales van con «Aplicar cambios».";
-
-const SEARCH_FOCUS_WELCOME =
-  "Modo **buscar alojamiento y transporte**\n\n" +
-  "Puedo recomendarte **hoteles**, **vuelos**, **tren**, **ferry**, **autobús** o **coche de alquiler** usando las fechas y el destino de este viaje.\n\n" +
-  "Te daré opciones con **precios orientativos** (no en tiempo real) y enlaces para **reservar** en comparadores como Booking, Google Flights, Omio o Rentalcars.\n\n" +
-  "Ejemplos: «busca hoteles cerca del centro», «vuelos desde Barcelona ida y vuelta», «tren Madrid–Valencia» o «coche de alquiler en el aeropuerto».";
-
-const PLANNER_FOCUS_WELCOME =
-  "Modo **Planificación profesional**\n\n" +
-  "1. **Importar dossier** — Adjunta PDF o imagen del calendario (agencia, empresa). Extraemos vuelos, hoteles, traslados y excursiones con hora.\n" +
-  "2. **Revisar tarjetas** — Cada día aparece con sus paradas; marca las que quieras y pulsa **«Añadir seleccionadas»**.\n" +
-  "3. **Pegar texto** — También puedes pegar la agenda en el chat si prefieres.\n\n" +
-  "Importante: las **fechas del viaje** (inicio y fin) deben coincidir con el calendario del dossier.";
-
-const DAY_FOCUS_WELCOME =
-  "Modo **Desplazamientos y un día**\n\n" +
-  "Una vez introducidos los alojamientos y planes vamos a crear las mejores rutas posibles.\n\n" +
-  "Este modo está pensado para **traslados**: rutas entre paradas, a qué hora salir para llegar a tiempo y cómo moveros (andando, bici, coche o transporte público). Si ya tienes una actividad a las 10:00, puedo decirte la hora de salida recomendada y ayudarte a preparar la ruta.\n\n" +
-  "Dime el día (por ejemplo **“10/11”**, **“10 de noviembre”**, **“día 2 del viaje”** o un rango **“del 10 al 12 de noviembre”**), el **modo de transporte** y el objetivo (por ejemplo: “llegar a las 10:00 a X”).";
-
-/** Apertura al entrar en modo documentos (cambio manual o `?modo=travel_docs`). */
-const OPENING_TRAVEL_DOCS =
-  "Dime tu nacionalidad y qué países vas a visitar o en los que harás escala, y miraré qué documentos o seguros necesitas.";
-
-function getManualModeWelcome(next: TripAiMode): string {
-  switch (next) {
-    case "travel_docs":
-      return OPENING_TRAVEL_DOCS;
-    case "planning":
-      return PLANNER_FOCUS_WELCOME;
-    case "day_planner":
-      return DAY_FOCUS_WELCOME;
-    case "general":
-      return "Modo **chat general**. Cuéntame en qué puedo ayudarte con este viaje (resumen, dudas, recomendaciones).";
-    case "expenses":
-      return "Modo **gastos**. Pregunta por totales, balances, quién debe a quién o qué conviene registrar.";
-    case "optimizer":
-      return "Modo **optimizador**. Pide huecos en el plan, orden geográfico del día o ideas para aprovechar mejor el tiempo y las rutas.";
-    case "actions":
-      return "Modo **acciones** para cambios puntuales en el plan. Te explico qué propongo en lenguaje claro; si hay cambios aplicables, usa **«Aplicar cambios»** (sin JSON visible en el chat).";
-    case "search":
-      return SEARCH_FOCUS_WELCOME;
-    default:
-      return DEFAULT_PAGE_WELCOME;
-  }
-}
-
-const KNOWN_TRIP_AI_MODES = new Set<string>([
-  "general",
-  "planning",
-  "expenses",
-  "optimizer",
-  "actions",
-  "day_planner",
-  "travel_docs",
-  "search",
-]);
-
-function coerceTripAiMode(value: unknown): TripAiMode {
-  return typeof value === "string" && KNOWN_TRIP_AI_MODES.has(value) ? (value as TripAiMode) : "general";
-}
-
-function buildInitialWelcomeMessages(params: {
-  layout: TripAiChatLayout;
-  ctxPreset: AssistantContextPreset | null;
-  defaultAssistantMode: TripAiMode | null;
-}): Message[] {
-  if (params.layout === "drawer" && params.ctxPreset?.welcome) {
-    return [{ id: "welcome", role: "assistant", content: params.ctxPreset.welcome }];
-  }
-  if (params.defaultAssistantMode === "planning") {
-    return [{ id: "welcome", role: "assistant", content: PLANNER_FOCUS_WELCOME }];
-  }
-  if (params.defaultAssistantMode === "day_planner") {
-    return [{ id: "welcome", role: "assistant", content: DAY_FOCUS_WELCOME }];
-  }
-  if (params.defaultAssistantMode === "travel_docs") {
-    return [{ id: "welcome", role: "assistant", content: OPENING_TRAVEL_DOCS }];
-  }
-  if (params.defaultAssistantMode === "search") {
-    return [{ id: "welcome", role: "assistant", content: SEARCH_FOCUS_WELCOME }];
-  }
-  return [{ id: "welcome", role: "assistant", content: DEFAULT_PAGE_WELCOME }];
-}
-
-type LucideIcon = typeof MessageCircle;
-
-const ASSISTANT_FOCUS_PRESETS: Array<{
-  id: TripAiMode;
-  label: string;
-  description: string;
-  Icon: LucideIcon;
-}> = [
-  {
-    id: "general",
-    label: "General",
-    description: "Resúmenes, dudas amplias y recomendaciones.",
-    Icon: MessageCircle,
-  },
-  {
-    id: "planning",
-    label: "Planificación",
-    description: "Varios días, itinerario completo + «Ejecutar plan».",
-    Icon: CalendarDays,
-  },
-  {
-    id: "day_planner",
-    label: "Organizar día",
-    description: "Un solo día: horarios, comidas y desplazamientos.",
-    Icon: Route,
-  },
-  {
-    id: "search",
-    label: "Buscar",
-    description: "Hoteles, vuelos, tren, ferry, bus o coche con enlaces.",
-    Icon: Search,
-  },
-  {
-    id: "travel_docs",
-    label: "Documentos",
-    description: "Visados, seguros y requisitos por nacionalidad.",
-    Icon: FileText,
-  },
-  {
-    id: "expenses",
-    label: "Gastos",
-    description: "Totales, quién debe a quién e ideas para pagar.",
-    Icon: Wallet,
-  },
-  {
-    id: "optimizer",
-    label: "Optimizador",
-    description: "Huecos, solapes y mejoras en el plan.",
-    Icon: Sparkles,
-  },
-  {
-    id: "actions",
-    label: "Acciones",
-    description: "Crear o modificar actividades y rutas (diff revisable).",
-    Icon: Wand2,
-  },
-];
-
-type Conversation = {
-  id: string;
-  title: string;
-  mode: TripAiMode;
-  updated_at?: string;
-};
-
-type Message = {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  metadata?: Record<string, unknown>;
-};
-
 type ItineraryPayload = ItineraryDraftPayload;
-
-type DiffOperation =
-  | { op: "update_activity"; id: string; patch: Record<string, unknown> }
-  | { op: "create_activity"; fields: Record<string, unknown> }
-  | { op: "delete_activity"; id: string }
-  | { op: "update_route"; id: string; patch: Record<string, unknown> }
-  | { op: "create_route"; fields: Record<string, unknown> };
-
-type DiffPayload = {
-  version: 1;
-  title?: string;
-  operations: DiffOperation[];
-};
-
-type RoutesDraftPayload = {
-  version: 1;
-  date: string;
-  travelMode: "DRIVING" | "WALKING" | "BICYCLING";
-  routes: Array<{
-    title: string;
-    route_day: string;
-    departure_time: string | null;
-    travel_mode: "DRIVING" | "WALKING" | "BICYCLING";
-    origin_name: string;
-    origin_address: string | null;
-    origin_latitude: number | null;
-    origin_longitude: number | null;
-    destination_name: string;
-    destination_address: string | null;
-    destination_latitude: number | null;
-    destination_longitude: number | null;
-    path_points: any[];
-    route_points: any[];
-    distance_text: string | null;
-    duration_text: string | null;
-    notes: string | null;
-  }>;
-};
-
-type MissingCoordsItem = { date: string; id: string; title: string };
-
-function tryExtractRoutesDraft(data: any): RoutesDraftPayload | null {
-  const v = data?.routesDraft;
-  if (!v || typeof v !== "object") return null;
-  if (v.version !== 1) return null;
-  if (typeof v.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.date)) return null;
-  if (v.travelMode !== "DRIVING" && v.travelMode !== "WALKING" && v.travelMode !== "BICYCLING") return null;
-  if (!Array.isArray(v.routes)) return null;
-  return v as RoutesDraftPayload;
-}
-
-function tryExtractMissingCoords(data: any): MissingCoordsItem[] | null {
-  const v = data?.missingCoords;
-  if (!Array.isArray(v) || v.length === 0) return null;
-  const out: MissingCoordsItem[] = [];
-  for (const row of v) {
-    if (!row || typeof row !== "object") continue;
-    const r = row as any;
-    const date = typeof r.date === "string" ? r.date : "";
-    const id = typeof r.id === "string" ? r.id : "";
-    const title = typeof r.title === "string" ? r.title : "";
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !id || !title) continue;
-    out.push({ date, id, title });
-  }
-  return out.length ? out : null;
-}
-
-function extractDiff(answer: string): DiffPayload | null {
-  const raw = extractJsonBetweenMarkers(answer, DIFF_JSON_START_ALIASES, DIFF_JSON_END_ALIASES);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.operations)) return null;
-    return parsed as DiffPayload;
-  } catch {
-    return null;
-  }
-}
 
 function answerHasTruncatedItineraryJson(answer: string): boolean {
   const start = findItineraryJsonStart(answer);
@@ -441,81 +145,6 @@ function answerHasTruncatedItineraryJson(answer: string): boolean {
   const end = findItineraryJsonEnd(answer, start.index + start.marker.length);
   return !end;
 }
-
-type ModeOption = {
-  id: TripAiMode;
-  label: string;
-  /** Cuándo elegirlo (texto orientativo) */
-  useFor: string;
-};
-
-const MODE_OPTIONS: ModeOption[] = [
-  {
-    id: "general",
-    label: "General",
-    useFor: "Resúmenes, qué tienes guardado, recomendaciones generales.",
-  },
-  {
-    id: "planning",
-    label: "Planificación",
-    useFor: "Varios días, orden de visitas, propuestas de agenda (itinerario en JSON + «Ejecutar plan»).",
-  },
-  {
-    id: "expenses",
-    label: "Gastos",
-    useFor: "Cuánto se ha gastado, quién debe a quién, ideas para pagar.",
-  },
-  {
-    id: "optimizer",
-    label: "Optimizador",
-    useFor: "Detectar huecos, solapes o formas de aprovechar mejor el plan.",
-  },
-  {
-    id: "actions",
-    label: "Acciones",
-    useFor: "Pedir al asistente personal que cree o modifique actividades/rutas vía «diff» revisable.",
-  },
-  {
-    id: "day_planner",
-    label: "Organizar día",
-    useFor: "Un solo día: horarios, comidas, desplazamientos; guardas con «Aplicar cambios» (no «Ejecutar plan»).",
-  },
-  {
-    id: "search",
-    label: "Buscar",
-    useFor: "Buscar hoteles, vuelos, trenes, ferries, autobuses o coche de alquiler con datos del viaje pre-rellenados.",
-  },
-  {
-    id: "travel_docs",
-    label: "Documentos del viaje",
-    useFor: "Visados, seguros, tasas y requisitos según nacionalidad y países a visitar.",
-  },
-];
-
-const MODE_LABELS: Record<TripAiMode, string> = {
-  general: "General",
-  planning: "Planificación",
-  expenses: "Gastos",
-  optimizer: "Optimizador",
-  actions: "Acciones",
-  day_planner: "Organizar día",
-  travel_docs: "Documentos",
-  search: "Buscar",
-};
-
-const PLACEHOLDERS: Record<TripAiMode, string> = {
-  general: "Ej.: hazme un resumen del viaje o qué documentos conviene llevar…",
-  planning: "Ej.: dame un plan de 3 días en Roma o reorganiza mis visitas…",
-  expenses: "Ej.: ¿cuánto llevamos gastado? ¿quién debe a quién?…",
-  optimizer: "Ej.: detecta huecos en mi plan o sugiere mejoras…",
-  actions: "Ej.: añade una cena el viernes en el plan o crea una ruta entre dos puntos…",
-  day_planner:
-    "Ej.: organízame el 2026-06-15 en Ámsterdam, andando, de 10:00 a 21:00… (luego «Aplicar cambios» para guardar)",
-  search:
-    "Ej.: busca hoteles con piscina cerca del centro, o vuelos baratos para estas fechas…",
-  travel_docs:
-    "Ej.: pasaporte español, viajo a Marruecos y Turquía en junio — ¿qué documentos y trámites necesito?",
-};
 
 export default function TripAiChatView({
   tripId,
@@ -1437,7 +1066,7 @@ export default function TripAiChatView({
     }
     const next = new Set<string>();
     (diffDraft.operations || []).forEach((op: any, idx: number) => {
-      const key = opKey(op, idx);
+      const key = diffOpKey(op as TripAiDiffOperation, idx);
       const rawOp = typeof op?.op === "string" ? op.op.toLowerCase() : "";
       if (rawOp.startsWith("delete_")) return;
       if (
@@ -1452,151 +1081,13 @@ export default function TripAiChatView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diffDraft]);
 
-  function opKey(op: any, idx: number) {
-    return `${String(op?.op || "op")}-${String(op?.id || op?.fields?.title || idx)}`;
-  }
-
-  function opDisplay(op: any): {
-    kind: "activity" | "route" | "unknown";
-    title: string;
-    subtitle: string | null;
-    date: string | null;
-    tone: "good" | "warn" | "neutral";
-    details: string | null;
-    raw: any;
-  } {
-    const rawOp = typeof op?.op === "string" ? op.op.trim() : "";
-    const normalized = rawOp.toLowerCase();
-    const id = typeof op?.id === "string" ? op.id : null;
-
-    const act = id && diffContext?.activitiesById ? diffContext.activitiesById.get(id) : null;
-    const route = id && diffContext?.routesById ? diffContext.routesById.get(id) : null;
-
-    if (normalized === "update_activity") {
-      const patch = op?.patch || {};
-      const beforeTitle = String(act?.title || "").trim() || "Plan";
-      const nextTitle = typeof patch.title === "string" && patch.title.trim() ? patch.title.trim() : beforeTitle;
-      const beforeDate = typeof act?.activity_date === "string" ? act.activity_date : null;
-      const afterDate = typeof patch.activity_date === "string" ? patch.activity_date : patch.activity_date === null ? null : beforeDate;
-      const beforeTime = typeof act?.activity_time === "string" ? act.activity_time : null;
-      const afterTime = typeof patch.activity_time === "string" ? patch.activity_time : patch.activity_time === null ? null : beforeTime;
-
-      const changes: string[] = [];
-      if (nextTitle !== beforeTitle) changes.push(`Título: “${beforeTitle}” → “${nextTitle}”`);
-      if (afterDate !== beforeDate) changes.push(`Fecha: ${beforeDate || "—"} → ${afterDate || "—"}`);
-      if (afterTime !== beforeTime) changes.push(`Hora: ${beforeTime || "—"} → ${afterTime || "—"}`);
-      if (typeof patch.address === "string") changes.push("Dirección actualizada");
-      if (typeof patch.place_name === "string") changes.push("Lugar actualizado");
-      if (typeof patch.activity_kind === "string") changes.push("Tipo actualizado");
-
-      return {
-        kind: "activity",
-        title: `Actualizar plan: ${nextTitle}`,
-        subtitle: changes.length ? changes.join(" · ") : "Cambio menor",
-        date: afterDate || beforeDate,
-        tone: "neutral",
-        details: null,
-        raw: op,
-      };
-    }
-
-    if (normalized === "create_activity") {
-      const f = op?.fields || {};
-      const title = String(f?.title || "").trim() || "Nuevo plan";
-      const date = typeof f?.activity_date === "string" ? f.activity_date : null;
-      const time = typeof f?.activity_time === "string" ? f.activity_time : null;
-      const where = String(f?.place_name || f?.address || "").trim();
-      return {
-        kind: "activity",
-        title: `Añadir plan: ${title}`,
-        subtitle: [date, time, where].filter(Boolean).join(" · ") || null,
-        date,
-        tone: "good",
-        details: null,
-        raw: op,
-      };
-    }
-
-    if (normalized === "delete_activity") {
-      const title = String(act?.title || "").trim() || "Plan";
-      const date = typeof act?.activity_date === "string" ? act.activity_date : null;
-      return {
-        kind: "activity",
-        title: `Eliminar plan: ${title}`,
-        subtitle: date ? `Fecha: ${date}` : null,
-        date,
-        tone: "warn",
-        details: "Revisa bien los borrados antes de aplicar.",
-        raw: op,
-      };
-    }
-
-    if (normalized === "update_route") {
-      const patch = op?.patch || {};
-      const beforeTitle = String(route?.title || route?.route_name || route?.name || "").trim() || "Ruta";
-      const nextTitle =
-        typeof patch.title === "string" && patch.title.trim() ? patch.title.trim() : beforeTitle;
-      const beforeDay = typeof route?.route_day === "string" ? route.route_day : null;
-      const afterDay =
-        typeof patch.route_day === "string" ? patch.route_day : patch.route_day === null ? null : beforeDay;
-      const beforeTime = typeof route?.departure_time === "string" ? route.departure_time : null;
-      const afterTime =
-        typeof patch.departure_time === "string"
-          ? patch.departure_time
-          : patch.departure_time === null
-            ? null
-            : beforeTime;
-
-      const changes: string[] = [];
-      if (nextTitle !== beforeTitle) changes.push(`Título: “${beforeTitle}” → “${nextTitle}”`);
-      if (afterDay !== beforeDay) changes.push(`Día: ${beforeDay || "—"} → ${afterDay || "—"}`);
-      if (afterTime !== beforeTime) changes.push(`Salida: ${beforeTime || "—"} → ${afterTime || "—"}`);
-      if (typeof patch.travel_mode === "string") changes.push(`Modo: ${patch.travel_mode}`);
-      if (typeof patch.notes === "string") changes.push("Notas actualizadas");
-
-      return {
-        kind: "route",
-        title: `Actualizar ruta: ${nextTitle}`,
-        subtitle: changes.length ? changes.join(" · ") : null,
-        date: afterDay || beforeDay,
-        tone: "neutral",
-        details: null,
-        raw: op,
-      };
-    }
-
-    if (normalized === "create_route") {
-      const f = op?.fields || {};
-      const title = String(f?.title || "").trim() || "Nueva ruta";
-      const date = typeof f?.route_day === "string" ? f.route_day : null;
-      const time = typeof f?.departure_time === "string" ? f.departure_time : null;
-      const travelMode = typeof f?.travel_mode === "string" ? f.travel_mode : null;
-      const origin = String(f?.origin_name || f?.origin_address || "").trim();
-      const destination = String(f?.destination_name || f?.destination_address || "").trim();
-      const path = [origin, destination].filter(Boolean).join(" → ");
-      const duration = typeof f?.duration_text === "string" ? f.duration_text.trim() : "";
-      return {
-        kind: "route",
-        title: `Añadir ruta: ${title}`,
-        subtitle: [date, time, travelMode, path, duration].filter(Boolean).join(" · ") || null,
-        date,
-        tone: "good",
-        details: null,
-        raw: op,
-      };
-    }
-
-    // Si el asistente personal se sale del formato
-    return {
-      kind: "unknown",
-      title: `Operación no reconocida: ${rawOp || "unknown"}`,
-      subtitle: null,
-      date: null,
-      tone: "warn",
-      details: "El asistente personal devolvió un formato distinto al esperado. Puedes descartarlo.",
-      raw: op,
-    };
-  }
+  const diffDisplayCtx = useMemo(
+    () => ({
+      activitiesById: diffContext?.activitiesById,
+      routesById: diffContext?.routesById,
+    }),
+    [diffContext]
+  );
 
   const placeholder = useMemo(() => PLACEHOLDERS[mode], [mode]);
 
@@ -2860,7 +2351,7 @@ export default function TripAiChatView({
                   setError(null);
                   try {
                     const filtered = (diffDraft.operations || []).filter((op: any, idx: number) =>
-                      diffSelected.has(opKey(op, idx))
+                      diffSelected.has(diffOpKey(op as TripAiDiffOperation, idx))
                     );
                     const res = await fetch("/api/trip-ai/apply-diff", {
                       method: "POST",
@@ -2929,7 +2420,7 @@ export default function TripAiChatView({
                       const next = new Set(diffSelected);
                       (diffDraft.operations || []).forEach((op: any, idx: number) => {
                         const rawOp = typeof op?.op === "string" ? op.op.toLowerCase() : "";
-                        if (rawOp.startsWith("delete_")) next.delete(opKey(op, idx));
+                        if (rawOp.startsWith("delete_")) next.delete(diffOpKey(op as TripAiDiffOperation, idx));
                       });
                       setDiffSelected(next);
                     }
@@ -2944,7 +2435,7 @@ export default function TripAiChatView({
                   (diffDraft.operations || []).forEach((op: any, idx: number) => {
                     const rawOp = typeof op?.op === "string" ? op.op.toLowerCase() : "";
                     if (rawOp.startsWith("delete_") && !diffAllowDeletes) return;
-                    next.add(opKey(op, idx));
+                    next.add(diffOpKey(op as TripAiDiffOperation, idx));
                   });
                   setDiffSelected(next);
                 }}
@@ -2977,8 +2468,13 @@ export default function TripAiChatView({
               {(() => {
                 const ops = (diffDraft.operations || [])
                   .slice(0, 80)
-                  .map((op, idx) => ({ ...opDisplay(op), __key: opKey(op, idx), __rawOp: op, __idx: idx }));
-                const byDate = new Map<string, ReturnType<typeof opDisplay>[]>();
+                  .map((op, idx) => ({
+                    ...diffOpDisplay(op as TripAiDiffOperation, diffDisplayCtx),
+                    __key: diffOpKey(op as TripAiDiffOperation, idx),
+                    __rawOp: op,
+                    __idx: idx,
+                  }));
+                const byDate = new Map<string, DiffOpDisplay[]>();
                 for (const item of ops) {
                   const key = item.date || "Sin fecha";
                   const arr = byDate.get(key) || [];
