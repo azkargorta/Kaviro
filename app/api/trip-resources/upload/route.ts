@@ -4,7 +4,7 @@ import { forbidUnlessCanManageResources, requireTripAccessApi } from "@/lib/trip
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MAX_BYTES = 10 * 1024 * 1024;
+import { assertFileWithinLimit, TRIP_DOCUMENT_MAX_BYTES } from "@/lib/upload-limits";
 
 function fileExtension(fileName: string) {
   const parts = fileName.split(".");
@@ -22,8 +22,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falta el archivo." }, { status: 400 });
     }
 
-    if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: "El archivo supera el máximo de 10 MB." }, { status: 400 });
+    const sizeError = assertFileWithinLimit(file, TRIP_DOCUMENT_MAX_BYTES);
+    if (sizeError) {
+      return NextResponse.json({ error: sizeError }, { status: 400 });
     }
 
     const gate = await requireTripAccessApi(tripId);

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import { getCachedTripPremium } from "@/lib/entitlements";
-import TripMapView from "@/components/trip/map/TripMapView";
+import TripMapViewDynamic from "@/components/trip/map/TripMapViewDynamic";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
 
@@ -100,7 +100,7 @@ export default async function TripMapPage({ params, searchParams }: Props) {
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripMapView
+      <TripMapViewDynamic
         tripId={tripId}
         isPremium={isPremium}
         canManageMap={access.can_manage_map}

@@ -9,6 +9,7 @@ import { monthKeyUtc } from "@/lib/ai-usage";
 import { createClient } from "@/lib/supabase/server";
 import { isPremiumEnabledForTrip } from "@/lib/entitlements";
 import { requireTripAccessApi } from "@/lib/trip-access-api";
+import { AI_DOCUMENT_ANALYZE_MAX_BYTES, assertFileWithinLimit } from "@/lib/upload-limits";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -24,6 +25,11 @@ export async function POST(request: Request) {
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Falta el archivo" }, { status: 400 });
+    }
+
+    const sizeError = assertFileWithinLimit(file, AI_DOCUMENT_ANALYZE_MAX_BYTES);
+    if (sizeError) {
+      return NextResponse.json({ error: sizeError }, { status: 400 });
     }
 
     // Premium: por viaje (asistente) o cuenta global (Recursos).

@@ -10,6 +10,7 @@ import {
   mergeExtractedTexts,
   shouldTryVisionExtract,
 } from "@/lib/trip-ai/documentVisionExtract";
+import { EXPENSE_RECEIPT_MAX_BYTES, assertFileWithinLimit } from "@/lib/upload-limits";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -82,6 +83,11 @@ export async function POST(req: Request) {
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Falta el archivo." }, { status: 400 });
+    }
+
+    const sizeError = assertFileWithinLimit(file, EXPENSE_RECEIPT_MAX_BYTES);
+    if (sizeError) {
+      return NextResponse.json({ error: sizeError }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

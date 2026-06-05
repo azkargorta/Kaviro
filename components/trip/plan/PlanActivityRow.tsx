@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, GripVertical } from "lucide-react";
+import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
 import { effectivePlanKind, getPlanActivityDisplayMeta } from "@/lib/plan-activity-meta";
 
 type Props = {
@@ -17,6 +18,11 @@ type Props = {
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   isDragging?: boolean;
   dataTour?: string;
+  tripId?: string;
+  activityId?: string;
+  currentUserId?: string | null;
+  currentDisplayName?: string;
+  showReactions?: boolean;
 };
 
 export default function PlanActivityRow({
@@ -33,6 +39,11 @@ export default function PlanActivityRow({
   dragHandleProps,
   isDragging = false,
   dataTour,
+  tripId,
+  activityId,
+  currentUserId = null,
+  currentDisplayName = "Yo",
+  showReactions = false,
 }: Props) {
   const meta = getPlanActivityDisplayMeta(isLodging ? "lodging" : effectivePlanKind({ activity_kind: activityKind }), customByKey);
   const subtitle = (place || "").trim() || "Sin ubicación";
@@ -54,7 +65,7 @@ export default function PlanActivityRow({
             }
           : undefined
       }
-      className={`flex items-start gap-2 rounded-xl border p-3 transition ${
+      className={`rounded-xl border transition ${
         isDragging
           ? "border-violet-300 bg-violet-50 shadow-md"
           : selectable && selected
@@ -62,6 +73,7 @@ export default function PlanActivityRow({
             : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/80 dark:border-[#1E293B] dark:bg-[#080C14] dark:hover:border-[#334155]"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
+      <div className="flex items-start gap-2 p-3">
       {dragHandleProps ? (
         <button
           type="button"
@@ -91,6 +103,22 @@ export default function PlanActivityRow({
         <p className="truncate text-[10px] text-slate-400">{subtitle}</p>
       </div>
       <span className="shrink-0 rounded-md bg-[var(--brand)] px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">{timeLabel}</span>
+      </div>
+      {showReactions && tripId && activityId ? (
+        <div
+          className="border-t border-slate-100 px-3 pb-3 pt-2 dark:border-[#1E293B]"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <ActivityReactions
+            tripId={tripId}
+            activityId={activityId}
+            currentUserId={currentUserId}
+            displayName={currentDisplayName}
+            variant="inline"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

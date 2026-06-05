@@ -1614,6 +1614,11 @@ export default function TripPlanView({
                         customByKey={customByKey}
                         selectable={bulkSelectable}
                         selected={bulkSelected}
+                        tripId={tripId}
+                        activityId={activity.id}
+                        currentUserId={currentUserId}
+                        currentDisplayName={currentDisplayName}
+                        showReactions={!hideSocialFeatures && !bulkDeleteMode}
                         onClick={
                           bulkSelectable
                             ? () => toggleActivitySelection(activity.id)

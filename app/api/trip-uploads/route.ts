@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { TRIP_DOCUMENT_MAX_BYTES, assertBytesWithinLimit } from "@/lib/upload-limits";
+import { forbidUnlessCanManageResources, requireTripAccessApi } from "@/lib/trip-access-api";
 
 export async function GET(req: NextRequest) {
   try {
-    const tripId = req.nextUrl.searchParams.get("tripId");
+    const tripId = req.nextUrl.searchParams.get("tripId")?.trim() || "";
 
     if (!tripId) {
       return NextResponse.json({ error: "tripId es obligatorio" }, { status: 400 });
     }
 
-    const supabase = createSupabaseAdmin();
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
 
-    const { data, error } = await supabase
+    const { data, error } = await gate.supabase
       .from("trip_uploads")
       .select("*")
       .eq("trip_id", tripId)
@@ -22,9 +24,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ uploads: data || [] });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: error?.message || "Error interno" },
+      { error: error instanceof Error ? error.message : "Error interno" },
       { status: 500 }
     );
   }
@@ -55,9 +57,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseAdmin();
+    const sizeError = assertBytesWithinLimit(fileSize, TRIP_DOCUMENT_MAX_BYTES);
+    if (sizeError) {
+      return NextResponse.json({ error: sizeError }, { status: 400 });
+    }
 
-    const { data, error } = await supabase
+    const gate = await requireTripAccessApi(tripId);
+    if (!gate.ok) return gate.response;
+    const forbidden = forbidUnlessCanManageResources(
+      gate.access,
+      "No tienes permisos para registrar subidas."
+    );
+    if (forbidden) return forbidden;
+
+    const { data, error } = await gate.supabase
       .from("trip_uploads")
       .insert([
         {
@@ -77,9 +90,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ upload: data });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: error?.message || "Error interno" },
+      { error: error instanceof Error ? error.message : "Error interno" },
       { status: 500 }
     );
   }

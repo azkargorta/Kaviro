@@ -1,3 +1,5 @@
+import { buildSecurityHeaders } from "./lib/security-headers.mjs";
+
 const supabaseStorageHost = (() => {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,7 +32,12 @@ const nextConfig = {
     ],
   },
   async headers() {
+    const security = buildSecurityHeaders();
     return [
+      {
+        source: "/((?!_next/static|_next/image|favicon.ico).*)",
+        headers: security,
+      },
       {
         source: "/.well-known/assetlinks.json",
         headers: [{ key: "Content-Type", value: "application/json; charset=utf-8" }],

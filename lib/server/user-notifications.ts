@@ -1,4 +1,5 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { logger } from "@/lib/logger";
 
 type Admin = ReturnType<typeof createSupabaseAdmin>;
 
@@ -34,6 +35,6 @@ export async function createUserNotification(
 
   if (error) {
     if (error.code === "42P01") return;
-    console.error("createUserNotification:", error.message);
+    logger.error("createUserNotification:", error.message);
   }
 }
