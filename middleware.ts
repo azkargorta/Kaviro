@@ -2,6 +2,11 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAgencyPanelPath, isProtectedAgencyApiPath } from "@/lib/agency-access";
+import {
+  agencyHasWorkspaceAccess,
+  isAgencyBillingOnlyPath,
+  isAgencyWorkspacePath,
+} from "@/lib/agency-plan-access";
 import { getAgencyForUser } from "@/lib/agency";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { isPlatformOpsPath } from "@/lib/platform-ops-paths";
@@ -116,9 +121,25 @@ export async function middleware(request: NextRequest) {
             { status: 403 }
           );
         }
-        const denied = new URL("/empresa", request.url);
-        denied.searchParams.set("reason", "no-membership");
-        return NextResponse.redirect(denied);
+        return NextResponse.redirect(new URL("/agency/setup", request.url));
+      }
+
+      const planInactive = !agencyHasWorkspaceAccess(ctx.agency);
+      if (planInactive) {
+        if (pathname.startsWith("/api/")) {
+          if (isAgencyBillingOnlyPath(pathname)) {
+            // APIs de facturación siguen disponibles
+          } else if (isProtectedAgencyApiPath(pathname)) {
+            return NextResponse.json(
+              { error: "Plan inactivo. Actualiza tu suscripción.", code: "PLAN_INACTIVE" },
+              { status: 402 }
+            );
+          }
+        } else if (isAgencyWorkspacePath(pathname)) {
+          const planUrl = new URL("/agency/plan", request.url);
+          planUrl.searchParams.set("reason", "plan-inactive");
+          return NextResponse.redirect(planUrl);
+        }
       }
     }
   }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AgencyShell from "@/components/agency/AgencyShell";
-import { requireAgencyContext } from "@/lib/require-agency";
+import { requireAgencyWorkspaceContext } from "@/lib/require-agency";
 import { APP_NAME, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -8,6 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default async function AgencyWorkspaceLayout({ children }: { children: React.ReactNode }) {
-  const { agency } = await requireAgencyContext();
+  const { agency } = await requireAgencyWorkspaceContext();
   return <AgencyShell agency={agency}>{children}</AgencyShell>;
 }

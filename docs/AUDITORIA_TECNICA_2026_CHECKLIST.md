@@ -48,3 +48,5 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 - Límites de tamaño en análisis de documentos / tickets y metadatos `trip-uploads`
 - Carga diferida de Leaflet (`TripMapViewDynamic`, `TripPlanExploreDrawer`)
 - `lib/logger.ts` para nuevos logs (migrar `console.log` gradualmente)
+- Bloqueo de panel si trial/plan inactivo → `/agency/plan`
+- Portal Stripe agencia: `POST /api/agencies/billing/portal`

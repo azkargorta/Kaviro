@@ -1,9 +1,12 @@
-/** Rutas del panel Kaviro Trips (solo miembros de agencia). */
+import { isAgencyBillingOnlyPath } from "@/lib/agency-plan-access";
+
+/** Rutas que exigen membresía de agencia (incluye plan y panel; excluye setup/join). */
 export function isAgencyPanelPath(pathname: string): boolean {
   if (pathname === "/agency") return true;
   if (!pathname.startsWith("/agency/")) return false;
   if (pathname === "/agency/setup" || pathname.startsWith("/agency/setup/")) return false;
-  return !pathname.startsWith("/agency/join");
+  if (pathname.startsWith("/agency/join")) return false;
+  return true;
 }
 
 export function isAgencyJoinPath(pathname: string): boolean {
@@ -18,5 +21,6 @@ export function isProtectedAgencyApiPath(pathname: string): boolean {
   if (pathname === "/api/agencies/register") return false;
   if (pathname === "/api/agencies/billing/checkout") return false;
   if (pathname === "/api/agencies/billing/status") return false;
+  if (pathname === "/api/agencies/billing/portal") return false;
   return true;
 }

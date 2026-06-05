@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAgencyForUser, type AgencyMemberRow, type AgencyRow } from "@/lib/agency";
+import { agencyHasWorkspaceAccess } from "@/lib/agency-plan-access";
 
 export type AgencyContext = {
   supabase: Awaited<ReturnType<typeof createClient>>;
@@ -31,4 +32,13 @@ export async function requireAgencyContext(loginNext = "/agency"): Promise<Agenc
     agency: ctx.agency,
     membership: ctx.membership,
   };
+}
+
+/** Panel operativo: exige además plan activo (trial vigente, Pro, partnership…). */
+export async function requireAgencyWorkspaceContext(loginNext = "/agency"): Promise<AgencyContext> {
+  const ctx = await requireAgencyContext(loginNext);
+  if (!agencyHasWorkspaceAccess(ctx.agency)) {
+    redirect("/agency/plan?reason=plan-inactive");
+  }
+  return ctx;
 }

@@ -36,5 +36,7 @@ export async function GET() {
     maxMembers: agency.max_members,
     selfServeCheckout: isAgencySelfServeCheckoutConfigured(),
     canUpgrade: isAgencySelfServeCheckoutConfigured() && agency.plan !== "agency_pro" && agency.plan !== "partnership",
+    hasStripeCustomer: Boolean(agency.stripe_customer_id),
+    canManageBilling: Boolean(agency.stripe_customer_id && agency.stripe_subscription_id),
   });
 }
