@@ -51,10 +51,10 @@ export async function GET(request: Request) {
     const features: PhotonFeature[] = Array.isArray(payload?.features) ? payload.features : [];
     const places = features
       .map((f) => {
-        const props = (f?.properties && typeof f.properties === "object" ? (f.properties as any) : {}) as Record<
-          string,
-          unknown
-        >;
+        const props =
+          f?.properties && typeof f.properties === "object"
+            ? (f.properties as Record<string, unknown>)
+            : {};
         const coords = f?.geometry?.coordinates;
         const lon = Array.isArray(coords) ? Number(coords[0]) : NaN;
         const lat = Array.isArray(coords) ? Number(coords[1]) : NaN;

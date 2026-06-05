@@ -48,7 +48,7 @@ export async function GET(
 
     const isOwnerOrManager =
       participant.role === "owner" ||
-      Boolean((participant as any).can_manage_trip);
+      Boolean(participant.can_manage_trip);
 
     if (!isOwnerOrManager) {
       return NextResponse.json({ error: "Solo el owner puede ver analytics." }, { status: 403 });
@@ -74,14 +74,16 @@ export async function GET(
     const dailyCounts = new Map<string, number>();
 
     for (const view of views ?? []) {
+      const path = typeof view.path === "string" ? view.path : "";
+      const createdAt = typeof view.created_at === "string" ? view.created_at : "";
       // Extract tab from path: /trip/[id]/tab
-      const segments = (view.path as string).replace(tripPathPrefix, "").split("/").filter(Boolean);
+      const segments = path.replace(tripPathPrefix, "").split("/").filter(Boolean);
       const tab = segments[0] || "summary";
       const label = TAB_LABELS[tab] ?? tab;
       tabCounts.set(label, (tabCounts.get(label) ?? 0) + 1);
 
       // Daily count
-      const day = (view.created_at as string).slice(0, 10);
+      const day = createdAt.slice(0, 10);
       dailyCounts.set(day, (dailyCounts.get(day) ?? 0) + 1);
     }
 

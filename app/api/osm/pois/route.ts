@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
+import { isLatLng } from "@/lib/geo/lat-lng";
+import { type OverpassElement, parseOverpassElements } from "@/lib/osm/overpass-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-type LatLng = { lat: number; lng: number };
-
-function isLatLng(value: any): value is LatLng {
-  return (
-    value &&
-    typeof value.lat === "number" &&
-    Number.isFinite(value.lat) &&
-    typeof value.lng === "number" &&
-    Number.isFinite(value.lng)
-  );
-}
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -30,15 +20,6 @@ export type PoiCategoryKey =
   | "shopping"
   | "night";
 
-type OverpassElement = {
-  type?: "node" | "way" | "relation";
-  id?: number | string;
-  tags?: Record<string, unknown>;
-  lat?: number;
-  lon?: number;
-  center?: { lat?: number; lon?: number };
-};
-
 function elementLatLng(el: OverpassElement): { lat: number; lng: number } | null {
   const lat = typeof el.lat === "number" ? el.lat : typeof el.center?.lat === "number" ? el.center.lat : null;
   const lng = typeof el.lon === "number" ? el.lon : typeof el.center?.lon === "number" ? el.center.lon : null;
@@ -54,7 +35,7 @@ function nameFromTags(tags: Record<string, unknown>): string {
 
 function buildCategoryBlocks(category: PoiCategoryKey, radiusMeters: number, lat: number, lng: number): string[] {
   const around = `(around:${Math.floor(radiusMeters)},${lat},${lng})`;
-  const any = (k: string, v: string) => [
+  const tagAround = (k: string, v: string) => [
     `node["${k}"="${v}"]${around};`,
     `way["${k}"="${v}"]${around};`,
     `relation["${k}"="${v}"]${around};`,
@@ -63,75 +44,75 @@ function buildCategoryBlocks(category: PoiCategoryKey, radiusMeters: number, lat
   // Nota: Overpass es público; preferimos queries moderadas y luego filtramos.
   if (category === "culture") {
     return [
-      ...any("tourism", "museum"),
-      ...any("tourism", "attraction"),
-      ...any("amenity", "theatre"),
-      ...any("amenity", "arts_centre"),
-      ...any("historic", "monument"),
-      ...any("historic", "castle"),
-      ...any("historic", "archaeological_site"),
+      ...tagAround("tourism", "museum"),
+      ...tagAround("tourism", "attraction"),
+      ...tagAround("amenity", "theatre"),
+      ...tagAround("amenity", "arts_centre"),
+      ...tagAround("historic", "monument"),
+      ...tagAround("historic", "castle"),
+      ...tagAround("historic", "archaeological_site"),
     ];
   }
   if (category === "nature") {
     return [
-      ...any("leisure", "park"),
-      ...any("boundary", "national_park"),
-      ...any("leisure", "nature_reserve"),
-      ...any("natural", "peak"),
-      ...any("natural", "waterfall"),
-      ...any("natural", "beach"),
-      ...any("natural", "bay"),
+      ...tagAround("leisure", "park"),
+      ...tagAround("boundary", "national_park"),
+      ...tagAround("leisure", "nature_reserve"),
+      ...tagAround("natural", "peak"),
+      ...tagAround("natural", "waterfall"),
+      ...tagAround("natural", "beach"),
+      ...tagAround("natural", "bay"),
     ];
   }
   if (category === "viewpoint") {
-    return [...any("tourism", "viewpoint")];
+    return [...tagAround("tourism", "viewpoint")];
   }
   if (category === "market") {
     return [
-      ...any("amenity", "marketplace"),
-      ...any("shop", "mall"),
-      ...any("shop", "supermarket"),
+      ...tagAround("amenity", "marketplace"),
+      ...tagAround("shop", "mall"),
+      ...tagAround("shop", "supermarket"),
     ];
   }
   if (category === "shopping") {
     // Solo un muestreo (si se trae demasiado, es ruido).
     return [
-      ...any("shop", "department_store"),
-      ...any("shop", "mall"),
-      ...any("tourism", "gift_shop"),
+      ...tagAround("shop", "department_store"),
+      ...tagAround("shop", "mall"),
+      ...tagAround("tourism", "gift_shop"),
     ];
   }
   if (category === "night") {
     return [
-      ...any("amenity", "bar"),
-      ...any("amenity", "pub"),
-      ...any("amenity", "nightclub"),
-      ...any("amenity", "cinema"),
-      ...any("amenity", "theatre"),
+      ...tagAround("amenity", "bar"),
+      ...tagAround("amenity", "pub"),
+      ...tagAround("amenity", "nightclub"),
+      ...tagAround("amenity", "cinema"),
+      ...tagAround("amenity", "theatre"),
     ];
   }
   if (category === "gastro_experience") {
     return [
-      ...any("tourism", "wine_cellar"),
-      ...any("craft", "brewery"),
-      ...any("craft", "winery"),
-      ...any("amenity", "cooking_school"),
-      ...any("tourism", "attraction"),
+      ...tagAround("tourism", "wine_cellar"),
+      ...tagAround("craft", "brewery"),
+      ...tagAround("craft", "winery"),
+      ...tagAround("amenity", "cooking_school"),
+      ...tagAround("tourism", "attraction"),
     ];
   }
   if (category === "excursion") {
     return [
-      ...any("tourism", "attraction"),
-      ...any("leisure", "park"),
-      ...any("natural", "peak"),
-      ...any("natural", "waterfall"),
+      ...tagAround("tourism", "attraction"),
+      ...tagAround("leisure", "park"),
+      ...tagAround("natural", "peak"),
+      ...tagAround("natural", "waterfall"),
     ];
   }
   if (category === "neighborhood") {
     return [
-      ...any("place", "neighbourhood"),
-      ...any("place", "suburb"),
-      ...any("tourism", "attraction"),
+      ...tagAround("place", "neighbourhood"),
+      ...tagAround("place", "suburb"),
+      ...tagAround("tourism", "attraction"),
     ];
   }
   return [];
@@ -174,12 +155,12 @@ out center tags ${Math.max(50, limit * 6)};
       cache: "no-store",
     });
 
-    const payload: any = await resp.json().catch(() => null);
+    const payload: unknown = await resp.json().catch(() => null);
     if (!resp.ok) {
       return NextResponse.json({ error: "No se pudo buscar POIs (Overpass)." }, { status: 502 });
     }
 
-    const elements = Array.isArray(payload?.elements) ? (payload.elements as OverpassElement[]) : [];
+    const elements = parseOverpassElements(payload);
     const seen = new Set<string>();
 
     const rows = elements

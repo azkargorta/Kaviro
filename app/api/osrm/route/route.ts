@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
+import { isLatLng } from "@/lib/geo/lat-lng";
 import { fetchProjectOsrmRoute } from "@/lib/osrm/projectOsrmRoute";
 
 export const runtime = "nodejs";
 
-type LatLng = { lat: number; lng: number };
-
-function isLatLng(value: any): value is LatLng {
-  return (
-    value &&
-    typeof value.lat === "number" &&
-    Number.isFinite(value.lat) &&
-    typeof value.lng === "number" &&
-    Number.isFinite(value.lng)
-  );
-}
+type OsrmRouteResponse = {
+  routes?: Array<{
+    distance?: number;
+    duration?: number;
+    geometry?: { coordinates?: Array<[number, number]> };
+  }>;
+};
 
 export async function POST(request: Request) {
   try {
@@ -43,12 +40,12 @@ export async function POST(request: Request) {
       url.searchParams.set("steps", "false");
       url.searchParams.set("alternatives", "false");
       const resp = await fetch(url.toString(), { method: "GET", cache: "no-store" });
-      const payload: any = await resp.json().catch(() => null);
+      const payload = (await resp.json().catch(() => null)) as OsrmRouteResponse | null;
       if (!resp.ok) {
         return NextResponse.json({ error: "No se pudo calcular la ruta (OSRM)." }, { status: 502 });
       }
       const route0 = payload?.routes?.[0] ?? null;
-      const coordsOut: any[] = route0?.geometry?.coordinates;
+      const coordsOut = route0?.geometry?.coordinates;
       const pointsRaw =
         Array.isArray(coordsOut) && coordsOut.length
           ? coordsOut.map((c) => (Array.isArray(c) ? { lng: Number(c[0]), lat: Number(c[1]) } : null))

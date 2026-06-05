@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { getTripAccessForApi } from "@/lib/trip-access";
+import { ApiHttpError, resolveHttpErrorStatus } from "@/lib/api-http-error";
 import { parseTripShareKind, type TripShareKind } from "@/lib/trip-share-kind";
 
 export const runtime = "nodejs";
@@ -13,16 +14,12 @@ async function requireCanShareTrip(tripId: string) {
   const supabase = await createClient();
   const result = await getTripAccessForApi(supabase, tripId);
   if (!result.ok) {
-    const err = new Error(result.error);
-    (err as any).status = result.status;
-    throw err;
+    throw new ApiHttpError(result.error, result.status);
   }
   const { access } = result;
   // Owners can always share; other roles need can_manage_resources
   if (access.role !== "owner" && !access.can_manage_resources) {
-    const err = new Error("No tienes permisos para compartir este viaje.");
-    (err as any).status = 403;
-    throw err;
+    throw new ApiHttpError("No tienes permisos para compartir este viaje.", 403);
   }
   return access;
 }
@@ -74,7 +71,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ share: data || null, tripId, kind, userId: access.userId }, { status: 200 });
   } catch (error) {
-    const status = (error as any)?.status ?? 500;
+    const status = resolveHttpErrorStatus(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo cargar el enlace público." },
       { status }
@@ -134,7 +131,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ share: data, kind }, { status: 201 });
   } catch (error) {
-    const status = (error as any)?.status ?? 500;
+    const status = resolveHttpErrorStatus(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo crear el enlace público." },
       { status }
@@ -171,7 +168,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
-    const status = (error as any)?.status ?? 500;
+    const status = resolveHttpErrorStatus(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo revocar el enlace público." },
       { status }

@@ -3,6 +3,7 @@ import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import { isBroadDestination } from "@/lib/destination-region";
 import { suggestAccommodationBasesWithAi } from "@/lib/suggest-accommodation-bases";
+import { type OverpassJsonResponse, parseOverpassElements } from "@/lib/osm/overpass-types";
 
 export const runtime = "nodejs";
 
@@ -483,7 +484,7 @@ function dedupeByName(rows: PlaceRow[]): PlaceRow[] {
   return out;
 }
 
-async function fetchOverpassJson(query: string, timeoutMs: number): Promise<any | null> {
+async function fetchOverpassJson(query: string, timeoutMs: number): Promise<OverpassJsonResponse | null> {
   const endpoints = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
@@ -499,7 +500,7 @@ async function fetchOverpassJson(query: string, timeoutMs: number): Promise<any 
         headers: { "content-type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body, cache: "no-store", signal: ctrl.signal,
       });
-      const json: any = await resp.json().catch(() => null);
+      const json = (await resp.json().catch(() => null)) as OverpassJsonResponse | null;
       if (resp.ok && json) return json;
     } catch {
       // try next mirror
@@ -516,10 +517,12 @@ async function photonCountryOsmRelationId(countryName: string): Promise<number |
   url.searchParams.set("limit", "8");
   try {
     const resp = await fetch(url.toString(), { cache: "no-store" });
-    const payload: any = await resp.json().catch(() => null);
+    const payload = (await resp.json().catch(() => null)) as {
+      features?: Array<{ properties?: Record<string, unknown> }>;
+    } | null;
     if (!resp.ok) return null;
-    for (const f of (Array.isArray(payload?.features) ? payload.features : [])) {
-      const p = f?.properties || {};
+    for (const f of Array.isArray(payload?.features) ? payload.features : []) {
+      const p = f?.properties ?? {};
       if (String(p?.osm_type || "").toLowerCase() !== "r") continue;
       const osmId = Number(p?.osm_id);
       if (!Number.isFinite(osmId)) continue;
@@ -531,13 +534,13 @@ async function photonCountryOsmRelationId(countryName: string): Promise<number |
   return null;
 }
 
-function parseOverpassPlaces(payload: any): PlaceRow[] {
+function parseOverpassPlaces(payload: OverpassJsonResponse): PlaceRow[] {
   const rows: PlaceRow[] = [];
-  for (const el of (Array.isArray(payload?.elements) ? payload.elements : [])) {
-    const tags = el?.tags || {};
-    const name = typeof tags?.name === "string" ? tags.name.trim() : "";
-    const lat = typeof el?.lat === "number" ? el.lat : el?.center?.lat ?? null;
-    const lng = typeof el?.lon === "number" ? el.lon : el?.center?.lon ?? null;
+  for (const el of parseOverpassElements(payload)) {
+    const tags = el.tags ?? {};
+    const name = typeof tags.name === "string" ? tags.name.trim() : "";
+    const lat = typeof el.lat === "number" ? el.lat : el.center?.lat ?? null;
+    const lng = typeof el.lon === "number" ? el.lon : el.center?.lon ?? null;
     if (!name || lat == null || lng == null) continue;
     rows.push({ name, lat, lng });
   }
@@ -591,10 +594,11 @@ Reglas:
     const arr = JSON.parse(text.slice(startArr, endArr + 1));
     if (!Array.isArray(arr)) return null;
     const places: PlaceRow[] = arr
-      .map((item: any) => {
-        const name = String(item?.name || "").trim();
-        const lat = typeof item?.lat === "number" ? item.lat : null;
-        const lng = typeof item?.lng === "number" ? item.lng : null;
+      .map((item: unknown) => {
+        const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+        const name = String(row.name ?? "").trim();
+        const lat = typeof row.lat === "number" ? row.lat : null;
+        const lng = typeof row.lng === "number" ? row.lng : null;
         if (!name || lat === null || lng === null) return null;
         if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
         return { name, lat, lng };

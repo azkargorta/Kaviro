@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
+import { isLatLng } from "@/lib/geo/lat-lng";
+import { parseOverpassElements } from "@/lib/osm/overpass-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-type LatLng = { lat: number; lng: number };
-
-function isLatLng(value: any): value is LatLng {
-  return (
-    value &&
-    typeof value.lat === "number" &&
-    Number.isFinite(value.lat) &&
-    typeof value.lng === "number" &&
-    Number.isFinite(value.lng)
-  );
-}
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -55,31 +45,35 @@ out center tags ${Math.max(20, limit * 5)};
       cache: "no-store",
     });
 
-    const payload: any = await resp.json().catch(() => null);
+    const payload: unknown = await resp.json().catch(() => null);
     if (!resp.ok) {
       return NextResponse.json({ error: "No se pudo buscar restaurantes (Overpass)." }, { status: 502 });
     }
 
-    const elements = Array.isArray(payload?.elements) ? payload.elements : [];
-    const rows = elements
-      .map((el: any) => {
-        const tags = el?.tags && typeof el.tags === "object" ? el.tags : {};
-        const name = typeof tags?.name === "string" ? tags.name.trim() : "";
-        const website = typeof tags?.website === "string" ? tags.website.trim() : null;
-        const lat = typeof el?.lat === "number" ? el.lat : typeof el?.center?.lat === "number" ? el.center.lat : null;
-        const lng = typeof el?.lon === "number" ? el.lon : typeof el?.center?.lon === "number" ? el.center.lon : null;
+    const rows = parseOverpassElements(payload)
+      .map((el) => {
+        const tags = el.tags ?? {};
+        const name = typeof tags.name === "string" ? tags.name.trim() : "";
+        const website = typeof tags.website === "string" ? tags.website.trim() : null;
+        const lat = typeof el.lat === "number" ? el.lat : typeof el.center?.lat === "number" ? el.center.lat : null;
+        const lng = typeof el.lon === "number" ? el.lon : typeof el.center?.lon === "number" ? el.center.lon : null;
         if (!name || lat == null || lng == null) return null;
         return {
-          osm: { type: String(el?.type || "node"), id: String(el?.id || "") },
+          osm: { type: String(el.type || "node"), id: String(el.id || "") },
           name,
           website,
           lat,
           lng,
         };
       })
-      .filter(Boolean) as Array<{ osm: { type: string; id: string }; name: string; website: string | null; lat: number; lng: number }>;
+      .filter(Boolean) as Array<{
+        osm: { type: string; id: string };
+        name: string;
+        website: string | null;
+        lat: number;
+        lng: number;
+      }>;
 
-    // Simplísimo: devolvemos los primeros `limit`
     return NextResponse.json({ restaurants: rows.slice(0, limit) });
   } catch (e) {
     return NextResponse.json(
@@ -88,4 +82,3 @@ out center tags ${Math.max(20, limit * 5)};
     );
   }
 }
-

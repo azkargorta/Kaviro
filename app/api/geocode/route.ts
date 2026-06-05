@@ -49,8 +49,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       formattedAddress,
-      latitude: Number.isFinite(latitude as any) ? latitude : null,
-      longitude: Number.isFinite(longitude as any) ? longitude : null,
+      latitude: typeof latitude === "number" && Number.isFinite(latitude) ? latitude : null,
+      longitude: typeof longitude === "number" && Number.isFinite(longitude) ? longitude : null,
     });
   } catch (error) {
     return NextResponse.json(
