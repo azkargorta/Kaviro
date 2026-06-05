@@ -1,5 +1,8 @@
 import { AGENCY_PARTNERSHIP_EMAIL, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
-import { sendTransactionalEmail } from "@/lib/email/send-transactional-email";
+import {
+  buildAgencyPricingReadyEmailHtml,
+  sendTransactionalEmail,
+} from "@/lib/email/send-transactional-email";
 import { getAppUrl } from "@/lib/stripe";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createUserNotification } from "@/lib/server/user-notifications";
@@ -143,6 +146,26 @@ export async function notifyAgencyOwnerPricingReady(
       body: `${input.agencyName}: ${input.quoteLabel}/mes. Ya puedes activar el plan en Plan y facturación.`,
       url: "/agency/plan",
     });
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("email")
+      .eq("id", input.ownerId)
+      .maybeSingle();
+
+    const ownerEmail = (profile?.email as string | null)?.trim();
+    if (ownerEmail) {
+      const planUrl = `${getAppUrl() || "https://kaviro.app"}/agency/plan`;
+      await sendTransactionalEmail({
+        to: ownerEmail,
+        subject: `Tu tarifa Agency Pro está lista — ${input.agencyName}`,
+        html: buildAgencyPricingReadyEmailHtml({
+          agencyName: input.agencyName,
+          quoteLabel: input.quoteLabel,
+          planUrl,
+        }),
+      });
+    }
   } catch (e) {
     logger.warn("notifyAgencyOwnerPricingReady:", e);
   }

@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
+
+type Integrations = {
+  stripeSecret: boolean;
+  stripeWebhook: boolean;
+  stripeAgencyProduct: boolean;
+  resend: boolean;
+  appUrl: boolean;
+  adminEmails: boolean;
+  agencyProReady: boolean;
+};
 
 export default function OpsHomeClient() {
   const [counts, setCounts] = useState<{
@@ -11,6 +21,7 @@ export default function OpsHomeClient() {
     tripsB2b: number;
     pricingPending?: number;
   } | null>(null);
+  const [integrations, setIntegrations] = useState<Integrations | null>(null);
   const [pricingPending, setPricingPending] = useState(0);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState("");
@@ -26,6 +37,7 @@ export default function OpsHomeClient() {
         if (data.error) throw new Error(data.error);
         setCounts(data.counts);
         setPricingPending(data.pricingPending ?? 0);
+        setIntegrations(data.integrations ?? null);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"));
   }, []);
@@ -49,12 +61,21 @@ export default function OpsHomeClient() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Vista global de agencias B2B y solicitudes de acceso.{" "}
         <Link href="/ops/migrations" className="font-semibold text-amber-800 underline dark:text-amber-300">
           Comprobar migraciones SQL →
         </Link>
       </p>
+
+      {integrations && !integrations.agencyProReady ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950 dark:border-rose-900/50 dark:bg-rose-950/30">
+          <AlertTriangle className="mr-1.5 inline h-4 w-4 shrink-0" aria-hidden />
+          Agency Pro (Stripe) incompleto en el servidor. Revisa integraciones abajo y{" "}
+          <code className="rounded bg-white/60 px-1 dark:bg-black/20">docs/AGENCY_PRO_STRIPE_E2E.md</code>.
+        </div>
+      ) : null}
+
       {pricingPending > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30">
           <strong>{pricingPending}</strong> agencia{pricingPending === 1 ? "" : "s"} en prueba sin tarifa asignada.{" "}
@@ -86,6 +107,53 @@ export default function OpsHomeClient() {
           <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{counts.tripsB2b}</p>
         </div>
       </div>
+
+      {integrations ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Integraciones (Vercel)</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Solo indica si la variable está configurada; no muestra valores secretos.
+          </p>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            <IntegrationRow ok={integrations.stripeAgencyProduct} label="STRIPE_AGENCY_PRODUCT_ID" required />
+            <IntegrationRow ok={integrations.stripeSecret} label="STRIPE_SECRET_KEY" required />
+            <IntegrationRow ok={integrations.stripeWebhook} label="STRIPE_WEBHOOK_SECRET" required />
+            <IntegrationRow ok={integrations.appUrl} label="NEXT_PUBLIC_APP_URL" required />
+            <IntegrationRow ok={integrations.resend} label="RESEND_API_KEY" />
+            <IntegrationRow ok={integrations.adminEmails} label="KAVIRO_ADMIN_EMAILS" />
+          </ul>
+          {integrations.agencyProReady ? (
+            <p className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" aria-hidden />
+              Listo para asignar tarifas y cobrar Agency Pro
+            </p>
+          ) : null}
+        </section>
+      ) : null}
     </div>
+  );
+}
+
+function IntegrationRow({
+  ok,
+  label,
+  required,
+}: {
+  ok: boolean;
+  label: string;
+  required?: boolean;
+}) {
+  return (
+    <li className="flex items-center gap-2 text-sm">
+      {ok ? (
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+      ) : (
+        <XCircle className="h-4 w-4 shrink-0 text-rose-500" aria-hidden />
+      )}
+      <span className={ok ? "text-slate-700 dark:text-slate-300" : "font-medium text-rose-800 dark:text-rose-300"}>
+        <code className="text-xs">{label}</code>
+        {required && !ok ? <span className="ml-1 text-xs text-rose-600">requerida</span> : null}
+      </span>
+    </li>
   );
 }

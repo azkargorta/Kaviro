@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/require-platform-admin";
+import { getOpsIntegrationsHealth } from "@/lib/server/ops-integrations-health";
 import { opsOverviewCounts } from "@/lib/server/platform-ops-data";
 
 export const runtime = "nodejs";
@@ -18,6 +19,7 @@ export async function GET() {
     return NextResponse.json({
       counts,
       pricingPending: overview.pricingPending ?? 0,
+      integrations: getOpsIntegrationsHealth(),
       needsMigration: needsMigration || undefined,
     });
   } catch (e) {

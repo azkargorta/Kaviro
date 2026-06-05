@@ -133,6 +133,26 @@ export function buildAgencyAccessRequestEmailHtml(params: {
 </html>`;
 }
 
+export function buildAgencyPricingReadyEmailHtml(params: {
+  agencyName: string;
+  quoteLabel: string;
+  planUrl: string;
+}) {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<body style="margin:0;padding:24px;background:#f1f5f9;font-family:Inter,Segoe UI,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:24px;">
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">${KAVIRO_TRIPS_PRODUCT_NAME}</p>
+    <h1 style="margin:0 0 16px;font-size:18px;color:#0f172a;">Tu tarifa Agency Pro está lista</h1>
+    <p style="margin:0 0 12px;color:#334155;">Hola,</p>
+    <p style="margin:0 0 16px;color:#334155;">Ya puedes activar <strong>Agency Pro</strong> para <strong>${escapeHtml(params.agencyName)}</strong> con tu tarifa acordada de <strong>${escapeHtml(params.quoteLabel)}/mes</strong>.</p>
+    <a href="${params.planUrl}" style="display:inline-block;background:#1e3a5f;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 18px;border-radius:8px;">Ir a Plan y facturación</a>
+  </div>
+</body>
+</html>`;
+}
+
 export async function sendAgencyInviteEmail(params: {
   to: string;
   agencyName: string;

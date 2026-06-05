@@ -39,6 +39,7 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
   const [billingQuoteNotes, setBillingQuoteNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [stripeProductOk, setStripeProductOk] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +64,13 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    fetch("/api/ops/overview", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((json) => setStripeProductOk(Boolean(json.integrations?.stripeAgencyProduct)))
+      .catch(() => setStripeProductOk(null));
+  }, []);
 
   async function savePlan(patch: Record<string, unknown>) {
     setBusy(true);
@@ -160,6 +168,12 @@ export default function OpsAgencyDetailClient({ agencyId }: { agencyId: string }
           Fija el precio mensual acordado al inicio. Se crea un Price en Stripe y la agencia lo verá en{" "}
           <code>/agency/plan</code> antes de pagar.
         </p>
+        {stripeProductOk === false ? (
+          <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/30">
+            Falta <code>STRIPE_AGENCY_PRODUCT_ID</code> en Vercel. Ver{" "}
+            <code>docs/AGENCY_PRO_STRIPE_E2E.md</code>.
+          </p>
+        ) : null}
         <form
           className="mt-4 grid gap-3 sm:grid-cols-2"
           onSubmit={(e) => {
