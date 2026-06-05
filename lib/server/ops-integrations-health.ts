@@ -10,6 +10,9 @@ export function getOpsIntegrationsHealth() {
   const adminEmails = Boolean(
     process.env.KAVIRO_ADMIN_EMAILS?.trim() || process.env.TRIPBOARD_ADMIN_EMAILS?.trim()
   );
+  const upstashRedis = Boolean(
+    process.env.UPSTASH_REDIS_REST_URL?.trim() && process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
+  );
 
   const agencyProReady = stripeSecret && stripeWebhook && stripeAgencyProduct && appUrl;
 
@@ -20,6 +23,7 @@ export function getOpsIntegrationsHealth() {
     resend,
     appUrl,
     adminEmails,
+    upstashRedis,
     agencyProReady,
   };
 }

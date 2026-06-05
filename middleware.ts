@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
   const previewRedirect = travelerPreviewMiddleware(request);
   if (previewRedirect) return previewRedirect;
 
-  const rateLimit = applyRateLimit(request);
+  const rateLimit = await applyRateLimit(request);
   if (rateLimit?.blocked) return rateLimit.response;
 
   let response = skipsSessionRefresh(request.nextUrl.pathname)

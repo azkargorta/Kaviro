@@ -35,6 +35,11 @@ export const RATE_LIMIT_PRESETS = {
     windowMs: 3_600_000,
     message: "Has enviado demasiadas solicitudes. Inténtalo más tarde.",
   },
+  auth: {
+    maxCalls: 10,
+    windowMs: 900_000,
+    message: "Demasiados intentos de acceso. Espera unos minutos e inténtalo de nuevo.",
+  },
 } as const satisfies Record<string, RateLimitPreset>;
 
 export type RateLimitPresetId = keyof typeof RATE_LIMIT_PRESETS;

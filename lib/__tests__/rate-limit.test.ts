@@ -41,6 +41,9 @@ describe("resolveRateLimitPreset", () => {
     expect(resolveRateLimitPreset("/api/geocode", "POST")).toBe("geocode");
     expect(resolveRateLimitPreset("/api/osrm/route", "POST")).toBe("geocode");
     expect(resolveRateLimitPreset("/api/places/search", "GET")).toBe("geocode");
+    expect(resolveRateLimitPreset("/api/contact/agency", "POST")).toBe("contact");
+    expect(resolveRateLimitPreset("/api/auth/login", "POST")).toBe("auth");
+    expect(resolveRateLimitPreset("/api/auth/signup", "POST")).toBe("auth");
   });
 });
 

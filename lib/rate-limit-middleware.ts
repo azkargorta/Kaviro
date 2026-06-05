@@ -8,6 +8,8 @@ import {
   type RateLimitPreset,
   type RateLimitPresetId,
 } from "@/lib/rate-limit";
+import { checkRateLimitUpstash } from "@/lib/rate-limit-upstash";
+import { isUpstashRedisConfigured } from "@/lib/upstash-redis";
 
 export function clientIp(request: NextRequest): string {
   return (
@@ -53,6 +55,12 @@ export function resolveRateLimitPreset(pathname: string, method: string): RateLi
   if (pathname === "/api/contact/agency" && method === "POST") {
     return "contact";
   }
+  if (
+    (pathname === "/api/auth/login" || pathname === "/api/auth/signup") &&
+    method === "POST"
+  ) {
+    return "auth";
+  }
   return null;
 }
 
@@ -69,13 +77,26 @@ export type RateLimitMiddlewareResult =
   | { blocked: true; response: NextResponse }
   | { blocked: false; remaining: number; preset: RateLimitPreset };
 
-export function applyRateLimit(request: NextRequest): RateLimitMiddlewareResult | null {
+async function runRateLimitCheck(
+  presetId: RateLimitPresetId,
+  key: string
+): Promise<{ allowed: boolean; remaining: number; resetIn: number; preset: RateLimitPreset }> {
+  if (isUpstashRedisConfigured()) {
+    const remote = await checkRateLimitUpstash(presetId, key);
+    if (remote) return remote;
+  }
+  maybeCleanupRateLimitStores();
+  return checkRateLimit(presetId, key);
+}
+
+export async function applyRateLimit(
+  request: NextRequest
+): Promise<RateLimitMiddlewareResult | null> {
   const presetId = resolveRateLimitPreset(request.nextUrl.pathname, request.method);
   if (!presetId) return null;
 
-  maybeCleanupRateLimitStores();
   const key = buildRateLimitKey(request, presetId);
-  const { allowed, remaining, resetIn, preset } = checkRateLimit(presetId, key);
+  const { allowed, remaining, resetIn, preset } = await runRateLimitCheck(presetId, key);
 
   if (!allowed) {
     logApiEvent("warn", "rate_limit_exceeded", {

@@ -11,6 +11,7 @@ type Integrations = {
   resend: boolean;
   appUrl: boolean;
   adminEmails: boolean;
+  upstashRedis: boolean;
   agencyProReady: boolean;
 };
 
@@ -121,6 +122,11 @@ export default function OpsHomeClient() {
             <IntegrationRow ok={integrations.appUrl} label="NEXT_PUBLIC_APP_URL" required />
             <IntegrationRow ok={integrations.resend} label="RESEND_API_KEY" />
             <IntegrationRow ok={integrations.adminEmails} label="KAVIRO_ADMIN_EMAILS" />
+            <IntegrationRow
+              ok={integrations.upstashRedis}
+              label="UPSTASH_REDIS_REST_URL + TOKEN"
+              hint="Rate limit compartido entre instancias (opcional)"
+            />
           </ul>
           {integrations.agencyProReady ? (
             <p className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
@@ -138,21 +144,24 @@ function IntegrationRow({
   ok,
   label,
   required,
+  hint,
 }: {
   ok: boolean;
   label: string;
   required?: boolean;
+  hint?: string;
 }) {
   return (
-    <li className="flex items-center gap-2 text-sm">
+    <li className="flex items-start gap-2 text-sm">
       {ok ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
       ) : (
-        <XCircle className="h-4 w-4 shrink-0 text-rose-500" aria-hidden />
+        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" aria-hidden />
       )}
       <span className={ok ? "text-slate-700 dark:text-slate-300" : "font-medium text-rose-800 dark:text-rose-300"}>
         <code className="text-xs">{label}</code>
         {required && !ok ? <span className="ml-1 text-xs text-rose-600">requerida</span> : null}
+        {hint ? <span className="mt-0.5 block text-xs text-slate-500">{hint}</span> : null}
       </span>
     </li>
   );
