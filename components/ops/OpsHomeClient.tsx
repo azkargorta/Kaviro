@@ -42,7 +42,12 @@ export default function OpsHomeClient() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">Vista global de agencias B2B y solicitudes de acceso.</p>
+      <p className="text-sm text-slate-600">
+        Vista global de agencias B2B y solicitudes de acceso.{" "}
+        <Link href="/ops/migrations" className="font-semibold text-amber-800 underline dark:text-amber-300">
+          Comprobar migraciones SQL →
+        </Link>
+      </p>
       <div className="grid gap-4 sm:grid-cols-3">
         <Link
           href="/ops/agencies"

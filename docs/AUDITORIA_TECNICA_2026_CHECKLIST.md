@@ -2,6 +2,11 @@
 
 Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún no estén aplicados en producción).
 
+**Comprobar estado:**
+
+- Panel **Kaviro Ops** → [/ops/migrations](/ops/migrations) (admin plataforma)
+- SQL puro: `docs/SQL_PRODUCCION_VERIFICACION.sql`
+
 ## B2C / viajes personales
 
 1. `docs/tripboard_profiles_trigger.sql`
