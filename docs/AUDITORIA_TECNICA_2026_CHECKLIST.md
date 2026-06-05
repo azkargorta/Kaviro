@@ -49,6 +49,7 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 | Panel `AgencyDashboardHome` ampliado | Hecho: métricas, checklist, cobros, invitaciones |
 | Ops leads ↔ agencias | Hecho: badges tarifa; backfill histórico en `/ops/leads` |
 | Alertas registro / tarifa | Hecho: email+ campana Ops al registrar; campana agencia al asignar tarifa |
+| Campana en Ops y agencia | Hecho: `OpsShell` + `AgencyShell`; badge en nav Agencias si faltan tarifas |
 
 ## Cambios de código aplicados (esta ronda)
 

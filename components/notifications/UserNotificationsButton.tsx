@@ -42,9 +42,11 @@ function dispatchNotificationsChanged(unreadCount: number, notificationId?: stri
 type Props = {
   /** Estilo sobre hero coral del dashboard */
   heroMode?: boolean;
+  /** Icono circular compacto (p. ej. barra Ops) */
+  compact?: boolean;
 };
 
-export default function UserNotificationsButton({ heroMode = true }: Props) {
+export default function UserNotificationsButton({ heroMode = true, compact = false }: Props) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -212,7 +214,9 @@ export default function UserNotificationsButton({ heroMode = true }: Props) {
 
   const buttonClass = heroMode
     ? "relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-sm backdrop-blur-sm transition hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-    : "relative inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm";
+    : compact
+      ? "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+      : "relative inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-[10px] font-semibold text-[var(--text-secondary)] shadow-sm";
 
   const badge =
     unreadCount > 0 ? (

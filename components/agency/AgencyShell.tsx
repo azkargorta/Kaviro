@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import AgencySidebar from "@/components/agency/AgencySidebar";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import SignOutButton from "@/components/auth/SignOutButton";
+import UserNotificationsButton from "@/components/notifications/UserNotificationsButton";
 import { WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
 import type { AgencyRow } from "@/lib/agency";
 import { agencyBrandingFromRow } from "@/lib/agency";
@@ -47,6 +48,7 @@ export default function AgencyShell({
             </div>
 
             <div className="flex items-center gap-2">
+              <UserNotificationsButton heroMode />
               <Link
                 href="/dashboard?personal=1"
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
