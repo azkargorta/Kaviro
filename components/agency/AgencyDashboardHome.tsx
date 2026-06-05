@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { AgencyTripListRow } from "@/lib/agency";
 import AgencyTripRowItem from "@/components/agency/AgencyTripRow";
@@ -11,7 +11,8 @@ import {
   agencyBtnSecondaryClass,
   agencyCardClass,
 } from "@/lib/agency-theme";
-import { ArrowRight, Layers } from "lucide-react";
+import { AGENCY_PARTNERSHIP_EMAIL } from "@/lib/brand";
+import { ArrowRight, CheckCircle2, Circle, CreditCard, Layers, UserPlus } from "lucide-react";
 
 type Props = {
   agencyName: string;
@@ -21,6 +22,17 @@ type Props = {
   clientCount: number;
   templateCount: number;
   portalViews30d: number;
+  publishedPortals: number;
+  upcomingCount: number;
+  memberCount: number;
+  maxMembers: number;
+  pendingInvites: number;
+  hasBranding: boolean;
+};
+
+type PaymentOverview = {
+  totals?: { collected: number; pending: number; counts: { pending: number } };
+  needsMigration?: boolean;
 };
 
 function categorize(trips: AgencyTripListRow[]) {
@@ -40,6 +52,15 @@ function categorize(trips: AgencyTripListRow[]) {
   return { active, upcoming, past };
 }
 
+const QUICK_LINKS = [
+  { href: "/agency/trips", title: "Mis viajes", desc: "Listado completo y filtros" },
+  { href: "/agency/clients", title: "Clientes", desc: "CRM y grupos" },
+  { href: "/agency/portals", title: "Portales", desc: "Publicar programa" },
+  { href: "/agency/branding", title: "Marca", desc: "Logo y color corporativo" },
+  { href: "/agency/team", title: "Equipo", desc: "Invitar colaboradores" },
+  { href: "/agency/finance", title: "Cobros", desc: "Pagos de viajeros" },
+] as const;
+
 export default function AgencyDashboardHome({
   agencyName,
   agencySlug,
@@ -48,14 +69,50 @@ export default function AgencyDashboardHome({
   clientCount,
   templateCount,
   portalViews30d,
+  publishedPortals,
+  upcomingCount,
+  memberCount,
+  maxMembers,
+  pendingInvites,
+  hasBranding,
 }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const [showFromTemplate, setShowFromTemplate] = useState(false);
+  const [payments, setPayments] = useState<PaymentOverview | null>(null);
+
   const buckets = useMemo(() => categorize(trips), [trips]);
   const recent = useMemo(
     () => [...buckets.active, ...buckets.upcoming].slice(0, 4),
     [buckets.active, buckets.upcoming]
   );
+
+  const checklist = useMemo(
+    () => [
+      { href: "/agency/branding", label: "Configura logo y color de marca", done: hasBranding },
+      { href: "/agency/clients", label: "Registra tus clientes", done: clientCount > 0 },
+      { href: "/agency/team", label: "Invita a tu equipo por email", done: memberCount > 1 },
+      { href: "/agency/templates", label: "Guarda una plantilla de viaje", done: templateCount > 0 },
+      { href: "/agency/portals", label: "Publica el portal de un programa", done: publishedPortals > 0 },
+      { href: "/agency", label: "Crea tu primer programa", done: trips.length > 0 },
+    ],
+    [hasBranding, clientCount, memberCount, templateCount, publishedPortals, trips.length]
+  );
+
+  const checklistDone = checklist.filter((c) => c.done).length;
+  const showChecklist = checklistDone < checklist.length;
+
+  useEffect(() => {
+    fetch("/api/agencies/payments/overview", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json && !json.error) setPayments(json as PaymentOverview);
+      })
+      .catch(() => {});
+  }, []);
+
+  const pendingPayments = payments?.totals?.counts.pending ?? 0;
+  const pendingAmount = payments?.totals?.pending ?? 0;
+  const showPaymentsAlert = !payments?.needsMigration && (pendingPayments > 0 || pendingAmount > 0);
 
   return (
     <div className="space-y-8">
@@ -93,12 +150,57 @@ export default function AgencyDashboardHome({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {pendingInvites > 0 ? (
+        <div
+          className={`${agencyCardClass} flex flex-wrap items-center justify-between gap-3 border-amber-200/80 bg-amber-50/80 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30`}
+        >
+          <p className="text-sm text-amber-950 dark:text-amber-100">
+            <UserPlus className="mr-1.5 inline h-4 w-4 shrink-0" aria-hidden />
+            Tienes <strong>{pendingInvites}</strong> invitación{pendingInvites === 1 ? "" : "es"} de equipo pendiente
+            {pendingInvites === 1 ? "" : "s"}.
+          </p>
+          <Link href="/agency/team" className={`${agencyBtnSecondaryClass} text-xs`}>
+            Ver equipo
+          </Link>
+        </div>
+      ) : null}
+
+      {showPaymentsAlert ? (
+        <div
+          className={`${agencyCardClass} flex flex-wrap items-center justify-between gap-3 border-sky-200/80 bg-sky-50/60 px-4 py-3 dark:border-sky-900/40 dark:bg-sky-950/20`}
+        >
+          <p className="text-sm text-sky-950 dark:text-sky-100">
+            <CreditCard className="mr-1.5 inline h-4 w-4 shrink-0" aria-hidden />
+            {pendingPayments > 0 ? (
+              <>
+                <strong>{pendingPayments}</strong> cobro{pendingPayments === 1 ? "" : "s"} pendiente
+                {pendingPayments === 1 ? "" : "s"}
+                {pendingAmount > 0 ? (
+                  <>
+                    {" "}
+                    · <strong>{pendingAmount.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</strong>{" "}
+                    por recibir
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <>Hay importes pendientes de cobro en tus programas.</>
+            )}
+          </p>
+          <Link href="/agency/finance" className={`${agencyBtnSecondaryClass} text-xs`}>
+            Ver cobros
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
-          { label: "Viajes activos", value: buckets.active.length, accent: "text-[#1e3a5f] dark:text-sky-300" },
+          { label: "En curso", value: buckets.active.length, accent: "text-[#1e3a5f] dark:text-sky-300" },
+          { label: "Próximos", value: upcomingCount, accent: "" },
           { label: "Clientes", value: clientCount, accent: "" },
+          { label: "Portales activos", value: publishedPortals, accent: "text-violet-700 dark:text-violet-300" },
           { label: "Vistas portal (30 d)", value: portalViews30d, accent: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Plantillas", value: templateCount, accent: "" },
+          { label: "Equipo", value: `${memberCount}/${maxMembers}`, accent: "" },
         ].map((m) => (
           <div key={m.label} className={`${agencyCardClass} p-4 text-center`}>
             <p className={`text-2xl font-semibold tabular-nums text-slate-900 dark:text-white ${m.accent}`}>
@@ -118,12 +220,48 @@ export default function AgencyDashboardHome({
         onClose={() => setShowFromTemplate(false)}
       />
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        {[
-          { href: "/agency/trips", title: "Mis viajes", desc: "Listado completo y filtros" },
-          { href: "/agency/clients", title: "Clientes", desc: "CRM y grupos" },
-          { href: "/agency/portals", title: "Portales", desc: "Publicar programa" },
-        ].map((card) => (
+      {showChecklist ? (
+        <section className={`${agencyCardClass} p-5`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Primeros pasos</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {checklistDone}/{checklist.length} completados
+              </p>
+            </div>
+            <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div
+                className="h-full rounded-full bg-[#1e3a5f] transition-all dark:bg-sky-600"
+                style={{ width: `${Math.round((checklistDone / checklist.length) * 100)}%` }}
+              />
+            </div>
+          </div>
+          <ul className="mt-4 space-y-2">
+            {checklist.map((item) => (
+              <li key={item.href + item.label}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-2 text-sm transition hover:opacity-80 ${
+                    item.done
+                      ? "text-slate-500 line-through decoration-slate-400/70"
+                      : "font-medium text-[#1e3a5f] dark:text-sky-300"
+                  }`}
+                >
+                  {item.done ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+                  ) : (
+                    <Circle className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />
+                  )}
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {QUICK_LINKS.map((card) => (
           <Link
             key={card.href}
             href={card.href}
@@ -160,6 +298,13 @@ export default function AgencyDashboardHome({
           </div>
         )}
       </section>
+
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        Plan y número de perfiles acordados con Kaviro. Para ampliar equipo o funciones:{" "}
+        <a href={`mailto:${AGENCY_PARTNERSHIP_EMAIL}`} className="font-semibold text-[#1e3a5f] dark:text-sky-300">
+          {AGENCY_PARTNERSHIP_EMAIL}
+        </a>
+      </p>
     </div>
   );
 }

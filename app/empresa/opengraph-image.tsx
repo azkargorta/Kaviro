@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
+export const runtime = "edge";
+
 export const alt = `${KAVIRO_TRIPS_PRODUCT_NAME} — Software para agencias de viajes`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

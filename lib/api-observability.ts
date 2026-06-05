@@ -3,6 +3,8 @@
  * En Vercel/Datadog se pueden filtrar por `event` y `route`.
  */
 
+import { logger } from "@/lib/logger";
+
 export type ApiLogLevel = "info" | "warn" | "error";
 
 export function logApiEvent(
@@ -17,7 +19,7 @@ export function logApiEvent(
     ...meta,
   };
   const line = JSON.stringify(payload);
-  if (level === "error") console.error(line);
-  else if (level === "warn") console.warn(line);
-  else console.info(line);
+  if (level === "error") logger.error(line);
+  else if (level === "warn") logger.warn(line);
+  else logger.info(line);
 }

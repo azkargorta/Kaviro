@@ -1,10 +1,19 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import TripExploreView from "@/components/trip/explore/TripExploreView";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
+
+const TripExploreView = dynamic(() => import("@/components/trip/explore/TripExploreView"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-500 dark:border-[#334155] dark:bg-[#0B1220]">
+      Cargando mapa…
+    </div>
+  ),
+});
 
 export type ExploreCreatePlanPayload = {
   title: string;

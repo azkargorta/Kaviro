@@ -39,12 +39,12 @@ Ejecutar en **Supabase → SQL Editor** en el orden indicado (solo los que aún 
 |------|--------|
 | Stripe **Agency Pro** (checkout B2B autónomo) | Por diseñar |
 | Registro self-service de agencia | Solo contacto en `/empresa` + invitaciones `/agency/join` |
-| Panel `AgencyDashboardHome` ampliado | Mejora incremental |
+| Panel `AgencyDashboardHome` ampliado | Hecho: métricas, checklist, cobros, invitaciones |
 
 ## Cambios de código aplicados (esta ronda)
 
 - Reacciones RSVP en filas del plan (`PlanActivityRow`)
 - CSP y cabeceras de seguridad en `next.config.mjs`
 - Límites de tamaño en análisis de documentos / tickets y metadatos `trip-uploads`
-- Carga diferida de Leaflet (`TripMapViewDynamic`)
+- Carga diferida de Leaflet (`TripMapViewDynamic`, `TripPlanExploreDrawer`)
 - `lib/logger.ts` para nuevos logs (migrar `console.log` gradualmente)
