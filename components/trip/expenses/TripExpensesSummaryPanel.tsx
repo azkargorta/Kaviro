@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Loader2, Plus, Users, Wallet } from "lucide-react";
 import { useTripExpenses } from "@/hooks/useTripExpenses";
+import ConvertExpenseGroupToTripPanel from "@/components/trip/ConvertExpenseGroupToTripPanel";
 
 function formatMoney(amount: number, currency: string) {
   try {
@@ -15,9 +16,17 @@ function formatMoney(amount: number, currency: string) {
 export default function TripExpensesSummaryPanel({
   tripId,
   groupName,
+  destination = null,
+  startDate = null,
+  endDate = null,
+  canManageTrip = false,
 }: {
   tripId: string;
   groupName: string;
+  destination?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  canManageTrip?: boolean;
 }) {
   const {
     loading,
@@ -65,6 +74,15 @@ export default function TripExpensesSummaryPanel({
           </Link>
         </div>
       </div>
+
+      <ConvertExpenseGroupToTripPanel
+        tripId={tripId}
+        groupName={groupName}
+        initialDestination={destination}
+        initialStartDate={startDate}
+        initialEndDate={endDate}
+        canManage={canManageTrip}
+      />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900 dark:text-white">

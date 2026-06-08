@@ -391,7 +391,14 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
           iconAlt="Gastos"
           actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}
         />
-        <TripExpensesSummaryPanel tripId={tripId} groupName={currentTrip.name} />
+        <TripExpensesSummaryPanel
+          tripId={tripId}
+          groupName={currentTrip.name}
+          destination={currentTrip.destination}
+          startDate={currentTrip.start_date}
+          endDate={currentTrip.end_date}
+          canManageTrip={access.can_manage_trip}
+        />
       </main>
     );
   }
