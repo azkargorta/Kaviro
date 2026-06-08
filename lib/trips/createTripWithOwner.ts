@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { friendlyAgencyPortalSlugError } from "@/lib/agency-portal-slug";
+import { EXPENSES_GROUP_MIGRATION_FILE, isMissingColumnError } from "@/lib/expenses-group-rollout";
 
 export type CreateTripInput = {
   name: string;
@@ -34,21 +35,36 @@ export async function createTripWithOwner(
 
   const trip_mode = input.trip_mode === "expenses" ? "expenses" : "travel";
 
-  const tripInsert = await supabase
+  const baseRow = {
+    name,
+    destination: trip_mode === "expenses" ? null : destination || null,
+    start_date: trip_mode === "expenses" ? null : start_date,
+    end_date: trip_mode === "expenses" ? null : end_date,
+    base_currency,
+    ...(input.agency_id ? { agency_id: input.agency_id } : {}),
+    ...(input.client_portal_slug ? { client_portal_slug: input.client_portal_slug } : {}),
+    ...(input.agency_client_id ? { agency_client_id: input.agency_client_id } : {}),
+  };
+
+  let tripInsert = await supabase
     .from("trips")
-    .insert({
-      name,
-      destination: destination || null,
-      start_date: trip_mode === "expenses" ? null : start_date,
-      end_date: trip_mode === "expenses" ? null : end_date,
-      base_currency,
-      trip_mode,
-      ...(input.agency_id ? { agency_id: input.agency_id } : {}),
-      ...(input.client_portal_slug ? { client_portal_slug: input.client_portal_slug } : {}),
-      ...(input.agency_client_id ? { agency_client_id: input.agency_client_id } : {}),
-    })
+    .insert({ ...baseRow, trip_mode })
     .select("id")
     .single();
+
+  if (
+    tripInsert.error &&
+    trip_mode === "expenses" &&
+    isMissingColumnError(tripInsert.error.message, "trip_mode")
+  ) {
+    return {
+      error: `El modo grupo de gastos aún no está activo en la base de datos. Ejecuta ${EXPENSES_GROUP_MIGRATION_FILE} en Supabase.`,
+    };
+  }
+
+  if (tripInsert.error && isMissingColumnError(tripInsert.error.message, "trip_mode")) {
+    tripInsert = await supabase.from("trips").insert(baseRow).select("id").single();
+  }
 
   if (tripInsert.error || !tripInsert.data) {
     const raw = tripInsert.error?.message || "No se pudo crear el viaje.";

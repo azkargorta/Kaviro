@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { agencyBrandingFromRow, type AgencyBranding, type AgencyRow } from "@/lib/agency";
+import { isMissingColumnError } from "@/lib/expenses-group-rollout";
 
 export type TripMode = "travel" | "expenses";
 
@@ -45,13 +46,28 @@ export async function loadTripWorkspaceMeta(
   tripId: string,
   userId: string
 ): Promise<TripWorkspaceMeta> {
-  const { data: trip, error } = await client
+  let trip: Record<string, unknown> | null = null;
+  const withMode = await client
     .from("trips")
     .select("agency_id, client_portal_slug, trip_mode")
     .eq("id", tripId)
     .maybeSingle();
 
-  if (error || !trip) {
+  if (withMode.error && isMissingColumnError(withMode.error.message, "trip_mode")) {
+    const fallback = await client
+      .from("trips")
+      .select("agency_id, client_portal_slug")
+      .eq("id", tripId)
+      .maybeSingle();
+    trip = fallback.data as Record<string, unknown> | null;
+  } else {
+    trip = withMode.data as Record<string, unknown> | null;
+  }
+
+  if (
+    (withMode.error && !isMissingColumnError(withMode.error.message, "trip_mode")) ||
+    !trip
+  ) {
     return {
       tripMode: "travel",
       isAgencyTrip: false,

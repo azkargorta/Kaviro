@@ -7,6 +7,11 @@ import TripPlacesFields from "@/components/dashboard/TripPlacesFields";
 import { joinTripPlaces } from "@/lib/trip-places";
 import { buildTravelCurrencySelectOptions } from "@/lib/travel-currencies";
 import { FREE_PLAN_CREATION_STEPS } from "@/lib/dashboard-creation-flow";
+import {
+  canShowExpensesGroupCreation,
+  expensesGroupRolloutAtLeast,
+  getExpensesGroupRolloutPhase,
+} from "@/lib/expenses-group-rollout";
 
 function withTimeout<T>(promiseLike: PromiseLike<T>, ms = 25000, label = "operación"): Promise<T> {
   return Promise.race([
@@ -20,6 +25,10 @@ function withTimeout<T>(promiseLike: PromiseLike<T>, ms = 25000, label = "operac
 export default function CreateTripForm({ isPremium = false }: { isPremium?: boolean }) {
   const router = useRouter();
   const toast = useToast();
+
+  const rolloutPhase = getExpensesGroupRolloutPhase();
+  const showExpensesGroup = canShowExpensesGroupCreation(rolloutPhase);
+  const showExpensesTabs = expensesGroupRolloutAtLeast(rolloutPhase, "create");
 
   const [creationMode, setCreationMode] = useState<"travel" | "expenses">("travel");
   const [name, setName] = useState("");
@@ -131,36 +140,69 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
   return (
     <form onSubmit={handleCreateTrip} className="card-soft p-6">
       <div className="mb-5">
-        <h2 className="mb-2 text-2xl font-bold">Crear nuevo</h2>
+        <h2 className="mb-2 text-2xl font-bold">
+          {creationMode === "expenses" && showExpensesGroup ? "Crear grupo de gastos" : "Crear nuevo viaje"}
+        </h2>
         <p className="text-slate-600">
-          Viaje con plan y mapa, o solo un grupo para repartir gastos.
+          {creationMode === "expenses" && showExpensesGroup
+            ? "Reparte gastos entre amigos sin plan ni mapa."
+            : showExpensesTabs
+              ? "Viaje con plan y mapa, o solo un grupo para repartir gastos."
+              : "Planifica destino, fechas y gastos del grupo."}
         </p>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
-        <button
-          type="button"
-          onClick={() => setCreationMode("travel")}
-          className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
-            creationMode === "travel"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          ✈️ Viaje
-        </button>
+      {showExpensesTabs ? (
+        <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+          <button
+            type="button"
+            onClick={() => setCreationMode("travel")}
+            className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+              creationMode === "travel"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            ✈️ Viaje
+          </button>
+          <button
+            type="button"
+            onClick={() => setCreationMode("expenses")}
+            className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+              creationMode === "expenses"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            💸 Grupo de gastos
+          </button>
+        </div>
+      ) : showExpensesGroup && creationMode === "travel" ? (
         <button
           type="button"
           onClick={() => setCreationMode("expenses")}
-          className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
-            creationMode === "expenses"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
+          className="mb-5 flex w-full items-center gap-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/80 px-4 py-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50"
         >
-          💸 Grupo de gastos
+          <span className="text-xl" aria-hidden>
+            💸
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-slate-900">¿Solo repartir gastos?</span>
+            <span className="mt-0.5 block text-xs text-slate-600">
+              Crea un grupo sin plan ni mapa — ideal para pisos, cenas o viajes cortos.
+            </span>
+          </span>
+          <span className="shrink-0 text-xs font-bold text-emerald-800">Crear grupo →</span>
         </button>
-      </div>
+      ) : showExpensesGroup && creationMode === "expenses" ? (
+        <button
+          type="button"
+          onClick={() => setCreationMode("travel")}
+          className="mb-5 text-sm font-semibold text-slate-500 transition hover:text-slate-800"
+        >
+          ← Volver a crear viaje completo
+        </button>
+      ) : null}
 
       {!isPremium ? (
         <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50/90 p-4">

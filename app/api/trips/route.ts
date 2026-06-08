@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createTripWithOwner } from "@/lib/trips/createTripWithOwner";
 import { ensureUserCanCreateTrip } from "@/lib/trips/tripCreationLimits";
+import { canCreateExpensesGroupTrip } from "@/lib/expenses-group-rollout";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,6 +34,13 @@ export async function POST(req: Request) {
     const end_date = typeof body?.end_date === "string" ? body.end_date : null;
     const base_currency = typeof body?.base_currency === "string" ? body.base_currency.trim().toUpperCase() : "EUR";
     const trip_mode = body?.trip_mode === "expenses" ? "expenses" : "travel";
+
+    if (trip_mode === "expenses" && !canCreateExpensesGroupTrip()) {
+      return NextResponse.json(
+        { error: "El modo grupo de gastos no está disponible todavía." },
+        { status: 403 }
+      );
+    }
 
     if (!name) return NextResponse.json({ error: "El nombre del viaje es obligatorio." }, { status: 400 });
     if (start_date && end_date && start_date > end_date) {
