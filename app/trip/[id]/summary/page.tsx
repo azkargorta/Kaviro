@@ -382,7 +382,11 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         <TripBoardPageHeader
           section="Inicio"
           title={currentTrip.name}
-          description="Grupo de gastos compartidos"
+          description={
+            currentTrip.start_date || currentTrip.end_date
+              ? `Grupo de gastos · ${formatDateRange(currentTrip.start_date, currentTrip.end_date)}`
+              : "Grupo de gastos compartidos"
+          }
           iconKey="expenses"
           iconAlt="Gastos"
           actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}

@@ -5,21 +5,14 @@ import Link from "next/link";
 import { Search, X, Star, MapPin, Users, Sparkles, ArrowRight } from "lucide-react";
 import DashboardTripSection from "@/components/dashboard/DashboardTripSection";
 import DashboardFavoritesSection from "@/components/dashboard/DashboardFavoritesSection";
+import DashboardExpenseGroupsSection from "@/components/dashboard/DashboardExpenseGroupsSection";
 import TripCardItem from "@/components/dashboard/TripCardItem";
+import { DASHBOARD_EXPENSE_GROUP_ACCENT, type DashboardTrip } from "@/lib/dashboard-trip-types";
 import { DashboardAnnouncementUnreadProvider } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Trip = {
-  id: string;
-  name: string;
-  destination: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  base_currency: string | null;
-  is_favorite?: boolean;
-  agency_id?: string | null;
-};
+type Trip = DashboardTrip;
 
 type FavoriteTrip = Trip & {
   badge: string;
@@ -111,6 +104,8 @@ export default function DashboardTripsClient({
   future,
   past,
   unscheduled,
+  expenseGroups,
+  showExpenseGroupsSection = true,
   favoriteTrips,
   lockedTripIds,
   announcementUnreadByTripId = {},
@@ -119,6 +114,8 @@ export default function DashboardTripsClient({
   future: Trip[];
   past: Trip[];
   unscheduled: Trip[];
+  expenseGroups: Trip[];
+  showExpenseGroupsSection?: boolean;
   favoriteTrips: FavoriteTrip[];
   lockedTripIds: string[];
   announcementUnreadByTripId?: Record<string, number>;
@@ -127,17 +124,22 @@ export default function DashboardTripsClient({
   const [filter, setFilter] = useState<Filter>("all");
 
   const totalTrips =
-    current.length + future.length + past.length + unscheduled.length;
+    current.length + future.length + past.length + unscheduled.length + expenseGroups.length;
 
   // Build flat list with meta for search/filter view
   const allWithMeta = useMemo<TripWithMeta[]>(
     () => [
-      ...current.map((t) => ({ ...t, badge: "En curso",   accent: ACCENT_CURRENT  })),
-      ...future.map((t)  => ({ ...t, badge: "Próximo",    accent: ACCENT_FUTURE   })),
-      ...past.map((t)    => ({ ...t, badge: "Finalizado", accent: ACCENT_PAST     })),
+      ...expenseGroups.map((t) => ({
+        ...t,
+        badge: "Grupo de gastos",
+        accent: DASHBOARD_EXPENSE_GROUP_ACCENT,
+      })),
+      ...current.map((t) => ({ ...t, badge: "En curso", accent: ACCENT_CURRENT })),
+      ...future.map((t) => ({ ...t, badge: "Próximo", accent: ACCENT_FUTURE })),
+      ...past.map((t) => ({ ...t, badge: "Finalizado", accent: ACCENT_PAST })),
       ...unscheduled.map((t) => ({ ...t, badge: "Pendiente", accent: ACCENT_UNSCHED })),
     ],
-    [current, future, past, unscheduled]
+    [current, future, past, unscheduled, expenseGroups]
   );
 
   const favWithMeta = useMemo<TripWithMeta[]>(
@@ -293,6 +295,9 @@ export default function DashboardTripsClient({
             trips={favoriteTrips}
             lockedTripIds={lockedTripIds}
           />
+          {showExpenseGroupsSection ? (
+            <DashboardExpenseGroupsSection trips={expenseGroups} lockedTripIds={lockedTripIds} />
+          ) : null}
           <DashboardTripSection
             title="En curso"
             subtitle="Lo que estás viviendo ahora."

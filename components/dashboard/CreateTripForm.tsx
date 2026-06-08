@@ -267,10 +267,11 @@ export default function CreateTripForm({
           </div>
         ) : null}
 
-        {creationMode === "travel" ? (
         <div className="md:col-span-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Fecha inicio</label>
+            <label className="mb-1 block text-sm font-medium">
+              {creationMode === "expenses" ? "Desde" : "Fecha inicio"}
+            </label>
             <input
               type="date"
               value={startDate}
@@ -279,7 +280,9 @@ export default function CreateTripForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Fecha fin</label>
+            <label className="mb-1 block text-sm font-medium">
+              {creationMode === "expenses" ? "Hasta" : "Fecha fin"}
+            </label>
             <input
               type="date"
               value={endDate}
@@ -288,8 +291,12 @@ export default function CreateTripForm({
               className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
             />
           </div>
+          {creationMode === "expenses" ? (
+            <p className="sm:col-span-2 text-xs text-slate-500">
+              Opcional: indica entre qué fechas repartís gastos (p. ej. fin de semana o mes del piso).
+            </p>
+          ) : null}
         </div>
-        ) : null}
 
         <div className="md:col-span-2 max-w-xl">
           <label className="mb-1 block text-sm font-medium">Moneda base</label>

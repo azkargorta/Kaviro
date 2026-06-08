@@ -38,8 +38,8 @@ export async function createTripWithOwner(
   const baseRow = {
     name,
     destination: trip_mode === "expenses" ? null : destination || null,
-    start_date: trip_mode === "expenses" ? null : start_date,
-    end_date: trip_mode === "expenses" ? null : end_date,
+    start_date: start_date || null,
+    end_date: end_date || null,
     base_currency,
     ...(input.agency_id ? { agency_id: input.agency_id } : {}),
     ...(input.client_portal_slug ? { client_portal_slug: input.client_portal_slug } : {}),

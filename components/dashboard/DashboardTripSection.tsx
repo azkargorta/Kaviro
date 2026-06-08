@@ -5,15 +5,9 @@ import TripCardItem from "@/components/dashboard/TripCardItem";
 import Reveal from "@/components/ui/Reveal";
 import { btnPrimary } from "@/components/ui/brandStyles";
 
-type Trip = {
-  id: string;
-  name: string;
-  destination: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  base_currency: string | null;
-  agency_id?: string | null;
-};
+import type { DashboardTrip } from "@/lib/dashboard-trip-types";
+
+type Trip = DashboardTrip;
 
 export default function DashboardTripSection({
   title,

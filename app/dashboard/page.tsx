@@ -26,18 +26,17 @@ import { FREE_TRIP_LIMIT, freePlanBanner } from "@/lib/premium-copy";
 import { userHasAgencyWorkspace } from "@/lib/agency-default-route";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { countUnreadAnnouncementsByTrip } from "@/lib/dashboard-announcement-unread";
+import {
+  DASHBOARD_EXPENSE_GROUP_ACCENT,
+  isExpenseGroupTrip,
+  splitDashboardTrips,
+  type DashboardTrip,
+} from "@/lib/dashboard-trip-types";
+import { canShowExpensesGroupCreation } from "@/lib/expenses-group-rollout";
+import { isMissingColumnError } from "@/lib/expenses-group-rollout";
 
-type Trip = {
-  id: string;
-  name: string;
-  destination: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  base_currency: string | null;
-  created_at?: string | null;
+type Trip = DashboardTrip & {
   is_demo?: boolean | null;
-  is_favorite?: boolean;
-  agency_id?: string | null;
 };
 
 type DashboardPageProps = {
@@ -60,13 +59,13 @@ function formatDate(value: string | null) {
   }).format(date);
 }
 
-function categorizeTrips(trips: Trip[]) {
+function categorizeTrips(trips: DashboardTrip[]) {
   const today = new Date().toISOString().slice(0, 10);
 
-  const current: Trip[] = [];
-  const future: Trip[] = [];
-  const past: Trip[] = [];
-  const unscheduled: Trip[] = [];
+  const current: DashboardTrip[] = [];
+  const future: DashboardTrip[] = [];
+  const past: DashboardTrip[] = [];
+  const unscheduled: DashboardTrip[] = [];
 
   for (const trip of trips) {
     const start = trip.start_date;
@@ -190,16 +189,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   let trips: Trip[] = [];
 
   if (tripIds.length > 0) {
-    const { data: tripsData, error: tripsError } = await supabase
+    const tripSelect =
+      "id, name, destination, start_date, end_date, base_currency, created_at, is_demo, agency_id, trip_mode";
+    let tripsData: Trip[] | null = null;
+    const withMode = await supabase
       .from("trips")
-      .select("id, name, destination, start_date, end_date, base_currency, created_at, is_demo, agency_id")
+      .select(tripSelect)
       .in("id", tripIds)
       .order("created_at", { ascending: false });
 
-    if (tripsError) {
-      console.error("Error cargando viajes del usuario:", tripsError);
+    if (withMode.error && isMissingColumnError(withMode.error.message, "trip_mode")) {
+      const fallback = await supabase
+        .from("trips")
+        .select("id, name, destination, start_date, end_date, base_currency, created_at, is_demo, agency_id")
+        .in("id", tripIds)
+        .order("created_at", { ascending: false });
+      if (fallback.error) {
+        console.error("Error cargando viajes del usuario:", fallback.error);
+      } else {
+        tripsData = ((fallback.data ?? []) as Trip[]).map((t) => ({ ...t, trip_mode: "travel" as const }));
+      }
+    } else if (withMode.error) {
+      console.error("Error cargando viajes del usuario:", withMode.error);
     } else {
-      trips = ((tripsData ?? []) as Trip[]).map((t) => ({
+      tripsData = (withMode.data ?? []) as Trip[];
+    }
+
+    if (tripsData) {
+      trips = tripsData.map((t) => ({
         ...t,
         is_favorite: favoriteMap.get(t.id) ?? false,
       }));
@@ -214,7 +231,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   );
   const realTrips = trips.filter((t) => !demoTrips.some((d) => d.id === t.id));
 
-  const { current, future, past, unscheduled } = categorizeTrips(realTrips);
+  const { expenseGroups, travelTrips } = splitDashboardTrips(realTrips);
+  const { current, future, past, unscheduled } = categorizeTrips(travelTrips);
+  const showExpenseGroupsSection = canShowExpensesGroupCreation();
   const lockedTripIds = new Set<string>();
   const freeTripLimitReached = !isPremium && realTrips.length >= FREE_TRIP_LIMIT;
 
@@ -225,6 +244,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const favoriteTrips = realTrips
     .filter((t) => t.is_favorite)
     .map((t) => {
+      if (isExpenseGroupTrip(t)) {
+        return {
+          ...t,
+          badge: "Grupo de gastos",
+          accent: DASHBOARD_EXPENSE_GROUP_ACCENT,
+          is_favorite: true as const,
+        };
+      }
       let badge = "Pendiente";
       let accent = "from-amber-100 to-orange-50 border-amber-200";
       if (currentIds.has(t.id)) {
@@ -389,6 +416,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           future={future}
           past={past}
           unscheduled={unscheduled}
+          expenseGroups={expenseGroups}
+          showExpenseGroupsSection={showExpenseGroupsSection}
           favoriteTrips={favoriteTrips}
           lockedTripIds={Array.from(lockedTripIds)}
           announcementUnreadByTripId={announcementUnreadByTripId}

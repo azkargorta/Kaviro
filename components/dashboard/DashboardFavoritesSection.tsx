@@ -4,17 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
 import TripCardItem from "@/components/dashboard/TripCardItem";
 
-type FavoriteTrip = {
-  id: string;
-  name: string;
-  destination: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  base_currency: string | null;
+import type { DashboardTrip } from "@/lib/dashboard-trip-types";
+
+type FavoriteTrip = DashboardTrip & {
   is_favorite: boolean;
   badge: string;
   accent: string;
-  agency_id?: string | null;
 };
 
 export default function DashboardFavoritesSection({
@@ -42,10 +37,10 @@ export default function DashboardFavoritesSection({
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-base font-bold tracking-tight text-amber-900 sm:text-lg dark:text-amber-300">
             <Star className="h-5 w-5 fill-amber-400 text-amber-400" aria-hidden />
-            Viajes favoritos
+            Favoritos
           </h2>
           <p className="mt-0.5 text-xs text-amber-700/70 sm:text-sm dark:text-amber-400/60">
-            Tus viajes marcados con estrella.
+            Viajes y grupos de gastos marcados con estrella.
           </p>
           <p className="mt-1 text-xs font-semibold text-amber-800 sm:text-sm dark:text-amber-300">
             {countLabel}

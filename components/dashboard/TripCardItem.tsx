@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, MapPin, Megaphone, Pencil, Trash2, Star } from "lucide-react";
+import { Calendar, Copy, MapPin, Megaphone, Pencil, Receipt, Trash2, Star } from "lucide-react";
+import { isExpenseGroupTrip } from "@/lib/dashboard-trip-types";
 import { useTripAnnouncementUnreadCount } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 import { useToast } from "@/components/ui/toast";
 import LongTextSheet from "@/components/ui/LongTextSheet";
@@ -20,6 +21,7 @@ type Trip = {
   base_currency: string | null;
   is_favorite?: boolean;
   agency_id?: string | null;
+  trip_mode?: "travel" | "expenses" | string | null;
 };
 
 function formatDate(value: string | null) {
@@ -112,9 +114,15 @@ export default function TripCardItem({
     }
   }
 
+  const isExpenseGroup = isExpenseGroupTrip(trip);
+
   function openTrip() {
     if (locked || editOpen || duplicateOpen) return;
-    router.push(`/trip/${encodeURIComponent(trip.id)}`);
+    router.push(
+      isExpenseGroup
+        ? `/trip/${encodeURIComponent(trip.id)}/summary`
+        : `/trip/${encodeURIComponent(trip.id)}`
+    );
   }
 
   const timelineProgress = tripTimelineProgress(trip.start_date, trip.end_date);
@@ -152,15 +160,26 @@ export default function TripCardItem({
               />
             </div>
             <p className="mt-1 flex items-start gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
+              {isExpenseGroup ? (
+                <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+              ) : (
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" aria-hidden />
+              )}
               <span className="min-w-0 flex-1">
-                <LongTextSheet
-                  text={trip.destination || "Destino pendiente"}
-                  modalTitle="Destino"
-                  minLength={48}
-                  lineClamp={3}
-                  className="text-sm text-slate-600 dark:text-slate-300"
-                />
+                {isExpenseGroup ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                    {formatRange(trip.start_date, trip.end_date)}
+                  </span>
+                ) : (
+                  <LongTextSheet
+                    text={trip.destination || "Destino pendiente"}
+                    modalTitle="Destino"
+                    minLength={48}
+                    lineClamp={3}
+                    className="text-sm text-slate-600 dark:text-slate-300"
+                  />
+                )}
               </span>
             </p>
           </div>

@@ -50,8 +50,8 @@ export async function POST(req: Request) {
     const created = await createTripWithOwner(supabase, user, {
       name,
       destination: trip_mode === "expenses" ? null : destination || null,
-      start_date: trip_mode === "expenses" ? null : start_date,
-      end_date: trip_mode === "expenses" ? null : end_date,
+      start_date: start_date || null,
+      end_date: end_date || null,
       base_currency: /^[A-Z]{3}$/.test(base_currency) ? base_currency : "EUR",
       trip_mode,
     });

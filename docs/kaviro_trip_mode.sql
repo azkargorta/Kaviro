@@ -9,4 +9,4 @@ alter table public.trips
   add constraint trips_trip_mode_check check (trip_mode in ('travel', 'expenses'));
 
 comment on column public.trips.trip_mode is
-  'travel = viaje con plan/mapas; expenses = grupo de gastos (sin fechas/destino obligatorio).';
+  'travel = viaje con plan/mapas; expenses = grupo de gastos (sin destino; fechas opcionales en start_date/end_date).';
