@@ -9,7 +9,16 @@ import type {
   PaymentPreferenceRow,
   SettlementSuggestion,
 } from "@/lib/expense-balance";
-import { CheckCircle2, Clock, Copy, MessageCircle, Settings2, SlidersHorizontal, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Copy,
+  MessageCircle,
+  Settings2,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { getBudgetProgress } from "@/lib/trip-budget-progress";
 
 function safeCurrency(currency?: string | null) {
@@ -78,6 +87,8 @@ export default function ExpenseBalancePanel({
 }: Props) {
   const displayCurrency = safeCurrency(balanceCurrency);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [balancesOpen, setBalancesOpen] = useState(false);
+  const [settlementsOpen, setSettlementsOpen] = useState(false);
   const pdfHref = tripId ? `/api/trips/${tripId}/expenses/balance-report` : null;
   const [savingPref, setSavingPref] = useState<string | null>(null);
   const [resetAllBusy, setResetAllBusy] = useState(false);
@@ -132,6 +143,11 @@ export default function ExpenseBalancePanel({
     const paid = settlements.filter((s) => s.status === "paid");
     return [...pending, ...paid];
   }, [settlements]);
+
+  const pendingSettlementCount = useMemo(
+    () => orderedSettlements.filter((s) => s.status !== "paid").length,
+    [orderedSettlements]
+  );
 
   const bulkReminders = useMemo(() => {
     const pending = orderedSettlements.filter((s) => s.status !== "paid");
@@ -523,18 +539,31 @@ export default function ExpenseBalancePanel({
       ) : null}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-        <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setBalancesOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 text-left"
+          aria-expanded={balancesOpen}
+        >
           <h3 className="text-base font-semibold text-slate-950">Balance por persona</h3>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-            {balances.length} viajeros
-          </span>
-        </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              {balances.length} viajeros
+            </span>
+            <ChevronDown
+              className={`h-5 w-5 text-slate-500 transition ${balancesOpen ? "rotate-180" : ""}`}
+              aria-hidden
+            />
+          </div>
+        </button>
 
-        {balances.length === 0 ? (
+        {balancesOpen && balances.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
             Añade gastos para calcular balances.
           </div>
-        ) : (
+        ) : null}
+
+        {balancesOpen && balances.length > 0 ? (
           <div className="mt-4 grid gap-3">
             {balances.map((row) => (
               <div
@@ -570,29 +599,49 @@ export default function ExpenseBalancePanel({
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-        <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setSettlementsOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 text-left"
+          aria-expanded={settlementsOpen}
+        >
           <h3 className="text-base font-semibold text-slate-950">Pagos a realizar</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            {bulkReminders.items.length ? (
-              <button
-                type="button"
-                onClick={() => setBulkOpen((v) => !v)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                title="Generar avisos para todos los deudores"
-              >
-                <Users className="h-4 w-4" aria-hidden />
-                Cobrar a todos
-              </button>
-            ) : null}
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {orderedSettlements.length} movimientos
-            </span>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {pendingSettlementCount > 0 ? (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
+                {pendingSettlementCount} pendiente{pendingSettlementCount !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                {orderedSettlements.length} movimientos
+              </span>
+            )}
+            <ChevronDown
+              className={`h-5 w-5 text-slate-500 transition ${settlementsOpen ? "rotate-180" : ""}`}
+              aria-hidden
+            />
           </div>
-        </div>
+        </button>
+
+        {settlementsOpen ? (
+          <>
+            {bulkReminders.items.length ? (
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setBulkOpen((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  title="Generar avisos para todos los deudores"
+                >
+                  <Users className="h-4 w-4" aria-hidden />
+                  Cobrar a todos
+                </button>
+              </div>
+            ) : null}
 
         {bulkOpen && bulkReminders.items.length ? (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -725,6 +774,8 @@ export default function ExpenseBalancePanel({
             })}
           </div>
         )}
+          </>
+        ) : null}
       </div>
     </div>
   );

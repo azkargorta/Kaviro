@@ -22,7 +22,13 @@ function withTimeout<T>(promiseLike: PromiseLike<T>, ms = 25000, label = "operac
   ]);
 }
 
-export default function CreateTripForm({ isPremium = false }: { isPremium?: boolean }) {
+export default function CreateTripForm({
+  isPremium = false,
+  initialMode = "travel",
+}: {
+  isPremium?: boolean;
+  initialMode?: "travel" | "expenses";
+}) {
   const router = useRouter();
   const toast = useToast();
 
@@ -30,7 +36,17 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
   const showExpensesGroup = canShowExpensesGroupCreation(rolloutPhase);
   const showExpensesTabs = expensesGroupRolloutAtLeast(rolloutPhase, "create");
 
-  const [creationMode, setCreationMode] = useState<"travel" | "expenses">("travel");
+  const [creationMode, setCreationMode] = useState<"travel" | "expenses">(
+    showExpensesGroup && initialMode === "expenses" ? "expenses" : "travel"
+  );
+
+  useEffect(() => {
+    if (!showExpensesGroup) {
+      setCreationMode("travel");
+      return;
+    }
+    setCreationMode(initialMode === "expenses" ? "expenses" : "travel");
+  }, [initialMode, showExpensesGroup]);
   const [name, setName] = useState("");
   const [places, setPlaces] = useState<string[]>([""]);
   const [startDate, setStartDate] = useState("");

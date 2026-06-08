@@ -12,7 +12,7 @@ export type ExpensesGroupRolloutPhase = "off" | "teaser" | "create" | "full";
 const ORDER: ExpensesGroupRolloutPhase[] = ["off", "teaser", "create", "full"];
 
 function parsePhase(raw: string | undefined): ExpensesGroupRolloutPhase {
-  const v = (raw ?? "teaser").trim().toLowerCase();
+  const v = (raw ?? "create").trim().toLowerCase();
   if (v === "off" || v === "0" || v === "false" || v === "hidden") return "off";
   if (v === "teaser" || v === "hint" || v === "link") return "teaser";
   if (v === "create" || v === "on" || v === "1" || v === "true") return "create";

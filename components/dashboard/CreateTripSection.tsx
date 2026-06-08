@@ -5,6 +5,7 @@ import CreateTripForm from "./CreateTripForm";
 import DashboardCreateTripCta from "./DashboardCreateTripCta";
 import Link from "next/link";
 import { FREE_TRIP_LIMIT, freeTripLimitMessage } from "@/lib/premium-copy";
+import type { CreateTripOpenMode } from "@/lib/open-create-trip";
 
 export default function CreateTripSection({
   isPremium,
@@ -15,11 +16,19 @@ export default function CreateTripSection({
 }) {
   const locked = !isPremium && tripCount >= FREE_TRIP_LIMIT;
   const [showForm, setShowForm] = useState(false);
+  const [initialMode, setInitialMode] = useState<CreateTripOpenMode>("travel");
 
   const syncOpenFromHash = useCallback(() => {
     if (locked) return;
     try {
-      if (window.location.hash === "#create-trip") setShowForm(true);
+      const hash = window.location.hash;
+      if (hash === "#create-trip-expenses") {
+        setInitialMode("expenses");
+        setShowForm(true);
+      } else if (hash === "#create-trip") {
+        setInitialMode("travel");
+        setShowForm(true);
+      }
     } catch {
       /* */
     }
@@ -32,8 +41,11 @@ export default function CreateTripSection({
   }, [syncOpenFromHash]);
 
   useEffect(() => {
-    const open = () => {
-      if (!locked) setShowForm(true);
+    const open = (event: Event) => {
+      if (locked) return;
+      const mode = (event as CustomEvent<{ mode?: CreateTripOpenMode }>).detail?.mode;
+      setInitialMode(mode === "expenses" ? "expenses" : "travel");
+      setShowForm(true);
     };
     window.addEventListener("kaviro:open-create-trip", open);
     return () => window.removeEventListener("kaviro:open-create-trip", open);
@@ -57,7 +69,7 @@ export default function CreateTripSection({
         </div>
       ) : showForm ? (
         <div className="space-y-3">
-          <CreateTripForm isPremium={isPremium} />
+          <CreateTripForm isPremium={isPremium} initialMode={initialMode} />
           <button
             type="button"
             onClick={() => setShowForm(false)}
