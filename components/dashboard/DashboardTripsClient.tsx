@@ -7,7 +7,7 @@ import DashboardTripSection from "@/components/dashboard/DashboardTripSection";
 import DashboardFavoritesSection from "@/components/dashboard/DashboardFavoritesSection";
 import DashboardExpenseGroupsSection from "@/components/dashboard/DashboardExpenseGroupsSection";
 import TripCardItem from "@/components/dashboard/TripCardItem";
-import { DASHBOARD_EXPENSE_GROUP_ACCENT, type DashboardTrip } from "@/lib/dashboard-trip-types";
+import { DASHBOARD_TRIP_BADGE_ACCENTS, type DashboardTrip } from "@/lib/dashboard-trip-types";
 import { DashboardAnnouncementUnreadProvider } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,10 +26,10 @@ type TripWithMeta = Trip & { badge: string; accent: string };
 
 // ── Accent helpers ─────────────────────────────────────────────────────────────
 
-const ACCENT_CURRENT   = "from-emerald-100 to-teal-50 border-emerald-200";
-const ACCENT_FUTURE    = "from-[var(--brand-light)] to-slate-50 border-[var(--brand-border)]";
-const ACCENT_PAST      = "from-slate-100 to-slate-50 border-slate-200";
-const ACCENT_UNSCHED   = "from-amber-100 to-orange-50 border-amber-200";
+const ACCENT_CURRENT = DASHBOARD_TRIP_BADGE_ACCENTS.current;
+const ACCENT_FUTURE = DASHBOARD_TRIP_BADGE_ACCENTS.future;
+const ACCENT_PAST = DASHBOARD_TRIP_BADGE_ACCENTS.past;
+const ACCENT_UNSCHED = DASHBOARD_TRIP_BADGE_ACCENTS.unscheduled;
 
 
 // ── Empty state (zero real trips) ─────────────────────────────────────────────
@@ -132,7 +132,7 @@ export default function DashboardTripsClient({
       ...expenseGroups.map((t) => ({
         ...t,
         badge: "Grupo de gastos",
-        accent: DASHBOARD_EXPENSE_GROUP_ACCENT,
+        accent: DASHBOARD_TRIP_BADGE_ACCENTS.expenseGroup,
       })),
       ...current.map((t) => ({ ...t, badge: "En curso", accent: ACCENT_CURRENT })),
       ...future.map((t) => ({ ...t, badge: "Próximo", accent: ACCENT_FUTURE })),

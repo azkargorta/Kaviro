@@ -104,7 +104,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
             style={agencyBrandStyle}
           >
             <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
-              <div className="mb-4 md:mb-5">
+              <div className="mb-2 md:mb-5">
                 <TripHeroCard
                   tripId={params.id}
                   tripName={tripName}

@@ -27,7 +27,7 @@ import { userHasAgencyWorkspace } from "@/lib/agency-default-route";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { countUnreadAnnouncementsByTrip } from "@/lib/dashboard-announcement-unread";
 import {
-  DASHBOARD_EXPENSE_GROUP_ACCENT,
+  DASHBOARD_TRIP_BADGE_ACCENTS,
   isExpenseGroupTrip,
   splitDashboardTrips,
   type DashboardTrip,
@@ -248,21 +248,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         return {
           ...t,
           badge: "Grupo de gastos",
-          accent: DASHBOARD_EXPENSE_GROUP_ACCENT,
+          accent: DASHBOARD_TRIP_BADGE_ACCENTS.expenseGroup,
           is_favorite: true as const,
         };
       }
       let badge = "Pendiente";
-      let accent = "from-amber-100 to-orange-50 border-amber-200";
+      let accent = DASHBOARD_TRIP_BADGE_ACCENTS.unscheduled;
       if (currentIds.has(t.id)) {
         badge = "En curso";
-        accent = "from-emerald-100 to-teal-50 border-emerald-200";
+        accent = DASHBOARD_TRIP_BADGE_ACCENTS.current;
       } else if (futureIds.has(t.id)) {
         badge = "Próximo";
-        accent = "from-[var(--brand-light)] to-slate-50 border-[var(--brand-border)]";
+        accent = DASHBOARD_TRIP_BADGE_ACCENTS.future;
       } else if (pastIds.has(t.id)) {
         badge = "Finalizado";
-        accent = "from-slate-100 to-slate-50 border-slate-200";
+        accent = DASHBOARD_TRIP_BADGE_ACCENTS.past;
       }
       return { ...t, badge, accent, is_favorite: true as const };
     });

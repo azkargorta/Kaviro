@@ -75,7 +75,7 @@ export default function TripHeroCard({
 
       <div
         data-tour="trip-hero-toolbar"
-        className="flex items-center justify-between gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] max-md:pl-[max(1rem,var(--safe-area-left))] max-md:pr-[max(1rem,var(--safe-area-right))]"
+        className="flex items-center justify-between gap-2 px-4 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top))] max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))] md:gap-3 md:pb-2 md:pt-[max(0.75rem,env(safe-area-inset-top))]"
       >
         {branded ? (
           <Link
