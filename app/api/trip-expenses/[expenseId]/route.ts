@@ -36,6 +36,14 @@ export async function PATCH(request: Request, { params }: { params: { expenseId:
     assign("participant_names", Array.isArray(body?.participant_names) ? body.participant_names : undefined);
     assign("paid_by_names", Array.isArray(body?.paid_by_names) ? body.paid_by_names : undefined);
     assign("owed_by_names", Array.isArray(body?.owed_by_names) ? body.owed_by_names : undefined);
+    if (body?.owed_amounts === null) assign("owed_amounts", null);
+    else if (body?.owed_amounts && typeof body.owed_amounts === "object" && !Array.isArray(body.owed_amounts)) {
+      assign("owed_amounts", body.owed_amounts);
+    }
+    if (body?.paid_amounts === null) assign("paid_amounts", null);
+    else if (body?.paid_amounts && typeof body.paid_amounts === "object" && !Array.isArray(body.paid_amounts)) {
+      assign("paid_amounts", body.paid_amounts);
+    }
     assign("amount", typeof body?.amount === "number" ? body.amount : undefined);
     assign("currency", typeof body?.currency === "string" ? body.currency : undefined);
     assign("expense_date", typeof body?.expense_date === "string" ? body.expense_date : undefined);

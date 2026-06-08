@@ -22,6 +22,7 @@ import { agencyBrandingStyleVars } from "@/lib/agency-brand-tokens";
 import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
 import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
 import TripWelcomeBanner from "@/components/trip/TripWelcomeBanner";
+import TripSectionHintHost from "@/components/trip/TripSectionHintHost";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -139,6 +140,9 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   ) : null}
                   {!displayWorkspace.isAgencyTrip ? (
                     <TripWelcomeBanner tripId={params.id} tripMode={displayWorkspace.tripMode} />
+                  ) : null}
+                  {!displayWorkspace.isAgencyTrip ? (
+                    <TripSectionHintHost tripId={params.id} />
                   ) : null}
                   {children}
                 </div>

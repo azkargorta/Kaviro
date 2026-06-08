@@ -137,6 +137,14 @@ import { notifyTripMembers } from "@/lib/server/notify-trip-members";
        participant_names: Array.isArray(body?.participant_names) ? body.participant_names : [],
        paid_by_names: Array.isArray(body?.paid_by_names) ? body.paid_by_names : [],
        owed_by_names: Array.isArray(body?.owed_by_names) ? body.owed_by_names : [],
+       owed_amounts:
+         body?.owed_amounts && typeof body.owed_amounts === "object" && !Array.isArray(body.owed_amounts)
+           ? body.owed_amounts
+           : null,
+       paid_amounts:
+         body?.paid_amounts && typeof body.paid_amounts === "object" && !Array.isArray(body.paid_amounts)
+           ? body.paid_amounts
+           : null,
        amount: typeof body?.amount === "number" ? body.amount : Number(body?.amount ?? 0),
        currency: typeof body?.currency === "string" ? body.currency : "EUR",
        expense_date: typeof body?.expense_date === "string" ? body.expense_date : null,

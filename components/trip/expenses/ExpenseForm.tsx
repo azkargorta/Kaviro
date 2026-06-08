@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { ALL_CURRENCIES } from "@/lib/currencies";
 import type { ExpenseAnalysis, ExpenseFormInput } from "@/hooks/useTripExpenses";
 import type { ExpenseDetectedData } from "@/components/trip/expenses/ExpenseAnalyzerPanel";
+import { parseAmountsMap, validateCustomShares } from "@/lib/expense-split";
 
 type ExistingExpense = {
   id?: string;
@@ -14,6 +15,8 @@ type ExistingExpense = {
   participant_names?: string[] | null;
   paid_by_names?: string[] | null;
   owed_by_names?: string[] | null;
+  owed_amounts?: Record<string, number> | null;
+  paid_amounts?: Record<string, number> | null;
   amount?: number | null;
   currency?: string | null;
   expense_date?: string | null;
@@ -131,6 +134,9 @@ export default function ExpenseForm({
   const [keepExistingAttachment, setKeepExistingAttachment] = useState(true);
   const [analysisData, setAnalysisData] = useState<ExpenseAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unevenSplit, setUnevenSplit] = useState(false);
+  const [owedAmountInputs, setOwedAmountInputs] = useState<Record<string, string>>({});
+  const [paidAmountInputs, setPaidAmountInputs] = useState<Record<string, string>>({});
 
   const isEditing = Boolean(editingExpense?.id);
   const isDuplicating = Boolean(editingExpense && !editingExpense.id);
@@ -150,10 +156,24 @@ export default function ExpenseForm({
     return Number.isFinite(n) ? n : 0;
   }, [amount]);
 
+  const owedCustomSum = useMemo(() => {
+    return owedByNames.reduce((sum, name) => {
+      const n = Number(String(owedAmountInputs[name] || "").replace(",", "."));
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+  }, [owedByNames, owedAmountInputs]);
+
+  const paidCustomSum = useMemo(() => {
+    return paidByNames.reduce((sum, name) => {
+      const n = Number(String(paidAmountInputs[name] || "").replace(",", "."));
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+  }, [paidByNames, paidAmountInputs]);
+
   const perPerson = useMemo(() => {
-    if (numericAmount <= 0 || owedByNames.length === 0) return null;
+    if (numericAmount <= 0 || owedByNames.length === 0 || unevenSplit) return null;
     return Math.round((numericAmount / owedByNames.length) * 100) / 100;
-  }, [numericAmount, owedByNames.length]);
+  }, [numericAmount, owedByNames.length, unevenSplit]);
 
   const participantNames = useMemo(() => {
     const set = new Set([...paidByNames, ...owedByNames]);
@@ -174,6 +194,19 @@ export default function ExpenseForm({
     const owed = normalizeNameArray(editingExpense.owed_by_names);
     setPaidByNames(paid.length ? paid : normalizeNameArray(editingExpense.participant_names));
     setOwedByNames(owed.length ? owed : normalizeNameArray(editingExpense.participant_names));
+    const owedMap = parseAmountsMap(editingExpense.owed_amounts);
+    const paidMap = parseAmountsMap(editingExpense.paid_amounts);
+    setUnevenSplit(Boolean(owedMap));
+    setOwedAmountInputs(
+      owedMap
+        ? Object.fromEntries(Object.entries(owedMap).map(([k, v]) => [k, String(v)]))
+        : {}
+    );
+    setPaidAmountInputs(
+      paidMap
+        ? Object.fromEntries(Object.entries(paidMap).map(([k, v]) => [k, String(v)]))
+        : {}
+    );
     setAmount(editingExpense.amount != null ? String(editingExpense.amount) : "");
     setCurrency(editingExpense.currency || baseCurrency);
     setExpenseDate(editingExpense.expense_date || "");
@@ -243,6 +276,52 @@ export default function ExpenseForm({
       return;
     }
 
+    let owedAmounts: Record<string, number> | null = null;
+    let paidAmounts: Record<string, number> | null = null;
+
+    if (unevenSplit) {
+      const map: Record<string, number> = {};
+      for (const name of owedByNames) {
+        const n = Number(String(owedAmountInputs[name] || "").replace(",", "."));
+        if (!Number.isFinite(n) || n < 0) {
+          setError(`Importe no válido para ${name}.`);
+          return;
+        }
+        map[name] = n;
+      }
+      const check = validateCustomShares(owedByNames, map, numericAmount);
+      if (!check.ok) {
+        setError(`La suma del reparto (${check.sum.toFixed(2)}) debe coincidir con el total (${numericAmount.toFixed(2)}).`);
+        return;
+      }
+      owedAmounts = map;
+    }
+
+    if (paidByNames.length > 1) {
+      const map: Record<string, number> = {};
+      let hasCustom = false;
+      for (const name of paidByNames) {
+        const raw = String(paidAmountInputs[name] || "").trim();
+        if (raw) {
+          hasCustom = true;
+          const n = Number(raw.replace(",", "."));
+          if (!Number.isFinite(n) || n < 0) {
+            setError(`Importe pagado no válido para ${name}.`);
+            return;
+          }
+          map[name] = n;
+        }
+      }
+      if (hasCustom) {
+        const check = validateCustomShares(paidByNames, map, numericAmount);
+        if (!check.ok) {
+          setError(`Lo pagado por persona (${check.sum.toFixed(2)}) debe sumar el total (${numericAmount.toFixed(2)}).`);
+          return;
+        }
+        paidAmounts = map;
+      }
+    }
+
     try {
       await Promise.race([
         onSubmit({
@@ -253,6 +332,8 @@ export default function ExpenseForm({
           participantNames,
           paidByNames,
           owedByNames,
+          owedAmounts,
+          paidAmounts,
           amount: numericAmount,
           currency,
           expenseDate,
@@ -309,10 +390,69 @@ export default function ExpenseForm({
           ))}
         </div>
       </div>
-      {perPerson != null ? (
+      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <input
+          type="checkbox"
+          checked={unevenSplit}
+          onChange={(e) => {
+            setUnevenSplit(e.target.checked);
+            if (!e.target.checked) setOwedAmountInputs({});
+          }}
+        />
+        Reparto desigual (importe por persona)
+      </label>
+      {unevenSplit ? (
+        <div className="space-y-2 rounded-xl border border-sky-200 bg-white p-3 dark:border-sky-900/40 dark:bg-[#0F1623]">
+          {owedByNames.map((name) => (
+            <label key={`owed-amt-${name}`} className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-semibold">{name}</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={owedAmountInputs[name] ?? ""}
+                onChange={(e) =>
+                  setOwedAmountInputs((prev) => ({ ...prev, [name]: e.target.value }))
+                }
+                className="w-28 rounded-lg border border-slate-200 px-2 py-1 text-right font-bold dark:border-[#334155] dark:bg-[#080C14]"
+                placeholder="0"
+              />
+            </label>
+          ))}
+          <p className={`text-xs font-bold ${Math.abs(owedCustomSum - numericAmount) < 0.02 ? "text-emerald-700" : "text-rose-700"}`}>
+            Suma: {formatMoney(owedCustomSum, currency)} / {formatMoney(numericAmount, currency)}
+          </p>
+        </div>
+      ) : perPerson != null ? (
         <p className="text-center text-sm font-extrabold text-slate-800 dark:text-slate-100">
           → {formatMoney(perPerson, currency)} por persona
         </p>
+      ) : null}
+      {paidByNames.length > 1 ? (
+        <div className="space-y-2 rounded-xl border border-emerald-200 bg-white p-3 dark:border-emerald-900/40 dark:bg-[#0F1623]">
+          <p className="text-xs font-bold text-emerald-800 dark:text-emerald-200">Importe pagado por cada uno (opcional)</p>
+          {paidByNames.map((name) => (
+            <label key={`paid-amt-${name}`} className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-semibold">{name}</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={paidAmountInputs[name] ?? ""}
+                onChange={(e) =>
+                  setPaidAmountInputs((prev) => ({ ...prev, [name]: e.target.value }))
+                }
+                className="w-28 rounded-lg border border-slate-200 px-2 py-1 text-right font-bold dark:border-[#334155] dark:bg-[#080C14]"
+                placeholder="Igual"
+              />
+            </label>
+          ))}
+          {Object.values(paidAmountInputs).some((v) => v.trim()) ? (
+            <p className={`text-xs font-bold ${Math.abs(paidCustomSum - numericAmount) < 0.02 ? "text-emerald-700" : "text-rose-700"}`}>
+              Suma pagada: {formatMoney(paidCustomSum, currency)} / {formatMoney(numericAmount, currency)}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

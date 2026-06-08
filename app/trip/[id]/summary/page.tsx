@@ -18,6 +18,7 @@ import { loadTripExpenseAmountRows } from "@/lib/load-trip-expense-amounts";
 import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
+import TripExpensesSummaryPanel from "@/components/trip/expenses/TripExpensesSummaryPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -374,6 +375,22 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       hint: aiHint,
     },
   ];
+
+  if (workspace.tripMode === "expenses") {
+    return (
+      <main className="w-full min-w-0 max-w-full space-y-5 md:space-y-6">
+        <TripBoardPageHeader
+          section="Inicio"
+          title={currentTrip.name}
+          description="Grupo de gastos compartidos"
+          iconKey="expenses"
+          iconAlt="Gastos"
+          actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}
+        />
+        <TripExpensesSummaryPanel tripId={tripId} groupName={currentTrip.name} />
+      </main>
+    );
+  }
 
   return (
     <main className="w-full min-w-0 max-w-full space-y-5 md:space-y-6">

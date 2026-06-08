@@ -19,6 +19,23 @@ describe("buildBalances", () => {
     expect(byPerson.Ana.paid).toBe(100);
     expect(byPerson.Bea.owed).toBe(50);
   });
+  it("usa reparto desigual cuando hay owed_amounts", () => {
+    const rows = buildBalances([
+      {
+        id: "1",
+        amount: 100,
+        currency: "EUR",
+        paid_by_names: ["Ana"],
+        owed_by_names: ["Ana", "Bea", "Ceci"],
+        owed_amounts: { Ana: 20, Bea: 30, Ceci: 50 },
+      },
+    ]);
+    const byPerson = Object.fromEntries(rows.map((r) => [r.person, r]));
+    expect(byPerson.Ana.balance).toBe(80);
+    expect(byPerson.Bea.balance).toBe(-30);
+    expect(byPerson.Ceci.balance).toBe(-50);
+  });
+
   it("parsea importes en string con coma", () => {
     const rows = buildBalances([
       {

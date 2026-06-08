@@ -57,6 +57,8 @@ export type ExpenseFormInput = {
   participantNames: string[];
   paidByNames: string[];
   owedByNames: string[];
+  owedAmounts?: Record<string, number> | null;
+  paidAmounts?: Record<string, number> | null;
   amount: number;
   currency: string;
   expenseDate: string;
@@ -534,6 +536,8 @@ export function useTripExpenses(tripId: string) {
         participant_names: input.participantNames,
         paid_by_names: input.paidByNames,
         owed_by_names: input.owedByNames,
+        owed_amounts: input.owedAmounts ?? null,
+        paid_amounts: input.paidAmounts ?? null,
         amount: input.amount,
         currency: input.currency,
         expense_date: normalizeDateInput(input.expenseDate),
@@ -590,6 +594,8 @@ export function useTripExpenses(tripId: string) {
         participant_names: input.participantNames,
         paid_by_names: input.paidByNames,
         owed_by_names: input.owedByNames,
+        owed_amounts: input.owedAmounts ?? null,
+        paid_amounts: input.paidAmounts ?? null,
         amount: input.amount,
         currency: input.currency,
         expense_date: normalizeDateInput(input.expenseDate),

@@ -1,3 +1,5 @@
+import { parseAmountsMap, resolvePersonShares } from "@/lib/expense-split";
+
 export type TripExpenseBalanceInput = {
   id: string;
   title?: string | null;
@@ -5,6 +7,8 @@ export type TripExpenseBalanceInput = {
   participant_names?: unknown;
   paid_by_names?: unknown;
   owed_by_names?: unknown;
+  owed_amounts?: unknown;
+  paid_amounts?: unknown;
   amount: number | string | null;
   currency: string | null;
 };
@@ -328,24 +332,20 @@ export function buildBalances(expenses: TripExpenseBalanceInput[]) {
 
     if (!debtors.length && !payers.length) continue;
 
-    if (debtors.length) {
-      const split = amount / debtors.length;
-      for (const debtor of debtors) {
-        const current = map.get(debtor) || { balance: 0, paid: 0, owed: 0 };
-        current.balance -= split;
-        current.owed += split;
-        map.set(debtor, current);
-      }
+    const owedShares = resolvePersonShares(debtors, amount, parseAmountsMap(e.owed_amounts));
+    for (const [debtor, share] of owedShares) {
+      const current = map.get(debtor) || { balance: 0, paid: 0, owed: 0 };
+      current.balance -= share;
+      current.owed += share;
+      map.set(debtor, current);
     }
 
-    if (payers.length) {
-      const split = amount / payers.length;
-      for (const payer of payers) {
-        const current = map.get(payer) || { balance: 0, paid: 0, owed: 0 };
-        current.balance += split;
-        current.paid += split;
-        map.set(payer, current);
-      }
+    const paidShares = resolvePersonShares(payers, amount, parseAmountsMap(e.paid_amounts));
+    for (const [payer, share] of paidShares) {
+      const current = map.get(payer) || { balance: 0, paid: 0, owed: 0 };
+      current.balance += share;
+      current.paid += share;
+      map.set(payer, current);
     }
   }
 
