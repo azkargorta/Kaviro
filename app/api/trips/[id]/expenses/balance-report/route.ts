@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTripAccessForApi } from "@/lib/trip-access";
 
-type Params = { params: { tripId: string } };
-
 function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -16,25 +14,26 @@ function money(amount: number, currency: string) {
   }
 }
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
+  const { id: tripId } = await context.params;
   const supabase = await createClient();
-  const access = await getTripAccessForApi(supabase, params.tripId);
+  const access = await getTripAccessForApi(supabase, tripId);
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
-  const { data: trip } = await supabase.from("trips").select("name, base_currency").eq("id", params.tripId).maybeSingle();
+  const { data: trip } = await supabase.from("trips").select("name, base_currency").eq("id", tripId).maybeSingle();
   const currency = (trip?.base_currency as string) || "EUR";
 
   const { data: settlements } = await supabase
     .from("trip_expense_settlements")
     .select("debtor_name, creditor_name, amount, currency, status")
-    .eq("trip_id", params.tripId)
+    .eq("trip_id", tripId)
     .order("created_at", { ascending: true });
 
   const { data: expenses } = await supabase
     .from("trip_expenses")
     .select("title, amount, currency, category")
-    .eq("trip_id", params.tripId);
+    .eq("trip_id", tripId);
 
   const byCategory = new Map<string, number>();
   for (const e of expenses ?? []) {
