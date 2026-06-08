@@ -22,14 +22,24 @@ export default function ParticipantLinkProfilePanel({
   const [results, setResults] = useState<ProfileSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   async function handleSearch() {
+    const q = query.trim().replace(/^@+/, "");
+    if (q.length < 2) {
+      setError("Escribe al menos 2 caracteres (usuario o email).");
+      setResults([]);
+      setSearched(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const nextResults = await onSearchProfiles(query);
+      const nextResults = await onSearchProfiles(q);
       setResults(nextResults);
+      setSearched(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudieron cargar perfiles.");
     } finally {
@@ -127,9 +137,17 @@ export default function ParticipantLinkProfilePanel({
             </div>
           ))}
 
-          {!loading && results.length === 0 ? (
+          {!loading && searched && results.length === 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+              <p className="font-bold">No hay ningún usuario de Kaviro con ese nombre o email.</p>
+              <p className="mt-1.5 font-semibold text-amber-900/90 dark:text-amber-200/90">
+                Es posible que aún no tenga cuenta. En ese caso, envíale el enlace de invitación por WhatsApp: al
+                registrarse entrará directamente al viaje.
+              </p>
+            </div>
+          ) : !loading && !searched ? (
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-400">
-              Sin resultados todavía. Prueba con @usuario o el email si lo conoces.
+              Busca por @usuario o email. Solo aparecen personas con cuenta en Kaviro.
             </div>
           ) : null}
         </div>

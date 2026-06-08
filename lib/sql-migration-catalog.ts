@@ -130,6 +130,14 @@ export const SQL_MIGRATION_CATALOG: SqlMigrationDefinition[] = [
     check: { kind: "column", table: "agency_participant_payments", column: "payment_schedule" },
   },
   {
+    id: "trip_mode",
+    file: "kaviro_trip_mode.sql",
+    label: "Modo grupo de gastos (trip_mode)",
+    group: "b2c",
+    order: 8.5,
+    check: { kind: "column", table: "trips", column: "trip_mode" },
+  },
+  {
     id: "agency_emails",
     file: "kaviro_agency_emails.sql",
     label: "Emails automatizados de agencia",

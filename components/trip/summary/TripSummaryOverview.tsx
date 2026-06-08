@@ -223,26 +223,18 @@ export default function TripSummaryOverview({
                 {/* Phase-aware headline */}
                 {phase === "before" && daysUntilStart !== null && (
                   <>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-300/90 dark:text-[var(--accent)]">Cuenta atrás</p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-5xl font-extrabold tabular-nums leading-none">{daysUntilStart}</span>
-                      <span className="text-lg font-semibold text-slate-300">día{daysUntilStart !== 1 ? "s" : ""} para el viaje</span>
-                    </div>
-                    {tripStartDate && (
-                      <p className="mt-1 text-sm text-slate-400">{formatFullDate(tripStartDate)}</p>
-                    )}
+                    <p className="text-sm font-bold text-violet-200 dark:text-[var(--accent)]">
+                      ⏳ Faltan <span className="tabular-nums">{daysUntilStart}</span> día{daysUntilStart !== 1 ? "s" : ""} para el viaje
+                      {tripStartDate ? ` · ${formatFullDate(tripStartDate)}` : ""}
+                    </p>
                   </>
                 )}
                 {phase === "during" && daysLeft !== null && (
                   <>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300/90 dark:text-[var(--accent)]">Viaje en curso ✈️</p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-5xl font-extrabold tabular-nums leading-none">{daysLeft}</span>
-                      <span className="text-lg font-semibold text-slate-300">día{daysLeft !== 1 ? "s" : ""} restantes</span>
-                    </div>
-                    {tripDestination && (
-                      <p className="mt-1 text-sm text-slate-400">📍 {tripDestination}</p>
-                    )}
+                    <p className="text-sm font-bold text-emerald-200 dark:text-[var(--accent)]">
+                      ✈️ Viaje en curso · <span className="tabular-nums">{daysLeft}</span> día{daysLeft !== 1 ? "s" : ""} restantes
+                      {tripDestination ? ` · ${tripDestination}` : ""}
+                    </p>
                   </>
                 )}
                 {phase === "after" && (
@@ -526,17 +518,6 @@ export default function TripSummaryOverview({
       </div>
 
       {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}
-            {/* ── Search card ──────────────────────────────────────────── */}
-      <Reveal variant="fade">
-      <TripSearchCard
-        destination={tripDestination ?? null}
-        startDate={tripStartDate ?? null}
-        endDate={tripEndDate ?? null}
-        participants={Math.max(1, participantsCount ?? 1)}
-        tripId={tripId}
-      />
-      </Reveal>
-
       <section className="min-w-0 space-y-3">
         <Reveal variant="fade">
         <div className="flex flex-wrap items-end justify-between gap-2">
@@ -547,7 +528,7 @@ export default function TripSummaryOverview({
         </div>
         </Reveal>
 
-        <div data-tour="summary-stats" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div data-tour="summary-stats" className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
           {tabs.map((tab, tabIdx) => {
             const ac = TILE_ACCENT[tab.tone];
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
@@ -563,67 +544,62 @@ export default function TripSummaryOverview({
               >
               <Link
                 href={tab.href}
-                className={`trip-tile-hover group flex h-full flex-col rounded-2xl border p-4 ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
+                className={`trip-tile-hover group flex h-full flex-col items-center rounded-2xl border p-3 text-center sm:items-stretch sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
               >
-                {/* Top row: icon + metric */}
-                <div className="flex items-start justify-between gap-3">
-                  <div
-                    className={
-                      isDark
-                        ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)]"
-                        : `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ac.icon}`
-                    }
-                  >
-                    <Image
-                      src={iconSrc}
-                      alt=""
-                      width={24}
-                      height={24}
-                      className={`h-6 w-6 object-contain ${isDark ? coralPngFilterDark : ""}`}
-                    />
-                  </div>
-                  <span
-                    className={
-                      isDark
-                        ? "rounded-full bg-[var(--brand-light)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--brand-text)] ring-1 ring-[color:var(--brand-border)]"
-                        : `rounded-full px-2.5 py-1 text-[11px] font-extrabold ${ac.chip}`
-                    }
-                  >
-                    {tab.metric}
-                  </span>
-                </div>
-
-                {/* Label + subtitle */}
-                <p className="mt-3 text-[15px] font-extrabold text-slate-950 leading-tight dark:text-slate-50">{tab.label}</p>
-                <p className="mt-0.5 text-xs text-slate-500 leading-snug dark:text-slate-300">{tab.subtitle}</p>
-
-                {/* Hint */}
-                {tab.hint && (
-                  <p
-                    className={`mt-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 leading-snug line-clamp-2
-                    dark:border-[color:var(--brand-border)] dark:bg-black/20 dark:text-slate-200`}
-                  >
-                    {tab.hint}
-                  </p>
-                )}
-
-                {/* Arrow */}
                 <div
                   className={
                     isDark
-                      ? "mt-3 flex items-center gap-1 text-xs font-bold text-[var(--accent)] transition group-hover:gap-2"
-                      : `mt-3 flex items-center gap-1 text-xs font-bold transition group-hover:gap-2 ${ac.arrow}`
+                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11"
+                      : `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${ac.icon}`
                   }
                 >
-                  <span>Ir al módulo</span>
-                  <span aria-hidden>→</span>
+                  <Image
+                    src={iconSrc}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className={`h-6 w-6 object-contain ${isDark ? coralPngFilterDark : ""}`}
+                  />
                 </div>
+                <p className="mt-2 text-[11px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
+                  {tab.label}
+                </p>
+                <span
+                  className={`mt-1 hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold sm:inline-block ${
+                    isDark
+                      ? "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[color:var(--brand-border)]"
+                      : ac.chip
+                  }`}
+                >
+                  {tab.metric}
+                </span>
+                <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-slate-300 sm:block">{tab.subtitle}</p>
+                {tab.hint ? (
+                  <p className="mt-2 hidden rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 line-clamp-2 dark:border-[color:var(--brand-border)] dark:bg-black/20 dark:text-slate-200 sm:block">
+                    {tab.hint}
+                  </p>
+                ) : null}
               </Link>
               </Reveal>
             );
           })}
         </div>
       </section>
+
+      <details className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
+        <summary className="cursor-pointer text-sm font-bold text-slate-800 dark:text-slate-200">
+          Buscar vuelos y alojamiento
+        </summary>
+        <div className="mt-4">
+          <TripSearchCard
+            destination={tripDestination ?? null}
+            startDate={tripStartDate ?? null}
+            endDate={tripEndDate ?? null}
+            participants={Math.max(1, participantsCount ?? 1)}
+            tripId={tripId}
+          />
+        </div>
+      </details>
 
       {/* ── Recap CTA ────────────────────────────────────────────── */}
       <Reveal variant="slide" delay={2}>

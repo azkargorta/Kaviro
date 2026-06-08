@@ -21,7 +21,8 @@ type Props = {
   newParticipantCount?: number;
 };
 
-const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "expenses", "chat"];
+const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "expenses", "map", "chat"];
+const EXPENSES_GROUP_PRIMARY_KEYS: TripTabKey[] = ["summary", "expenses", "participants"];
 const AGENCY_PRIMARY_KEYS: TripTabKey[] = ["plan", "map", "resources"];
 
 const SECONDARY_META: Record<
@@ -50,18 +51,22 @@ export default function MobileBottomNav({
 }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
-  const { isAgencyTrip, isAgencyManaged, useAgencyBranding } = useTripWorkspace();
+  const { isAgencyTrip, isAgencyManaged, useAgencyBranding, tripMode } = useTripWorkspace();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const navItems = getTripNavItems(isAgencyTrip, isAgencyManaged).filter(
+  const navItems = getTripNavItems(isAgencyTrip, isAgencyManaged, tripMode).filter(
     (item) => !item.isPremiumGated || isPremium
   );
-  const primaryKeys = isAgencyTrip ? AGENCY_PRIMARY_KEYS : PERSONAL_PRIMARY_KEYS;
+  const primaryKeys = isAgencyTrip
+    ? AGENCY_PRIMARY_KEYS
+    : tripMode === "expenses"
+      ? EXPENSES_GROUP_PRIMARY_KEYS
+      : PERSONAL_PRIMARY_KEYS;
   const primaryItems = navItems
     .filter((item) => primaryKeys.includes(item.key))
     .map((item) => ({
       key: item.key,
-      label: item.key === "chat" ? (isAgencyTrip ? "IA" : "IA") : item.label,
+      label: item.label,
       href: item.href,
       isAI: item.key === "chat",
     }));

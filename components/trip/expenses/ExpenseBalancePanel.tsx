@@ -78,6 +78,7 @@ export default function ExpenseBalancePanel({
 }: Props) {
   const displayCurrency = safeCurrency(balanceCurrency);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const pdfHref = tripId ? `/api/trips/${tripId}/expenses/balance-report` : null;
   const [savingPref, setSavingPref] = useState<string | null>(null);
   const [resetAllBusy, setResetAllBusy] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -185,6 +186,16 @@ export default function ExpenseBalancePanel({
 
   return (
     <div className="space-y-4">
+      {pdfHref ? (
+        <a
+          href={pdfHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+        >
+          Exportar informe (PDF / imprimir)
+        </a>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
@@ -680,7 +691,15 @@ export default function ExpenseBalancePanel({
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => void onToggleSettlementStatus(s)}
+                      onClick={() => {
+                        if (!isPaid) {
+                          const ok = window.confirm(
+                            `¿Confirmas que ${s.debtor_name} ya pagó ${formatMoney(s.amount, s.currency || displayCurrency)} a ${s.creditor_name}?`
+                          );
+                          if (!ok) return;
+                        }
+                        void onToggleSettlementStatus(s);
+                      }}
                       className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
                         isPaid
                           ? "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"

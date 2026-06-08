@@ -21,6 +21,7 @@ import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-tra
 import { agencyBrandingStyleVars } from "@/lib/agency-brand-tokens";
 import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
 import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
+import TripWelcomeBanner from "@/components/trip/TripWelcomeBanner";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -135,6 +136,9 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                       tripName={tripName}
                       isPremium={isPremium}
                     />
+                  ) : null}
+                  {!displayWorkspace.isAgencyTrip ? (
+                    <TripWelcomeBanner tripId={params.id} tripMode={displayWorkspace.tripMode} />
                   ) : null}
                   {children}
                 </div>

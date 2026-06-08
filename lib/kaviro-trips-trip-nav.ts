@@ -17,14 +17,21 @@ export const TRAVELER_ANNOUNCEMENTS_NAV: TripNavItem = {
 };
 
 /** Navegación B2C (viajero). */
+/** Navegación reducida para grupos de gastos (sin plan, mapa ni IA). */
+export const EXPENSES_GROUP_NAV: TripNavItem[] = [
+  { key: "summary", label: "Inicio", sublabel: "Balances", href: (id) => `/trip/${id}/summary` },
+  { key: "expenses", label: "Gastos", sublabel: "Tickets", href: (id) => `/trip/${id}/expenses` },
+  { key: "participants", label: "Gente", sublabel: "Participantes", href: (id) => `/trip/${id}/participants` },
+];
+
 export const PERSONAL_TRIP_NAV: TripNavItem[] = [
-  { key: "summary", label: "Resumen", sublabel: "Vista general", href: (id) => `/trip/${id}/summary` },
+  { key: "summary", label: "Inicio", sublabel: "Vista general", href: (id) => `/trip/${id}/summary` },
   { key: "plan", label: "Plan", sublabel: "Itinerario", href: (id) => `/trip/${id}/plan` },
   { key: "map", label: "Rutas", sublabel: "Mapa", href: (id) => `/trip/${id}/map` },
   { key: "expenses", label: "Gastos", sublabel: "Finanzas", href: (id) => `/trip/${id}/expenses` },
   { key: "participants", label: "Gente", sublabel: "Participantes", href: (id) => `/trip/${id}/participants` },
   { key: "resources", label: "Docs", sublabel: "Documentos", href: (id) => `/trip/${id}/resources` },
-  { key: "chat", label: "Asistente IA", sublabel: "Premium", href: (id) => `/trip/${id}/ai-chat`, isPremiumGated: true },
+  { key: "chat", label: "IA", sublabel: "Asistente", href: (id) => `/trip/${id}/ai-chat`, isPremiumGated: true },
   { key: "settings", label: "Ajustes", sublabel: "Datos del viaje", href: (id) => `/trip/${id}/settings` },
 ];
 
@@ -48,7 +55,14 @@ export const AGENCY_TRIP_BLOCKED_PATH_SUFFIXES = [
   "/today",
 ] as const;
 
-export function getTripNavItems(isAgencyTrip: boolean, isAgencyManaged = false): TripNavItem[] {
+export type TripMode = "travel" | "expenses";
+
+export function getTripNavItems(
+  isAgencyTrip: boolean,
+  isAgencyManaged = false,
+  tripMode: TripMode = "travel"
+): TripNavItem[] {
+  if (tripMode === "expenses") return EXPENSES_GROUP_NAV;
   if (isAgencyTrip) return AGENCY_TRIP_NAV;
   if (!isAgencyManaged) return PERSONAL_TRIP_NAV;
 

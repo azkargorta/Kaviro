@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { agencyBrandingFromRow, type AgencyBranding, type AgencyRow } from "@/lib/agency";
 
+export type TripMode = "travel" | "expenses";
+
 export type TripWorkspaceMeta = {
+  tripMode: TripMode;
   /** Vista operativa Kaviro Trips (solo personal de la agencia). */
   isAgencyTrip: boolean;
   /** El viaje pertenece a una agencia (viajeros invitados usan Kaviro completo). */
@@ -44,12 +47,13 @@ export async function loadTripWorkspaceMeta(
 ): Promise<TripWorkspaceMeta> {
   const { data: trip, error } = await client
     .from("trips")
-    .select("agency_id, client_portal_slug")
+    .select("agency_id, client_portal_slug, trip_mode")
     .eq("id", tripId)
     .maybeSingle();
 
   if (error || !trip) {
     return {
+      tripMode: "travel",
       isAgencyTrip: false,
       isAgencyManaged: false,
       agencyId: null,
@@ -59,11 +63,14 @@ export async function loadTripWorkspaceMeta(
     };
   }
 
+  const tripModeRaw = (trip as { trip_mode?: string | null }).trip_mode;
+  const tripMode: TripMode = tripModeRaw === "expenses" ? "expenses" : "travel";
   const agencyId = (trip as { agency_id?: string | null }).agency_id ?? null;
   const clientPortalSlug = (trip as { client_portal_slug?: string | null }).client_portal_slug ?? null;
 
   if (!agencyId) {
     return {
+      tripMode,
       isAgencyTrip: false,
       isAgencyManaged: false,
       agencyId: null,
@@ -99,6 +106,7 @@ export async function loadTripWorkspaceMeta(
   const agencyBranding = agency ? agencyBrandingFromRow(agency as AgencyRow) : null;
 
   return {
+    tripMode,
     isAgencyTrip: isAgencyStaff,
     isAgencyManaged: true,
     agencyId,

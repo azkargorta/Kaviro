@@ -73,7 +73,7 @@ export default function RegisterForm() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-      router.push("/auth/login");
+      router.push(loginHref);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear la cuenta");

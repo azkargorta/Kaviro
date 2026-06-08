@@ -7,8 +7,11 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = (searchParams.get("query") || "").trim();
-    if (!query) return NextResponse.json({ profiles: [] });
+    const raw = (searchParams.get("query") || "").trim();
+    const query = raw.replace(/^@+/, "").toLowerCase();
+    if (!query || query.length < 2) {
+      return NextResponse.json({ profiles: [], hint: query.length < 2 ? "min_length" : null });
+    }
 
     const supabase = await createClient();
     const {
@@ -16,10 +19,12 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
 
+    const pattern = `%${query}%`;
     const { data, error } = await supabase
       .from("profiles")
       .select("id, username, email, full_name")
-      .or(`username.ilike.%${query}%,email.ilike.%${query}%`)
+      .or(`username.ilike.${pattern},email.ilike.${pattern},full_name.ilike.${pattern}`)
+      .neq("id", user.id)
       .limit(8);
 
     if (error) throw new Error(error.message);

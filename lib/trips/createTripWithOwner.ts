@@ -7,6 +7,7 @@ export type CreateTripInput = {
   start_date: string | null;
   end_date: string | null;
   base_currency: string;
+  trip_mode?: "travel" | "expenses";
   agency_id?: string | null;
   client_portal_slug?: string | null;
   agency_client_id?: string | null;
@@ -31,14 +32,17 @@ export async function createTripWithOwner(
     return { error: "La fecha de inicio no puede ser posterior a la fecha de fin." };
   }
 
+  const trip_mode = input.trip_mode === "expenses" ? "expenses" : "travel";
+
   const tripInsert = await supabase
     .from("trips")
     .insert({
       name,
       destination: destination || null,
-      start_date,
-      end_date,
+      start_date: trip_mode === "expenses" ? null : start_date,
+      end_date: trip_mode === "expenses" ? null : end_date,
       base_currency,
+      trip_mode,
       ...(input.agency_id ? { agency_id: input.agency_id } : {}),
       ...(input.client_portal_slug ? { client_portal_slug: input.client_portal_slug } : {}),
       ...(input.agency_client_id ? { agency_client_id: input.agency_client_id } : {}),

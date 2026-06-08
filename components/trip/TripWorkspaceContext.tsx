@@ -49,6 +49,7 @@ export function useTripWorkspace() {
   return (
     ctx ?? {
       tripId: "",
+      tripMode: "travel" as const,
       isAgencyTrip: false,
       isAgencyManaged: false,
       agencyId: null,

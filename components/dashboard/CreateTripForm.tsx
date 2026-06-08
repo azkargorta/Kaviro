@@ -21,6 +21,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
   const router = useRouter();
   const toast = useToast();
 
+  const [creationMode, setCreationMode] = useState<"travel" | "expenses">("travel");
   const [name, setName] = useState("");
   const [places, setPlaces] = useState<string[]>([""]);
   const [startDate, setStartDate] = useState("");
@@ -82,9 +83,10 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: trimmedName,
-            destination: trimmedDestination ? trimmedDestination : null,
-            start_date: startDate || null,
-            end_date: endDate || null,
+            trip_mode: creationMode,
+            destination: creationMode === "expenses" ? null : trimmedDestination ? trimmedDestination : null,
+            start_date: creationMode === "expenses" ? null : startDate || null,
+            end_date: creationMode === "expenses" ? null : endDate || null,
             base_currency: baseCurrency || "EUR",
           }),
         }),
@@ -106,8 +108,15 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
       setBaseCurrency("EUR");
 
       setStep("done");
-      toast.success("Viaje creado", "Te llevamos al resumen para los primeros pasos.");
-      router.push(`/trip/${encodeURIComponent(newTripId)}/summary?recien=1`);
+      toast.success(
+        creationMode === "expenses" ? "Grupo creado" : "Viaje creado",
+        creationMode === "expenses" ? "Empieza añadiendo gastos." : "Te llevamos al resumen para los primeros pasos."
+      );
+      router.push(
+        creationMode === "expenses"
+          ? `/trip/${encodeURIComponent(newTripId)}/expenses?recien=1`
+          : `/trip/${encodeURIComponent(newTripId)}/summary?recien=1`
+      );
       router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo crear el viaje.";
@@ -122,10 +131,35 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
   return (
     <form onSubmit={handleCreateTrip} className="card-soft p-6">
       <div className="mb-5">
-        <h2 className="mb-2 text-2xl font-bold">Crear nuevo viaje</h2>
+        <h2 className="mb-2 text-2xl font-bold">Crear nuevo</h2>
         <p className="text-slate-600">
-          Crea un viaje y automáticamente quedarás añadido como owner.
+          Viaje con plan y mapa, o solo un grupo para repartir gastos.
         </p>
+      </div>
+
+      <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <button
+          type="button"
+          onClick={() => setCreationMode("travel")}
+          className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+            creationMode === "travel"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          ✈️ Viaje
+        </button>
+        <button
+          type="button"
+          onClick={() => setCreationMode("expenses")}
+          className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+            creationMode === "expenses"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          💸 Grupo de gastos
+        </button>
       </div>
 
       {!isPremium ? (
@@ -158,21 +192,24 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className="mb-1 block text-sm font-medium">
-            Nombre del viaje
+            {creationMode === "expenses" ? "Nombre del grupo" : "Nombre del viaje"}
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
-            placeholder="Ej. Japón 2026"
+            placeholder={creationMode === "expenses" ? "Ej. Piso compartido" : "Ej. Japón 2026"}
           />
         </div>
 
-        <div className="md:col-span-2">
-          <TripPlacesFields places={places} onChange={setPlaces} />
-        </div>
+        {creationMode === "travel" ? (
+          <div className="md:col-span-2">
+            <TripPlacesFields places={places} onChange={setPlaces} />
+          </div>
+        ) : null}
 
+        {creationMode === "travel" ? (
         <div className="md:col-span-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Fecha inicio</label>
@@ -194,6 +231,7 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
             />
           </div>
         </div>
+        ) : null}
 
         <div className="md:col-span-2 max-w-xl">
           <label className="mb-1 block text-sm font-medium">Moneda base</label>
@@ -221,7 +259,9 @@ export default function CreateTripForm({ isPremium = false }: { isPremium?: bool
             ? step === "trip"
               ? "Creando viaje..."
               : "Creando..."
-            : "Crear viaje"}
+            : creationMode === "expenses"
+              ? "Crear grupo"
+              : "Crear viaje"}
         </button>
       </div>
     </form>

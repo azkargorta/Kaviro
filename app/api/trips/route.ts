@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     const start_date = typeof body?.start_date === "string" ? body.start_date : null;
     const end_date = typeof body?.end_date === "string" ? body.end_date : null;
     const base_currency = typeof body?.base_currency === "string" ? body.base_currency.trim().toUpperCase() : "EUR";
+    const trip_mode = body?.trip_mode === "expenses" ? "expenses" : "travel";
 
     if (!name) return NextResponse.json({ error: "El nombre del viaje es obligatorio." }, { status: 400 });
     if (start_date && end_date && start_date > end_date) {
@@ -40,10 +41,11 @@ export async function POST(req: Request) {
 
     const created = await createTripWithOwner(supabase, user, {
       name,
-      destination: destination || null,
-      start_date,
-      end_date,
+      destination: trip_mode === "expenses" ? null : destination || null,
+      start_date: trip_mode === "expenses" ? null : start_date,
+      end_date: trip_mode === "expenses" ? null : end_date,
       base_currency: /^[A-Z]{3}$/.test(base_currency) ? base_currency : "EUR",
+      trip_mode,
     });
 
     if ("error" in created) {

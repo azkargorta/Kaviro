@@ -29,9 +29,9 @@ function isActivePath(pathname: string, href: string, key: string) {
 export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
   const isDark = useIsDarkMode();
-  const { isAgencyTrip, isAgencyManaged, useAgencyBranding, agencyBranding } = useTripWorkspace();
+  const { isAgencyTrip, isAgencyManaged, useAgencyBranding, agencyBranding, tripMode } = useTripWorkspace();
 
-  const visibleItems = getTripNavItems(isAgencyTrip, isAgencyManaged).filter(
+  const visibleItems = getTripNavItems(isAgencyTrip, isAgencyManaged, tripMode).filter(
     (item) => !item.isPremiumGated || isPremium
   );
 

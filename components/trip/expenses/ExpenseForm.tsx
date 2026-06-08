@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { ALL_CURRENCIES } from "@/lib/currencies";
 import type { ExpenseAnalysis, ExpenseFormInput } from "@/hooks/useTripExpenses";
 import type { ExpenseDetectedData } from "@/components/trip/expenses/ExpenseAnalyzerPanel";
@@ -50,6 +51,59 @@ function normalizeNameArray(value: unknown) {
   return value.map(normalizeName).filter(Boolean);
 }
 
+function formatMoney(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("es-ES", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+}
+
+function Chip({
+  name,
+  active,
+  tone,
+  onClick,
+}: {
+  name: string;
+  active: boolean;
+  tone: "paid" | "split";
+  onClick: () => void;
+}) {
+  const activeClass =
+    tone === "paid"
+      ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
+      : "border-sky-500 bg-sky-500 text-white shadow-sm";
+  const idleClass =
+    tone === "paid"
+      ? "border-slate-200 bg-white text-slate-700 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+      : "border-slate-200 bg-slate-50 text-slate-600 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-[40px] rounded-full border px-4 py-2 text-sm font-bold transition active:scale-95 ${
+        active ? activeClass : idleClass
+      }`}
+    >
+      {name}
+    </button>
+  );
+}
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
+
 export default function ExpenseForm({
   saving = false,
   existingParticipants,
@@ -60,10 +114,13 @@ export default function ExpenseForm({
   onCancelEdit,
   onSubmit,
 }: Props) {
+  const isMobile = useIsMobile();
+  const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
+  const [moreOpen, setMoreOpen] = useState(false);
+
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("general");
   const [payerName, setPayerName] = useState("");
-  const [participantNames, setParticipantNames] = useState<string[]>([]);
   const [paidByNames, setPaidByNames] = useState<string[]>([]);
   const [owedByNames, setOwedByNames] = useState<string[]>([]);
   const [amount, setAmount] = useState("");
@@ -87,14 +144,36 @@ export default function ExpenseForm({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [existingParticipants, registeredTravelers]);
 
+  const numericAmount = useMemo(() => {
+    const normalized = String(amount || "").trim().replace(/\s/g, "").replace(",", ".");
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : 0;
+  }, [amount]);
+
+  const perPerson = useMemo(() => {
+    if (numericAmount <= 0 || owedByNames.length === 0) return null;
+    return Math.round((numericAmount / owedByNames.length) * 100) / 100;
+  }, [numericAmount, owedByNames.length]);
+
+  const participantNames = useMemo(() => {
+    const set = new Set([...paidByNames, ...owedByNames]);
+    return Array.from(set);
+  }, [paidByNames, owedByNames]);
+
   useEffect(() => {
-    if (!editingExpense) return;
+    if (!editingExpense) {
+      if (travelerOptions.length && owedByNames.length === 0 && !isEditing) {
+        setOwedByNames([...travelerOptions]);
+      }
+      return;
+    }
     setTitle(editingExpense.title || "");
     setCategory(editingExpense.category || "general");
     setPayerName(editingExpense.payer_name || "");
-    setParticipantNames(normalizeNameArray(editingExpense.participant_names));
-    setPaidByNames(normalizeNameArray(editingExpense.paid_by_names));
-    setOwedByNames(normalizeNameArray(editingExpense.owed_by_names));
+    const paid = normalizeNameArray(editingExpense.paid_by_names);
+    const owed = normalizeNameArray(editingExpense.owed_by_names);
+    setPaidByNames(paid.length ? paid : normalizeNameArray(editingExpense.participant_names));
+    setOwedByNames(owed.length ? owed : normalizeNameArray(editingExpense.participant_names));
     setAmount(editingExpense.amount != null ? String(editingExpense.amount) : "");
     setCurrency(editingExpense.currency || baseCurrency);
     setExpenseDate(editingExpense.expense_date || "");
@@ -102,69 +181,65 @@ export default function ExpenseForm({
     setKeepExistingAttachment(Boolean(editingExpense.attachment_name));
     setAnalysisData(editingExpense.analysis_data || null);
     setAttachment(null);
-  }, [editingExpense]);
+    setMobileStep(1);
+  }, [editingExpense, baseCurrency, isEditing, travelerOptions]);
 
   useEffect(() => {
     if (!detectedData || isEditing) return;
     if (detectedData.title) setTitle(detectedData.title);
     if (detectedData.category) setCategory(detectedData.category);
     if (detectedData.amount != null) setAmount(String(detectedData.amount));
-    // Usamos la moneda detectada si es válida; si no, la base del viaje.
     const detectedCurrency =
       typeof detectedData.currency === "string" ? detectedData.currency.trim().toUpperCase() : "";
     const isSupported = Boolean(ALL_CURRENCIES.find((c) => c.code === detectedCurrency));
     setCurrency(isSupported ? detectedCurrency : baseCurrency);
     if (detectedData.expenseDate) setExpenseDate(detectedData.expenseDate);
     if (detectedData.file) setAttachment(detectedData.file);
-    // No guardamos el File dentro de analysis_data (rompe JSON / DB y no aporta valor).
-    const { file: _file, ...safeAnalysis } = detectedData as any;
-    setAnalysisData(safeAnalysis);
-  }, [detectedData, isEditing]);
+    const { file: _file, ...safeAnalysis } = detectedData as ExpenseDetectedData & { file?: File };
+    setAnalysisData(safeAnalysis as ExpenseAnalysis);
+  }, [detectedData, isEditing, baseCurrency]);
 
-  function toggleParticipant(name: string) {
-    setParticipantNames((current) => {
-      const next = current.includes(name)
-        ? current.filter((item) => item !== name)
-        : [...current, name];
+  useEffect(() => {
+    const clean = normalizeName(payerName);
+    if (!clean) return;
+    setPaidByNames((prev) => (prev.includes(clean) ? prev : [clean, ...prev.filter((n) => n !== clean)]));
+    setOwedByNames((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
+  }, [payerName]);
 
-      setPaidByNames((prev) => prev.filter((item) => next.includes(item)));
-      setOwedByNames((prev) => prev.filter((item) => next.includes(item)));
-      return next;
-    });
-  }
-
-  function toggleIn(target: "paid" | "owed", name: string) {
-    const setter = target === "paid" ? setPaidByNames : setOwedByNames;
-    setter((current) =>
-      current.includes(name) ? current.filter((item) => item !== name) : [...current, name]
+  function togglePaid(name: string) {
+    setPaidByNames((current) =>
+      current.includes(name) ? current.filter((n) => n !== name) : [...current, name]
     );
   }
 
-  function setAllParticipantsAsDebtors() {
-    setOwedByNames([...participantNames]);
+  function toggleOwed(name: string) {
+    setOwedByNames((current) =>
+      current.includes(name) ? current.filter((n) => n !== name) : [...current, name]
+    );
   }
 
-  function setOnlyPayerAsPaid() {
-    const clean = normalizeName(payerName);
-    if (!clean) return;
-    if (!participantNames.includes(clean)) {
-      setParticipantNames((current) => [...current, clean]);
-    }
-    setPaidByNames([clean]);
+  function selectAllOwed() {
+    setOwedByNames([...travelerOptions]);
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleSubmit(event?: React.FormEvent) {
+    event?.preventDefault();
     setError(null);
-    const normalizedAmount = String(amount || "").trim().replace(/\s/g, "").replace(",", ".");
-    const numericAmount = Number(normalizedAmount);
 
     if (!title.trim()) {
-      setError("Introduce el nombre del gasto.");
+      setError("Introduce el concepto del gasto.");
       return;
     }
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setError("El importe no es válido.");
+      return;
+    }
+    if (!paidByNames.length) {
+      setError("Indica quién ha pagado.");
+      return;
+    }
+    if (!owedByNames.length) {
+      setError("Indica entre quién se reparte.");
       return;
     }
 
@@ -174,7 +249,7 @@ export default function ExpenseForm({
           id: editingExpense?.id,
           title: title.trim(),
           category,
-          payerName: payerName.trim(),
+          payerName: payerName.trim() || paidByNames[0] || "",
           participantNames,
           paidByNames,
           owedByNames,
@@ -195,168 +270,209 @@ export default function ExpenseForm({
         setTitle("");
         setCategory("general");
         setPayerName("");
-        setParticipantNames([]);
         setPaidByNames([]);
-        setOwedByNames([]);
+        setOwedByNames([...travelerOptions]);
         setAmount("");
-        setCurrency("EUR");
+        setCurrency(baseCurrency);
         setExpenseDate("");
         setNotes("");
         setAttachment(null);
         setKeepExistingAttachment(true);
         setAnalysisData(null);
+        setMobileStep(1);
       }
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "No se pudo guardar el gasto.";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "No se pudo guardar el gasto.");
     }
   }
 
+  const chipsBlock = (
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Quién pagó</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {travelerOptions.map((name) => (
+            <Chip key={`paid-${name}`} name={name} active={paidByNames.includes(name)} tone="paid" onClick={() => togglePaid(name)} />
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">Entre quién se reparte</p>
+          <button type="button" onClick={selectAllOwed} className="text-xs font-bold text-[var(--brand)] underline">
+            Todos
+          </button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {travelerOptions.map((name) => (
+            <Chip key={`owed-${name}`} name={name} active={owedByNames.includes(name)} tone="split" onClick={() => toggleOwed(name)} />
+          ))}
+        </div>
+      </div>
+      {perPerson != null ? (
+        <p className="text-center text-sm font-extrabold text-slate-800 dark:text-slate-100">
+          → {formatMoney(perPerson, currency)} por persona
+        </p>
+      ) : null}
+    </div>
+  );
+
+  const moreOptions = (
+    <div className="space-y-3">
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Categoría</span>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
+          {CATEGORIES.map((item) => (
+            <option key={item.value} value={item.value}>{item.icon} {item.label}</option>
+          ))}
+        </select>
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Fecha</span>
+        <input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Notas</span>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
+      </label>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
+        {isEditing && editingExpense?.attachment_name ? (
+          <label className="mb-2 inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={keepExistingAttachment} onChange={(e) => setKeepExistingAttachment(e.target.checked)} />
+            <span>Mantener: {editingExpense.attachment_name}</span>
+          </label>
+        ) : null}
+        <input type="file" accept="image/*,.pdf" onChange={(e) => setAttachment(e.target.files?.[0] || null)} className="w-full text-sm" />
+      </div>
+    </div>
+  );
+
+  const step1Fields = (
+    <>
+      <label className="block text-center">
+        <span className="text-sm font-semibold text-slate-600">Importe</span>
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          inputMode="decimal"
+          className="mt-2 w-full border-0 bg-transparent text-center text-4xl font-black text-slate-900 outline-none dark:text-white"
+          placeholder="0,00"
+        />
+        <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="mt-1 mx-auto block rounded-lg border border-slate-200 px-2 py-1 text-sm font-bold">
+          {ALL_CURRENCIES.map((item) => (
+            <option key={item.code} value={item.code}>{item.code}</option>
+          ))}
+        </select>
+      </label>
+      {perPerson != null && owedByNames.length > 0 ? (
+        <p className="text-center text-sm font-bold text-[var(--brand)]">
+          {formatMoney(perPerson, currency)} / persona
+        </p>
+      ) : null}
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Concepto</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" placeholder="Cena, taxi…" />
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Quién ha pagado</span>
+        <select value={payerName} onChange={(e) => setPayerName(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
+          <option value="">Seleccionar…</option>
+          {travelerOptions.map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
+
+  const confirmSummary = (
+    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-[#1E293B] dark:bg-[#080C14]">
+      <p><span className="font-bold">{formatMoney(numericAmount, currency)}</span> · {title || "Sin concepto"}</p>
+      <p>Pagó: <span className="font-semibold">{paidByNames.join(", ") || "—"}</span></p>
+      <p>Reparto: <span className="font-semibold">{owedByNames.join(", ") || "—"}</span></p>
+      {perPerson != null ? <p className="font-bold text-[var(--brand)]">{formatMoney(perPerson, currency)} cada uno</p> : null}
+    </div>
+  );
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] md:rounded-2xl">
       <div>
         <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
           <span>💸</span>
           <span>{isEditing ? "Editar gasto" : isDuplicating ? "Duplicar gasto" : "Nuevo gasto"}</span>
         </div>
-        <h3 className="mt-3 text-lg font-semibold text-slate-900 dark:text-white">
-          {isEditing ? "Editar gasto" : isDuplicating ? "Duplicar gasto" : "Añadir gasto"}
-        </h3>
+        {isMobile && !isEditing ? (
+          <p className="mt-2 text-xs font-bold text-slate-500">Paso {mobileStep} de 3</p>
+        ) : null}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+      <form
+        onSubmit={(e) => {
+          if (isMobile && !isEditing && mobileStep < 3) {
+            e.preventDefault();
+            if (mobileStep === 1) setMobileStep(2);
+            else if (mobileStep === 2) setMobileStep(3);
+            return;
+          }
+          void handleSubmit(e);
+        }}
+        className="mt-5 space-y-4"
+      >
         {saving ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-[#1E293B] dark:bg-[#080C14] dark:text-slate-300">
-            Guardando… Si esto tarda más de 20s, suele ser un problema de permisos/bucket al subir el adjunto.
-          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Guardando…</div>
         ) : null}
 
-        <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800">Concepto</span>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-        </label>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Categoría</span>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
-              {CATEGORIES.map((item) => (
-                <option key={item.value} value={item.value}>{item.icon} {item.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Quién ha pagado</span>
-            <select value={payerName} onChange={(e) => setPayerName(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
-              <option value="">Sin definir</option>
-              {travelerOptions.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-            <div className="mt-2">
-              <button type="button" onClick={setOnlyPayerAsPaid} className="text-xs font-semibold text-slate-600 underline underline-offset-2">
-                Usar este viajero como pagador real
-              </button>
-            </div>
-          </label>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="block space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Importe</span>
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Moneda</span>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3">
-              {ALL_CURRENCIES.map((item) => (
-                <option key={item.code} value={item.code}>{item.code} · {item.name}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-semibold text-slate-800">Fecha</span>
-            <input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-          </label>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-          <div className="text-sm font-semibold text-slate-800">Viajeros registrados</div>
-          <p className="mt-1 text-sm text-slate-500">
-            Marca los viajeros implicados y luego decide entre cuáles se ha pagado y entre cuáles se reparte.
-          </p>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {travelerOptions.length === 0 ? (
-              <p className="text-sm text-slate-500">No se han encontrado viajeros registrados.</p>
-            ) : (
-              travelerOptions.map((name) => (
-                <label key={name} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
-                  <input type="checkbox" checked={participantNames.includes(name)} onChange={() => toggleParticipant(name)} />
-                  <span>{name}</span>
-                </label>
-              ))
-            )}
-          </div>
-
-          {participantNames.length ? (
-            <>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={setAllParticipantsAsDebtors} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
-                  Repartir entre todos los viajeros seleccionados
+        {isMobile && !isEditing ? (
+          <>
+            {mobileStep === 1 ? step1Fields : null}
+            {mobileStep === 2 ? chipsBlock : null}
+            {mobileStep === 3 ? (
+              <>
+                {confirmSummary}
+                <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold">
+                  Más opciones
+                  {moreOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {participantNames.map((name) => (
-                  <div key={name} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-[#1E293B] dark:bg-[#0F1623]">
-                    <div className="font-semibold text-slate-900 dark:text-white">{name}</div>
-                    <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" checked={paidByNames.includes(name)} onChange={() => toggleIn("paid", name)} />
-                        <span>Ha pagado</span>
-                      </label>
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" checked={owedByNames.includes(name)} onChange={() => toggleIn("owed", name)} />
-                        <span>Participa en el reparto</span>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : null}
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 dark:border-[#1E293B] dark:bg-[#080C14]">
-          <div className="text-sm font-semibold text-slate-800">Archivo adjunto</div>
-          {isEditing && editingExpense?.attachment_name ? (
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={keepExistingAttachment} onChange={(e) => setKeepExistingAttachment(e.target.checked)} />
-              <span>Mantener archivo actual: {editingExpense.attachment_name}</span>
-            </label>
-          ) : null}
-          <input type="file" accept="image/*,.pdf" onChange={(e) => setAttachment(e.target.files?.[0] || null)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-          {attachment ? <div className="text-sm text-slate-600 dark:text-slate-400">Nuevo archivo: {attachment.name}</div> : null}
-        </div>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800">Notas</span>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-        </label>
+                {moreOpen ? moreOptions : null}
+              </>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {step1Fields}
+            <button type="button" onClick={selectAllOwed} className="w-full rounded-xl border border-dashed border-slate-300 py-2 text-sm font-bold text-slate-700">
+              Repartir entre todos ({travelerOptions.length})
+            </button>
+            {chipsBlock}
+            <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold">
+              Más opciones (fecha, categoría, notas)
+              {moreOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+            {moreOpen ? moreOptions : null}
+          </>
+        )}
 
         {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
         <div className="flex flex-wrap gap-3">
+          {isMobile && !isEditing && mobileStep > 1 ? (
+            <button type="button" onClick={() => setMobileStep((s) => (s - 1) as 1 | 2)} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold">
+              Atrás
+            </button>
+          ) : null}
           <button type="submit" disabled={saving} className={`rounded-xl px-4 py-3 text-sm font-semibold ${saving ? "bg-slate-200 text-slate-500" : "bg-slate-950 text-white"}`}>
-            {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar gasto"}
+            {saving
+              ? "Guardando..."
+              : isMobile && !isEditing && mobileStep < 3
+                ? mobileStep === 1
+                  ? "Siguiente"
+                  : "Revisar"
+                : isEditing
+                  ? "Guardar cambios"
+                  : "Guardar gasto"}
           </button>
           {isEditing && onCancelEdit ? (
-            <button type="button" onClick={onCancelEdit} className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200">
+            <button type="button" onClick={onCancelEdit} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold">
               Cancelar
             </button>
           ) : null}

@@ -236,7 +236,7 @@ export default function TripExpensesView({
   }
 
   return (
-    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden pb-20 md:pb-0">
       {!canManageExpenses ? <TripReadOnlyBanner moduleLabel="gastos" /> : null}
 
       {/* Tab switcher */}
@@ -633,6 +633,22 @@ export default function TripExpensesView({
 
       {/* Listado movido dentro de la columna izquierda del grid */}
       </div>
+
+      {canManageExpenses && !shouldShowForm && !editingExpense ? (
+        <button
+          type="button"
+          onClick={() => {
+            setIsAddOpen(true);
+            setIsAnalyzeOpen(false);
+            setEditingExpense(null);
+            setDetectedData(null);
+          }}
+          className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] active:scale-95 md:hidden"
+          aria-label="Añadir gasto"
+        >
+          <Plus className="h-7 w-7" />
+        </button>
+      ) : null}
     </div>
   );
 }

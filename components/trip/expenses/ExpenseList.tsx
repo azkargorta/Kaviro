@@ -130,6 +130,35 @@ export default function ExpenseList({
 
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      {filterOptions.categories.length > 0 ? (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("all")}
+            className={`rounded-full px-3 py-1 text-xs font-bold ${
+              categoryFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            Todas
+          </button>
+          {filterOptions.categories.map((c) => {
+            const meta = categoryMeta(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategoryFilter(c)}
+                className={`rounded-full px-3 py-1 text-xs font-bold ${
+                  categoryFilter === c ? "bg-slate-900 text-white" : `${meta.bg} ${meta.text}`
+                }`}
+              >
+                {meta.icon} {meta.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">Gastos registrados</h3>
