@@ -24,6 +24,9 @@ export const DASHBOARD_TRIP_BADGE_ACCENTS = {
     "from-emerald-100 to-teal-50 border-emerald-200 text-emerald-900 dark:from-emerald-950/80 dark:to-teal-950/60 dark:border-emerald-500/45 dark:text-emerald-100",
 } as const;
 
+export type DashboardTripBadgeAccent =
+  (typeof DASHBOARD_TRIP_BADGE_ACCENTS)[keyof typeof DASHBOARD_TRIP_BADGE_ACCENTS];
+
 export const DASHBOARD_EXPENSE_GROUP_ACCENT = DASHBOARD_TRIP_BADGE_ACCENTS.expenseGroup;
 
 export function isExpenseGroupTrip(trip: Pick<DashboardTrip, "trip_mode">): boolean {

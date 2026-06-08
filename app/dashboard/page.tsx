@@ -28,6 +28,7 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { countUnreadAnnouncementsByTrip } from "@/lib/dashboard-announcement-unread";
 import {
   DASHBOARD_TRIP_BADGE_ACCENTS,
+  type DashboardTripBadgeAccent,
   isExpenseGroupTrip,
   splitDashboardTrips,
   type DashboardTrip,
@@ -253,7 +254,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         };
       }
       let badge = "Pendiente";
-      let accent = DASHBOARD_TRIP_BADGE_ACCENTS.unscheduled;
+      let accent: DashboardTripBadgeAccent = DASHBOARD_TRIP_BADGE_ACCENTS.unscheduled;
       if (currentIds.has(t.id)) {
         badge = "En curso";
         accent = DASHBOARD_TRIP_BADGE_ACCENTS.current;
