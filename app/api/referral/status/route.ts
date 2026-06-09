@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/referral/status
  * Returns the current user's referral code and stats.

@@ -9,8 +9,14 @@ const supabaseStorageHost = (() => {
   }
 })();
 
+const isCi = process.env.CI === "true";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // En CI ya corre `npm run lint`; evita un segundo pase ESLint que sube el pico de RAM.
+    ignoreDuringBuilds: isCi,
+  },
   images: {
     remotePatterns: [
       {
@@ -48,9 +54,13 @@ const nextConfig = {
     // Evita que Next intente "bundle/trazar" los workers de tesseract en runtime,
     // lo que en Windows puede acabar en `.next/worker-script/...` MODULE_NOT_FOUND.
     serverComponentsExternalPackages: ["tesseract.js", "unpdf", "@napi-rs/canvas"],
-    // Mantén assets binarios disponibles en entornos serverless/trace.
+    // Solo rutas que cargan OCR/PDF; incluir **/*.wasm en todas las APIs agotaba RAM en `next build`.
     outputFileTracingIncludes: {
-      "/api/**/*": ["./node_modules/**/*.wasm", "./node_modules/**/*.proto"],
+      "/api/expense/analyze": [
+        "./node_modules/tesseract.js/**",
+        "./node_modules/@napi-rs/canvas/**",
+        "./node_modules/unpdf/**",
+      ],
     },
   },
 };
