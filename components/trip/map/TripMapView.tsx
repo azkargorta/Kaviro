@@ -3,7 +3,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
-import { CalendarDays, ChevronDown, Clock, MapPin, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  Clock,
+  List,
+  MapPin,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Save,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import PlaceAutocompleteInput from "@/components/PlaceAutocompleteInput";
 import { btnPrimary } from "@/components/ui/brandStyles";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
@@ -202,6 +217,7 @@ function MapSurface({
   onMapCreated,
   isDarkMap = false,
   compact = false,
+  mobileFullBleed = false,
 }: {
   visible: boolean;
   bounds: L.LatLngBounds | null;
@@ -212,12 +228,22 @@ function MapSurface({
   isDarkMap?: boolean;
   /** Mapa más bajo cuando el editor de ruta está abierto (caber formulario sin scroll). */
   compact?: boolean;
+  /** Móvil: mapa primero, más alto y sin cabecera de card. */
+  mobileFullBleed?: boolean;
 }) {
   if (!visible) return null;
 
   return (
-    <section className="min-w-0 max-w-full overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm lg:sticky lg:top-4 lg:self-start">
-      <div className="flex min-w-0 flex-col gap-2 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <section
+      className={`min-w-0 max-w-full overflow-hidden border border-slate-200 bg-white shadow-sm lg:sticky lg:top-4 lg:self-start ${
+        mobileFullBleed ? "max-xl:rounded-2xl" : "rounded-[28px]"
+      }`}
+    >
+      <div
+        className={`flex min-w-0 flex-col gap-2 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${
+          mobileFullBleed ? "max-xl:hidden" : ""
+        }`}
+      >
         <div className="min-w-0">
           <div className="text-sm font-extrabold text-slate-950">Vista del mapa</div>
           <div className="mt-1 text-xs text-slate-600">Recorridos, focos y lugares del plan en tiempo real.</div>
@@ -228,8 +254,12 @@ function MapSurface({
       </div>
       <div
         data-tour="map-container"
-        className={`h-[min(420px,55vh)] w-full bg-slate-100 sm:h-[min(480px,50vh)] ${
-          compact ? "lg:h-[min(340px,38vh)]" : "lg:h-[calc(100vh-7.5rem)]"
+        className={`w-full bg-slate-100 ${
+          mobileFullBleed
+            ? "h-[min(52dvh,480px)] max-xl:h-[calc(100dvh-15rem-env(safe-area-inset-bottom,0px))] sm:max-xl:h-[calc(100dvh-14rem)]"
+            : `h-[min(420px,55vh)] sm:h-[min(480px,50vh)] ${
+                compact ? "lg:h-[min(340px,38vh)]" : "lg:h-[calc(100vh-7.5rem)]"
+              }`
         }`}
       >
         <MapContainer center={DEFAULT_CENTER} zoom={4} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
@@ -375,16 +405,31 @@ export default function TripMapView({
   const [showRoutesList, setShowRoutesList] = useState(false);
   const [routesBulkMode, setRoutesBulkMode] = useState(false);
   const [selectedRouteKeys, setSelectedRouteKeys] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
+  type MobileMapPanel = null | "menu" | "filters" | "routes" | "editor" | "auto";
+  const [mobilePanel, setMobilePanel] = useState<MobileMapPanel>(null);
 
   useEffect(() => {
-    if (!isRouteFormOpen) return;
+    if (!isRouteFormOpen || isMobile) return;
     const id = window.setTimeout(() => {
       const el = routeFormPanelRef.current;
       if (!el) return;
       el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
     }, 180);
     return () => window.clearTimeout(id);
-  }, [isRouteFormOpen]);
+  }, [isRouteFormOpen, isMobile]);
+
+  useEffect(() => {
+    if (!mapRef) return;
+    const id = window.setTimeout(() => {
+      try {
+        mapRef.invalidateSize();
+      } catch {
+        /* */
+      }
+    }, 150);
+    return () => window.clearTimeout(id);
+  }, [mapRef, isMobile, mobilePanel, isRouteFormOpen]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -1291,13 +1336,94 @@ export default function TripMapView({
     [filteredRouteKeys, reorderDay]
   );
 
+  function openNewRouteForm() {
+    const dayPref =
+      isSingleDayFilter(filterDateFrom, filterDateTo) && filterDateFrom ? filterDateFrom : filterDateFrom || null;
+    setIsRouteFormOpen(true);
+    setTravelMode("DRIVING");
+    setForm(
+      defaultRouteForm(
+        defaultNewRouteDate({
+          preferred: dayPref,
+          tripStart: tripStartDate,
+          tripDates,
+        })
+      )
+    );
+    setRoutePreview(null);
+    setOrigin({ address: "", latitude: null, longitude: null });
+    setStop({ address: "", latitude: null, longitude: null });
+    setDestination({ address: "", latitude: null, longitude: null });
+    setOriginPlanId("");
+    setStopPlanId("");
+    setDestinationPlanId("");
+  }
+
+  function closeRouteEditor() {
+    setIsRouteFormOpen(false);
+    setMobilePanel(null);
+    setForm(
+      defaultRouteForm(
+        defaultNewRouteDate({
+          preferred: form.routeDate,
+          tripStart: tripStartDate,
+          tripDates,
+        })
+      )
+    );
+    setRoutePreview(null);
+    setOrigin({ address: "", latitude: null, longitude: null });
+    setStop({ address: "", latitude: null, longitude: null });
+    setDestination({ address: "", latitude: null, longitude: null });
+    setOriginPlanId("");
+    setStopPlanId("");
+    setDestinationPlanId("");
+  }
+
+  const routeEditorPanel = (
+    <RouteEditorPanel
+      ref={routeFormPanelRef}
+      editing={!!form.editingRouteId}
+      form={form}
+      setForm={setForm}
+      travelMode={travelMode}
+      onTravelModeChange={(m) => {
+        setTravelMode(m);
+        setRoutePreview(null);
+      }}
+      effectiveRouteColor={effectiveRouteColor}
+      routeDayForPlans={routeDayForPlans}
+      planSelectOptions={planSelectOptions}
+      origin={origin}
+      setOrigin={setOrigin}
+      stop={stop}
+      setStop={setStop}
+      destination={destination}
+      setDestination={setDestination}
+      originPlanId={originPlanId}
+      setOriginPlanId={setOriginPlanId}
+      stopPlanId={stopPlanId}
+      setStopPlanId={setStopPlanId}
+      destinationPlanId={destinationPlanId}
+      setDestinationPlanId={setDestinationPlanId}
+      onSelectPlace={onSelectPlace}
+      routePreview={routePreview}
+      calculatingRoute={calculatingRoute}
+      saving={saving}
+      savingRoute={savingRoute}
+      onCalculate={() => void calculateRoutePreview()}
+      onSave={() => void createOrUpdateRoute()}
+      saveButtonClass={btnPrimary}
+    />
+  );
+
   return (
-    <div className="min-w-0 max-w-full space-y-4 overflow-x-hidden">
+    <div className="min-w-0 max-w-full space-y-4 overflow-x-hidden pb-4 md:pb-0">
       {!canManageMap ? <TripReadOnlyBanner moduleLabel="rutas y mapa" /> : null}
       {canManageMap ? (
       <section
         data-tour="map-ai-section"
-        className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
+        className="hidden overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm md:block"
       >
         <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -1392,7 +1518,7 @@ export default function TripMapView({
       ) : null}
 
       {canManageMap && routesDraft?.routes?.length ? (
-        <div className="rounded-3xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 px-5 py-4 shadow-sm dark:border-[#F87171]/20 dark:from-[#F87171]/8 dark:via-[#0F1623] dark:to-[#0F1623]">
+        <div className="hidden rounded-3xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-slate-50 px-5 py-4 shadow-sm md:block dark:border-[#F87171]/20 dark:from-[#F87171]/8 dark:via-[#0F1623] dark:to-[#0F1623]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--brand-text)]">Borrador del asistente</div>
@@ -1488,9 +1614,77 @@ export default function TripMapView({
 
       <div className="flex min-w-0 flex-col gap-6">
       <div
-        className={`grid min-w-0 gap-6 ${isMapVisible ? "xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]" : "grid-cols-1"}`}
+        className={`grid min-w-0 gap-6 max-xl:flex max-xl:flex-col ${
+          isMapVisible ? "xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]" : "grid-cols-1"
+        }`}
       >
-        <aside className="min-w-0 space-y-4">
+        <div className="relative max-xl:order-first">
+          <MapSurface
+            visible={isMapVisible}
+            bounds={bounds}
+            boundsKey={boundsKey}
+            lines={mapEntities.lines}
+            markers={mapEntities.markers}
+            onMapCreated={(m) => setMapRef(m)}
+            isDarkMap={typeof document !== "undefined" && document.documentElement.classList.contains("dark")}
+            compact={isRouteFormOpen && !isMobile}
+            mobileFullBleed={isMobile}
+          />
+          {isMobile ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[500] flex justify-center gap-2 px-3">
+              <div className="pointer-events-auto flex gap-1.5 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-lg backdrop-blur-sm dark:border-slate-600 dark:bg-slate-900/95">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRoutesList(true);
+                    setMobilePanel("routes");
+                  }}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-white"
+                >
+                  <List className="h-4 w-4" aria-hidden />
+                  Rutas
+                  {routesState.length > 0 ? (
+                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-extrabold dark:bg-slate-700">
+                      {routesState.length}
+                    </span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobilePanel("filters")}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-white"
+                >
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                  Filtros
+                </button>
+                {canManageMap ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openNewRouteForm();
+                      setMobilePanel("editor");
+                    }}
+                    className="inline-flex min-h-[40px] items-center gap-1 rounded-xl bg-[var(--brand)] px-3 text-xs font-bold text-white"
+                    data-tour="map-new-route-btn"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden />
+                    Nueva
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setMobilePanel("menu")}
+                  className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-xl border border-slate-200 text-slate-700 dark:border-slate-600 dark:text-slate-200"
+                  aria-label="Más opciones"
+                >
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="max-xl:hidden min-w-0 space-y-4">
         {error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>
         ) : null}
@@ -1919,55 +2113,229 @@ export default function TripMapView({
           )}
         </section>
         </aside>
+      </div>
+      {canManageMap && isRouteFormOpen && !isMobile ? routeEditorPanel : null}
+      </div>
 
-        <MapSurface
-          visible={isMapVisible}
-          bounds={bounds}
-          boundsKey={boundsKey}
-          lines={mapEntities.lines}
-          markers={mapEntities.markers}
-          onMapCreated={(m) => setMapRef(m)}
-          isDarkMap={typeof document !== "undefined" && document.documentElement.classList.contains("dark")}
-          compact={isRouteFormOpen}
-        />
-      </div>
-      {canManageMap && isRouteFormOpen ? (
-        <RouteEditorPanel
-          ref={routeFormPanelRef}
-          editing={!!form.editingRouteId}
-          form={form}
-          setForm={setForm}
-          travelMode={travelMode}
-          onTravelModeChange={(m) => {
-            setTravelMode(m);
-            setRoutePreview(null);
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "menu"}
+        onClose={() => setMobilePanel(null)}
+        title="Más opciones"
+      >
+        <div className="space-y-1">
+          {canManageMap ? (
+            <button
+              type="button"
+              onClick={() => {
+                setAutoRoutesOpen(true);
+                setMobilePanel("auto");
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white"
+            >
+              <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />
+              Crear rutas con IA
+              {!isPremium ? (
+                <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">PRO</span>
+              ) : null}
+            </button>
+          ) : null}
+          {routesDraft?.routes?.length ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMobilePanel(null);
+                setRoutesDraftIndex(0);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white"
+            >
+              Revisar borrador IA ({routesDraft.routes.length})
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              setFocusedRouteKey(null);
+              setMobilePanel(null);
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden />
+            Mostrar todas las rutas
+          </button>
+        </div>
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "filters"}
+        onClose={() => setMobilePanel(null)}
+        title="Filtros y capas"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs font-semibold text-slate-700">
+              Desde
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => {
+                  const v = normalizeFilterDate(e.target.value);
+                  setFilterDateFrom(v);
+                  if (filterDateTo && v && v > filterDateTo) setFilterDateTo(v);
+                  setFocusedRouteKey(null);
+                }}
+                className="mt-1.5 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold"
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-700">
+              Hasta
+              <input
+                type="date"
+                value={filterDateTo}
+                min={filterDateFrom || undefined}
+                onChange={(e) => {
+                  setFilterDateTo(normalizeFilterDate(e.target.value));
+                  setFocusedRouteKey(null);
+                }}
+                className="mt-1.5 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setFilterDateFrom("");
+                setFilterDateTo("");
+                setFocusedRouteKey(null);
+              }}
+              className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold"
+            >
+              Todos los días
+            </button>
+            {(Array.isArray(tripDates) ? tripDates : []).slice(0, 6).map((d) => (
+              <button
+                key={`mquick-${d}`}
+                type="button"
+                onClick={() => {
+                  setFilterDateFrom(d);
+                  setFilterDateTo(d);
+                  setFocusedRouteKey(null);
+                }}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                  filterDateFrom === d && filterDateTo === d
+                    ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                    : "border-slate-200"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPlanMarkers((v) => !v)}
+              className={`min-h-[40px] rounded-xl border px-3 text-xs font-semibold ${
+                showPlanMarkers ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200"
+              }`}
+            >
+              Plan {showPlanMarkers ? "ON" : "OFF"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCityRoute((v) => !v)}
+              disabled={Boolean(filterDateFrom || filterDateTo)}
+              className="min-h-[40px] rounded-xl border border-slate-200 px-3 text-xs font-semibold disabled:opacity-45"
+            >
+              Ruta viaje {showCityRoute ? "ON" : "OFF"}
+            </button>
+          </div>
+          <label className="block text-xs font-semibold text-slate-700">
+            Buscar ruta
+            <input
+              value={routeQuery}
+              onChange={(e) => setRouteQuery(e.target.value)}
+              className="mt-1.5 min-h-[42px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
+              placeholder="Filtrar por nombre…"
+            />
+          </label>
+        </div>
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "routes"}
+        onClose={() => setMobilePanel(null)}
+        title={`Rutas (${routesForList.length})`}
+      >
+        <TripMapRoutesList
+          routesForList={routesForList}
+          filteredRouteKeys={filteredRouteKeys}
+          reorderDay={reorderDay}
+          routesBulkMode={routesBulkMode}
+          focusedRouteKey={focusedRouteKey}
+          selectedRouteKeys={selectedRouteKeys}
+          canManageMap={!!canManageMap}
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          onFocusRoute={(key) => {
+            toggleFocusRoute(key);
+            setMobilePanel(null);
           }}
-          effectiveRouteColor={effectiveRouteColor}
-          routeDayForPlans={routeDayForPlans}
-          planSelectOptions={planSelectOptions}
-          origin={origin}
-          setOrigin={setOrigin}
-          stop={stop}
-          setStop={setStop}
-          destination={destination}
-          setDestination={setDestination}
-          originPlanId={originPlanId}
-          setOriginPlanId={setOriginPlanId}
-          stopPlanId={stopPlanId}
-          setStopPlanId={setStopPlanId}
-          destinationPlanId={destinationPlanId}
-          setDestinationPlanId={setDestinationPlanId}
-          onSelectPlace={onSelectPlace}
-          routePreview={routePreview}
-          calculatingRoute={calculatingRoute}
-          saving={saving}
-          savingRoute={savingRoute}
-          onCalculate={() => void calculateRoutePreview()}
-          onSave={() => void createOrUpdateRoute()}
-          saveButtonClass={btnPrimary}
+          onToggleRouteSelection={toggleRouteSelection}
+          onEditRoute={(route) => {
+            beginEditRoute(route);
+            setMobilePanel("editor");
+          }}
+          onDuplicateRoute={(route) => {
+            setDuplicateRoute(route);
+            setDuplicateOpen(true);
+            setMobilePanel(null);
+          }}
+          onRemoveRoute={removeRoute}
         />
-      ) : null}
-      </div>
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "editor" && isRouteFormOpen}
+        onClose={closeRouteEditor}
+        title={form.editingRouteId ? "Editar ruta" : "Nueva ruta"}
+      >
+        {routeEditorPanel}
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "auto"}
+        onClose={() => {
+          setMobilePanel(null);
+          setAutoRoutesOpen(false);
+        }}
+        title="Rutas automáticas"
+      >
+        {!isPremium ? <PremiumUpsell feature="autoRoutes" showTripCoopHint /> : null}
+        <div className="mt-3 space-y-3">
+          <RouteTravelModePicker
+            value={routesAutoTravelMode}
+            onChange={setRoutesAutoTravelMode}
+            disabled={routesAutoLoading}
+            compact
+          />
+          <textarea
+            value={routesAutoNotes}
+            onChange={(e) => setRoutesAutoNotes(e.target.value)}
+            rows={2}
+            placeholder="Preferencias opcionales…"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => void generateRoutesDraft()}
+            disabled={routesAutoLoading || !isPremium}
+            className={`${btnPrimary} w-full min-h-[44px] rounded-xl text-sm disabled:opacity-60`}
+          >
+            {routesAutoLoading ? "Creando rutas…" : "Crear rutas"}
+          </button>
+        </div>
+      </MobileBottomSheet>
 
       <DuplicateRouteDialog
         open={duplicateOpen}

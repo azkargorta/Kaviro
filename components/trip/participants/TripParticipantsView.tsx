@@ -45,6 +45,8 @@ import {
   UserCheck,
   FileSpreadsheet,
 } from "lucide-react";
+import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type TripParticipantsViewProps = {
   tripId: string;
@@ -180,6 +182,7 @@ function ActionMenu({
 
 export default function TripParticipantsView({ tripId, mapFlow = false }: TripParticipantsViewProps) {
   const { isAgencyTrip } = useTripWorkspace();
+  const isMobile = useIsMobile();
   const {
     participants,
     loading,
@@ -210,18 +213,24 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [roleFilter, setRoleFilter] = useState<"all" | TripRole>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  type MobileParticipantsPanel = null | "menu" | "form" | "invite" | "link" | "import";
+  const [mobilePanel, setMobilePanel] = useState<MobileParticipantsPanel>(null);
   const participantFormRef = useRef<HTMLDivElement | null>(null);
   const asidePanelRef = useRef<HTMLDivElement | null>(null);
 
   const showParticipantForm = Boolean(isCreating || editingParticipant);
 
   useEffect(() => {
-    if (!showParticipantForm) return;
+    if (!showParticipantForm || isMobile) return;
     const t = window.setTimeout(() => {
       participantFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
     return () => window.clearTimeout(t);
-  }, [showParticipantForm, editingParticipant?.id]);
+  }, [showParticipantForm, editingParticipant?.id, isMobile]);
+
+  useEffect(() => {
+    if (isMobile && showParticipantForm) setMobilePanel("form");
+  }, [isMobile, showParticipantForm]);
 
   useEffect(() => {
     if (asidePanel === "none") return;
@@ -240,20 +249,24 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     setEditingParticipant(null);
     closeAsidePanel();
     setIsCreating(true);
+    if (isMobile) setMobilePanel("form");
   }
 
   function closeCreateParticipant() {
     setIsCreating(false);
+    setMobilePanel(null);
   }
 
   function openEditParticipant(participant: TripParticipant) {
     setIsCreating(false);
     closeAsidePanel();
     setEditingParticipant(participant);
+    if (isMobile) setMobilePanel("form");
   }
 
   function closeEditParticipant() {
     setEditingParticipant(null);
+    setMobilePanel(null);
   }
 
   useEffect(() => {
@@ -438,6 +451,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     setBulkImportOpen(false);
     setAsideParticipant(participant);
     setAsidePanel("invite");
+    if (isMobile) setMobilePanel("invite");
   }
 
   function openLinkProfile(participant: TripParticipant) {
@@ -446,6 +460,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
     setBulkImportOpen(false);
     setAsideParticipant(participant);
     setAsidePanel("link");
+    if (isMobile) setMobilePanel("link");
   }
 
   if (loading) {
@@ -479,7 +494,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   }
 
   return (
-    <main className="min-w-0 max-w-full space-y-8 overflow-x-hidden">
+    <main className="min-w-0 max-w-full space-y-5 overflow-x-hidden pb-20 md:space-y-8 md:pb-0">
       <TripBoardPageHeader
         section="Pasajeros del viaje"
         title="Participantes"
@@ -489,38 +504,38 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
         actions={mapFlow ? <TripTabActions tripId={tripId} /> : <TripScreenActions tripId={tripId} />}
       />
 
-      {/* Ge1 — 3 stat cards con número grande como protagonista */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Reveal variant="scale" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-          <div className="flex items-center gap-3 px-4 py-3.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-[#1E293B] text-slate-600 dark:text-slate-300">
-              <Users className="h-5 w-5" aria-hidden />
+      {/* Ge1 — stats compactos en móvil */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <Reveal variant="scale" className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <div className="px-2.5 py-2.5 text-center sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left">
+            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 sm:flex dark:bg-[#1E293B]">
+              <Users className="h-5 w-5 text-slate-600 dark:text-slate-300" aria-hidden />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total</p>
-              <p className="text-3xl font-extrabold leading-none text-slate-950 tabular-nums">{stats.total}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400 sm:text-[10px]">Total</p>
+              <p className="text-xl font-extrabold leading-none text-slate-950 tabular-nums sm:text-3xl">{stats.total}</p>
             </div>
           </div>
         </Reveal>
-        <Reveal variant="scale" delay={1} className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-900/40 dark:bg-[#0F1623]">
-          <div className="flex items-center gap-3 px-4 py-3.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <UserCheck className="h-5 w-5" aria-hidden />
+        <Reveal variant="scale" delay={1} className="overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm sm:rounded-2xl dark:border-emerald-900/40 dark:bg-[#0F1623]">
+          <div className="px-2.5 py-2.5 text-center sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left">
+            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 sm:flex">
+              <UserCheck className="h-5 w-5 text-emerald-700" aria-hidden />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Con cuenta</p>
-              <p className="text-3xl font-extrabold leading-none text-emerald-700 tabular-nums">{stats.linked}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 sm:text-[10px]">Cuenta</p>
+              <p className="text-xl font-extrabold leading-none text-emerald-700 tabular-nums sm:text-3xl">{stats.linked}</p>
             </div>
           </div>
         </Reveal>
-        <Reveal variant="scale" delay={2} className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/40 dark:bg-[#0F1623]">
-          <div className="flex items-center gap-3 px-4 py-3.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-              <Sparkles className="h-5 w-5" aria-hidden />
+        <Reveal variant="scale" delay={2} className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm sm:rounded-2xl dark:border-amber-900/40 dark:bg-[#0F1623]">
+          <div className="px-2.5 py-2.5 text-center sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left">
+            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 sm:flex">
+              <Sparkles className="h-5 w-5 text-amber-700" aria-hidden />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Pendientes</p>
-              <p className="text-3xl font-extrabold leading-none text-amber-700 tabular-nums">{stats.unlinked}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wide text-amber-600 sm:text-[10px]">Pend.</p>
+              <p className="text-xl font-extrabold leading-none text-amber-700 tabular-nums sm:text-3xl">{stats.unlinked}</p>
             </div>
           </div>
         </Reveal>
@@ -567,7 +582,30 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           </div>
         </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-3 shadow-sm sm:p-4">
+        <div className="flex gap-2 overflow-x-auto pb-1 md:hidden">
+          {(
+            [
+              { id: "all" as const, label: "Todos" },
+              { id: "linked" as const, label: "Con cuenta" },
+              { id: "unlinked" as const, label: "Pendientes" },
+            ] as const
+          ).map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => setLinkFilter(chip.id)}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                linkFilter === chip.id
+                  ? "border-violet-300 bg-violet-50 text-violet-900"
+                  : "border-slate-200 bg-white text-slate-600"
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
+        <section className="hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] sm:p-4 md:block">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-sm font-extrabold text-slate-950">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300">
@@ -717,12 +755,12 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                               <span aria-hidden>⏳</span> Pendiente de vincular
                             </span>
                           )}
-                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                          <span className="hidden rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 sm:inline-flex">
                             {getStatusLabel(participant.status as "active" | "pending" | "removed")}
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="hidden flex-wrap gap-2 sm:flex">
                           {participant.username ? (
                             <KeyValueChip icon={<User className="h-3.5 w-3.5" aria-hidden />} label={`@${participant.username}`} />
                           ) : null}
@@ -754,7 +792,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           </div>
         )}
 
-        {canManageParticipants && showParticipantForm ? (
+        {canManageParticipants && showParticipantForm && !isMobile ? (
           <div
             ref={participantFormRef}
             id="participant-form-panel"
@@ -781,7 +819,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
         ) : null}
         </section>
 
-        <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
+        <aside className="max-lg:hidden min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
           {!isAgencyTrip ? (
             <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-4 shadow-sm dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)]">
               <p className="text-sm font-extrabold text-[var(--brand-text)]">Chat del grupo</p>
@@ -914,6 +952,163 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
           ) : null}
         </aside>
       </div>
+
+      {canManageParticipants ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setMobilePanel("menu")}
+            className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] active:scale-95 md:hidden"
+            aria-label="Gestionar participantes"
+          >
+            <MoreHorizontal className="h-6 w-6" />
+          </button>
+
+          <MobileBottomSheet
+            open={isMobile && mobilePanel === "menu"}
+            onClose={() => setMobilePanel(null)}
+            title="Gestionar pasajeros"
+          >
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => openCreateParticipant()}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold"
+              >
+                <UserPlus className="h-4 w-4" aria-hidden />
+                Añadir pasajero
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  openGenericInvite();
+                  setMobilePanel("invite");
+                }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold"
+              >
+                <MessageCircle className="h-4 w-4 text-emerald-600" aria-hidden />
+                Invitar por WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkImportOpen(true);
+                  setMobilePanel("import");
+                }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold"
+              >
+                <FileSpreadsheet className="h-4 w-4" aria-hidden />
+                Importar desde Excel
+              </button>
+            </div>
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={isMobile && mobilePanel === "form" && showParticipantForm}
+            onClose={() => {
+              closeCreateParticipant();
+              closeEditParticipant();
+            }}
+            title={editingParticipant ? "Editar pasajero" : "Nuevo pasajero"}
+          >
+            {isCreating ? (
+              <ParticipantForm
+                tripId={tripId}
+                onSubmit={handleCreate}
+                onCancel={closeCreateParticipant}
+                submitLabel="Añadir participante"
+              />
+            ) : null}
+            {editingParticipant ? (
+              <ParticipantForm
+                tripId={tripId}
+                initialData={editingParticipant}
+                onSubmit={handleUpdate}
+                onCancel={closeEditParticipant}
+                submitLabel="Guardar cambios"
+              />
+            ) : null}
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={isMobile && mobilePanel === "invite" && asidePanel === "invite"}
+            onClose={() => {
+              closeAsidePanel();
+              setMobilePanel(null);
+            }}
+            title="Invitar por WhatsApp"
+          >
+            <InviteParticipantPanel
+              tripId={tripId}
+              participant={asideParticipant}
+              onCreated={() => {
+                closeAsidePanel();
+                setMobilePanel(null);
+              }}
+              onCancel={() => {
+                closeAsidePanel();
+                setMobilePanel(null);
+              }}
+            />
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={isMobile && mobilePanel === "import" && bulkImportOpen}
+            onClose={() => {
+              setBulkImportOpen(false);
+              setMobilePanel(null);
+            }}
+            title="Importar participantes"
+          >
+            <BulkImportParticipantsPanel
+              tripId={tripId}
+              existingEmails={existingEmailsForImport}
+              existingNames={existingNamesForImport}
+              onImported={async () => {
+                await refetch();
+              }}
+              onClose={() => {
+                setBulkImportOpen(false);
+                setMobilePanel(null);
+              }}
+            />
+            <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+              <UsernameInvitePanel tripId={tripId} />
+              <TravelMatesInvitePanel tripId={tripId} />
+            </div>
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={isMobile && mobilePanel === "link" && asidePanel === "link" && !!asideParticipant}
+            onClose={() => {
+              closeAsidePanel();
+              setMobilePanel(null);
+            }}
+            title="Vincular cuenta"
+          >
+            {asideParticipant ? (
+              <ParticipantLinkProfilePanel
+                participant={asideParticipant}
+                onSearchProfiles={searchProfiles}
+                onCancel={() => {
+                  closeAsidePanel();
+                  setMobilePanel(null);
+                }}
+                onLinkProfile={async (profile) => {
+                  setActionError(null);
+                  try {
+                    await linkParticipantToProfile(asideParticipant.id, profile);
+                    closeAsidePanel();
+                    setMobilePanel(null);
+                  } catch (e) {
+                    setActionError(e instanceof Error ? e.message : "No se pudo vincular el usuario.");
+                  }
+                }}
+              />
+            ) : null}
+          </MobileBottomSheet>
+        </>
+      ) : null}
     </main>
   );
 }

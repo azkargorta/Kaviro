@@ -180,6 +180,8 @@ export default function TripAiChatView({
   const ctxPreset = assistantContext ? assistantContextPreset(assistantContext) : null;
   const isMobileViewport = useMobileViewport();
   const isMobileDrawer = layout === "drawer" && isMobileViewport;
+  const isMobilePage = layout === "page" && isMobileViewport;
+  const isMobileChatCompact = isMobileDrawer || isMobilePage;
   const router = useRouter();
   const pathname = usePathname();
 
@@ -239,7 +241,7 @@ export default function TripAiChatView({
     ctxPreset?.modeSource ?? (defaultAssistantMode ? "manual" : "auto")
   );
   /** En panel por pestaña (`drawer`), el selector de modo va recogido por defecto. */
-  const [modePickerOpen, setModePickerOpen] = useState(layout !== "drawer");
+  const [modePickerOpen, setModePickerOpen] = useState(layout !== "drawer" && layout !== "page");
   const [planActivityCount, setPlanActivityCount] = useState<number | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -1096,8 +1098,12 @@ export default function TripAiChatView({
   }, [mode, modeSource]);
 
   function collapseModePickerIfDrawer() {
-    if (layout === "drawer") setModePickerOpen(false);
+    if (layout === "drawer" || isMobilePage) setModePickerOpen(false);
   }
+
+  useEffect(() => {
+    if (isMobilePage) setModePickerOpen(false);
+  }, [isMobilePage]);
 
   useEffect(() => {
     try {
@@ -1655,11 +1661,11 @@ export default function TripAiChatView({
       data-tour="ai-input"
       onSubmit={handleSubmit}
       className={`min-w-0 max-w-full border-t border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] ${
-        layout === "drawer"
-          ? isMobileDrawer
-            ? "shrink-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
-            : "shrink-0 p-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:p-5"
-          : "p-4 sm:p-5"
+        isMobileChatCompact
+          ? "shrink-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
+          : layout === "drawer"
+            ? "shrink-0 p-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:p-5"
+            : "p-4 sm:p-5"
       }`}
     >
       <div
@@ -1675,11 +1681,11 @@ export default function TripAiChatView({
               e.currentTarget.form?.requestSubmit();
             }
           }}
-          rows={layout === "drawer" ? 3 : 4}
+          rows={isMobileChatCompact ? 3 : 4}
           placeholder={placeholder}
           disabled={!isPremium || aiBudgetExceeded}
           className={`w-full resize-none border-0 bg-transparent px-4 py-3.5 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 ${
-            layout === "drawer" ? "min-h-[72px]" : "min-h-[100px]"
+            isMobileChatCompact ? "min-h-[72px]" : "min-h-[100px]"
           }`}
         />
         <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 dark:border-[#1E293B]">
@@ -2364,6 +2370,8 @@ export default function TripAiChatView({
               ? isMobileDrawer
                 ? "flex flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm"
                 : "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
+              : isMobilePage
+                ? "flex max-h-[calc(100dvh-11rem-env(safe-area-inset-bottom))] min-h-[min(60dvh,560px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
               : itineraryDraft
                 ? "flex max-h-[min(88vh,900px)] min-h-[min(52vh,520px)] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm xl:max-h-[calc(100dvh-9rem)]"
                 : "overflow-x-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
@@ -2379,7 +2387,7 @@ export default function TripAiChatView({
                 : "px-4 py-3 sm:px-5 sm:py-4"
             }`}
           >
-            {layout === "drawer" ? (
+            {layout === "drawer" || isMobilePage ? (
               <div className="flex items-center justify-between gap-2">
                 <p className="min-w-0 truncate text-xs font-semibold text-slate-600 dark:text-slate-400" title={focusModeSummary}>
                   {focusModeSummary}
@@ -2430,16 +2438,16 @@ export default function TripAiChatView({
               </div>
             )}
 
-            {layout !== "drawer" ? (
+            {layout !== "drawer" && !isMobilePage ? (
               <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">Elige el foco</p>
             ) : null}
 
-            {(layout !== "drawer" || modePickerOpen) && (
-              <div id="trip-ai-mode-picker" className={layout === "drawer" ? "mt-2" : undefined}>
+            {(layout !== "drawer" && !isMobilePage) || modePickerOpen ? (
+              <div id="trip-ai-mode-picker" className={layout === "drawer" || isMobilePage ? "mt-2" : undefined}>
                 <div
                   data-tour="ai-suggestions"
                   className={
-                    layout === "drawer"
+                    isMobileChatCompact
                       ? "grid grid-cols-2 gap-1.5 sm:gap-2"
                       : "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
                   }
@@ -2458,7 +2466,7 @@ export default function TripAiChatView({
                           collapseModePickerIfDrawer();
                         }}
                         className={`flex min-w-0 w-full flex-col items-start gap-1 overflow-hidden rounded-2xl border px-2.5 py-2 text-left transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2.5 ${
-                          layout === "drawer" ? "min-h-[64px]" : "min-h-[88px]"
+                          isMobileChatCompact ? "min-h-[56px]" : "min-h-[88px]"
                         } ${
                           selected
                             ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)] shadow-sm ring-1 ring-[var(--brand-border)]"
@@ -2472,7 +2480,7 @@ export default function TripAiChatView({
                         <span className="w-full min-w-0 hyphens-auto break-words text-[11px] font-bold leading-snug sm:text-xs">
                           {preset.label}
                         </span>
-                        <span className="w-full min-w-0 break-words text-[10px] font-medium leading-snug text-slate-600">
+                        <span className={`w-full min-w-0 break-words text-[10px] font-medium leading-snug text-slate-600 ${isMobileChatCompact ? "hidden" : ""}`}>
                           {preset.description}
                         </span>
                       </button>
@@ -2496,7 +2504,7 @@ export default function TripAiChatView({
                   Automático (detectar intención del mensaje)
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
           ) : null}
 
@@ -2537,6 +2545,8 @@ export default function TripAiChatView({
                 ? isMobileDrawer
                   ? "min-w-0 max-w-full space-y-4 overflow-visible px-3 py-2 sm:px-4"
                   : "min-h-0 min-w-0 max-w-full flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-3 sm:px-5"
+                : isMobilePage
+                  ? "min-h-0 min-w-0 max-w-full flex-1 space-y-4 overflow-y-auto overflow-x-hidden overscroll-y-contain px-3 py-2 sm:px-4"
                 : layout === "page" && itineraryDraft
                   ? "min-h-0 min-w-0 max-w-full flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-3 sm:max-h-[min(28vh,240px)] sm:px-5"
                   : "max-md:max-h-none max-md:overflow-visible min-w-0 max-w-full space-y-5 overflow-y-auto overflow-x-hidden px-4 py-5 sm:max-h-[560px] sm:px-5"
@@ -2682,17 +2692,17 @@ export default function TripAiChatView({
             <div ref={bottomRef} />
           </div>
 
-          {!hideChatForItineraryCards ? (
+          {!hideChatForItineraryCards && !isMobileChatCompact ? (
             <div className="shrink-0 space-y-2 border-t border-slate-100 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
-              {!isMobileDrawer ? documentImportSection : null}
-              {!isMobileDrawer ? chatComposerForm : null}
+              {documentImportSection}
+              {chatComposerForm}
             </div>
           ) : null}
         </section>
       </section>
       ) : null}
         </div>
-        {isMobileDrawer ? (
+        {isMobileChatCompact ? (
           <div className="shrink-0 space-y-2 border-t border-slate-100 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">
             {documentImportSection}
             {chatComposerForm}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useRouter } from "next/navigation";
 import { joinTripPlaces } from "@/lib/trip-places";
 import { buildTravelCurrencySelectOptions, coerceTravelCurrencyCode } from "@/lib/travel-currencies";
@@ -39,6 +40,7 @@ function newStayId() {
 
 export default function TripSettingsView({ tripId, readOnly = false }: TripSettingsViewProps) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const { hideWeather, isAgencyTrip, clientPortalHref } = useTripWorkspace();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -253,8 +255,10 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
     );
   }
 
+  const sectionCard = "rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm max-md:p-3 p-5";
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 md:space-y-5">
       {dbHint ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
           {dbHint}
@@ -266,8 +270,11 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
         </div>
       )}
 
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm space-y-4">
-        <div>
+      <details className={`${sectionCard} space-y-4`} open={!isMobile || undefined}>
+        <summary className="cursor-pointer list-none text-sm font-extrabold uppercase tracking-[0.1em] text-[var(--text-primary)] md:hidden">
+          Datos del viaje
+        </summary>
+        <div className="hidden md:block">
           <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">
             Datos del viaje
           </h3>
@@ -338,14 +345,18 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           </div>
         ) : null}
 
-      </div>
+      </details>
 
       {!hideWeather ? (
-      <div
+      <details
         id="clima"
-        className="rounded-2xl border border-sky-200/70 bg-gradient-to-b from-sky-50/80 to-white p-5 shadow-sm space-y-4 dark:border-sky-900/40 dark:from-[var(--surface-card)] dark:to-[var(--surface-card)] scroll-mt-24"
+        open={!isMobile || undefined}
+        className="rounded-2xl border border-sky-200/70 bg-gradient-to-b from-sky-50/80 to-white max-md:p-3 p-5 shadow-sm space-y-4 dark:border-sky-900/40 dark:from-[var(--surface-card)] dark:to-[var(--surface-card)] scroll-mt-24"
       >
-        <div>
+        <summary className="cursor-pointer list-none text-sm font-extrabold uppercase tracking-[0.1em] text-[var(--text-primary)] md:hidden">
+          Ciudades y clima
+        </summary>
+        <div className="hidden md:block">
           <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">
             Ciudades y días (clima)
           </h3>
@@ -365,7 +376,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           {weatherStays.map((stay, index) => (
             <div
               key={stay.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#334155] dark:bg-[#080C14]"
+              className="rounded-2xl border border-slate-200 bg-white max-md:p-3 p-4 dark:border-[#334155] dark:bg-[#080C14]"
             >
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
@@ -446,14 +457,18 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
             Añadir otra ciudad
           </button>
         ) : null}
-      </div>
+      </details>
       ) : null}
 
-      <div
+      <details
         id="presupuesto"
-        className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm space-y-3 scroll-mt-24"
+        open={!isMobile || undefined}
+        className={`${sectionCard} space-y-3 scroll-mt-24`}
       >
-        <div>
+        <summary className="cursor-pointer list-none text-sm font-extrabold uppercase tracking-[0.1em] text-[var(--text-primary)] md:hidden">
+          Presupuesto objetivo
+        </summary>
+        <div className="hidden md:block">
           <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">
             Presupuesto objetivo
           </h3>
@@ -495,7 +510,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
           La moneda del presupuesto es también la <span className="font-semibold">moneda base</span> del viaje
           (gastos y balances). Las opciones con ★ encajan con tu destino.
         </p>
-      </div>
+      </details>
 
       {!readOnly && (
         <div className="flex flex-wrap items-center gap-3">
@@ -519,7 +534,10 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       ) : null}
 
       {!readOnly && (
-        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+        <details className={`${sectionCard} hidden md:block`}>
+          <summary className="cursor-pointer list-none text-sm font-extrabold uppercase tracking-[0.1em] text-[var(--text-primary)] md:hidden">
+            Exportar datos
+          </summary>
           <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">
             Exportar datos
           </h3>
@@ -535,7 +553,7 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
               Exportar gastos CSV
             </a>
           </div>
-        </div>
+        </details>
       )}
 
       {isAgencyTrip && !readOnly ? (
@@ -550,7 +568,9 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
         </div>
       ) : null}
 
-      <TripAnalyticsPanel tripId={tripId} />
+      <div className="hidden md:block">
+        <TripAnalyticsPanel tripId={tripId} />
+      </div>
     </div>
   );
 }
