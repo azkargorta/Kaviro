@@ -699,7 +699,7 @@ export default function TripPlanView({
   const isEmpty = activities.length === 0;
 
   return (
-    <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:space-y-6">
+    <div className="min-w-0 max-w-full space-y-2 overflow-x-hidden md:space-y-6">
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -724,41 +724,244 @@ export default function TripPlanView({
         <AgencyTripAnnouncements tripId={tripId} embedded collapsible defaultOpen={false} />
       ) : null}
 
-      <div
-        role="tablist"
-        aria-label="Vista del plan"
-        className={`${chipGroup} max-md:p-1 sm:inline-flex sm:max-w-2xl`}
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={workspaceTab === "itinerary"}
-          onClick={() => setWorkspaceTab("itinerary")}
-          className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "itinerary" ? chipItemActive : chipItemInactive}`}
+      <div className="flex flex-col gap-1.5 md:gap-2">
+        <div
+          role="tablist"
+          aria-label="Vista del plan"
+          className={`${chipGroup} max-md:p-1 sm:inline-flex sm:max-w-2xl`}
         >
-          Itinerario
-        </button>
-        {!hideSocialFeatures ? (
           <button
             type="button"
             role="tab"
-            data-tour="plan-attendance-tab"
-            aria-selected={workspaceTab === "attendance"}
-            onClick={() => setWorkspaceTab("attendance")}
-            className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
+            aria-selected={workspaceTab === "itinerary"}
+            onClick={() => setWorkspaceTab("itinerary")}
+            className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "itinerary" ? chipItemActive : chipItemInactive}`}
           >
-            Asistencia
+            Itinerario
           </button>
+          {!hideSocialFeatures ? (
+            <button
+              type="button"
+              role="tab"
+              data-tour="plan-attendance-tab"
+              aria-selected={workspaceTab === "attendance"}
+              onClick={() => setWorkspaceTab("attendance")}
+              className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
+            >
+              Asistencia
+            </button>
+          ) : null}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={workspaceTab === "notes"}
+            onClick={() => setWorkspaceTab("notes")}
+            className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "notes" ? chipItemActive : chipItemInactive}`}
+          >
+            Notas
+          </button>
+        </div>
+
+        {workspaceTab === "itinerary" ? (
+          <div className="space-y-2 max-md:space-y-1.5">
+            <div className="flex w-full items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                aria-expanded={filtersOpen}
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] sm:min-h-11 sm:flex-none sm:rounded-2xl sm:px-4 sm:py-2.5 sm:text-sm"
+              >
+                <SlidersHorizontal className="h-4 w-4 shrink-0 text-slate-700" aria-hidden />
+                Filtros
+                {filtersOpen ? (
+                  <ChevronUp className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                ) : (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                )}
+              </button>
+
+              <div data-tour="plan-view-toggle" className="inline-flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto sm:flex-none">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
+                    viewMode === "list"
+                      ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
+                      : "text-slate-700 hover:bg-violet-50"
+                  }`}
+                  title="Vista de lista"
+                >
+                  Lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("calendar")}
+                  className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
+                    viewMode === "calendar"
+                      ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
+                      : "text-slate-700 hover:bg-violet-50"
+                  }`}
+                  data-tour="plan-calendar-mode"
+                  title="Vista calendario"
+                >
+                  Calendario
+                </button>
+              </div>
+
+              <button
+                type="button"
+                data-tour="plan-mobile-tools"
+                onClick={() => setMobileOptionsOpen((v) => !v)}
+                className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                aria-label={
+                  premiumEnabled && ticketHintCount > 0
+                    ? `Más opciones del plan (${ticketHintCount} con posible entrada)`
+                    : "Más opciones del plan"
+                }
+                aria-expanded={mobileOptionsOpen}
+              >
+                <MoreHorizontal className="h-5 w-5" />
+                {premiumEnabled && ticketHintCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">
+                    {ticketHintCount}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+
+            {mobileOptionsOpen ? (
+              <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623]">
+                {premiumEnabled && ticketHintCount > 0 ? (
+                  <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+                    <p className="font-bold">🎟️ Entradas ({ticketHintCount})</p>
+                    <p className="mt-0.5 leading-snug text-amber-900/90 dark:text-amber-200/90">
+                      Pulsa «Entrada» en la tarjeta de cada actividad para buscar la web oficial.
+                    </p>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHistoryOpen(true);
+                    setMobileOptionsOpen(false);
+                  }}
+                  className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+                >
+                  Historial de cambios
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportPlanPdf();
+                    setMobileOptionsOpen(false);
+                  }}
+                  className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+                >
+                  Exportar PDF
+                </button>
+                <a
+                  href={`/api/trips/${tripId}/calendar`}
+                  download
+                  onClick={() => setMobileOptionsOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100"
+                >
+                  Descargar calendario (.ics)
+                </a>
+                {canManagePlan ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExploreOpen(true);
+                      setMobileOptionsOpen(false);
+                    }}
+                    className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+                  >
+                    Explorar lugares
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {filtersOpen ? (
+              <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950">
+                    <SlidersHorizontal className="h-4 w-4 text-slate-700" aria-hidden />
+                    Vista y alojamientos
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowLodging((v) => !v)}
+                      className={`inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
+                        showLodging
+                          ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                      title="Mostrar/ocultar alojamientos"
+                    >
+                      {showLodging ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      Alojamiento
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Buscar por título, lugar o dirección…"
+                      className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-700">
+                      <Filter className="h-4 w-4" />
+                      Tipos:
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setKindFilter(new Set())}
+                      className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
+                        kindFilter.size === 0
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                      title="Todos los tipos"
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                      Todos
+                    </button>
+
+                    {availableKinds.map((k) => {
+                      const active = kindFilter.has(k);
+                      const meta = kindMeta(k, customByKey);
+                      return (
+                        <Chip
+                          key={k}
+                          active={active}
+                          onClick={() => {
+                            setKindFilter((prev) => {
+                              if (prev.has(k) && prev.size === 1) return new Set();
+                              return new Set([k]);
+                            });
+                          }}
+                          label={meta.label}
+                          glyph={meta.glyph}
+                          color={meta.color}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
         ) : null}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={workspaceTab === "notes"}
-          onClick={() => setWorkspaceTab("notes")}
-          className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "notes" ? chipItemActive : chipItemInactive}`}
-        >
-          Notas
-        </button>
       </div>
 
       {workspaceTab === "notes" ? (
@@ -793,7 +996,7 @@ export default function TripPlanView({
       ) : null}
 
       {workspaceTab === "itinerary" ? (
-        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-2 md:space-y-6">
+        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-1.5 max-md:space-y-1.5 md:space-y-6">
           {premiumEnabled && ticketHintCount > 0 && !isEmpty ? (
             <details className="hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 shadow-sm md:block">
               <summary className="cursor-pointer list-none px-4 py-2.5 text-sm text-amber-950">
@@ -1120,200 +1323,6 @@ export default function TripPlanView({
           <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
         </button>
       ) : null}
-
-      <div className="space-y-2 max-md:space-y-1.5">
-        <div className="flex w-full items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
-            aria-expanded={filtersOpen}
-            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] sm:min-h-11 sm:flex-none sm:rounded-2xl sm:px-4 sm:py-2.5 sm:text-sm"
-          >
-            <SlidersHorizontal className="h-4 w-4 shrink-0 text-slate-700" aria-hidden />
-            Filtros
-            {filtersOpen ? (
-              <ChevronUp className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-            ) : (
-              <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-            )}
-          </button>
-
-          <div data-tour="plan-view-toggle" className="inline-flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto sm:flex-none">
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
-                viewMode === "list"
-                  ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
-                  : "text-slate-700 hover:bg-violet-50"
-              }`}
-              title="Vista de lista"
-            >
-              Lista
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("calendar")}
-              className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 px-3 text-xs font-extrabold transition sm:min-h-[36px] sm:flex-none ${
-                viewMode === "calendar"
-                  ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
-                  : "text-slate-700 hover:bg-violet-50"
-              }`}
-              data-tour="plan-calendar-mode" title="Vista calendario"
-            >
-              Calendario
-            </button>
-          </div>
-
-          <button
-            type="button"
-            data-tour="plan-mobile-tools"
-            onClick={() => setMobileOptionsOpen((v) => !v)}
-            className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-            aria-label={
-              premiumEnabled && ticketHintCount > 0
-                ? `Más opciones del plan (${ticketHintCount} con posible entrada)`
-                : "Más opciones del plan"
-            }
-            aria-expanded={mobileOptionsOpen}
-          >
-            <MoreHorizontal className="h-5 w-5" />
-            {premiumEnabled && ticketHintCount > 0 ? (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">
-                {ticketHintCount}
-              </span>
-            ) : null}
-          </button>
-        </div>
-
-        {mobileOptionsOpen ? (
-          <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623]">
-            {premiumEnabled && ticketHintCount > 0 ? (
-              <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
-                <p className="font-bold">🎟️ Entradas ({ticketHintCount})</p>
-                <p className="mt-0.5 leading-snug text-amber-900/90 dark:text-amber-200/90">
-                  Pulsa «Entrada» en la tarjeta de cada actividad para buscar la web oficial.
-                </p>
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                setHistoryOpen(true);
-                setMobileOptionsOpen(false);
-              }}
-              className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
-            >
-              Historial de cambios
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                exportPlanPdf();
-                setMobileOptionsOpen(false);
-              }}
-              className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
-            >
-              Exportar PDF
-            </button>
-            <a
-              href={`/api/trips/${tripId}/calendar`}
-              download
-              onClick={() => setMobileOptionsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100"
-            >
-              Descargar calendario (.ics)
-            </a>
-            {canManagePlan ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setExploreOpen(true);
-                  setMobileOptionsOpen(false);
-                }}
-                className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
-              >
-                Explorar lugares
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {filtersOpen ? (
-          <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950">
-                <SlidersHorizontal className="h-4 w-4 text-slate-700" aria-hidden />
-                Vista y alojamientos
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowLodging((v) => !v)}
-                  className={`inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
-                    showLodging ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                  title="Mostrar/ocultar alojamientos"
-                >
-                  {showLodging ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  Alojamiento
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar por título, lugar o dirección…"
-                  className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-border)]"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-700">
-                  <Filter className="h-4 w-4" />
-                  Tipos:
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setKindFilter(new Set())}
-                  className={`inline-flex min-h-[36px] items-center gap-2 rounded-full border px-3 py-2 text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] ${
-                    kindFilter.size === 0 ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                  title="Todos los tipos"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  Todos
-                </button>
-
-                {availableKinds.map((k) => {
-                  const active = kindFilter.has(k);
-                  const meta = kindMeta(k, customByKey);
-                  return (
-                    <Chip
-                      key={k}
-                      active={active}
-                      onClick={() => {
-                        setKindFilter((prev) => {
-                          if (prev.has(k) && prev.size === 1) return new Set();
-                          return new Set([k]);
-                        });
-                      }}
-                      label={meta.label}
-                      glyph={meta.glyph}
-                      color={meta.color}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
 
       <details className="group hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:block">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">

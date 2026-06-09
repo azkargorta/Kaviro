@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Home, LifeBuoy, Share2, X } from "lucide-react";
+import { Home, Lightbulb, Share2, X } from "lucide-react";
 import TripShareButton from "@/components/trip/common/TripShareButton";
 import ShareTodayPlanButton from "@/components/trip/common/ShareTodayPlanButton";
 import { mobileMenuRowBase, mobileMenuRowIconWrap } from "@/components/ui/mobileMenuStyles";
@@ -72,6 +72,42 @@ export default function TripHeroMobileShareSheet({ tripId, tripName, destination
             </button>
           </div>
           <div className="space-y-2 p-4" onClick={() => setOpen(false)}>
+            <button
+              type="button"
+              data-tour="trip-section-tips"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHelpOpen((prev) => {
+                  const next = !prev;
+                  dispatchTripHelpToggle(next);
+                  return next;
+                });
+                setOpen(false);
+              }}
+              className={`${mobileMenuRowBase} ${
+                helpOpen
+                  ? "border-violet-300/80 bg-gradient-to-br from-violet-50/90 via-white to-white ring-violet-900/[0.08]"
+                  : ""
+              }`}
+              aria-pressed={helpOpen}
+              aria-label={helpOpen ? "Ocultar consejos de esta pantalla" : "Mostrar consejos de esta pantalla"}
+            >
+              <span
+                className={
+                  helpOpen
+                    ? "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-inner"
+                    : mobileMenuRowIconWrap
+                }
+              >
+                <Lightbulb className={`h-5 w-5 ${helpOpen ? "" : "text-amber-500"}`} aria-hidden />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left">
+                <span>Consejos de esta pantalla</span>
+                <span className="text-xs font-medium text-slate-500">
+                  {helpOpen ? "Pulsa de nuevo para ocultarlos" : "Tips, checklist y guía rápida"}
+                </span>
+              </span>
+            </button>
             <TripShareButton tripId={tripId} menuRow />
             <ShareTodayPlanButton tripId={tripId} tripName={tripName} destination={destination} menuRow />
             <Link href="/dashboard" className={mobileMenuRowBase} data-tour="topbar-mis-viajes">
@@ -87,31 +123,13 @@ export default function TripHeroMobileShareSheet({ tripId, tripName, destination
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 border-t border-white/20 px-3 py-1.5 max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))]">
-        <button
-          type="button"
-          onClick={() => {
-            setHelpOpen((prev) => {
-              const next = !prev;
-              dispatchTripHelpToggle(next);
-              return next;
-            });
-          }}
-          className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm transition ${
-            helpOpen
-              ? "border-white/60 bg-white/30 text-white"
-              : "border-white/35 bg-white/15 text-white hover:bg-white/25"
-          }`}
-          aria-pressed={helpOpen}
-          aria-label="Ayuda de esta sección"
-        >
-          <LifeBuoy className="h-3.5 w-3.5" aria-hidden />
-          Ayuda
-        </button>
+      <div className="flex items-center justify-end border-t border-white/20 px-3 py-1.5 max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))]">
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-white/35 bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25"
+          aria-expanded={open}
+          aria-label="Compartir viaje y más opciones"
         >
           <Share2 className="h-3.5 w-3.5" aria-hidden />
           Compartir
