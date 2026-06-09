@@ -33,7 +33,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   {
     id: "summary-sidebar", tab: "summary", target: '[data-tour="sidebar-nav"]', targetAlt: '[data-tour="mobile-bottom-nav"]', placement: "top", emoji: "🗂️",
     title: "Navegación del viaje",
-    body: "En escritorio: menú lateral con Resumen, Plan, Rutas, Gastos, Gente, Docs y Asistente IA. En móvil: barra inferior (Inicio, Plan, Gastos, IA) y «Más» para Rutas, Gente, Docs y Ajustes.",
+    body: "En escritorio: menú lateral con Inicio, Plan, Rutas, Gastos, Gente, Docs y Asistente IA. En móvil: barra inferior (Inicio, Plan, Rutas, Gastos) y «Más» para Gente, Docs, IA, Hoy, Recap y Ajustes.",
   },
   {
     id: "summary-countdown", tab: "summary", target: '[data-tour="summary-countdown"]', placement: "right", emoji: "⏳",
@@ -47,8 +47,8 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   },
   {
     id: "summary-stats", tab: "summary", target: '[data-tour="summary-stats"]', placement: "top", emoji: "📊",
-    title: "Tarjetas de módulos",
-    body: "Acceso rápido al estado de cada módulo del viaje. Cada tarjeta muestra el dato más relevante: actividades planificadas, gastos del grupo, participantes y documentos. Pulsa cualquier tarjeta para ir directamente a esa sección.",
+    title: "Acceso rápido a módulos",
+    body: "En móvil verás una cuadrícula compacta de iconos para ir a Plan, Rutas, Gastos, Gente, Docs e IA. En escritorio, cada tarjeta muestra además métricas y descripción. Pulsa cualquier icono para ir a esa sección.",
   },
   {
     id: "summary-search", tab: "summary", target: '[data-tour="summary-search-travel"]', targetAlt: '[data-tour="summary-search-toggle"]', placement: "top", action: "open-summary-search", emoji: "🔎",
@@ -56,7 +56,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Desde el resumen puedes abrir búsquedas con los datos del viaje ya rellenados: hotel, vuelo, tren, ferry, autobús o coche de alquiler. Elige categoría y pulsa una plataforma (Booking, Google Flights, Omio, etc.) para reservar en su web.",
   },
   {
-    id: "summary-recap", tab: "summary", target: '[data-tour="summary-recap-cta"]', placement: "top", emoji: "🎬",
+    id: "summary-recap", tab: "summary", target: '[data-tour="summary-recap-cta"]', targetAlt: '[data-tour="mobile-bottom-nav"]', placement: "top", emoji: "🎬",
     title: "Recap del viaje",
     body: "Al terminar el viaje, genera una tarjeta visual con estadísticas: días, actividades, km recorridos y foto del destino. Se comparte directamente por WhatsApp o se descarga en formato Stories para Instagram.",
   },
@@ -64,9 +64,9 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
   // ════════ PLAN — 6 pasos ════════
 
   {
-    id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', placement: "bottom", emoji: "➕",
+    id: "plan-add", tab: "plan", target: '[data-tour="plan-toolbar"]', targetAlt: '[data-tour="plan-mobile-tools"]', placement: "bottom", emoji: "➕",
     title: "Añadir y gestionar el plan",
-    body: "Pulsa + Añadir plan para crear una actividad: nombre, lugar con autocompletado, hora, categoría y valoración. Al guardar puedes elegir quién la ve: todo el viaje, solo tú o participantes concretos. La barra incluye 🧭 Explorar, 🕐 Historial, 📄 PDF y 📅 Calendario (Google, Apple o .ics).",
+    body: "En móvil usa el botón flotante + para añadir actividades y el menú ⋯ para historial, PDF y calendario. En escritorio, la barra superior incluye también Explorar, Historial, PDF y exportar al calendario (.ics o Google).",
   },
   {
     id: "plan-itinerary", tab: "plan", target: '[data-tour="plan-itinerary-highlight"]', placement: "bottom", emoji: "📋",
@@ -128,7 +128,7 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Cuatro acciones principales: Historial muestra todos los cambios de gastos y quién los hizo. Exportar CSV descarga todos los gastos en Excel. Añadir ticket abre el formulario para registrar un nuevo gasto. Analizar ticket (Premium) extrae datos de imágenes o PDFs de tickets automáticamente.",
   },
   {
-    id: "expenses-list", tab: "expenses", target: '[data-tour="expenses-list-details"]', placement: "top",
+    id: "expenses-list", tab: "expenses", target: '[data-tour="expenses-list-details"]', targetAlt: '[data-tour="expenses-list-mobile"]', placement: "top",
     action: "open-expenses-list", emoji: "📋",
     title: "Listado de gastos",
     body: "Despliega para ver todos los tickets registrados del viaje. Cada gasto muestra el importe, quién pagó, la categoría y entre quiénes se divide. Pulsa cualquier gasto para editarlo o eliminar. Puedes filtrar por persona o categoría.",
@@ -140,9 +140,9 @@ export const DEMO_SPOTLIGHT_TOUR: SpotlightStep[] = [
     body: "Despliega para convertir importes entre divisas al tipo de cambio actual. También puedes cambiar aquí la moneda principal del balance — si el viaje es en libras pero tú prefieres ver los totales en euros, cámbialo aquí.",
   },
   {
-    id: "expenses-balance", tab: "expenses", target: '[data-tour="expenses-balance-panel"]', placement: "top", emoji: "⚖️",
+    id: "expenses-balance", tab: "expenses", target: '[data-tour="expenses-balance-panel"]', targetAlt: '[data-tour="expenses-balance-compact"]', placement: "top", emoji: "⚖️",
     title: "Balances y pagos",
-    body: "Kaviro calcula automáticamente quién debe dinero a quién. La pestaña Balances muestra el resumen por persona. La pestaña Métodos de pago permite configurar el Bizum, PayPal o cuenta bancaria de cada participante para que los enlaces de pago vayan directos.",
+    body: "Kaviro calcula quién debe a quién. En móvil los balances aparecen arriba con accesos rápidos a WhatsApp; despliega «Balances y opciones avanzadas» para reglas de pago y métodos (Bizum, transferencia, etc.).",
   },
   {
     id: "expenses-stats", tab: "expenses", target: '[data-tour="expenses-stats-btn"]', placement: "bottom",

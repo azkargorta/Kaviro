@@ -102,7 +102,7 @@ export default function TripPageAssistantDock({ tripId, isPremium }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] right-4 z-[1090] inline-flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg ring-2 ring-white/20 transition hover:bg-slate-800 md:bottom-8 md:right-6 dark:bg-[#F87171] dark:ring-[#F87171]/30 dark:hover:bg-[#EF4444] dark:shadow-[0_4px_20px_rgba(248,113,113,0.35)] ${iconSlotFab56}`}
+        className={`fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] right-4 z-[1090] hidden h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg ring-2 ring-white/20 transition hover:bg-slate-800 md:inline-flex md:bottom-8 md:right-6 dark:bg-[#F87171] dark:ring-[#F87171]/30 dark:hover:bg-[#EF4444] dark:shadow-[0_4px_20px_rgba(248,113,113,0.35)] ${iconSlotFab56}`}
         aria-label={`Abrir asistente personal (${surfaceLabel})`}
         title={`Asistente personal · ${surfaceLabel}`}
       >

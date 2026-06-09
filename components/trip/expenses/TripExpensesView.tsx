@@ -571,7 +571,7 @@ export default function TripExpensesView({
             </div>
           </details>
 
-          <div className="md:hidden">
+          <div className="md:hidden" data-tour="expenses-list-mobile">
             <ExpenseList
               compact
               expenses={expenses as any}

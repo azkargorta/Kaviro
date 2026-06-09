@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -29,6 +29,7 @@ import {
   EyeOff,
   Filter,
   GripVertical,
+  MoreHorizontal,
   Plus,
   Search,
   SlidersHorizontal,
@@ -354,6 +355,44 @@ export default function TripPlanView({
       cancelled = true;
     };
   }, [historyOpen, tripId]);
+
+  const exportPlanPdf = useCallback(() => {
+    const popup = window.open("about:blank", "_blank");
+    if (!popup) {
+      alert("Tu navegador bloqueó la ventana. Permite ventanas emergentes para este sitio.");
+      return;
+    }
+    popup.document.write(
+      "<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#64748b'><p>Generando PDF...</p></body></html>"
+    );
+
+    const fetchToken = () =>
+      fetch(`/api/trip-shares?tripId=${encodeURIComponent(tripId)}`, { credentials: "include" })
+        .then((r) => r.json())
+        .then((d) => d?.share?.token ?? null)
+        .catch(() => null);
+
+    const createToken = () =>
+      fetch("/api/trip-shares", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId }),
+        credentials: "include",
+      })
+        .then((r) => r.json())
+        .then((d) => d?.share?.token ?? d?.token ?? null)
+        .catch(() => null);
+
+    void fetchToken().then(async (token) => {
+      const finalToken = token ?? (await createToken());
+      if (finalToken && popup && !popup.closed) {
+        popup.location.href = `/share/${finalToken}/pdf`;
+      } else {
+        if (popup && !popup.closed) popup.close();
+        alert("No se pudo generar el PDF. Comprueba que tienes permisos de compartir el viaje.");
+      }
+    });
+  }, [tripId]);
 
   const availableKinds = useMemo(() => {
     const s = new Set<string>();
@@ -768,6 +807,64 @@ export default function TripPlanView({
             </div>
           ) : null}
 
+          <div className="flex items-center justify-end md:hidden">
+            <button
+              type="button"
+              data-tour="plan-mobile-tools"
+              onClick={() => setMobileOptionsOpen((v) => !v)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+              aria-label="Más opciones del plan"
+              aria-expanded={mobileOptionsOpen}
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+          </div>
+
+          {mobileOptionsOpen ? (
+            <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623]">
+              <button
+                type="button"
+                onClick={() => {
+                  setHistoryOpen(true);
+                  setMobileOptionsOpen(false);
+                }}
+                className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+              >
+                Historial de cambios
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  exportPlanPdf();
+                  setMobileOptionsOpen(false);
+                }}
+                className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+              >
+                Exportar PDF
+              </button>
+              <a
+                href={`/api/trips/${tripId}/calendar`}
+                download
+                onClick={() => setMobileOptionsOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100"
+              >
+                Descargar calendario (.ics)
+              </a>
+              {canManagePlan ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExploreOpen(true);
+                    setMobileOptionsOpen(false);
+                  }}
+                  className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+                >
+                  Explorar lugares
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           <div data-tour="plan-toolbar" className="hidden flex-col gap-4 md:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{trip?.name || trip?.destination || "Este viaje"}</span>
@@ -857,43 +954,7 @@ export default function TripPlanView({
           {/* PDF export — direct print approach */}
           <button
             type="button"
-            onClick={() => {
-              // Open popup synchronously (Firefox requires sync open from click handler)
-              const popup = window.open("about:blank", "_blank");
-              if (!popup) {
-                alert("Tu navegador bloqueó la ventana. Permite ventanas emergentes para este sitio.");
-                return;
-              }
-              popup.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#64748b'><p>Generando PDF...</p></body></html>");
-
-              // Try GET first (reuse existing token), then POST
-              const fetchToken = () =>
-                fetch(`/api/trip-shares?tripId=${encodeURIComponent(tripId)}`, { credentials: "include" })
-                  .then((r) => r.json())
-                  .then((d) => d?.share?.token ?? null)
-                  .catch(() => null);
-
-              const createToken = () =>
-                fetch("/api/trip-shares", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ tripId }),
-                  credentials: "include",
-                })
-                  .then((r) => r.json())
-                  .then((d) => d?.share?.token ?? d?.token ?? null)
-                  .catch(() => null);
-
-              void fetchToken().then(async (token) => {
-                const finalToken = token ?? (await createToken());
-                if (finalToken && popup && !popup.closed) {
-                  popup.location.href = `/share/${finalToken}/pdf`;
-                } else {
-                  if (popup && !popup.closed) popup.close();
-                  alert("No se pudo generar el PDF. Comprueba que tienes permisos de compartir el viaje.");
-                }
-              });
-            }}
+            onClick={exportPlanPdf}
             className="hidden sm:inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
             data-tour="plan-pdf-btn" title="Exportar itinerario como PDF"
           >

@@ -1,7 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import type { TripReservation } from "@/hooks/useTripResources";
 import LongTextSheet from "@/components/ui/LongTextSheet";
+import { groupByResourceCategory, resolveReservationGroup } from "@/lib/trip-resources/category-groups";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // D2 — Boarding pass metadata per reservation type
 function reservationMeta(type: string | null | undefined) {
@@ -25,6 +28,82 @@ export default function ReservationList({
   onDelete?: (reservationId: string) => void;
 }) {
   const canMutate = Boolean(onEdit && onDelete);
+  const isMobile = useIsMobile();
+  const groupedReservations = useMemo(
+    () =>
+      isMobile
+        ? groupByResourceCategory(
+            reservations,
+            (r) => resolveReservationGroup(r.reservation_type)
+          )
+        : null,
+    [isMobile, reservations]
+  );
+
+  function renderReservationCard(reservation: TripReservation) {
+    const meta = reservationMeta(reservation.reservation_type);
+    return (
+      <div key={reservation.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+        <div className={`h-1.5 w-full ${meta.stripe}`} />
+        <div className="flex items-start gap-3 p-4">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-lg">
+            {meta.icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <LongTextSheet
+              text={reservation.reservation_name}
+              modalTitle="Reserva"
+              minLength={40}
+              lineClamp={2}
+              className="text-sm font-extrabold leading-snug text-slate-900"
+            />
+            <p className="mt-1 text-xs text-slate-500">{reservation.provider_name || "Sin proveedor"}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {reservation.check_in_date ? (
+                <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                  📅 {reservation.check_in_date}
+                  {reservation.check_out_date ? ` → ${reservation.check_out_date}` : ""}
+                </span>
+              ) : null}
+              <span
+                className={`rounded-lg px-2 py-0.5 text-[10px] font-bold ${
+                  reservation.payment_status === "paid"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {reservation.payment_status === "paid" ? "✓ Pagado" : "⏳ Pendiente"}
+              </span>
+              {typeof reservation.total_amount === "number" ? (
+                <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-800">
+                  {reservation.total_amount} {reservation.currency || ""}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          {canMutate ? (
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => onEdit!(reservation)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623]"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete!(reservation.id)}
+                className="rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+              >
+                Eliminar
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-4">
@@ -41,64 +120,20 @@ export default function ReservationList({
           <p className="mt-1 text-xs text-slate-400">Añade vuelos, hoteles y traslados para tenerlos a mano durante el viaje.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {reservations.map((reservation) => {
-            const meta = reservationMeta(reservation.reservation_type);
-            return (
-              <div key={reservation.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-                <div className={`h-1.5 w-full ${meta.stripe}`} />
-                <div className="flex items-start gap-3 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-lg mt-0.5">
-                    {meta.icon}
+        <div className="space-y-4">
+          {groupedReservations
+            ? groupedReservations.map((group) => (
+                <section key={group.key}>
+                  <p className="mb-2 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+                    <span aria-hidden>{group.icon}</span>
+                    {group.label}
+                  </p>
+                  <div className="space-y-2">
+                    {group.items.map((reservation) => renderReservationCard(reservation))}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <LongTextSheet
-                      text={reservation.reservation_name}
-                      modalTitle="Reserva"
-                      minLength={40}
-                      lineClamp={2}
-                      className="font-extrabold text-sm leading-snug text-slate-900"
-                    />
-                    <p className="mt-1 text-xs text-slate-500">{reservation.provider_name || "Sin proveedor"}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {reservation.check_in_date ? (
-                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                          📅 {reservation.check_in_date}
-                          {reservation.check_out_date ? ` → ${reservation.check_out_date}` : ""}
-                        </span>
-                      ) : null}
-                      <span className={`rounded-lg px-2 py-0.5 text-[10px] font-bold ${reservation.payment_status === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
-                        {reservation.payment_status === "paid" ? "✓ Pagado" : "⏳ Pendiente"}
-                      </span>
-                      {typeof reservation.total_amount === "number" ? (
-                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-800">
-                          {reservation.total_amount} {reservation.currency || ""}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  {canMutate ? (
-                    <div className="flex shrink-0 flex-col gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => onEdit!(reservation)}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-[#1E293B] dark:bg-[#0F1623]"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDelete!(reservation.id)}
-                        className="rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
+                </section>
+              ))
+            : reservations.map((reservation) => renderReservationCard(reservation))}
         </div>
       )}
     </div>
