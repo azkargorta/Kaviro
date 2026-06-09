@@ -18,7 +18,18 @@ jobs:
     steps:
       - name: Add swap (next build trace collection)
         run: |
-          sudo fallocate -l 6G /swapfile
+          if swapon --show | grep -q '/swapfile'; then
+            echo "Swap ya activo en /swapfile"
+            free -h
+            exit 0
+          fi
+          if [ -f /swapfile ]; then
+            sudo swapoff /swapfile 2>/dev/null || true
+            sudo rm -f /swapfile
+          fi
+          if ! sudo fallocate -l 6G /swapfile 2>/dev/null; then
+            sudo dd if=/dev/zero of=/swapfile bs=1M count=6144 status=none
+          fi
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
