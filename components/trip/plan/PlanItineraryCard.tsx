@@ -168,7 +168,7 @@ export default function PlanItineraryCard({
   return (
     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
       <div data-tour="plan-itinerary-highlight">
-      <div className="bg-gradient-to-r from-[var(--brand)] to-[var(--brand-hover)] px-5 py-4">
+      <div className="bg-gradient-to-r from-[var(--brand)] to-[var(--brand-hover)] px-4 py-3 md:px-5 md:py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             {destLabel ? (
@@ -239,7 +239,7 @@ export default function PlanItineraryCard({
                   aria-label={`${ariaDay}, ${countLabel}`}
                   title={`${ariaDay} · ${countLabel}`}
                   onClick={() => onSelectDate(date)}
-                  className={`relative flex min-w-[5.25rem] shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2.5 transition ${
+                  className={`relative flex min-w-[5rem] shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2 transition md:min-w-[5.25rem] md:py-2.5 ${
                     isActive ? "text-[var(--brand)]" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   }`}
                 >

@@ -699,7 +699,7 @@ export default function TripPlanView({
   const isEmpty = activities.length === 0;
 
   return (
-    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
+    <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:space-y-6">
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -727,14 +727,14 @@ export default function TripPlanView({
       <div
         role="tablist"
         aria-label="Vista del plan"
-        className={`${chipGroup} sm:inline-flex sm:max-w-2xl`}
+        className={`${chipGroup} max-md:p-1 sm:inline-flex sm:max-w-2xl`}
       >
         <button
           type="button"
           role="tab"
           aria-selected={workspaceTab === "itinerary"}
           onClick={() => setWorkspaceTab("itinerary")}
-          className={`${chipItemBase} sm:flex-1 ${workspaceTab === "itinerary" ? chipItemActive : chipItemInactive}`}
+          className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "itinerary" ? chipItemActive : chipItemInactive}`}
         >
           Itinerario
         </button>
@@ -745,7 +745,7 @@ export default function TripPlanView({
             data-tour="plan-attendance-tab"
             aria-selected={workspaceTab === "attendance"}
             onClick={() => setWorkspaceTab("attendance")}
-            className={`${chipItemBase} sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
+            className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "attendance" ? chipItemActive : chipItemInactive}`}
           >
             Asistencia
           </button>
@@ -755,7 +755,7 @@ export default function TripPlanView({
           role="tab"
           aria-selected={workspaceTab === "notes"}
           onClick={() => setWorkspaceTab("notes")}
-          className={`${chipItemBase} sm:flex-1 ${workspaceTab === "notes" ? chipItemActive : chipItemInactive}`}
+          className={`${chipItemBase} max-md:min-h-9 max-md:px-3 max-md:text-xs sm:flex-1 ${workspaceTab === "notes" ? chipItemActive : chipItemInactive}`}
         >
           Notas
         </button>
@@ -793,7 +793,7 @@ export default function TripPlanView({
       ) : null}
 
       {workspaceTab === "itinerary" ? (
-        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-3 md:space-y-6">
+        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-2 md:space-y-6">
           {premiumEnabled && ticketHintCount > 0 && !isEmpty ? (
             <details className="hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 shadow-sm md:block">
               <summary className="cursor-pointer list-none px-4 py-2.5 text-sm text-amber-950">
@@ -807,81 +807,6 @@ export default function TripPlanView({
                 <strong>web oficial</strong> (verifica siempre la URL y el dominio antes de pagar).
               </p>
             </details>
-          ) : null}
-
-          <div className="flex items-center justify-end md:hidden">
-            <button
-              type="button"
-              data-tour="plan-mobile-tools"
-              onClick={() => setMobileOptionsOpen((v) => !v)}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-              aria-label={
-                premiumEnabled && ticketHintCount > 0
-                  ? `Más opciones del plan (${ticketHintCount} con posible entrada)`
-                  : "Más opciones del plan"
-              }
-              aria-expanded={mobileOptionsOpen}
-            >
-              <MoreHorizontal className="h-5 w-5" />
-              {premiumEnabled && ticketHintCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">
-                  {ticketHintCount}
-                </span>
-              ) : null}
-            </button>
-          </div>
-
-          {mobileOptionsOpen ? (
-            <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623]">
-              {premiumEnabled && ticketHintCount > 0 ? (
-                <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
-                  <p className="font-bold">🎟️ Entradas ({ticketHintCount})</p>
-                  <p className="mt-0.5 leading-snug text-amber-900/90 dark:text-amber-200/90">
-                    Pulsa «Entrada» en la tarjeta de cada actividad para buscar la web oficial.
-                  </p>
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => {
-                  setHistoryOpen(true);
-                  setMobileOptionsOpen(false);
-                }}
-                className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
-              >
-                Historial de cambios
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  exportPlanPdf();
-                  setMobileOptionsOpen(false);
-                }}
-                className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
-              >
-                Exportar PDF
-              </button>
-              <a
-                href={`/api/trips/${tripId}/calendar`}
-                download
-                onClick={() => setMobileOptionsOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100"
-              >
-                Descargar calendario (.ics)
-              </a>
-              {canManagePlan ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExploreOpen(true);
-                    setMobileOptionsOpen(false);
-                  }}
-                  className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
-                >
-                  Explorar lugares
-                </button>
-              ) : null}
-            </div>
           ) : null}
 
           <div data-tour="plan-toolbar" className="hidden flex-col gap-4 md:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -1161,7 +1086,7 @@ export default function TripPlanView({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 md:gap-4">
+      <div className="hidden grid-cols-2 gap-2 md:grid md:gap-4">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14] px-3 py-2 shadow-sm md:p-4">
           {unseenCount > 0 && (
           <button
@@ -1186,7 +1111,7 @@ export default function TripPlanView({
         <button
           type="button"
           onClick={() => setWorkspaceTab("attendance")}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)]/40 dark:border-[#334155] dark:bg-[#0F1623]"
+          className="hidden w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-[var(--brand-border)] hover:bg-[var(--brand-light)]/40 md:flex dark:border-[#334155] dark:bg-[#0F1623]"
         >
           <span className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
             <Users className="h-4 w-4 text-[var(--brand)]" aria-hidden />
@@ -1196,13 +1121,13 @@ export default function TripPlanView({
         </button>
       ) : null}
 
-      <div className="space-y-2">
-        <div className="flex w-full flex-wrap items-center justify-between gap-2">
+      <div className="space-y-2 max-md:space-y-1.5">
+        <div className="flex w-full items-center gap-2">
           <button
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] sm:w-auto sm:justify-start"
+            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] sm:min-h-11 sm:flex-none sm:rounded-2xl sm:px-4 sm:py-2.5 sm:text-sm"
           >
             <SlidersHorizontal className="h-4 w-4 shrink-0 text-slate-700" aria-hidden />
             Filtros
@@ -1213,7 +1138,7 @@ export default function TripPlanView({
             )}
           </button>
 
-          <div data-tour="plan-view-toggle" className="inline-flex w-full overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto">
+          <div data-tour="plan-view-toggle" className="inline-flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white sm:w-auto sm:flex-none">
             <button
               type="button"
               onClick={() => setViewMode("list")}
@@ -1239,7 +1164,80 @@ export default function TripPlanView({
               Calendario
             </button>
           </div>
+
+          <button
+            type="button"
+            data-tour="plan-mobile-tools"
+            onClick={() => setMobileOptionsOpen((v) => !v)}
+            className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+            aria-label={
+              premiumEnabled && ticketHintCount > 0
+                ? `Más opciones del plan (${ticketHintCount} con posible entrada)`
+                : "Más opciones del plan"
+            }
+            aria-expanded={mobileOptionsOpen}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            {premiumEnabled && ticketHintCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">
+                {ticketHintCount}
+              </span>
+            ) : null}
+          </button>
         </div>
+
+        {mobileOptionsOpen ? (
+          <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623]">
+            {premiumEnabled && ticketHintCount > 0 ? (
+              <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+                <p className="font-bold">🎟️ Entradas ({ticketHintCount})</p>
+                <p className="mt-0.5 leading-snug text-amber-900/90 dark:text-amber-200/90">
+                  Pulsa «Entrada» en la tarjeta de cada actividad para buscar la web oficial.
+                </p>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setHistoryOpen(true);
+                setMobileOptionsOpen(false);
+              }}
+              className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+            >
+              Historial de cambios
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                exportPlanPdf();
+                setMobileOptionsOpen(false);
+              }}
+              className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+            >
+              Exportar PDF
+            </button>
+            <a
+              href={`/api/trips/${tripId}/calendar`}
+              download
+              onClick={() => setMobileOptionsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100"
+            >
+              Descargar calendario (.ics)
+            </a>
+            {canManagePlan ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setExploreOpen(true);
+                  setMobileOptionsOpen(false);
+                }}
+                className="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
+              >
+                Explorar lugares
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {filtersOpen ? (
           <div className="rounded-2xl border border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623] p-4 shadow-sm sm:p-5">
@@ -1317,7 +1315,7 @@ export default function TripPlanView({
         ) : null}
       </div>
 
-      <details className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <details className="group hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:block">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-extrabold text-slate-950">Tipos personalizados</div>
