@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import TripOnboardingChecklist from "@/components/trip/onboarding/TripOnboardingChecklist";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { KAVIRO_TRIP_HELP_TOGGLE_EVENT } from "@/lib/trip-section-hints";
 import { isTripOnboardingDismissed, type TripOnboardingCounts } from "@/lib/trip-onboarding";
 
 type Props = {
@@ -15,7 +17,19 @@ type Props = {
  * Si el usuario ya lo cerró, no hace ninguna petición.
  */
 export default function TripOnboardingChecklistGate({ tripId, tripName, isPremium }: Props) {
+  const isMobile = useIsMobile();
   const [counts, setCounts] = useState<TripOnboardingCounts | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+      setHelpOpen((prev) => (typeof detail?.open === "boolean" ? detail.open : !prev));
+    };
+    window.addEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+    return () => window.removeEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+  }, [isMobile]);
 
   useEffect(() => {
     if (isTripOnboardingDismissed(tripId)) return;
@@ -49,6 +63,7 @@ export default function TripOnboardingChecklistGate({ tripId, tripName, isPremiu
   }, [tripId]);
 
   if (!counts) return null;
+  if (isMobile && !helpOpen) return null;
 
   return (
     <TripOnboardingChecklist
@@ -56,6 +71,7 @@ export default function TripOnboardingChecklistGate({ tripId, tripName, isPremiu
       tripName={tripName}
       isPremium={isPremium}
       counts={counts}
+      startExpanded={isMobile && helpOpen}
     />
   );
 }

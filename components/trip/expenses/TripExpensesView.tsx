@@ -506,6 +506,7 @@ export default function TripExpensesView({
         settlements={suggestedSettlements}
         balanceCurrency={balanceCurrency}
         createWhatsAppLink={createWhatsAppLink}
+        onOpenAdvanced={isMobile ? () => openMobilePanel("balances") : undefined}
       />
 
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">

@@ -1,7 +1,7 @@
 "use client";
 
 import type { BalanceRow, SettlementSuggestion } from "@/lib/expense-balance";
-import { MessageCircle } from "lucide-react";
+import { ChevronRight, MessageCircle, Settings2 } from "lucide-react";
 
 function formatMoney(value: number, currency?: string | null) {
   const code = (currency || "EUR").toUpperCase().trim();
@@ -22,6 +22,7 @@ type Props = {
   settlements: SettlementSuggestion[];
   balanceCurrency: string;
   createWhatsAppLink: (settlement: SettlementSuggestion) => string;
+  onOpenAdvanced?: () => void;
 };
 
 export default function ExpenseBalanceCompact({
@@ -29,6 +30,7 @@ export default function ExpenseBalanceCompact({
   settlements,
   balanceCurrency,
   createWhatsAppLink,
+  onOpenAdvanced,
 }: Props) {
   const pending = settlements.filter((s) => s.status !== "paid").slice(0, 5);
 
@@ -39,9 +41,22 @@ export default function ExpenseBalanceCompact({
       className="rounded-2xl border border-sky-100 bg-gradient-to-b from-sky-50/90 to-white p-3 shadow-sm dark:border-sky-900/35 dark:from-sky-950/25 dark:to-[#0F1623] md:hidden"
       data-tour="expenses-balance-compact"
     >
-      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-800 dark:text-sky-300">
-        Balances del grupo
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-800 dark:text-sky-300">
+          Balances del grupo
+        </p>
+        {onOpenAdvanced ? (
+          <button
+            type="button"
+            onClick={onOpenAdvanced}
+            className="inline-flex min-h-[32px] shrink-0 items-center gap-1 rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[10px] font-bold text-sky-800 transition hover:bg-sky-50 dark:border-sky-800 dark:bg-[#080C14] dark:text-sky-200 dark:hover:bg-sky-950/40"
+          >
+            <Settings2 className="h-3 w-3" aria-hidden />
+            Avanzados
+            <ChevronRight className="h-3 w-3" aria-hidden />
+          </button>
+        ) : null}
+      </div>
 
       {balances.length > 0 ? (
         <div className="mt-2 flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">

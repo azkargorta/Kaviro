@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Home, Share2, X } from "lucide-react";
+import { Home, LifeBuoy, Share2, X } from "lucide-react";
 import TripShareButton from "@/components/trip/common/TripShareButton";
 import ShareTodayPlanButton from "@/components/trip/common/ShareTodayPlanButton";
 import { mobileMenuRowBase, mobileMenuRowIconWrap } from "@/components/ui/mobileMenuStyles";
+import { dispatchTripHelpToggle, KAVIRO_TRIP_HELP_TOGGLE_EVENT } from "@/lib/trip-section-hints";
 
 type Props = {
   tripId: string;
@@ -16,10 +17,20 @@ type Props = {
 
 export default function TripHeroMobileShareSheet({ tripId, tripName, destination }: Props) {
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+      setHelpOpen((prev) => (typeof detail?.open === "boolean" ? detail.open : !prev));
+    };
+    window.addEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+    return () => window.removeEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
   }, []);
 
   useEffect(() => {
@@ -76,7 +87,27 @@ export default function TripHeroMobileShareSheet({ tripId, tripName, destination
 
   return (
     <>
-      <div className="flex justify-end border-t border-white/20 px-3 py-1.5 max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))]">
+      <div className="flex items-center justify-between gap-2 border-t border-white/20 px-3 py-1.5 max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))]">
+        <button
+          type="button"
+          onClick={() => {
+            setHelpOpen((prev) => {
+              const next = !prev;
+              dispatchTripHelpToggle(next);
+              return next;
+            });
+          }}
+          className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm transition ${
+            helpOpen
+              ? "border-white/60 bg-white/30 text-white"
+              : "border-white/35 bg-white/15 text-white hover:bg-white/25"
+          }`}
+          aria-pressed={helpOpen}
+          aria-label="Ayuda de esta sección"
+        >
+          <LifeBuoy className="h-3.5 w-3.5" aria-hidden />
+          Ayuda
+        </button>
         <button
           type="button"
           onClick={() => setOpen(true)}

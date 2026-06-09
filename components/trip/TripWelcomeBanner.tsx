@@ -3,20 +3,44 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { KAVIRO_TRIP_HELP_TOGGLE_EVENT } from "@/lib/trip-section-hints";
 
 const STORAGE_PREFIX = "kaviro-trip-welcome-";
 
 export default function TripWelcomeBanner({ tripId, tripMode = "travel" }: { tripId: string; tripMode?: "travel" | "expenses" }) {
+  const isMobile = useIsMobile();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (isMobile) return;
     try {
       const key = `${STORAGE_PREFIX}${tripId}`;
       if (!localStorage.getItem(key)) setVisible(true);
     } catch {
       /* */
     }
-  }, [tripId]);
+  }, [tripId, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+      const next = typeof detail?.open === "boolean" ? detail.open : true;
+      if (!next) {
+        setVisible(false);
+        return;
+      }
+      try {
+        const key = `${STORAGE_PREFIX}${tripId}`;
+        if (!localStorage.getItem(key)) setVisible(true);
+      } catch {
+        setVisible(true);
+      }
+    };
+    window.addEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+    return () => window.removeEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+  }, [isMobile, tripId]);
 
   if (!visible) return null;
 

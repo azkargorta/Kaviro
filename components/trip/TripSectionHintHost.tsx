@@ -1,48 +1,45 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import TripSectionHint from "@/components/trip/TripSectionHint";
-
-const HINTS: Array<{
-  suffix: string;
-  key: string;
-  message: string;
-}> = [
-  {
-    suffix: "/expenses",
-    key: "expenses",
-    message: "Añade tickets con el botón +. Kaviro calcula balances y quién debe a quién.",
-  },
-  {
-    suffix: "/plan",
-    key: "plan",
-    message: "Aquí va el itinerario día a día. Puedes importar un PDF con la IA (Premium).",
-  },
-  {
-    suffix: "/map",
-    key: "map",
-    message: "Rutas y puntos del viaje en el mapa. Útil durante el desplazamiento.",
-  },
-  {
-    suffix: "/participants",
-    key: "participants",
-    message: "Invita por enlace de WhatsApp o busca usuarios que ya tengan cuenta en Kaviro.",
-  },
-  {
-    suffix: "/resources",
-    key: "resources",
-    message: "Billetes, reservas y documentos compartidos del grupo.",
-  },
-  {
-    suffix: "/ai-chat",
-    key: "ai",
-    message: "Asistente con contexto del viaje: organizar días, ideas y cambios al plan.",
-  },
-];
+import {
+  dispatchTripHelpToggle,
+  getTripSectionHint,
+  KAVIRO_TRIP_HELP_TOGGLE_EVENT,
+} from "@/lib/trip-section-hints";
 
 export default function TripSectionHintHost({ tripId }: { tripId: string }) {
   const pathname = usePathname() || "";
-  const match = HINTS.find((h) => pathname.endsWith(h.suffix));
+  const match = getTripSectionHint(pathname);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+    dispatchTripHelpToggle(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+      setOpen((prev) => (typeof detail?.open === "boolean" ? detail.open : !prev));
+    };
+    window.addEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+    return () => window.removeEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
+  }, []);
+
   if (!match) return null;
-  return <TripSectionHint tripId={tripId} sectionKey={match.key} message={match.message} />;
+
+  return (
+    <TripSectionHint
+      tripId={tripId}
+      sectionKey={match.key}
+      message={match.message}
+      open={open}
+      onClose={() => {
+        setOpen(false);
+        dispatchTripHelpToggle(false);
+      }}
+    />
+  );
 }

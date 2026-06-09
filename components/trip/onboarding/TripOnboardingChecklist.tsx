@@ -23,9 +23,16 @@ type Props = {
   tripName: string;
   isPremium: boolean;
   counts: TripOnboardingCounts;
+  startExpanded?: boolean;
 };
 
-export default function TripOnboardingChecklist({ tripId, tripName, isPremium, counts: initialCounts }: Props) {
+export default function TripOnboardingChecklist({
+  tripId,
+  tripName,
+  isPremium,
+  counts: initialCounts,
+  startExpanded = false,
+}: Props) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [counts, setCounts] = useState(initialCounts);
@@ -54,13 +61,21 @@ export default function TripOnboardingChecklist({ tripId, tripName, isPremium, c
   useEffect(() => {
     setMounted(true);
     syncVisibility();
+    if (startExpanded) {
+      setExpanded(true);
+      return;
+    }
     try {
       const collapsed = window.localStorage.getItem(tripOnboardingCollapsedKey(tripId)) === "1";
       setExpanded(collapsed ? false : !isMobile);
     } catch {
       setExpanded(!isMobile);
     }
-  }, [tripId, syncVisibility, isMobile]);
+  }, [tripId, syncVisibility, isMobile, startExpanded]);
+
+  useEffect(() => {
+    if (startExpanded) setExpanded(true);
+  }, [startExpanded]);
 
   useEffect(() => {
     const onRefresh = (e: Event) => {
