@@ -18,9 +18,15 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: "npm run build && npm run start",
+        // En CI el build va en un paso aparte (evita OOM al compilar dentro del webServer).
+        command: process.env.CI ? "npm run start" : "npm run build && npm run start",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
+        timeout: process.env.CI ? 120_000 : 300_000,
+        env: {
+          ...process.env,
+          NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=4096",
+          PORT: String(port),
+        },
       },
 });

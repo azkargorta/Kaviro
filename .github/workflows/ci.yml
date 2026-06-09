@@ -10,9 +10,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,6 +35,9 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Build app (E2E)
+        run: npm run build
 
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
