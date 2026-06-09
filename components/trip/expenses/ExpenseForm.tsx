@@ -471,7 +471,6 @@ export default function ExpenseForm({
       <input
         type="file"
         accept="image/*,.pdf"
-        capture={isMobile ? "environment" : undefined}
         onChange={(e) => setAttachment(e.target.files?.[0] || null)}
         className="w-full text-sm"
       />

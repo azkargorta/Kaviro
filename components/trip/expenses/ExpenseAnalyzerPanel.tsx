@@ -197,7 +197,6 @@ export default function ExpenseAnalyzerPanel({
           <input
             type="file"
             accept="image/*,.pdf"
-            capture={embedded ? "environment" : undefined}
             onChange={(e) => {
               setFile(e.target.files?.[0] || null);
               setAppliedHint(null);
