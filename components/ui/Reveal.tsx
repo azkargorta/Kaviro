@@ -46,7 +46,10 @@ export default function Reveal({
     const el = ref.current;
     if (!el) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      navigator.webdriver
+    ) {
       setVisible(true);
       return;
     }

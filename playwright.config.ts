@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { withE2eSupabaseEnv } from "./e2e/ci-env";
 
 const port = Number(process.env.PORT || 3000);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${port}`;
@@ -24,7 +25,7 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: process.env.CI ? 120_000 : 300_000,
         env: {
-          ...process.env,
+          ...withE2eSupabaseEnv(process.env),
           NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=4096",
           PORT: String(port),
         },

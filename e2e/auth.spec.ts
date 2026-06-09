@@ -25,7 +25,8 @@ test.describe("Auth (sin sesión)", () => {
 
   test("login respeta ?next=", async ({ page }) => {
     await page.goto("/auth/login?next=/pricing");
-    await expect(page).toHaveURL(/next=%2Fpricing/);
+    await expect(page).toHaveURL(/\/auth\/login/);
+    expect(new URL(page.url()).searchParams.get("next")).toBe("/pricing");
   });
 });
 
