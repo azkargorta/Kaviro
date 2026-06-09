@@ -355,7 +355,76 @@ export default function TripSummaryOverview({
           </div>
         </Reveal>
 
-        <div className="flex min-w-0 flex-col gap-4 md:gap-5">
+        {/* R3 — Módulos del viaje (móvil: antes de presupuesto/clima) */}
+        <section className="order-2 col-span-full min-w-0 space-y-2 lg:col-span-2 md:space-y-3">
+          <Reveal variant="fade">
+            <div className="hidden flex-wrap items-end justify-between gap-2 md:flex">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Navegación rápida</p>
+                <h2 className="mt-0.5 text-xl font-extrabold text-slate-950 dark:text-slate-50">Módulos del viaje</h2>
+              </div>
+            </div>
+          </Reveal>
+
+          <div data-tour="summary-stats" className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+            {tabs.map((tab, tabIdx) => {
+              const ac = TILE_ACCENT[tab.tone];
+              const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
+              const tileBorder = isDark ? "border-[color:var(--brand-border)] hover:border-[var(--accent)]" : ac.border;
+              const tileBg = isDark ? "bg-[var(--surface-card)]/80 hover:bg-[var(--surface-card)]" : "bg-white";
+              const tileShadow = isDark ? "shadow-[0_10px_30px_rgba(0,0,0,0.40)]" : "shadow-sm";
+              return (
+                <Reveal
+                  key={tab.href}
+                  variant="scale"
+                  delay={(tabIdx % 4) as RevealDelay}
+                  className="h-full"
+                >
+                  <Link
+                    href={tab.href}
+                    className={`trip-tile-hover group flex h-full flex-col items-center rounded-xl border p-2 text-center sm:items-stretch sm:rounded-2xl sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
+                  >
+                    <div
+                      className={
+                        isDark
+                          ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11 sm:rounded-xl"
+                          : `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11 sm:rounded-xl ${ac.icon}`
+                      }
+                    >
+                      <Image
+                        src={iconSrc}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className={`h-5 w-5 object-contain sm:h-6 sm:w-6 ${isDark ? coralPngFilterDark : ""}`}
+                      />
+                    </div>
+                    <p className="mt-1 text-[10px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
+                      {tab.label}
+                    </p>
+                    <span
+                      className={`mt-1 hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold sm:inline-block ${
+                        isDark
+                          ? "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[color:var(--brand-border)]"
+                          : ac.chip
+                      }`}
+                    >
+                      {tab.metric}
+                    </span>
+                    <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-slate-300 sm:block">{tab.subtitle}</p>
+                    {tab.hint ? (
+                      <p className="mt-2 hidden rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 line-clamp-2 dark:border-[color:var(--brand-border)] dark:bg-black/20 dark:text-slate-200 sm:block">
+                        {tab.hint}
+                      </p>
+                    ) : null}
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="order-3 flex min-w-0 flex-col gap-4 md:order-2 md:gap-5">
         {budgetTarget != null && budgetTarget > 0 ? (
           <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
             <TripBudgetSummaryCard
@@ -541,75 +610,6 @@ export default function TripSummaryOverview({
           <span className="shrink-0 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{formatActivityWhen(nextPlan)}</span>
         </Link>
       ) : null}
-
-      {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}
-      <section className="order-3 min-w-0 space-y-2 md:order-none md:space-y-3">
-        <Reveal variant="fade">
-        <div className="hidden flex-wrap items-end justify-between gap-2 md:flex">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Navegación rápida</p>
-            <h2 className="mt-0.5 text-xl font-extrabold text-slate-950 dark:text-slate-50">Módulos del viaje</h2>
-          </div>
-        </div>
-        </Reveal>
-
-        <div data-tour="summary-stats" className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
-          {tabs.map((tab, tabIdx) => {
-            const ac = TILE_ACCENT[tab.tone];
-            const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
-            const tileBorder = isDark ? "border-[color:var(--brand-border)] hover:border-[var(--accent)]" : ac.border;
-            const tileBg = isDark ? "bg-[var(--surface-card)]/80 hover:bg-[var(--surface-card)]" : "bg-white";
-            const tileShadow = isDark ? "shadow-[0_10px_30px_rgba(0,0,0,0.40)]" : "shadow-sm";
-            return (
-              <Reveal
-                key={tab.href}
-                variant="scale"
-                delay={(tabIdx % 4) as RevealDelay}
-                className="h-full"
-              >
-              <Link
-                href={tab.href}
-                className={`trip-tile-hover group flex h-full flex-col items-center rounded-xl border p-2 text-center sm:items-stretch sm:rounded-2xl sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
-              >
-                <div
-                  className={
-                    isDark
-                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11 sm:rounded-xl"
-                      : `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11 sm:rounded-xl ${ac.icon}`
-                  }
-                >
-                  <Image
-                    src={iconSrc}
-                    alt=""
-                    width={24}
-                    height={24}
-                    className={`h-5 w-5 object-contain sm:h-6 sm:w-6 ${isDark ? coralPngFilterDark : ""}`}
-                  />
-                </div>
-                <p className="mt-1 text-[10px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
-                  {tab.label}
-                </p>
-                <span
-                  className={`mt-1 hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold sm:inline-block ${
-                    isDark
-                      ? "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[color:var(--brand-border)]"
-                      : ac.chip
-                  }`}
-                >
-                  {tab.metric}
-                </span>
-                <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-slate-300 sm:block">{tab.subtitle}</p>
-                {tab.hint ? (
-                  <p className="mt-2 hidden rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 line-clamp-2 dark:border-[color:var(--brand-border)] dark:bg-black/20 dark:text-slate-200 sm:block">
-                    {tab.hint}
-                  </p>
-                ) : null}
-              </Link>
-              </Reveal>
-            );
-          })}
-        </div>
-      </section>
 
       <details className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
         <summary className="cursor-pointer text-sm font-bold text-slate-800 dark:text-slate-200">

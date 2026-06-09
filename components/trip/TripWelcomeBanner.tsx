@@ -36,8 +36,8 @@ export default function TripWelcomeBanner({ tripId, tripMode = "travel" }: { tri
       : "Eres nuevo aquí — empieza por el Plan o invita a tu grupo en Gente.";
 
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900/50 dark:bg-sky-950/40">
-      <p className="flex-1 text-sm font-semibold text-sky-950 dark:text-sky-100">
+    <div className="mb-2 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 md:mb-4 md:gap-3 md:rounded-2xl md:px-4 md:py-3 dark:border-sky-900/50 dark:bg-sky-950/40">
+      <p className="flex-1 text-xs font-semibold leading-snug text-sky-950 md:text-sm dark:text-sky-100">
         {message}{" "}
         <Link href={planHref} className="font-bold text-[#0B5CFF] underline" onClick={dismiss}>
           Ir →

@@ -305,6 +305,7 @@ export default function DashboardTripsClient({
             badge="En curso"
             accent={ACCENT_CURRENT}
             lockedTripIds={lockedTripIds}
+            defaultOpen={current.length > 0}
           />
           <DashboardTripSection
             title="Próximos"
@@ -313,6 +314,7 @@ export default function DashboardTripsClient({
             badge="Próximo"
             accent={ACCENT_FUTURE}
             lockedTripIds={lockedTripIds}
+            defaultOpen={current.length === 0 && future.length > 0}
           />
           <DashboardTripSection
             title="Pasados"

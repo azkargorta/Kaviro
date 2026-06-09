@@ -16,6 +16,7 @@ export default function DashboardTripSection({
   badge,
   accent,
   lockedTripIds,
+  defaultOpen = false,
 }: {
   title: string;
   subtitle: string;
@@ -24,8 +25,10 @@ export default function DashboardTripSection({
   accent: string;
   /** Lista serializable (p. ej. desde el servidor). */
   lockedTripIds: string[];
+  /** Abrir la sección al cargar (p. ej. viajes en curso). */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const expandedRef = useRef<HTMLDivElement | null>(null);
   const count = trips.length;
   const countLabel = `${count} viaje${count === 1 ? "" : "s"}`;
@@ -38,19 +41,20 @@ export default function DashboardTripSection({
 
   return (
     <Reveal variant="slide" as="section" className="mx-auto max-w-2xl space-y-3">
-      <div className="flex flex-col gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-[var(--shadow-card)] sm:flex-row sm:justify-between sm:gap-3 sm:p-4">
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-bold tracking-tight text-slate-950 dark:text-white sm:text-lg">{title}</h2>
-          <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{subtitle}</p>
-          <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">{countLabel}</p>
+          <h2 className="text-sm font-bold tracking-tight text-slate-950 sm:text-lg dark:text-white">{title}</h2>
+          <p className="mt-0.5 hidden text-xs text-slate-500 sm:block sm:text-sm">{subtitle}</p>
+          <p className="mt-0.5 text-xs font-semibold text-slate-800 sm:mt-1 sm:text-sm dark:text-slate-200">{countLabel}</p>
         </div>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`${btnPrimary} min-h-[40px] rounded-lg px-3 py-1.5 text-xs sm:text-sm`}
+          className={`${btnPrimary} min-h-[36px] shrink-0 rounded-lg px-3 py-1.5 text-xs sm:min-h-[40px] sm:text-sm`}
           aria-expanded={open}
         >
-          {open ? "Ocultar viajes" : "Mostrar viajes"}
+          <span className="sm:hidden">{open ? "Ocultar" : "Ver"}</span>
+          <span className="hidden sm:inline">{open ? "Ocultar viajes" : "Mostrar viajes"}</span>
         </button>
       </div>
 

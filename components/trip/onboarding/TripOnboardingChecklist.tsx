@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   buildOnboardingSteps,
   dismissTripOnboarding,
@@ -26,6 +27,7 @@ type Props = {
 
 export default function TripOnboardingChecklist({ tripId, tripName, isPremium, counts: initialCounts }: Props) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const [counts, setCounts] = useState(initialCounts);
   const steps = useMemo(() => buildOnboardingSteps(tripId, isPremium), [tripId, isPremium]);
   const { done, total } = useMemo(() => onboardingProgress(counts, steps), [counts, steps]);
@@ -53,13 +55,12 @@ export default function TripOnboardingChecklist({ tripId, tripName, isPremium, c
     setMounted(true);
     syncVisibility();
     try {
-      if (window.localStorage.getItem(tripOnboardingCollapsedKey(tripId)) === "1") {
-        setExpanded(false);
-      }
+      const collapsed = window.localStorage.getItem(tripOnboardingCollapsedKey(tripId)) === "1";
+      setExpanded(collapsed ? false : !isMobile);
     } catch {
-      /* */
+      setExpanded(!isMobile);
     }
-  }, [tripId, syncVisibility]);
+  }, [tripId, syncVisibility, isMobile]);
 
   useEffect(() => {
     const onRefresh = (e: Event) => {

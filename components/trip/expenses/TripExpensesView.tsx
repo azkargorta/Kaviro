@@ -11,7 +11,16 @@ import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import { useTripExpenses } from "@/hooks/useTripExpenses";
 import { useTripData } from "@/hooks/useTripData";
 import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
-import { ChevronDown, Clock, Download, Plus, ScanText, Wallet } from "lucide-react";
+import {
+  BarChart3,
+  ChevronDown,
+  Clock,
+  Download,
+  MoreHorizontal,
+  Plus,
+  ScanText,
+  Wallet,
+} from "lucide-react";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import { SkeletonCard } from "@/components/ui/Skeleton";
@@ -97,6 +106,8 @@ export default function TripExpensesView({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"list" | "charts">("list");
+  type MobileExpensesPanel = null | "menu" | "analyze" | "converter" | "export" | "history" | "balances";
+  const [mobilePanel, setMobilePanel] = useState<MobileExpensesPanel>(null);
 
   const shouldShowForm =
     canManageExpenses && (isAddOpen || !!editingExpense || !!detectedData);
@@ -159,6 +170,104 @@ export default function TripExpensesView({
     a.remove();
     URL.revokeObjectURL(url);
   }
+
+  function closeMobilePanel() {
+    setMobilePanel(null);
+    setIsAnalyzeOpen(false);
+    setIsConverterOpen(false);
+    setExportOpen(false);
+    setHistoryOpen(false);
+  }
+
+  function openMobilePanel(panel: Exclude<MobileExpensesPanel, null | "menu">) {
+    setMobilePanel(panel);
+    if (panel === "analyze") setIsAnalyzeOpen(true);
+    if (panel === "converter") setIsConverterOpen(true);
+    if (panel === "export") setExportOpen(true);
+    if (panel === "history") setHistoryOpen(true);
+  }
+
+  const exportPanelBody = (
+    <>
+      <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+        Descarga un CSV para contabilidad o para compartir con el grupo.
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            const rows = (expenses || []).map((e: any) => ({
+              "Nombre del gasto": e.title || "",
+              Fecha: e.expense_date || "",
+              Cantidad: `${Number(e.amount || 0).toFixed(2)} ${String(e.currency || "").toUpperCase()}`.trim(),
+              "Pagado por": e.payer_name || "",
+              "Repartir pago entre": Array.isArray(e.owed_by_names) ? e.owed_by_names.join(" | ") : "",
+              Categoría: e.category || "",
+            }));
+            downloadCsv(`trip-${tripId}-gastos.csv`, rows, { delimiter: ";" });
+          }}
+          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+        >
+          Descargar gastos.csv
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const rows = (suggestedSettlements || []).map((s: any) => ({
+              id: s.id || "",
+              deudor: s.debtor_name || "",
+              acreedor: s.creditor_name || "",
+              importe: Number(s.amount || 0),
+              moneda: s.currency || "",
+              estado: s.status || "pending",
+              metodo: s.payment_method || "",
+            }));
+            downloadCsv(`trip-${tripId}-pagos.csv`, rows, { delimiter: ";" });
+          }}
+          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+        >
+          Descargar pagos.csv
+        </button>
+      </div>
+    </>
+  );
+
+  const historyPanelBody = (
+    <>
+      <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+        Quién creó/editó/eliminó gastos recientemente.
+      </div>
+      {historyLoading ? (
+        <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">Cargando historial…</div>
+      ) : historyError ? (
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {historyError}
+        </div>
+      ) : history.length ? (
+        <div className="mt-4 space-y-2">
+          {history.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-950 dark:text-white">
+                    {item.summary || `${item.action} ${item.entity_type}`}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                    {(item.actor_email || "Alguien")} · {new Date(item.created_at).toLocaleString("es-ES")}
+                  </div>
+                </div>
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                  {item.action}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">Todavía no hay cambios registrados.</div>
+      )}
+    </>
+  );
 
   useEffect(() => {
     if (editingExpense || detectedData) {
@@ -248,41 +357,52 @@ export default function TripExpensesView({
     <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden pb-20 md:pb-0">
       {!canManageExpenses ? <TripReadOnlyBanner moduleLabel="gastos" /> : null}
 
-      {/* Tab switcher */}
-      {/* G5 — Pill toggle */}
-      <div className="inline-flex rounded-xl bg-slate-100 p-1 gap-1">
+      {/* Tab switcher + menú móvil */}
+      <div className="flex items-center gap-2">
+        <div className="inline-flex flex-1 rounded-xl bg-slate-100 p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab("list")}
+            className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition sm:flex-none sm:px-4 ${
+              activeTab === "list"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Lista
+            {activeTab === "list" && expenses.length > 0 && (
+              <span className="rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--brand-text)]">
+                {expenses.length}
+              </span>
+            )}
+          </button>
+          <button
+            data-tour="expenses-stats-btn"
+            type="button"
+            onClick={() => setActiveTab("charts")}
+            className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition sm:flex-none sm:px-4 md:inline-flex ${
+              activeTab === "charts"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <span className="md:hidden">📊</span>
+            <span className="hidden md:inline">📊 Estadísticas</span>
+            <span className="md:hidden">Stats</span>
+          </button>
+        </div>
         <button
           type="button"
-          onClick={() => setActiveTab("list")}
-          className={`inline-flex min-h-[34px] items-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition ${
-            activeTab === "list"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
+          onClick={() => setMobilePanel("menu")}
+          className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 md:hidden"
+          aria-label="Más opciones"
         >
-          Lista
-          {activeTab === "list" && expenses.length > 0 && (
-            <span className="rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--brand-text)]">
-              {expenses.length}
-            </span>
-          )}
-        </button>
-        <button
-          data-tour="expenses-stats-btn"
-          type="button"
-          onClick={() => setActiveTab("charts")}
-          className={`inline-flex min-h-[34px] items-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition ${
-            activeTab === "charts"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          📊 Estadísticas
+          <MoreHorizontal className="h-5 w-5" aria-hidden />
         </button>
       </div>
 
-      {/* Toolbar — siempre visible independientemente del tab activo */}
-      <div className="card-soft relative overflow-hidden p-4">
+      {/* Toolbar — escritorio */}
+      <div className="card-soft relative hidden overflow-hidden p-4 md:block">
         <div
           className="pointer-events-none absolute inset-0 opacity-100"
           style={{
@@ -347,17 +467,12 @@ export default function TripExpensesView({
           </div>
         ) : null}
 
-      {!isPremium ? <PremiumUpsell feature="expenseOcr" /> : null}
+      {!isPremium ? <div className="hidden md:block"><PremiumUpsell feature="expenseOcr" /></div> : null}
 
-      {exportOpen ? (
+      {exportOpen && !isMobile ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-slate-950">Exportar</div>
-              <div className="mt-1 text-xs text-slate-600">
-                Descarga un CSV para contabilidad o para compartir con el grupo.
-              </div>
-            </div>
+            <div className="text-sm font-semibold text-slate-950 dark:text-white">Exportar</div>
             <button
               type="button"
               onClick={() => setExportOpen(false)}
@@ -366,55 +481,14 @@ export default function TripExpensesView({
               Cerrar
             </button>
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                const rows = (expenses || []).map((e: any) => ({
-                  "Nombre del gasto": e.title || "",
-                  Fecha: e.expense_date || "",
-                  Cantidad: `${Number(e.amount || 0).toFixed(2)} ${String(e.currency || "").toUpperCase()}`.trim(),
-                  "Pagado por": e.payer_name || "",
-                  "Repartir pago entre": Array.isArray(e.owed_by_names) ? e.owed_by_names.join(" | ") : "",
-                  Categoría: e.category || "",
-                }));
-                downloadCsv(`trip-${tripId}-gastos.csv`, rows, { delimiter: ";" });
-              }}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
-            >
-              Descargar gastos.csv
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                const rows = (suggestedSettlements || []).map((s: any) => ({
-                  id: s.id || "",
-                  deudor: s.debtor_name || "",
-                  acreedor: s.creditor_name || "",
-                  importe: Number(s.amount || 0),
-                  moneda: s.currency || "",
-                  estado: s.status || "pending",
-                  metodo: s.payment_method || "",
-                }));
-                downloadCsv(`trip-${tripId}-pagos.csv`, rows, { delimiter: ";" });
-              }}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
-            >
-              Descargar pagos.csv
-            </button>
-          </div>
+          {exportPanelBody}
         </div>
       ) : null}
 
-      {historyOpen ? (
+      {historyOpen && !isMobile ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-slate-950">Historial de cambios</div>
-              <div className="mt-1 text-xs text-slate-600">Quién creó/editó/eliminó gastos recientemente.</div>
-            </div>
+            <div className="text-sm font-semibold text-slate-950 dark:text-white">Historial de cambios</div>
             <button
               type="button"
               onClick={() => setHistoryOpen(false)}
@@ -423,36 +497,7 @@ export default function TripExpensesView({
               Cerrar
             </button>
           </div>
-
-          {historyLoading ? (
-            <div className="mt-4 text-sm text-slate-600">Cargando historial…</div>
-          ) : historyError ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {historyError}
-            </div>
-          ) : history.length ? (
-            <div className="mt-4 space-y-2">
-              {history.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-950">
-                        {item.summary || `${item.action} ${item.entity_type}`}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-600">
-                        {(item.actor_email || "Alguien")} · {new Date(item.created_at).toLocaleString("es-ES")}
-                      </div>
-                    </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                      {item.action}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 text-sm text-slate-600">Todavía no hay cambios registrados.</div>
-          )}
+          {historyPanelBody}
         </div>
       ) : null}
 
@@ -467,7 +512,7 @@ export default function TripExpensesView({
         <div className="min-w-0 space-y-4">
           {canManageExpenses ? (
           <details
-            className="rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
+            className="hidden rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70 md:block"
             open={showAnalyzePanel}
             onToggle={(e) => setIsAnalyzeOpen((e.currentTarget as HTMLDetailsElement).open)}
           >
@@ -551,7 +596,7 @@ export default function TripExpensesView({
 
           <details
             data-tour="expenses-currency-details"
-            className="rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
+            className="hidden rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70 md:block"
             open={isConverterOpen}
             onToggle={(e) => setIsConverterOpen((e.currentTarget as HTMLDetailsElement).open)}
           >
@@ -677,35 +722,146 @@ export default function TripExpensesView({
         </div>
       </div>
 
-      <details className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700/50 dark:bg-[#0F1623] md:hidden">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">
-          Balances y opciones avanzadas
-        </summary>
-        <div className="border-t border-slate-200 px-4 py-4 dark:border-[#334155]">
-          <ExpenseBalancePanel
-            tripId={tripId}
-            balances={balances}
-            settlements={suggestedSettlements}
-            balanceCurrency={balanceCurrency}
-            onChangeBalanceCurrency={setBalanceCurrency}
-            onToggleSettlementStatus={toggleSettlementStatus}
-            createWhatsAppLink={createWhatsAppLink}
-            settlementWarning={settlementWarning}
-            participants={participants}
-            paymentPreferences={paymentPreferences}
-            onSavePaymentPreference={savePaymentPreference}
-            paymentPairRules={paymentPairRules}
-            onSavePaymentPairRule={savePaymentPairRule}
-            onResetPaymentPairRules={resetPaymentPairRules}
-            budgetTarget={budgetTarget}
-            onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
-            strictPaymentMethods={strictPaymentMethods}
-            onChangeStrictPaymentMethods={setStrictPaymentMethods}
-          />
-        </div>
-      </details>
-
       </div>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "menu"}
+        onClose={() => setMobilePanel(null)}
+        title="Más opciones"
+      >
+        <div className="space-y-1">
+          {canManageExpenses ? (
+            <button
+              type="button"
+              onClick={() => openMobilePanel("analyze")}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
+            >
+              <ScanText className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+              Analizar ticket
+              {!isPremium ? (
+                <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">PRO</span>
+              ) : null}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => openMobilePanel("converter")}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
+          >
+            <Wallet className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+            Convertidor de moneda
+          </button>
+          <button
+            type="button"
+            onClick={() => openMobilePanel("history")}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
+          >
+            <Clock className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+            Historial de cambios
+          </button>
+          <button
+            type="button"
+            onClick={() => openMobilePanel("export")}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
+          >
+            <Download className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+            Exportar CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("charts");
+              setMobilePanel(null);
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
+          >
+            <BarChart3 className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
+            Ver estadísticas
+          </button>
+          <button
+            type="button"
+            onClick={() => openMobilePanel("balances")}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
+          >
+            <Wallet className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
+            Balances y opciones avanzadas
+          </button>
+        </div>
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "analyze"}
+        onClose={closeMobilePanel}
+        title="Analizar ticket"
+      >
+        {isPremium ? (
+          <ExpenseAnalyzerPanel
+            tripBaseCurrency={tripBaseCurrency || "EUR"}
+            onUseDetectedData={(data) => {
+              setDetectedData(data);
+              closeMobilePanel();
+              setIsAddOpen(true);
+            }}
+          />
+        ) : (
+          <PremiumUpsell feature="expenseOcr" showTripCoopHint={false} />
+        )}
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "converter"}
+        onClose={closeMobilePanel}
+        title="Convertidor de moneda"
+      >
+        <CurrencyConverterCard
+          onConvert={convertAmount}
+          balanceCurrency={balanceCurrency}
+          onChangeBalanceCurrency={setBalanceCurrency}
+        />
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "export"}
+        onClose={closeMobilePanel}
+        title="Exportar"
+      >
+        {exportPanelBody}
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "history"}
+        onClose={closeMobilePanel}
+        title="Historial de cambios"
+      >
+        {historyPanelBody}
+      </MobileBottomSheet>
+
+      <MobileBottomSheet
+        open={isMobile && mobilePanel === "balances"}
+        onClose={() => setMobilePanel(null)}
+        title="Balances y opciones"
+      >
+        <ExpenseBalancePanel
+          tripId={tripId}
+          balances={balances}
+          settlements={suggestedSettlements}
+          balanceCurrency={balanceCurrency}
+          onChangeBalanceCurrency={setBalanceCurrency}
+          onToggleSettlementStatus={toggleSettlementStatus}
+          createWhatsAppLink={createWhatsAppLink}
+          settlementWarning={settlementWarning}
+          participants={participants}
+          paymentPreferences={paymentPreferences}
+          onSavePaymentPreference={savePaymentPreference}
+          paymentPairRules={paymentPairRules}
+          onSavePaymentPairRule={savePaymentPairRule}
+          onResetPaymentPairRules={resetPaymentPairRules}
+          budgetTarget={budgetTarget}
+          onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
+          strictPaymentMethods={strictPaymentMethods}
+          onChangeStrictPaymentMethods={setStrictPaymentMethods}
+        />
+      </MobileBottomSheet>
 
       <MobileBottomSheet
         open={isMobile && shouldShowForm}

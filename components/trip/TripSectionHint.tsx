@@ -35,7 +35,7 @@ export default function TripSectionHint({
   }
 
   return (
-    <div className="mb-4 flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-violet-950 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-100">
+    <div className="mb-4 hidden items-start gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-violet-950 md:flex dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-100">
       <p className="flex-1 leading-snug">{message}</p>
       <button
         type="button"

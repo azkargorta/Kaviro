@@ -128,7 +128,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   startDate={tripMeta?.start_date ?? null}
                   endDate={tripMeta?.end_date ?? null}
                 />
-                <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden md:space-y-8">
+                <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:space-y-8">
                   {isTravelerPreview ? <TripTravelerPreviewBanner tripId={params.id} /> : null}
                   {isDemo ? <DemoTripBanner /> : null}
                   {showOnboarding ? (
