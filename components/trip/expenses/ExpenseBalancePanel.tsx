@@ -20,6 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { getBudgetProgress } from "@/lib/trip-budget-progress";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 function safeCurrency(currency?: string | null) {
   const code = (currency || "EUR").toUpperCase().trim();
@@ -86,6 +87,7 @@ export default function ExpenseBalancePanel({
   budgetTarget,
 }: Props) {
   const displayCurrency = safeCurrency(balanceCurrency);
+  const isMobile = useIsMobile();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [balancesOpen, setBalancesOpen] = useState(false);
   const [settlementsOpen, setSettlementsOpen] = useState(false);
@@ -205,11 +207,10 @@ export default function ExpenseBalancePanel({
       {pdfHref ? (
         <a
           href={pdfHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+          {...(isMobile ? {} : { target: "_blank", rel: "noopener noreferrer" })}
+          className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 sm:w-auto dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
         >
-          Exportar informe (PDF / imprimir)
+          {isMobile ? "Ver informe de balances" : "Exportar informe (PDF / imprimir)"}
         </a>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">

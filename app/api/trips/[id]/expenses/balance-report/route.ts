@@ -54,10 +54,21 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
     .map(([cat, amt]) => `<tr><td>${esc(cat)}</td><td>${money(amt, currency)}</td></tr>`)
     .join("");
 
-  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/><title>Balances — ${esc(String(trip?.name || "Viaje"))}</title>
-<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;color:#111}
-h1{font-size:1.5rem}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #ddd;padding:.5rem;text-align:left}
-th{background:#f8fafc}@media print{body{margin:0}}</style></head><body>
+  const backHref = `/trip/${encodeURIComponent(tripId)}/expenses`;
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Balances — ${esc(String(trip?.name || "Viaje"))}</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;max-width:720px;margin:0 auto;padding:0 1rem 2rem;color:#111;padding-top:env(safe-area-inset-top,0)}
+.toolbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:.75rem;margin:0 -1rem 1rem;padding:.75rem 1rem;padding-top:max(.75rem,env(safe-area-inset-top));background:#0f172a;color:#fff;box-shadow:0 2px 12px rgba(15,23,42,.15)}
+.toolbar a{color:#fff;text-decoration:none;font-weight:700;font-size:.9rem}
+.toolbar button{margin-left:auto;border:0;border-radius:.5rem;background:#f87171;color:#fff;font-weight:700;font-size:.85rem;padding:.5rem .85rem;cursor:pointer}
+h1{font-size:1.35rem;margin-top:.5rem}table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}th,td{border:1px solid #ddd;padding:.5rem;text-align:left}
+th{background:#f8fafc}@media print{.toolbar{display:none!important}body{margin:0;padding-top:0}}
+</style></head><body>
+<div class="toolbar no-print">
+  <a href="${backHref}" id="back-link">← Volver a gastos</a>
+  <button type="button" onclick="window.print()">Imprimir / PDF</button>
+</div>
 <h1>${esc(String(trip?.name || "Viaje"))}</h1>
 <p>Informe de balances · ${new Date().toLocaleDateString("es-ES")}</p>
 <h2>Quién debe a quién</h2>
@@ -65,7 +76,16 @@ th{background:#f8fafc}@media print{body{margin:0}}</style></head><body>
 <h2>Resumen por categoría</h2>
 <table><thead><tr><th>Categoría</th><th>Total</th></tr></thead><tbody>${catRows || "<tr><td colspan=2>Sin gastos</td></tr>"}</tbody></table>
 <p><strong>Total gastos:</strong> ${money(total, currency)}</p>
-<script>window.onload=()=>window.print()</script>
+<script>
+(function(){
+  var back=document.getElementById("back-link");
+  if(back){back.addEventListener("click",function(e){
+    if(window.history.length>1){e.preventDefault();window.history.back();}
+  });}
+  var mobile=/iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)||window.innerWidth<768;
+  if(!mobile){window.addEventListener("load",function(){setTimeout(function(){window.print();},300);});}
+})();
+</script>
 </body></html>`;
 
   return new NextResponse(html, {
