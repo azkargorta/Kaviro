@@ -45,6 +45,14 @@ export function parsePlaceFromScheduleLabel(label: string): {
     return { place_name: cityTail[1]!.trim(), title: raw };
   }
 
+  // «EXCURSION GUIADA BUENOS AIRES SUR», «CITY TOUR MADRID CENTRO», etc.
+  const directionalTail = raw.match(
+    /\b([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{2,}?)\s+(?:SUR|NORTE|CENTRO|ESTE|OESTE)\s*$/i
+  );
+  if (directionalTail) {
+    return { place_name: directionalTail[1]!.trim(), title: raw };
+  }
+
   return { place_name: null, title: raw };
 }
 
