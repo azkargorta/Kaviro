@@ -6,6 +6,7 @@ import { ALL_CURRENCIES } from "@/lib/currencies";
 import type { ExpenseAnalysis, ExpenseFormInput } from "@/hooks/useTripExpenses";
 import type { ExpenseDetectedData } from "@/components/trip/expenses/ExpenseAnalyzerPanel";
 import { parseAmountsMap, validateCustomShares } from "@/lib/expense-split";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ExistingExpense = {
   id?: string;
@@ -93,18 +94,6 @@ function Chip({
       {name}
     </button>
   );
-}
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return mobile;
 }
 
 export default function ExpenseForm({

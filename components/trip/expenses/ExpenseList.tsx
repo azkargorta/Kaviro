@@ -93,15 +93,18 @@ export default function ExpenseList({
   onEdit,
   onDuplicate,
   onDelete,
+  compact = false,
 }: {
   expenses: Expense[];
   onEdit?: (expense: Expense) => void;
   onDuplicate?: (expense: Expense) => void;
   onDelete?: (expenseId: string) => Promise<void>;
+  /** Filas densas para móvil */
+  compact?: boolean;
 }) {
   const canMutate = Boolean(onEdit && onDelete);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [groupByDate, setGroupByDate] = useState(false);
+  const [groupByDate, setGroupByDate] = useState(compact);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [payerFilter, setPayerFilter] = useState<string>("all");
@@ -139,6 +142,46 @@ export default function ExpenseList({
     }
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered, groupByDate]);
+
+  function renderExpenseCompactRow(expense: Expense) {
+    const owedBy = normalizeParticipants(expense.owed_by_names);
+    const cat = categoryMeta(expense.category);
+    const amount = Number(expense.amount || 0);
+    const perPerson = owedBy.length > 0 ? amount / owedBy.length : amount;
+
+    return (
+      <div
+        key={expense.id}
+        className="motion-stagger-item flex items-center gap-2.5 border-b border-slate-100 py-2.5 last:border-0 dark:border-[#1E293B]"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center text-lg" aria-hidden>
+          {cat.icon}
+        </span>
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          onClick={() => onEdit?.(expense)}
+          disabled={!canMutate}
+        >
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+            {expense.title || "Gasto sin título"}
+          </p>
+          <p className="truncate text-[10px] text-slate-500 dark:text-slate-400">
+            {expense.payer_name ? `Pagó ${expense.payer_name}` : "Sin pagador"}
+            {owedBy.length > 0 ? ` · ${owedBy.length} pers.` : ""}
+          </p>
+        </button>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-extrabold tabular-nums text-slate-950 dark:text-white">
+            {formatMoney(amount, expense.currency)}
+          </p>
+          {owedBy.length > 1 ? (
+            <p className="text-[10px] tabular-nums text-slate-500">{formatMoney(perPerson, expense.currency)}/pp</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   function renderExpenseCard(expense: Expense) {
     const owedBy = normalizeParticipants(expense.owed_by_names);
@@ -196,8 +239,16 @@ export default function ExpenseList({
     );
   }
 
+  const renderItem = compact ? renderExpenseCompactRow : renderExpenseCard;
+
   return (
-    <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div
+      className={
+        compact
+          ? "min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]"
+          : "min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+      }
+    >
       {filterOptions.categories.length > 0 ? (
         <div className="mb-3 flex flex-wrap gap-1.5">
           <button
@@ -227,11 +278,11 @@ export default function ExpenseList({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className={`flex flex-wrap items-start justify-between gap-3 ${compact ? "px-1 pt-2" : ""}`}>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Gastos registrados</h3>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
-            Mostrando {filtered.length} de {expenses.length}
+          <h3 className={`font-semibold text-slate-900 ${compact ? "text-sm" : "text-lg"}`}>Gastos registrados</h3>
+          <p className="mt-0.5 text-xs font-semibold text-slate-500">
+            {filtered.length} de {expenses.length}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -361,12 +412,12 @@ export default function ExpenseList({
                     {formatMoney(subtotal, cur)}
                   </span>
                 </div>
-                {items.map((expense) => renderExpenseCard(expense))}
+                {items.map((expense) => renderItem(expense))}
               </div>
             );
           })
         ) : (
-          filtered.map((expense) => renderExpenseCard(expense))
+          filtered.map((expense) => renderItem(expense))
         )}
       </div>
     </div>

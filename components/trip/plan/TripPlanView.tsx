@@ -768,7 +768,7 @@ export default function TripPlanView({
             </div>
           ) : null}
 
-          <div data-tour="plan-toolbar" className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div data-tour="plan-toolbar" className="hidden flex-col gap-4 md:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{trip?.name || trip?.destination || "Este viaje"}</span>
           {" · "}

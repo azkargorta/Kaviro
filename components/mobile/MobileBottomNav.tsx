@@ -4,7 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { MoreHorizontal, X, Settings, Map, Users, FileText, Star, MessageCircle, Megaphone, CreditCard } from "lucide-react";
+import {
+  MoreHorizontal,
+  X,
+  Settings,
+  Map,
+  Users,
+  FileText,
+  Star,
+  MessageCircle,
+  Megaphone,
+  CreditCard,
+  CalendarDays,
+  Sparkles,
+} from "lucide-react";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import { iconSlotNavBottom } from "@/components/ui/iconTokens";
 import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
@@ -21,7 +34,7 @@ type Props = {
   newParticipantCount?: number;
 };
 
-const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "expenses", "map", "chat"];
+const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "map", "expenses"];
 const EXPENSES_GROUP_PRIMARY_KEYS: TripTabKey[] = ["summary", "expenses", "participants"];
 const AGENCY_PRIMARY_KEYS: TripTabKey[] = ["plan", "map", "resources"];
 
@@ -36,9 +49,12 @@ const SECONDARY_META: Record<
   resources: { label: "Documentos", icon: <FileText className="h-5 w-5" /> },
   settings: { label: "Ajustes", icon: <Settings className="h-5 w-5" /> },
   announcements: { label: "Avisos", icon: <Megaphone className="h-5 w-5" /> },
-  chat: { label: "Herramientas IA", icon: <Star className="h-5 w-5" /> },
+  chat: { label: "IA", icon: <Sparkles className="h-5 w-5" /> },
+  today: { label: "Hoy", icon: <CalendarDays className="h-5 w-5" /> },
+  recap: { label: "Recap", icon: <Star className="h-5 w-5" /> },
   expenses: { label: "Gastos", icon: <Star className="h-5 w-5" /> },
   summary: { label: "Resumen", icon: <Star className="h-5 w-5" /> },
+  plan: { label: "Plan", icon: <CalendarDays className="h-5 w-5" /> },
 };
 
 export default function MobileBottomNav({
@@ -54,9 +70,8 @@ export default function MobileBottomNav({
   const { isAgencyTrip, isAgencyManaged, useAgencyBranding, tripMode } = useTripWorkspace();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const navItems = getTripNavItems(isAgencyTrip, isAgencyManaged, tripMode).filter(
-    (item) => !item.isPremiumGated || isPremium
-  );
+  const allNavItems = getTripNavItems(isAgencyTrip, isAgencyManaged, tripMode);
+  const navItems = allNavItems.filter((item) => !item.isPremiumGated || isPremium);
   const primaryKeys = isAgencyTrip
     ? AGENCY_PRIMARY_KEYS
     : tripMode === "expenses"
@@ -70,13 +85,14 @@ export default function MobileBottomNav({
       href: item.href,
       isAI: item.key === "chat",
     }));
-  const secondaryItems = navItems
+  const secondaryItems = allNavItems
     .filter((item) => !primaryKeys.includes(item.key))
     .map((item) => ({
       key: item.key,
       label: SECONDARY_META[item.key]?.label ?? item.label,
       href: item.href,
       icon: SECONDARY_META[item.key]?.icon ?? <Star className="h-5 w-5" />,
+      isPremiumGated: item.isPremiumGated,
     }));
 
   const isTripActiveToday = (() => {
@@ -152,6 +168,11 @@ export default function MobileBottomNav({
                     {item.icon}
                   </span>
                   <span className="text-sm font-semibold leading-snug">{item.label}</span>
+                  {item.isPremiumGated && !isPremium ? (
+                    <span className="ml-auto rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
+                      PRO
+                    </span>
+                  ) : null}
                   {item.key === "participants" && newParticipantCount > 0 && (
                     <span
                       className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${

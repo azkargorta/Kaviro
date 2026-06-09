@@ -32,6 +32,8 @@ export const PERSONAL_TRIP_NAV: TripNavItem[] = [
   { key: "participants", label: "Gente", sublabel: "Participantes", href: (id) => `/trip/${id}/participants` },
   { key: "resources", label: "Docs", sublabel: "Documentos", href: (id) => `/trip/${id}/resources` },
   { key: "chat", label: "IA", sublabel: "Asistente", href: (id) => `/trip/${id}/ai-chat`, isPremiumGated: true },
+  { key: "today", label: "Hoy", sublabel: "Modo día", href: (id) => `/trip/${id}/today` },
+  { key: "recap", label: "Recap", sublabel: "Recuerdos del viaje", href: (id) => `/trip/${id}/recap` },
   { key: "settings", label: "Ajustes", sublabel: "Datos del viaje", href: (id) => `/trip/${id}/settings` },
 ];
 

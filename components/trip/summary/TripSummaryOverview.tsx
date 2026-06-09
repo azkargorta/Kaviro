@@ -195,7 +195,7 @@ export default function TripSummaryOverview({
     : null;
 
   return (
-    <div className="w-full min-w-0 space-y-5 md:space-y-6">
+    <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
 
       {/* ── R1+R2+R4+R5+R6 — Hero rediseñado ─────────────────────────────── */}
       <div
@@ -205,35 +205,40 @@ export default function TripSummaryOverview({
       >
 
         {/* Hero card — countdown + today's plan + next activity */}
-        <Reveal variant="fade" as="section" data-tour="summary-countdown" className="relative overflow-hidden rounded-3xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:p-7">
-          {/* Subtle glow */}
+        <Reveal variant="fade" as="section" data-tour="summary-countdown" className="relative overflow-hidden rounded-2xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-xl md:rounded-3xl md:p-7">
+          {/* Subtle glow — solo escritorio */}
           <div
-            className="pointer-events-none absolute -right-20 -top-10 h-52 w-52 rounded-full bg-violet-500/15 blur-3xl dark:bg-[var(--brand-light)]"
+            className="pointer-events-none absolute -right-20 -top-10 hidden h-52 w-52 rounded-full bg-violet-500/15 blur-3xl dark:bg-[var(--brand-light)] md:block"
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl dark:bg-[var(--brand-light)]"
+            className="pointer-events-none absolute -bottom-10 -left-10 hidden h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl dark:bg-[var(--brand-light)] md:block"
             aria-hidden
           />
 
           <div className="relative">
             {/* R1 — Countdown / state hero */}
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 md:mb-5 md:items-start">
               <div>
                 {/* Phase-aware headline */}
                 {phase === "before" && daysUntilStart !== null && (
                   <>
-                    <p className="text-sm font-bold text-violet-200 dark:text-[var(--accent)]">
-                      ⏳ Faltan <span className="tabular-nums">{daysUntilStart}</span> día{daysUntilStart !== 1 ? "s" : ""} para el viaje
-                      {tripStartDate ? ` · ${formatFullDate(tripStartDate)}` : ""}
+                    <p className="text-xs font-bold text-violet-200 dark:text-[var(--accent)] md:text-sm">
+                      <span className="md:hidden">⏳ </span>
+                      Faltan <span className="tabular-nums">{daysUntilStart}</span> día{daysUntilStart !== 1 ? "s" : ""}
+                      <span className="hidden md:inline">
+                        {" "}para el viaje{tripStartDate ? ` · ${formatFullDate(tripStartDate)}` : ""}
+                      </span>
                     </p>
                   </>
                 )}
                 {phase === "during" && daysLeft !== null && (
                   <>
-                    <p className="text-sm font-bold text-emerald-200 dark:text-[var(--accent)]">
-                      ✈️ Viaje en curso · <span className="tabular-nums">{daysLeft}</span> día{daysLeft !== 1 ? "s" : ""} restantes
-                      {tripDestination ? ` · ${tripDestination}` : ""}
+                    <p className="text-xs font-bold text-emerald-200 dark:text-[var(--accent)] md:text-sm">
+                      ✈️ En curso · <span className="tabular-nums">{daysLeft}</span>d
+                      <span className="hidden md:inline">
+                        {" "}restantes{tripDestination ? ` · ${tripDestination}` : ""}
+                      </span>
                     </p>
                   </>
                 )}
@@ -256,20 +261,28 @@ export default function TripSummaryOverview({
 
               <Link
                 href={planHref}
-                className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+                className="hidden min-h-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20 md:inline-flex"
               >
                 Ver Plan →
               </Link>
+              {phase === "before" && daysUntilStart !== null ? (
+                <p className="shrink-0 text-base font-black tabular-nums text-white md:hidden">{daysUntilStart}d</p>
+              ) : null}
+              {phase === "during" && daysLeft !== null ? (
+                <p className="shrink-0 text-base font-black tabular-nums text-white md:hidden">{daysLeft}d</p>
+              ) : null}
             </div>
 
             {/* R6 — Progress bar (only during) */}
             {phase === "during" && tripStartDate && tripEndDate && (
-              <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
+              <div className="max-md:scale-y-90 max-md:origin-top">
+                <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
+              </div>
             )}
 
             {/* R5 — Empty state */}
             {(activitiesCount ?? 0) === 0 && (
-              <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 md:mt-5 md:px-4 md:py-4">
                 <p className="text-sm font-bold text-white">🗺️ Sin actividades todavía</p>
                 <p className="mt-1 text-xs text-slate-300">Crea tu primer plan o usa el asistente IA para generar el itinerario completo.</p>
                 <Link
@@ -281,9 +294,9 @@ export default function TripSummaryOverview({
               </div>
             )}
 
-            {/* Today's activities */}
+            {/* Today's activities — detalle solo en escritorio */}
             {plansToday.length > 0 && (
-              <div className="mt-5">
+              <div className="mt-5 hidden md:block">
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-300/90 mb-2 dark:text-[var(--accent)]">Planes para hoy</p>
                 <ul className="space-y-2">
                   {plansToday.map((a) => (
@@ -308,10 +321,10 @@ export default function TripSummaryOverview({
               </div>
             )}
 
-            {/* R4 — Next activity as featured card */}
+            {/* R4 — Next activity as featured card (escritorio) */}
             {nextPlan && (
               <div
-                className={`mt-5 rounded-2xl border border-[#F87171]/30 bg-gradient-to-br from-[#F87171]/20 to-transparent p-4 ring-1 ring-[#F87171]/15
+                className={`mt-5 hidden rounded-2xl border border-[#F87171]/30 bg-gradient-to-br from-[#F87171]/20 to-transparent p-4 ring-1 ring-[#F87171]/15 md:block
                 dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)] dark:ring-[color:var(--brand-light)]`}
               >
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#FCA5A5] dark:text-[var(--accent)]">Próximo en el calendario</p>
@@ -364,9 +377,10 @@ export default function TripSummaryOverview({
               </p>
               <Link
                 href={`/trip/${tripId}/settings#presupuesto`}
-                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
+                className="mt-3 inline-flex min-h-9 items-center gap-1 text-xs font-bold text-[var(--brand)] hover:underline md:mt-4 md:min-h-10 md:rounded-xl md:bg-[var(--brand)] md:px-4 md:py-2 md:text-white md:no-underline md:hover:bg-[var(--brand-hover)]"
               >
-                Definir presupuesto en Ajustes
+                <span className="md:hidden">Definir presupuesto →</span>
+                <span className="hidden md:inline">Definir presupuesto en Ajustes</span>
               </Link>
             </section>
           </Reveal>
@@ -470,7 +484,7 @@ export default function TripSummaryOverview({
                       <div
                         key={day.date}
                         style={{ scrollSnapAlign: "start" }}
-                        className={`w-[84px] shrink-0 rounded-2xl border px-2.5 py-3 text-center shadow-sm transition-all ${
+                        className={`w-[52px] shrink-0 rounded-xl border px-1.5 py-2 text-center shadow-sm transition-all max-md:py-2 md:w-[84px] md:rounded-2xl md:px-2.5 md:py-3 ${
                           isToday
                             ? "border-[#F87171]/40 bg-[#FEF2F2] ring-1 ring-[#F87171]/25 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/55 dark:ring-[color:var(--brand-light)]"
                             : "border-slate-200 bg-white dark:border-[color:var(--border-default)] dark:bg-[var(--surface-card)]"
@@ -479,15 +493,15 @@ export default function TripSummaryOverview({
                         <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-[var(--brand)] dark:text-[var(--accent)]" : "text-slate-400 dark:text-slate-400"}`}>
                           {isToday ? "HOY" : formatShortWeekday(day.date)}
                         </p>
-                        <p className="mt-1.5 text-2xl leading-none">{vis.emoji}</p>
-                        <p className="mt-2 text-xs font-extrabold text-slate-900 tabular-nums leading-tight dark:text-slate-50">
+                        <p className="mt-1 text-lg leading-none md:mt-1.5 md:text-2xl">{vis.emoji}</p>
+                        <p className="mt-1 text-[11px] font-extrabold text-slate-900 tabular-nums leading-tight dark:text-slate-50 md:mt-2 md:text-xs">
                           {day.tempMax != null ? `${Math.round(day.tempMax)}°` : "—"}
                         </p>
-                        <p className="text-[10px] text-slate-400 tabular-nums dark:text-slate-400">
+                        <p className="hidden text-[10px] text-slate-400 tabular-nums dark:text-slate-400 md:block">
                           {day.tempMin != null ? `${Math.round(day.tempMin)}°` : "—"}
                         </p>
-                        {/* Precipitation */}
-                        <div className={`mt-2 rounded-lg px-1.5 py-1 ${hasRain ? "bg-sky-50 dark:bg-[color:var(--border-default)]/50" : "bg-transparent"}`}>
+                        {/* Precipitation — solo escritorio */}
+                        <div className={`mt-2 hidden rounded-lg px-1.5 py-1 md:block ${hasRain ? "bg-sky-50 dark:bg-[color:var(--border-default)]/50" : "bg-transparent"}`}>
                           {prob != null ? (
                             <>
                               <p className={`text-[11px] font-extrabold tabular-nums ${hasRain ? "text-sky-600 dark:text-[var(--accent)]" : "text-slate-300 dark:text-slate-500"}`}>
@@ -517,10 +531,21 @@ export default function TripSummaryOverview({
         </div>
       </div>
 
+      {nextPlan ? (
+        <Link
+          href={planHref}
+          className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:hover:bg-[#1a2438] md:hidden"
+        >
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--brand)]" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900 dark:text-white">{nextPlan.title}</span>
+          <span className="shrink-0 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{formatActivityWhen(nextPlan)}</span>
+        </Link>
+      ) : null}
+
       {/* ── R3 — Navigation tiles rediseñados ──────────────────────────────── */}
-      <section className="min-w-0 space-y-3">
+      <section className="order-3 min-w-0 space-y-2 md:order-none md:space-y-3">
         <Reveal variant="fade">
-        <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="hidden flex-wrap items-end justify-between gap-2 md:flex">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Navegación rápida</p>
             <h2 className="mt-0.5 text-xl font-extrabold text-slate-950 dark:text-slate-50">Módulos del viaje</h2>
@@ -528,7 +553,7 @@ export default function TripSummaryOverview({
         </div>
         </Reveal>
 
-        <div data-tour="summary-stats" className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+        <div data-tour="summary-stats" className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
           {tabs.map((tab, tabIdx) => {
             const ac = TILE_ACCENT[tab.tone];
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
@@ -544,13 +569,13 @@ export default function TripSummaryOverview({
               >
               <Link
                 href={tab.href}
-                className={`trip-tile-hover group flex h-full flex-col items-center rounded-2xl border p-3 text-center sm:items-stretch sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
+                className={`trip-tile-hover group flex h-full flex-col items-center rounded-xl border p-2 text-center sm:items-stretch sm:rounded-2xl sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
               >
                 <div
                   className={
                     isDark
-                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11"
-                      : `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${ac.icon}`
+                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11 sm:rounded-xl"
+                      : `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11 sm:rounded-xl ${ac.icon}`
                   }
                 >
                   <Image
@@ -558,10 +583,10 @@ export default function TripSummaryOverview({
                     alt=""
                     width={24}
                     height={24}
-                    className={`h-6 w-6 object-contain ${isDark ? coralPngFilterDark : ""}`}
+                    className={`h-5 w-5 object-contain sm:h-6 sm:w-6 ${isDark ? coralPngFilterDark : ""}`}
                   />
                 </div>
-                <p className="mt-2 text-[11px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
+                <p className="mt-1 text-[10px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
                   {tab.label}
                 </p>
                 <span
@@ -601,8 +626,8 @@ export default function TripSummaryOverview({
         </div>
       </details>
 
-      {/* ── Recap CTA ────────────────────────────────────────────── */}
-      <Reveal variant="slide" delay={2}>
+      {/* ── Recap CTA — escritorio (móvil: menú Más) ─────────────── */}
+      <Reveal variant="slide" delay={2} className="hidden md:block">
       <SummaryRecapCta
         tripId={tripId}
         tripName={tripName ?? ""}

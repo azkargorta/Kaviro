@@ -16,6 +16,9 @@ import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import Reveal from "@/components/ui/Reveal";
+import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
+import ExpenseBalanceCompact from "@/components/trip/expenses/ExpenseBalanceCompact";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function TripExpensesView({
   tripId,
@@ -74,6 +77,7 @@ export default function TripExpensesView({
   const [isAnalyzeOpen, setIsAnalyzeOpen] = useState(false);
   const [isConverterOpen, setIsConverterOpen] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Auto-open all sections for demo trip
   useEffect(() => {
@@ -82,6 +86,11 @@ export default function TripExpensesView({
       setIsListOpen(true);
     }
   }, [isDemoTrip]);
+
+  useEffect(() => {
+    if (isMobile) setIsListOpen(true);
+  }, [isMobile]);
+
   const [exportOpen, setExportOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -193,7 +202,7 @@ export default function TripExpensesView({
           <>
             <button
               type="button"
-              className={primary}
+              className={`${primary} hidden md:inline-flex`}
               onClick={() => {
                 setIsAddOpen((v) => !v);
                 setIsAnalyzeOpen(false);
@@ -288,7 +297,7 @@ export default function TripExpensesView({
               <Wallet className="h-4 w-4 text-[var(--brand)]" aria-hidden />
               Gastos
             </div>
-            <div className="mt-1 text-xs text-slate-600">
+            <div className="mt-1 hidden text-xs text-slate-600 md:block">
               Mantén el balance al día: añade tickets, analiza PDFs/imágenes y comparte pagos pendientes.
             </div>
           </div>
@@ -447,6 +456,13 @@ export default function TripExpensesView({
         </div>
       ) : null}
 
+      <ExpenseBalanceCompact
+        balances={balances}
+        settlements={suggestedSettlements}
+        balanceCurrency={balanceCurrency}
+        createWhatsAppLink={createWhatsAppLink}
+      />
+
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div className="min-w-0 space-y-4">
           {canManageExpenses ? (
@@ -484,7 +500,7 @@ export default function TripExpensesView({
 
           {canManageExpenses ? (
           <details
-            className="rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
+            className="hidden rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70 md:block"
             open={shouldShowForm}
             onToggle={(e) => {
               const open = (e.currentTarget as HTMLDetailsElement).open;
@@ -555,9 +571,39 @@ export default function TripExpensesView({
             </div>
           </details>
 
+          <div className="md:hidden">
+            <ExpenseList
+              compact
+              expenses={expenses as any}
+              onEdit={
+                canManageExpenses
+                  ? (expense) => {
+                      setEditingExpense(expense);
+                      setDetectedData(null);
+                      setIsAddOpen(true);
+                    }
+                  : undefined
+              }
+              onDuplicate={
+                canManageExpenses
+                  ? (expense) => {
+                      setEditingExpense({
+                        ...expense,
+                        id: undefined,
+                        attachment_name: null,
+                      });
+                      setDetectedData(null);
+                      setIsAddOpen(true);
+                    }
+                  : undefined
+              }
+              onDelete={canManageExpenses ? deleteExpense : undefined}
+            />
+          </div>
+
           <details
             data-tour="expenses-list-details"
-            className="group rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70"
+            className="group hidden rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70 md:block"
             open={isListOpen}
             onToggle={(e) => setIsListOpen((e.currentTarget as HTMLDetailsElement).open)}
           >
@@ -599,7 +645,7 @@ export default function TripExpensesView({
           </details>
         </div>
 
-        <div className="min-w-0 space-y-4">
+        <div className="hidden min-w-0 space-y-4 md:block">
           <Reveal variant="fade" delay={1} data-tour="expenses-balance-panel" className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700/50 dark:bg-gradient-to-br dark:from-slate-950/70 dark:via-slate-900/55 dark:to-slate-950/70">
             <div className="border-b border-slate-200 bg-slate-50/50 px-5 py-4 dark:border-slate-700/50 dark:bg-slate-900/45">
               <div className="text-sm font-semibold text-slate-950">Balances y pagos</div>
@@ -631,8 +677,69 @@ export default function TripExpensesView({
         </div>
       </div>
 
-      {/* Listado movido dentro de la columna izquierda del grid */}
+      <details className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700/50 dark:bg-[#0F1623] md:hidden">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">
+          Balances y opciones avanzadas
+        </summary>
+        <div className="border-t border-slate-200 px-4 py-4 dark:border-[#334155]">
+          <ExpenseBalancePanel
+            tripId={tripId}
+            balances={balances}
+            settlements={suggestedSettlements}
+            balanceCurrency={balanceCurrency}
+            onChangeBalanceCurrency={setBalanceCurrency}
+            onToggleSettlementStatus={toggleSettlementStatus}
+            createWhatsAppLink={createWhatsAppLink}
+            settlementWarning={settlementWarning}
+            participants={participants}
+            paymentPreferences={paymentPreferences}
+            onSavePaymentPreference={savePaymentPreference}
+            paymentPairRules={paymentPairRules}
+            onSavePaymentPairRule={savePaymentPairRule}
+            onResetPaymentPairRules={resetPaymentPairRules}
+            budgetTarget={budgetTarget}
+            onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
+            strictPaymentMethods={strictPaymentMethods}
+            onChangeStrictPaymentMethods={setStrictPaymentMethods}
+          />
+        </div>
+      </details>
+
       </div>
+
+      <MobileBottomSheet
+        open={isMobile && shouldShowForm}
+        onClose={() => {
+          setIsAddOpen(false);
+          setEditingExpense(null);
+          setDetectedData(null);
+        }}
+        title={editingExpense?.id ? "Editar gasto" : "Nuevo gasto"}
+      >
+        <ExpenseForm
+          saving={saving}
+          existingParticipants={participants}
+          registeredTravelers={registeredTravelers}
+          baseCurrency={tripBaseCurrency || "EUR"}
+          editingExpense={editingExpense}
+          detectedData={detectedData}
+          onCancelEdit={() => {
+            setEditingExpense(null);
+            setDetectedData(null);
+            setIsAddOpen(false);
+          }}
+          onSubmit={async (input) => {
+            if (editingExpense?.id) {
+              await updateExpense(editingExpense.id, input, editingExpense);
+              setEditingExpense(null);
+            } else {
+              await createExpense(input);
+            }
+            setDetectedData(null);
+            setIsAddOpen(false);
+          }}
+        />
+      </MobileBottomSheet>
 
       {canManageExpenses && !shouldShowForm && !editingExpense ? (
         <button
@@ -643,7 +750,7 @@ export default function TripExpensesView({
             setEditingExpense(null);
             setDetectedData(null);
           }}
-          className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] active:scale-95 md:hidden"
+          className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] active:scale-95 md:hidden"
           aria-label="Añadir gasto"
         >
           <Plus className="h-7 w-7" />

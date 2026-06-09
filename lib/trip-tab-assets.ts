@@ -7,6 +7,7 @@ export type TripTabKey =
   | "resources"
   | "chat"
   | "recap"
+  | "today"
   | "messages"
   | "announcements"
   | "payments"
@@ -24,6 +25,7 @@ const tabToBaseName: Record<TripTabKey, string> = {
   resources: "documents",
   chat: "ai",
   recap: "recap",
+  today: "plan",
   messages: "participants",
   announcements: "participants",
   payments: "expenses",
