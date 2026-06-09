@@ -572,6 +572,7 @@ export default function TripExpensesView({
                 existingParticipants={participants}
                 registeredTravelers={registeredTravelers}
                 baseCurrency={tripBaseCurrency || "EUR"}
+                isPremium={isPremium}
                 editingExpense={editingExpense}
                 detectedData={detectedData}
                 onCancelEdit={() => {
@@ -877,6 +878,7 @@ export default function TripExpensesView({
           existingParticipants={participants}
           registeredTravelers={registeredTravelers}
           baseCurrency={tripBaseCurrency || "EUR"}
+          isPremium={isPremium}
           editingExpense={editingExpense}
           detectedData={detectedData}
           onCancelEdit={() => {

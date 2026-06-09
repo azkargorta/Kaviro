@@ -90,14 +90,18 @@ function buildDetectedFromPayload(
 export default function ExpenseAnalyzerPanel({
   tripBaseCurrency = "EUR",
   onUseDetectedData,
+  embedded = false,
 }: {
   tripBaseCurrency?: string;
   onUseDetectedData: (data: ExpenseDetectedData) => void;
+  /** Versión compacta para incrustar en el formulario móvil. */
+  embedded?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ExpenseDetectedData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appliedHint, setAppliedHint] = useState<string | null>(null);
 
   function validateSelectedFile(f: File) {
     const maxBytes = 12 * 1024 * 1024;
@@ -137,7 +141,14 @@ export default function ExpenseAnalyzerPanel({
           });
           const payload = await response.json().catch(() => null);
           if (!response.ok) throw new Error(payload?.error || "No se pudo analizar el archivo.");
-          setResult(buildDetectedFromPayload(payload, tripBaseCurrency, file, pdfText));
+          const detected = buildDetectedFromPayload(payload, tripBaseCurrency, file, pdfText);
+          if (embedded) {
+            onUseDetectedData(detected);
+            setAppliedHint("Datos del ticket aplicados al formulario.");
+            setResult(null);
+          } else {
+            setResult(detected);
+          }
           return;
         }
       }
@@ -153,7 +164,14 @@ export default function ExpenseAnalyzerPanel({
         throw new Error(payload?.error || "No se pudo analizar el archivo.");
       }
 
-      setResult(buildDetectedFromPayload(payload, tripBaseCurrency, file, pdfText || undefined));
+      const detected = buildDetectedFromPayload(payload, tripBaseCurrency, file, pdfText || undefined);
+      if (embedded) {
+        onUseDetectedData(detected);
+        setAppliedHint("Datos del ticket aplicados al formulario.");
+        setResult(null);
+      } else {
+        setResult(detected);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo analizar.");
     } finally {
@@ -170,25 +188,21 @@ export default function ExpenseAnalyzerPanel({
       result.expenseDate ||
       (result.extractedText && result.extractedText.length > 30));
 
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-      <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
-        <span>🧾</span>
-        <span>Analizador de factura o ticket</span>
-      </div>
-
-      <h3 className="mt-3 text-lg font-semibold text-slate-900 dark:text-white">Analizar PDF o imagen</h3>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Lee el ticket con Gemini (OCR + visión en fotos y escaneos) y rellena importe, fecha y comercio.
-      </p>
-
-      <div className="mt-4 space-y-4">
+  const inner = (
+      <div className={embedded ? "space-y-3" : "mt-4 space-y-4"}>
         <label className="block space-y-2">
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Archivo</span>
+          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+            {embedded ? "Foto o PDF del ticket" : "Archivo"}
+          </span>
           <input
             type="file"
             accept="image/*,.pdf"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            capture={embedded ? "environment" : undefined}
+            onChange={(e) => {
+              setFile(e.target.files?.[0] || null);
+              setAppliedHint(null);
+              setError(null);
+            }}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
           />
         </label>
@@ -204,12 +218,18 @@ export default function ExpenseAnalyzerPanel({
           type="button"
           onClick={analyze}
           disabled={!file || loading}
-          className={`btn-press rounded-xl px-4 py-3 text-sm font-semibold ${
+          className={`btn-press w-full rounded-xl px-4 py-3 text-sm font-semibold ${
             !file || loading ? "bg-slate-200 text-slate-500" : "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
           }`}
         >
-          {loading ? "Analizando con Gemini…" : "Analizar archivo"}
+          {loading ? "Analizando ticket…" : embedded ? "Escanear y rellenar" : "Analizar archivo"}
         </button>
+
+        {appliedHint ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200">
+            {appliedHint}
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
@@ -217,7 +237,7 @@ export default function ExpenseAnalyzerPanel({
           </div>
         ) : null}
 
-        {result ? (
+        {!embedded && result ? (
           <div
             className={`rounded-2xl border p-4 ${
               hasAnyData
@@ -296,6 +316,33 @@ export default function ExpenseAnalyzerPanel({
           </div>
         ) : null}
       </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="rounded-2xl border border-violet-200 bg-violet-50/50 p-3 dark:border-violet-900/40 dark:bg-violet-950/20">
+        <p className="text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-200">Escanear ticket</p>
+        <p className="mt-1 text-[11px] text-violet-900/80 dark:text-violet-200/80">
+          Sube una foto o PDF y rellenamos importe, fecha y concepto.
+        </p>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+        <span>🧾</span>
+        <span>Analizador de factura o ticket</span>
+      </div>
+
+      <h3 className="mt-3 text-lg font-semibold text-slate-900 dark:text-white">Analizar PDF o imagen</h3>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Lee el ticket con Gemini (OCR + visión en fotos y escaneos) y rellena importe, fecha y comercio.
+      </p>
+
+      {inner}
     </div>
   );
 }

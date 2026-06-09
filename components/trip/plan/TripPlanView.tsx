@@ -793,18 +793,20 @@ export default function TripPlanView({
       ) : null}
 
       {workspaceTab === "itinerary" ? (
-        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-6">
+        <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-3 md:space-y-6">
           {premiumEnabled && ticketHintCount > 0 && !isEmpty ? (
-            <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 px-4 py-3 text-sm text-amber-950 shadow-sm">
-              <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-amber-800">Entradas · Premium</p>
-              <p className="mt-1.5 leading-relaxed text-amber-950/95">
-                Hay <strong>{ticketHintCount}</strong>{" "}
-                {ticketHintCount === 1 ? "actividad marcada" : "actividades marcadas"} como{" "}
-                <strong>probables entradas o reservas</strong>. En cada tarjeta usa el botón{" "}
-                <span className="font-bold">«Entrada»</span> para abrir una búsqueda orientada a la{" "}
+            <details className="hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 shadow-sm md:block">
+              <summary className="cursor-pointer list-none px-4 py-2.5 text-sm text-amber-950">
+                <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-amber-800">Entradas · Premium</span>
+                <span className="ml-2 font-semibold text-amber-900/90">
+                  {ticketHintCount} {ticketHintCount === 1 ? "actividad" : "actividades"} con posible entrada
+                </span>
+              </summary>
+              <p className="border-t border-amber-100 px-4 py-3 text-sm leading-relaxed text-amber-950/95">
+                En cada tarjeta usa el botón <span className="font-bold">«Entrada»</span> para abrir una búsqueda orientada a la{" "}
                 <strong>web oficial</strong> (verifica siempre la URL y el dominio antes de pagar).
               </p>
-            </div>
+            </details>
           ) : null}
 
           <div className="flex items-center justify-end md:hidden">
@@ -812,16 +814,33 @@ export default function TripPlanView({
               type="button"
               data-tour="plan-mobile-tools"
               onClick={() => setMobileOptionsOpen((v) => !v)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-              aria-label="Más opciones del plan"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+              aria-label={
+                premiumEnabled && ticketHintCount > 0
+                  ? `Más opciones del plan (${ticketHintCount} con posible entrada)`
+                  : "Más opciones del plan"
+              }
               aria-expanded={mobileOptionsOpen}
             >
               <MoreHorizontal className="h-5 w-5" />
+              {premiumEnabled && ticketHintCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">
+                  {ticketHintCount}
+                </span>
+              ) : null}
             </button>
           </div>
 
           {mobileOptionsOpen ? (
             <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm md:hidden dark:border-[#334155] dark:bg-[#0F1623]">
+              {premiumEnabled && ticketHintCount > 0 ? (
+                <div className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+                  <p className="font-bold">🎟️ Entradas ({ticketHintCount})</p>
+                  <p className="mt-0.5 leading-snug text-amber-900/90 dark:text-amber-200/90">
+                    Pulsa «Entrada» en la tarjeta de cada actividad para buscar la web oficial.
+                  </p>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {

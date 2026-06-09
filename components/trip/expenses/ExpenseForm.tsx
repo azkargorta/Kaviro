@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ALL_CURRENCIES } from "@/lib/currencies";
 import type { ExpenseAnalysis, ExpenseFormInput } from "@/hooks/useTripExpenses";
-import type { ExpenseDetectedData } from "@/components/trip/expenses/ExpenseAnalyzerPanel";
+import ExpenseAnalyzerPanel, {
+  type ExpenseDetectedData,
+} from "@/components/trip/expenses/ExpenseAnalyzerPanel";
+import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import { parseAmountsMap, validateCustomShares } from "@/lib/expense-split";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -33,6 +36,7 @@ type Props = {
   baseCurrency?: string;
   editingExpense?: ExistingExpense | null;
   detectedData?: ExpenseDetectedData | null;
+  isPremium?: boolean;
   onCancelEdit?: () => void;
   onSubmit: (input: ExpenseFormInput) => Promise<void>;
 };
@@ -103,11 +107,12 @@ export default function ExpenseForm({
   baseCurrency = "EUR",
   editingExpense = null,
   detectedData = null,
+  isPremium = true,
   onCancelEdit,
   onSubmit,
 }: Props) {
   const isMobile = useIsMobile();
-  const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
+  const [mobileStep, setMobileStep] = useState<1 | 2>(1);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -206,19 +211,23 @@ export default function ExpenseForm({
     setMobileStep(1);
   }, [editingExpense, baseCurrency, isEditing, travelerOptions]);
 
-  useEffect(() => {
-    if (!detectedData || isEditing) return;
-    if (detectedData.title) setTitle(detectedData.title);
-    if (detectedData.category) setCategory(detectedData.category);
-    if (detectedData.amount != null) setAmount(String(detectedData.amount));
+  function applyDetectedData(data: ExpenseDetectedData) {
+    if (data.title) setTitle(data.title);
+    if (data.category) setCategory(data.category);
+    if (data.amount != null) setAmount(String(data.amount));
     const detectedCurrency =
-      typeof detectedData.currency === "string" ? detectedData.currency.trim().toUpperCase() : "";
+      typeof data.currency === "string" ? data.currency.trim().toUpperCase() : "";
     const isSupported = Boolean(ALL_CURRENCIES.find((c) => c.code === detectedCurrency));
     setCurrency(isSupported ? detectedCurrency : baseCurrency);
-    if (detectedData.expenseDate) setExpenseDate(detectedData.expenseDate);
-    if (detectedData.file) setAttachment(detectedData.file);
-    const { file: _file, ...safeAnalysis } = detectedData as ExpenseDetectedData & { file?: File };
+    if (data.expenseDate) setExpenseDate(data.expenseDate);
+    if (data.file) setAttachment(data.file);
+    const { file: _file, ...safeAnalysis } = data as ExpenseDetectedData & { file?: File };
     setAnalysisData(safeAnalysis as ExpenseAnalysis);
+  }
+
+  useEffect(() => {
+    if (!detectedData || isEditing) return;
+    applyDetectedData(detectedData);
   }, [detectedData, isEditing, baseCurrency]);
 
   useEffect(() => {
@@ -446,7 +455,30 @@ export default function ExpenseForm({
     </div>
   );
 
-  const moreOptions = (
+  const attachmentBlock = (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-[#1E293B] dark:bg-[#080C14]">
+      {isEditing && editingExpense?.attachment_name ? (
+        <label className="mb-2 inline-flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={keepExistingAttachment} onChange={(e) => setKeepExistingAttachment(e.target.checked)} />
+          <span>Mantener: {editingExpense.attachment_name}</span>
+        </label>
+      ) : null}
+      {attachment ? (
+        <p className="mb-2 truncate text-xs font-semibold text-slate-600 dark:text-slate-300">
+          📎 {attachment.name}
+        </p>
+      ) : null}
+      <input
+        type="file"
+        accept="image/*,.pdf"
+        capture={isMobile ? "environment" : undefined}
+        onChange={(e) => setAttachment(e.target.files?.[0] || null)}
+        className="w-full text-sm"
+      />
+    </div>
+  );
+
+  const extraOptions = (
     <div className="space-y-3">
       <label className="block space-y-2">
         <span className="text-sm font-semibold text-slate-800">Categoría</span>
@@ -457,21 +489,51 @@ export default function ExpenseForm({
         </select>
       </label>
       <label className="block space-y-2">
-        <span className="text-sm font-semibold text-slate-800">Fecha</span>
-        <input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-      </label>
-      <label className="block space-y-2">
         <span className="text-sm font-semibold text-slate-800">Notas</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
       </label>
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-        {isEditing && editingExpense?.attachment_name ? (
-          <label className="mb-2 inline-flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={keepExistingAttachment} onChange={(e) => setKeepExistingAttachment(e.target.checked)} />
-            <span>Mantener: {editingExpense.attachment_name}</span>
-          </label>
-        ) : null}
-        <input type="file" accept="image/*,.pdf" onChange={(e) => setAttachment(e.target.files?.[0] || null)} className="w-full text-sm" />
+    </div>
+  );
+
+  const moreOptions = (
+    <div className="space-y-3">
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Fecha</span>
+        <input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
+      </label>
+      {attachmentBlock}
+      {extraOptions}
+    </div>
+  );
+
+  const mobileStep1Header = (
+    <div className="space-y-3">
+      {isPremium ? (
+        <ExpenseAnalyzerPanel
+          embedded
+          tripBaseCurrency={baseCurrency}
+          onUseDetectedData={applyDetectedData}
+        />
+      ) : (
+        <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 p-3 dark:border-violet-900/40">
+          <p className="text-xs font-bold text-violet-900 dark:text-violet-200">Escanear ticket (Premium)</p>
+          <div className="mt-2">
+            <PremiumUpsell feature="expenseOcr" showTripCoopHint={false} />
+          </div>
+        </div>
+      )}
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-slate-800">Fecha del ticket</span>
+        <input
+          type="date"
+          value={expenseDate}
+          onChange={(e) => setExpenseDate(e.target.value)}
+          className="w-full rounded-xl border border-slate-300 px-4 py-3 dark:border-[#334155] dark:bg-[#080C14]"
+        />
+      </label>
+      <div>
+        <span className="text-sm font-semibold text-slate-800">Adjuntar archivo (opcional)</span>
+        <div className="mt-2">{attachmentBlock}</div>
       </div>
     </div>
   );
@@ -514,33 +576,40 @@ export default function ExpenseForm({
     </>
   );
 
-  const confirmSummary = (
-    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-[#1E293B] dark:bg-[#080C14]">
-      <p><span className="font-bold">{formatMoney(numericAmount, currency)}</span> · {title || "Sin concepto"}</p>
-      <p>Pagó: <span className="font-semibold">{paidByNames.join(", ") || "—"}</span></p>
-      <p>Reparto: <span className="font-semibold">{owedByNames.join(", ") || "—"}</span></p>
-      {perPerson != null ? <p className="font-bold text-[var(--brand)]">{formatMoney(perPerson, currency)} cada uno</p> : null}
-    </div>
-  );
+  function validateStep1(): boolean {
+    if (!title.trim()) {
+      setError("Introduce el concepto del gasto.");
+      return false;
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError("El importe no es válido.");
+      return false;
+    }
+    if (!payerName.trim() && !paidByNames.length) {
+      setError("Indica quién ha pagado.");
+      return false;
+    }
+    setError(null);
+    return true;
+  }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] md:rounded-2xl">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] md:rounded-2xl md:p-5">
       <div>
         <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
           <span>💸</span>
           <span>{isEditing ? "Editar gasto" : isDuplicating ? "Duplicar gasto" : "Nuevo gasto"}</span>
         </div>
         {isMobile && !isEditing ? (
-          <p className="mt-2 text-xs font-bold text-slate-500">Paso {mobileStep} de 3</p>
+          <p className="mt-2 text-xs font-bold text-slate-500">Paso {mobileStep} de 2</p>
         ) : null}
       </div>
 
       <form
         onSubmit={(e) => {
-          if (isMobile && !isEditing && mobileStep < 3) {
+          if (isMobile && !isEditing && mobileStep === 1) {
             e.preventDefault();
-            if (mobileStep === 1) setMobileStep(2);
-            else if (mobileStep === 2) setMobileStep(3);
+            if (validateStep1()) setMobileStep(2);
             return;
           }
           void handleSubmit(e);
@@ -553,16 +622,24 @@ export default function ExpenseForm({
 
         {isMobile && !isEditing ? (
           <>
-            {mobileStep === 1 ? step1Fields : null}
-            {mobileStep === 2 ? chipsBlock : null}
-            {mobileStep === 3 ? (
+            {mobileStep === 1 ? (
               <>
-                {confirmSummary}
+                {mobileStep1Header}
+                {step1Fields}
+              </>
+            ) : null}
+            {mobileStep === 2 ? (
+              <>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-[#1E293B] dark:bg-[#080C14]">
+                  <span className="font-bold">{formatMoney(numericAmount, currency)}</span>
+                  <span className="text-slate-600 dark:text-slate-300"> · {title}</span>
+                </div>
+                {chipsBlock}
                 <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold">
-                  Más opciones
+                  Categoría y notas
                   {moreOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
-                {moreOpen ? moreOptions : null}
+                {moreOpen ? extraOptions : null}
               </>
             ) : null}
           </>
@@ -585,17 +662,22 @@ export default function ExpenseForm({
 
         <div className="flex flex-wrap gap-3">
           {isMobile && !isEditing && mobileStep > 1 ? (
-            <button type="button" onClick={() => setMobileStep((s) => (s - 1) as 1 | 2)} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileStep(1);
+                setError(null);
+              }}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold"
+            >
               Atrás
             </button>
           ) : null}
-          <button type="submit" disabled={saving} className={`rounded-xl px-4 py-3 text-sm font-semibold ${saving ? "bg-slate-200 text-slate-500" : "bg-slate-950 text-white"}`}>
+          <button type="submit" disabled={saving} className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold ${saving ? "bg-slate-200 text-slate-500" : "bg-slate-950 text-white"}`}>
             {saving
               ? "Guardando..."
-              : isMobile && !isEditing && mobileStep < 3
-                ? mobileStep === 1
-                  ? "Siguiente"
-                  : "Revisar"
+              : isMobile && !isEditing && mobileStep === 1
+                ? "Reparto →"
                 : isEditing
                   ? "Guardar cambios"
                   : "Guardar gasto"}
