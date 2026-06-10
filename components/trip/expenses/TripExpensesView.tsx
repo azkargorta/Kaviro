@@ -129,11 +129,19 @@ export default function TripExpensesView({
   }, [isExpenseGroup, tripId]);
 
   // Identifica el nombre del usuario actual en el sistema de balances.
-  // Estrategia: consulta directa a trip_participants por user_id, con fallback por email
-  // y matching case-insensitive contra los participantes reales de los gastos.
+  // Replica la misma lógica de prioridad que usa el API: display_name > name > full_name > username > email
   useEffect(() => {
     if (!tripId) return;
     let cancelled = false;
+
+    /** Misma prioridad que extractNamesFromRows en el servidor */
+    function pickName(row: Record<string, unknown>): string | null {
+      for (const field of ["display_name", "name", "full_name", "username", "email"] as const) {
+        const v = row[field];
+        if (typeof v === "string" && v.trim()) return v.trim();
+      }
+      return null;
+    }
 
     async function resolveMyName() {
       try {
@@ -141,30 +149,41 @@ export default function TripExpensesView({
         const user = authData.user;
         if (!user || cancelled) return;
 
-        // 1. Buscar en trip_participants por user_id
+        let candidateName: string | null = null;
+
+        // 1. Buscar en trip_participants por user_id con TODOS los campos (misma prioridad que API)
         const { data: byUid } = await supabase
           .from("trip_participants")
-          .select("display_name, email")
+          .select("display_name, name, full_name, username, email")
           .eq("trip_id", tripId)
           .eq("user_id", user.id)
           .maybeSingle();
 
-        let candidateName: string | null = byUid?.display_name ?? null;
+        if (byUid) candidateName = pickName(byUid as Record<string, unknown>);
 
-        // 2. Fallback: buscar por email si no se encontró por user_id
+        // 2. Fallback por email si user_id no dio resultado
         if (!candidateName && user.email) {
           const { data: byEmail } = await supabase
             .from("trip_participants")
-            .select("display_name")
+            .select("display_name, name, full_name, username, email")
             .eq("trip_id", tripId)
             .ilike("email", user.email)
             .maybeSingle();
-          candidateName = byEmail?.display_name ?? null;
+          if (byEmail) candidateName = pickName(byEmail as Record<string, unknown>);
+        }
+
+        // 3. Fallback desde metadata de auth (nombre de registro)
+        if (!candidateName) {
+          candidateName =
+            (user.user_metadata?.display_name as string | undefined) ||
+            (user.user_metadata?.full_name as string | undefined) ||
+            (user.user_metadata?.name as string | undefined) ||
+            null;
         }
 
         if (!candidateName || cancelled) return;
 
-        // 3. Match case-insensitive contra los nombres reales del sistema de gastos
+        // 4. Match case-insensitive contra los nombres reales del sistema de gastos
         const lower = candidateName.toLowerCase();
         const matched =
           (participants as string[]).find((n) => n.toLowerCase() === lower) ??
@@ -172,7 +191,7 @@ export default function TripExpensesView({
 
         if (!cancelled) setMyDisplayName(matched);
       } catch {
-        // Silencio: el balance simplemente mostrará "—"
+        // Silencio: "Tu balance" mostrará "—"
       }
     }
 
@@ -180,7 +199,7 @@ export default function TripExpensesView({
     return () => {
       cancelled = true;
     };
-  }, [tripId, participants]); // participants se recalcula cuando cargan los gastos
+  }, [tripId, participants]);
 
   const myBalance: number | null = useMemo(() => {
     if (!myDisplayName) return null;
