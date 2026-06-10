@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import { DEMO_TAB_TOUR, DEMO_SPOTLIGHT_TOUR } from "@/lib/onboarding/demo-tour-copy";
 import SpotlightTour from "@/components/trip/common/SpotlightTour";
 import type { TourStep } from "@/components/trip/common/trip-tour-types";
@@ -127,6 +128,155 @@ const TAB_TOUR: TourStep[] = [
     visual: { type: "image", tabKey: "chat", alt: "Asistente personal" },
   },
 ];
+
+/** Tour reducido para grupos de gastos: solo secciones que existen (sin Plan, Rutas, IA). */
+const EXPENSE_GROUP_TAB_TOUR: TourStep[] = [
+  {
+    id: "home",
+    title: "Inicio",
+    lead: "Paso 1 de 4",
+    body: "Resumen de tu grupo de gastos: participantes, total acumulado y accesos rápidos.",
+    mobileTip: "Desde aquí accedes a Gastos, Gente y Docs del grupo.",
+    href: (id) => `/trip/${id}/summary`,
+    visual: { type: "image", tabKey: "summary", alt: "Inicio" },
+  },
+  {
+    id: "expenses",
+    title: "Gastos",
+    lead: "Paso 2 de 4",
+    body: "Registra gastos, escanea tickets con IA, consulta balances y obtén los pagos exactos para saldar al mínimo.",
+    mobileTip: "Mira el balance en la barra superior; el detalle de cada gasto va debajo en lista o tabla.",
+    href: (id) => `/trip/${id}/expenses`,
+    visual: { type: "image", tabKey: "expenses", alt: "Gastos" },
+  },
+  {
+    id: "participants",
+    title: "Gente",
+    lead: "Paso 3 de 4",
+    body: "Gestiona quién participa en el grupo: añade personas, invita por enlace y alinea los nombres con los que usarás en gastos.",
+    mobileTip: "Usa el mismo nombre en gastos que aquí para que los balances te reconozcan bien.",
+    href: (id) => `/trip/${id}/participants`,
+    visual: { type: "image", tabKey: "participants", alt: "Participantes" },
+  },
+  {
+    id: "resources",
+    title: "Docs",
+    lead: "Paso 4 de 4",
+    body: "Guarda aquí los comprobantes, facturas o cualquier documento relacionado con los gastos del grupo.",
+    mobileTip: "En móvil, enlaces y archivos se abren con el navegador.",
+    href: (id) => `/trip/${id}/resources`,
+    visual: { type: "image", tabKey: "resources", alt: "Docs", imageClassName: tripTabDocsImageClass },
+  },
+];
+
+/** Ayuda por pantalla adaptada para grupos de gastos. */
+const EXPENSE_GROUP_HELP: Record<string, HelpEntry> = {
+  home: {
+    title: "Inicio del grupo de gastos",
+    intro: "Vista general del grupo: participantes, gastos acumulados y accesos rápidos a cada sección.",
+    blocks: [
+      {
+        heading: "Qué puedes hacer aquí",
+        bullets: [
+          "Consultar el resumen del grupo: quién pertenece, total gastado y estado de los balances.",
+          "Ir a Gastos, Gente o Docs desde las tarjetas de acceso rápido.",
+          "Abrir la campana de novedades para ver cambios recientes en gastos o invitaciones.",
+        ],
+      },
+      {
+        heading: "Ventajas",
+        bullets: [
+          "Todo el grupo comparte la misma información en tiempo real.",
+          "Sin viaje planificado: solo lo que importa, el dinero.",
+        ],
+      },
+    ],
+  },
+  expenses: {
+    title: "Gastos del grupo",
+    intro: "Registra lo que cada persona paga, repártelo entre los participantes y obtén el resumen exacto de quién debe qué.",
+    blocks: [
+      {
+        heading: "Qué puedes hacer en esta página",
+        bullets: [
+          "Añadir gastos indicando quién pagó, el importe y entre quién se reparte.",
+          "Escanear un ticket o factura con IA para rellenar el gasto automáticamente (PRO).",
+          "Consultar balances individuales: quién debe dinero y cuánto al resto.",
+          "Usar los pagos sugeridos para saldar todas las deudas con el menor número de transferencias.",
+          "Enviar el resumen de pagos directamente por WhatsApp a cada persona.",
+          "Convertir el grupo en un viaje completo si quieres añadir itinerario.",
+          "Exportar el historial de gastos en CSV.",
+        ],
+      },
+      {
+        heading: "Ventajas",
+        bullets: [
+          "Transparencia total: nadie tiene que llevar la cuenta en un Excel aparte.",
+          "Menos fricción: las cifras son revisables y el reparto es justo.",
+          "Ideal para gastos de casa, eventos, viajes rápidos o cualquier gasto compartido.",
+        ],
+      },
+    ],
+  },
+  participants: {
+    title: "Gente del grupo",
+    intro: "Define quién participa en el grupo y cómo se llama en los gastos.",
+    blocks: [
+      {
+        heading: "Qué puedes hacer en esta página",
+        bullets: [
+          "Añadir o revisar quién pertenece al grupo.",
+          "Invitar por WhatsApp, enlace o QR para que otros puedan unirse.",
+          "Alinear nombres con los que usarás en Gastos para que los balances funcionen correctamente.",
+        ],
+      },
+      {
+        heading: "Ventajas",
+        bullets: [
+          "Menos errores en repartos: todos los nombres coinciden.",
+          "Quien se une tarde entra en un contexto ya definido.",
+        ],
+      },
+    ],
+  },
+  resources: {
+    title: "Docs y recursos",
+    intro: "Guarda comprobantes, facturas o cualquier documento del grupo.",
+    blocks: [
+      {
+        heading: "Qué puedes hacer en esta página",
+        bullets: [
+          "Subir archivos o pegar enlaces a facturas, comprobantes o seguros.",
+          "Organizar la documentación en un solo sitio visible para todos los miembros.",
+        ],
+      },
+      {
+        heading: "Ventajas",
+        bullets: [
+          "Sin búsqueda en correos: todo en un sitio compartido.",
+          "Historial accesible para cualquier miembro del grupo.",
+        ],
+      },
+    ],
+  },
+  settings: {
+    title: "Ajustes del grupo",
+    intro: "Configura opciones del grupo de gastos.",
+    blocks: [
+      {
+        heading: "Qué puedes hacer aquí",
+        bullets: [
+          "Cambiar el nombre del grupo o ajustes de acceso.",
+          "Configurar moneda base para los balances.",
+        ],
+      },
+      {
+        heading: "Ventajas",
+        bullets: ["Control centralizado de las preferencias del grupo."],
+      },
+    ],
+  },
+};
 
 const HELP: Record<string, HelpEntry> = {
   home: {
@@ -427,15 +577,18 @@ export default function TripPageHelp({ heroMode = false }: { heroMode?: boolean 
   const pathname = usePathname();
   const params = useParams();
   const isDemoTrip = useIsDemoTrip();
+  const { tripMode } = useTripWorkspace();
+  const isExpenseGroup = tripMode === "expense_group";
   const tripId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
-  const activeTour = isDemoTrip ? DEMO_TAB_TOUR : TAB_TOUR;
+  const activeTour = isDemoTrip ? DEMO_TAB_TOUR : isExpenseGroup ? EXPENSE_GROUP_TAB_TOUR : TAB_TOUR;
 
   const pageId = useMemo(() => {
     if (!tripId) return null;
     return getTripPageHelpId(pathname);
   }, [pathname, tripId]);
 
-  const entry = pageId ? HELP[pageId] : null;
+  const activeHelp = isExpenseGroup ? EXPENSE_GROUP_HELP : HELP;
+  const entry = pageId ? (activeHelp[pageId] ?? HELP[pageId]) : null;
 
   const searchParams = useSearchParams();
   const [spotlightOpen, setSpotlightOpen] = useState(false);

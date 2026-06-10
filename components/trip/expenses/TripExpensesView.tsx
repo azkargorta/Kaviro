@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import ExpenseForm from "@/components/trip/expenses/ExpenseForm";
 import ExpenseList from "@/components/trip/expenses/ExpenseList";
@@ -31,6 +31,7 @@ import Reveal from "@/components/ui/Reveal";
 import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
 import ExpenseBalanceCompact from "@/components/trip/expenses/ExpenseBalanceCompact";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { supabase } from "@/lib/supabase";
 export default function TripExpensesView({
   tripId,
   isPremium = true,
@@ -129,10 +130,87 @@ export default function TripExpensesView({
     if (stored) setMyDisplayName(stored);
   }, [isExpenseGroup, tripId]);
 
-  function selectMyName(name: string) {
+  // Auto-detectar el nombre del usuario en la lista de participantes usando profiles (tabla global por usuario)
+  useEffect(() => {
+    if (!tripId) return;
+    // Si ya hay nombre guardado, no hace falta buscar
+    const stored = localStorage.getItem(`kaviro_myname_${tripId}`);
+    if (stored) return;
+
+    let cancelled = false;
+    async function autoDetect() {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+        if (!user || cancelled) return;
+
+        // Consultar profiles: tiene registro para TODOS los usuarios (incluido el creador del viaje)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username, full_name, display_name, email")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        // Candidatos ordenados por prioridad
+        const candidates: string[] = [];
+        const add = (v: unknown) => {
+          if (typeof v === "string" && v.trim()) candidates.push(v.trim());
+        };
+        add(profile?.display_name);
+        add(profile?.full_name);
+        add(profile?.username);
+        add(user.user_metadata?.display_name);
+        add(user.user_metadata?.full_name);
+        add(user.user_metadata?.name);
+        add(profile?.email);
+        add(user.email);
+
+        if (!candidates.length || cancelled) return;
+
+        // Intentar coincidir con algún nombre real de la lista de participantes
+        // (necesitamos esperar a que participants se haya calculado — lo hacemos en otro effect)
+        // Guardamos candidatos en sessionStorage para que el siguiente effect los use
+        sessionStorage.setItem(`kaviro_candidates_${tripId}`, JSON.stringify(candidates));
+      } catch {
+        // silencioso
+      }
+    }
+
+    void autoDetect();
+    return () => { cancelled = true; };
+  // Se ejecuta solo en mount (tripId no cambia)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tripId]);
+
+  // Cuando participants se cargue, intentar match con los candidatos almacenados
+  useEffect(() => {
+    if (!tripId || !participants.length || myDisplayName) return;
+    const stored = localStorage.getItem(`kaviro_myname_${tripId}`);
+    if (stored) { setMyDisplayName(stored); return; }
+
+    try {
+      const raw = sessionStorage.getItem(`kaviro_candidates_${tripId}`);
+      if (!raw) return;
+      const candidates: string[] = JSON.parse(raw);
+      for (const candidate of candidates) {
+        const lower = candidate.toLowerCase();
+        const match = (participants as string[]).find((p) => p.toLowerCase() === lower);
+        if (match) {
+          localStorage.setItem(`kaviro_myname_${tripId}`, match);
+          setMyDisplayName(match);
+          sessionStorage.removeItem(`kaviro_candidates_${tripId}`);
+          break;
+        }
+      }
+    } catch {
+      // silencioso
+    }
+  }, [tripId, participants, myDisplayName]);
+
+  const selectMyName = useCallback((name: string) => {
     localStorage.setItem(`kaviro_myname_${tripId}`, name);
     setMyDisplayName(name);
-  }
+  }, [tripId]);
 
   const myBalance: number | null = useMemo(() => {
     if (!myDisplayName) return null;

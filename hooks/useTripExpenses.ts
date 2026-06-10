@@ -230,15 +230,6 @@ export function useTripExpenses(tripId: string) {
   const [expenses, setExpenses] = useState<TripExpenseRecord[]>([]);
   const [settlements, setSettlements] = useState<TripSettlement[]>([]);
   const [registeredTravelers, setRegisteredTravelers] = useState<string[]>([]);
-  // Nombres que alguna vez se vieron para este viaje; persiste aunque se quite a alguien de pasajeros
-  const [everSeenParticipants, setEverSeenParticipants] = useState<string[]>(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(`kaviro_participants_${tripId}`) : null;
-      return raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      return [];
-    }
-  });
   const [tripBaseCurrency, setTripBaseCurrency] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -306,32 +297,8 @@ export function useTripExpenses(tripId: string) {
     }
   }, [tripId]);
 
-  // Acumula en localStorage los nombres vistos para este viaje (sobrevive a eliminaciones de pasajeros)
-  useEffect(() => {
-    if (!tripId) return;
-    setEverSeenParticipants((prev) => {
-      const merged = new Set<string>(prev);
-      registeredTravelers.forEach((n) => merged.add(n));
-      expenses.forEach((e) => {
-        if (e.payer_name) merged.add(e.payer_name);
-        normalizeNames(e.participant_names).forEach((n) => merged.add(n));
-        normalizeNames(e.paid_by_names).forEach((n) => merged.add(n));
-        normalizeNames(e.owed_by_names).forEach((n) => merged.add(n));
-      });
-      settlements.forEach((s) => {
-        if (s.debtor_name) merged.add(s.debtor_name);
-        if (s.creditor_name) merged.add(s.creditor_name);
-      });
-      const arr = Array.from(merged);
-      try { localStorage.setItem(`kaviro_participants_${tripId}`, JSON.stringify(arr)); } catch { /* ignore */ }
-      return arr;
-    });
-  }, [tripId, registeredTravelers, expenses, settlements]);
-
   const participants = useMemo(() => {
     const names = new Set<string>();
-    // Incluye tanto los actuales como los que alguna vez estuvieron (evita que desaparezcan al quitarlos de pasajeros)
-    everSeenParticipants.forEach((name) => names.add(name));
     registeredTravelers.forEach((name) => names.add(name));
     expenses.forEach((expense) => {
       if (expense.payer_name) names.add(expense.payer_name);
@@ -344,7 +311,7 @@ export function useTripExpenses(tripId: string) {
       if (settlement.creditor_name) names.add(settlement.creditor_name);
     });
     return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [expenses, registeredTravelers, everSeenParticipants, settlements]);
+  }, [expenses, registeredTravelers, settlements]);
 
   useEffect(() => {
     let cancelled = false;
