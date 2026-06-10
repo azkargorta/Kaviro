@@ -313,11 +313,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <DashboardTripInvitesInbox />
 
       {/* ── Área de acción principal ────────────────────────────────────── */}
-      <div className={showSidePanel ? "grid items-start gap-4 md:grid-cols-2" : ""}>
+      <div className={showSidePanel ? "grid gap-4 md:grid-cols-2 md:items-start" : ""}>
 
-        {/* Columna izquierda: crear viaje */}
+        {/* Columna izquierda: crear viaje — order-2 en móvil para que "estado actual" aparezca primero */}
         <section
-          className={`rounded-2xl px-5 py-5 md:px-6 md:py-6 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
+          className={`min-w-0 overflow-hidden rounded-2xl px-5 py-5 md:px-6 md:py-6 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40${showSidePanel ? " order-2 md:order-1" : ""}`}
         >
           {/* Header de sección */}
           <div className="mb-4 flex items-center gap-3">
@@ -336,7 +336,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700/50">
             {isPremium ? (
               <>
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-border)] bg-white/70 px-4 py-3 dark:border-slate-600/40 dark:bg-slate-800/40">
+                <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-[var(--brand-border)] bg-white/70 px-4 py-3 dark:border-slate-600/40 dark:bg-slate-800/40">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]">
                       <Sparkles className="h-4 w-4" aria-hidden />
@@ -388,10 +388,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </div>
         </section>
 
-        {/* Columna derecha: viaje activo + demo + onboarding */}
+        {/* Columna derecha: viaje activo + demo + onboarding — order-1 en móvil (aparece primero) */}
         {showSidePanel && (
-          <div className="flex flex-col gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+          <div className="order-1 min-w-0 flex flex-col gap-3 md:order-2">
+            <p className="hidden text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 md:block dark:text-slate-500">
               Tu estado actual
             </p>
             <DashboardContinueTrip trips={allRealTrips} />

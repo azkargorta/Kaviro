@@ -30,11 +30,11 @@ export default function DashboardAiShortcuts({
   }
 
   return (
-    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+    <div className="mt-3">
       <button
         type="button"
         onClick={() => openCreateTripForm()}
-        className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)] sm:min-w-[200px] sm:flex-none sm:text-sm"
+        className="flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border-2 border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:border-[var(--brand)]"
         title="Abre el formulario para crear un viaje; al guardar con Premium puedes seguir en el asistente"
       >
         <Sparkles className={`${iconInline16} text-[var(--brand)]`} aria-hidden />
