@@ -257,6 +257,11 @@ textarea.input { resize: vertical; min-height: 120px; }
   min-width: 0;
   padding: 1.25rem max(0.875rem, var(--safe-area-left)) 1.5rem max(0.875rem, var(--safe-area-right));
 }
+/* Dashboard: sin límite de ancho para aprovechar pantallas anchas */
+.page-shell--fluid {
+  max-width: none;
+}
+
 /* Páginas sin barra superior fija (cuenta, changelog, etc.) */
 .page-shell--safe-top {
   padding-top: max(1.25rem, var(--safe-area-top));

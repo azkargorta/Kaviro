@@ -296,7 +296,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const announcementUnreadByTripId = countUnreadAnnouncementsByTrip(unreadAnnouncementRows);
 
   return (
-    <main className="page-shell space-y-4 pb-8 md:space-y-5 md:pb-10">
+    <main className="page-shell page-shell--fluid space-y-4 pb-8 md:space-y-5 md:pb-10">
       <DashboardOfflineRegistry
         trips={allRealTrips.map((t) => ({
           id: t.id,
