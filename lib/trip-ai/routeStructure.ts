@@ -1,4 +1,4 @@
-import { geocodePhotonPreferred, geocodeTripAnchor, regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
+import { regionHintsFromDestination } from "@/lib/geocoding/photonGeocode";
 import type { TripAutoConfig, TripAutoGeoStrictness } from "@/lib/trip-ai/tripAutoConfig";
 import type { ResolvedTripCreation } from "@/lib/trip-ai/tripCreationResolve";
 
@@ -196,6 +196,8 @@ function orderClustersGreedy(
 export async function deriveRouteStructure(params: {
   resolved: ResolvedTripCreation;
   config: TripAutoConfig;
+  /** Ancla geográfica opcional (p. ej. tests sin red) */
+  anchor?: { lat: number; lng: number } | null;
   /** Permite inyectar geocode para tests */
   geocode?: (q: string, opts: { anchor: { lat: number; lng: number } | null; regionHints: string[] }) => Promise<Candidate | null>;
 }): Promise<RouteStructure> {
@@ -211,14 +213,28 @@ export async function deriveRouteStructure(params: {
 
   const destination = clean(resolved.destination) || "Destino";
   const regionHints = regionHintsFromDestination(destination);
-  const anchor = await geocodeTripAnchor(destination).catch(() => null);
   const geocode =
     params.geocode ||
     (async (q: string, opts: { anchor: { lat: number; lng: number } | null; regionHints: string[] }) => {
-      const hit = await geocodePhotonPreferred(q, { anchor: opts.anchor, regionHints: opts.regionHints, maxDistanceKm: 50000 });
+      const { geocodePhotonPreferred } = await import("@/lib/geocoding/photonGeocode");
+      const hit = await geocodePhotonPreferred(q, {
+        anchor: opts.anchor,
+        regionHints: opts.regionHints,
+        maxDistanceKm: 50000,
+      });
       if (!hit) return null;
       return { label: q, lat: hit.lat, lng: hit.lng };
     });
+
+  const anchor =
+    params.anchor !== undefined
+      ? params.anchor
+      : params.geocode
+        ? null
+        : await (async () => {
+            const { geocodeTripAnchor } = await import("@/lib/geocoding/photonGeocode");
+            return geocodeTripAnchor(destination).catch(() => null);
+          })();
 
   const rawCandidates = uniqLabels([
     clean(resolved.intent.startLocation),

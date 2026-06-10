@@ -1,6 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { TripAutoConfig } from "@/lib/trip-ai/tripAutoConfig";
-import { deriveRouteStructure } from "@/lib/trip-ai/routeStructure";
+
+vi.mock("@/lib/geocoding/photonGeocode", () => ({
+  regionHintsFromDestination: (destination: string) => {
+    const d = destination.toLowerCase();
+    return d.includes("argentina") ? ["argentina"] : [];
+  },
+  geocodeTripAnchor: vi.fn(async () => ({ lat: -38.4, lng: -63.6 })),
+  geocodePhotonPreferred: vi.fn(async () => null),
+}));
+
+const { deriveRouteStructure } = await import("@/lib/trip-ai/routeStructure");
 
 describe("deriveRouteStructure", () => {
   const baseResolved: any = {
@@ -33,7 +43,6 @@ describe("deriveRouteStructure", () => {
   });
 
   it("genera segmentos y baseCityByDay con longitud exacta", async () => {
-    // Geocoder inyectado para evitar red
     const fakeGeo = async (q: string) => {
       const label = q.split(",")[0]!.trim();
       const map: Record<string, { lat: number; lng: number }> = {
@@ -50,6 +59,7 @@ describe("deriveRouteStructure", () => {
     const s = await deriveRouteStructure({
       resolved: baseResolved,
       config: cfg,
+      anchor: { lat: -38.4, lng: -63.6 },
       geocode: async (q) => fakeGeo(q),
     });
     expect(s.version).toBe(1);
@@ -58,4 +68,3 @@ describe("deriveRouteStructure", () => {
     expect(s.segments[0]!.startDate).toBe("2026-11-05");
   });
 });
-
