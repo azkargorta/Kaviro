@@ -1,7 +1,9 @@
 "use client";
 
+import { Clock, MapPin } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import type { RevealDelay } from "@/components/ui/Reveal";
+import { getPlanActivityDisplayMeta } from "@/lib/plan-activity-meta";
 
 type Activity = {
   id: string;
@@ -30,45 +32,76 @@ export default function ShareTripItinerary({ days }: { days: ShareDay[] }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {days.map(({ key, label, rows }, dayIdx) => (
         <Reveal
           key={key}
           variant="slide"
           delay={(dayIdx % 4) as RevealDelay}
           as="section"
-          className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-[#1E293B] dark:bg-[#0F1623]"
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]"
         >
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-950 dark:text-white">{label}</h2>
-              <p className="mt-1 text-sm text-slate-600">
+          {/* Cabecera del día */}
+          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3.5 dark:border-[#1E293B] dark:bg-[#080C14]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand,#1e3a5f)] text-xs font-bold text-white">
+              {dayIdx + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {rows.length} actividad{rows.length === 1 ? "" : "es"}
               </p>
             </div>
           </div>
-          <div className="motion-stagger-list mt-4 space-y-3">
-            {rows.map((a) => (
-              <div
-                key={a.id}
-                className="motion-stagger-item trip-card-hover rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-950 dark:text-white">
-                      {a.title || a.place_name || "Actividad"}
-                    </div>
-                    <div className="mt-1 text-sm text-slate-600">
-                      {(a.place_name || a.address || "Ubicación pendiente") +
-                        (a.activity_time ? ` · ${a.activity_time.slice(0, 5)}` : "")}
-                    </div>
+
+          {/* Lista de actividades */}
+          <div className="divide-y divide-slate-100 dark:divide-[#1E293B]">
+            {rows.map((a) => {
+              const meta = getPlanActivityDisplayMeta(a.activity_kind || a.activity_type);
+              const location = a.place_name || a.address;
+              const time = a.activity_time ? a.activity_time.slice(0, 5) : null;
+
+              return (
+                <div key={a.id} className="flex items-start gap-3 px-5 py-4">
+                  {/* Icono de tipo */}
+                  <div
+                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
+                    style={{ background: `${meta.color}18` }}
+                    aria-hidden
+                  >
+                    {meta.icon}
                   </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 dark:bg-[#1E293B] dark:text-slate-200">
-                    {a.activity_kind || a.activity_type || "Plan"}
-                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-1.5">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {a.title || a.place_name || "Actividad"}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {time && (
+                          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-[#1E293B] dark:text-slate-300">
+                            <Clock className="h-2.5 w-2.5" aria-hidden />
+                            {time}
+                          </span>
+                        )}
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ background: `${meta.color}20`, color: meta.color }}
+                        >
+                          {meta.label}
+                        </span>
+                      </div>
+                    </div>
+                    {location && (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        {location}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Reveal>
       ))}
