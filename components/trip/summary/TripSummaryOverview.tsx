@@ -366,7 +366,7 @@ export default function TripSummaryOverview({
             </div>
           </Reveal>
 
-          <div data-tour="summary-stats" className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+          <div data-tour="summary-stats" className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
             {tabs.map((tab, tabIdx) => {
               const ac = TILE_ACCENT[tab.tone];
               const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
@@ -382,13 +382,13 @@ export default function TripSummaryOverview({
                 >
                   <Link
                     href={tab.href}
-                    className={`trip-tile-hover group flex h-full flex-col items-center rounded-xl border p-2 text-center sm:items-stretch sm:rounded-2xl sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
+                    className={`trip-tile-hover group flex h-full flex-col items-center rounded-xl border p-2.5 text-center sm:items-stretch sm:rounded-2xl sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
                   >
                     <div
                       className={
                         isDark
-                          ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11 sm:rounded-xl"
-                          : `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11 sm:rounded-xl ${ac.icon}`
+                          ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11 sm:rounded-xl"
+                          : `flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11 sm:rounded-xl ${ac.icon}`
                       }
                     >
                       <Image
@@ -399,7 +399,7 @@ export default function TripSummaryOverview({
                         className={`h-5 w-5 object-contain sm:h-6 sm:w-6 ${isDark ? coralPngFilterDark : ""}`}
                       />
                     </div>
-                    <p className="mt-1 text-[10px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
+                    <p className="mt-1.5 text-[11px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
                       {tab.label}
                     </p>
                     <span
