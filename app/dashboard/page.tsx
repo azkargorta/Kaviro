@@ -6,7 +6,7 @@ import OnboardingNudge from "@/components/dashboard/OnboardingNudge";
 import DashboardAiShortcuts from "@/components/dashboard/DashboardAiShortcuts";
 import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFlowStepper";
 import { surfaceAccentCyan } from "@/components/ui/brandStyles";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Plane } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
@@ -319,54 +319,64 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <section
           className={`rounded-2xl px-5 py-5 md:px-6 md:py-6 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
         >
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-            Crear viaje
-          </p>
+          {/* Header de sección */}
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-white shadow-sm">
+              <Plane className="h-4 w-4" aria-hidden />
+            </span>
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">Crear viaje</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Sigue los pasos o planifica con IA</p>
+            </div>
+          </div>
+
           <DashboardCreateFlowStepper isPremium={isPremium} canCreate={!freeTripLimitReached} />
 
-          <div className="mt-4 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50">
+          {/* Tarjeta compacta IA / Premium */}
+          <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700/50">
             {isPremium ? (
               <>
-                <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--brand)] dark:text-[#F87171]">
-                  Asistente personal
-                </p>
-                <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
-                  Tras crear el viaje, el asistente te guía con propuestas. También puedes abrirlo en cualquier viaje desde
-                  la pestaña del mismo nombre.
-                </p>
-                <div className="mt-4 flex justify-center">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-border)] bg-white/70 px-4 py-3 dark:border-slate-600/40 dark:bg-slate-800/40">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]">
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[var(--brand)] dark:text-[#F87171]">Asistente personal</p>
+                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                        Genera planes completos con IA para cualquier destino
+                      </p>
+                    </div>
+                  </div>
                   <Link
                     href="/trips/new/planner"
-                    className="inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:bg-[var(--brand-light)] disabled:opacity-60 sm:w-auto sm:min-w-[320px] sm:text-sm"
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
                     title="Genera un borrador con lugares reales y coordenadas"
                   >
-                    <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />
-                    Planificador IA (borrador)
+                    <Sparkles className="h-3 w-3" aria-hidden />
+                    Planificar
                   </Link>
                 </div>
                 <DashboardAiShortcuts trips={realTrips} isPremium />
               </>
             ) : (
-              <>
-                <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">
-                  Plan gratuito
-                </p>
-                <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
-                  Sigue los 6 pasos del recuadro superior. Al pulsar <strong className="text-slate-800">Crear viaje</strong> y abrir el
-                  formulario verás una guía detallada en el mismo orden.
-                </p>
-                <div className="mt-4 flex justify-center">
-                  <Link
-                    href="/account?upgrade=premium&focus=premium#premium-plans"
-                    className="group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-amber-100/60 px-3 py-2.5 text-center text-xs font-semibold text-amber-950 shadow-sm ring-1 ring-slate-900/[0.02] transition hover:border-amber-300 hover:shadow-md active:translate-y-[0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 sm:w-auto sm:min-w-[260px] sm:text-sm"
-                  >
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm ring-1 ring-white/20">
-                      <Sparkles className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span>Asistente personal y más con Premium</span>
-                  </Link>
+              <Link
+                href="/account?upgrade=premium&focus=premium#premium-plans"
+                className="group flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-50/40 px-4 py-3 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-800/30 dark:from-amber-950/20 dark:to-transparent"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+                    <Sparkles className="h-4 w-4" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-amber-900 dark:text-amber-300">Asistente IA con Premium</p>
+                    <p className="text-[11px] text-amber-700/80 dark:text-amber-500">Sin límite de viajes y mucho más</p>
+                  </div>
                 </div>
-              </>
+                <span className="shrink-0 text-xs font-semibold text-amber-700 transition group-hover:underline dark:text-amber-400">
+                  Ver planes →
+                </span>
+              </Link>
             )}
           </div>
 
@@ -380,7 +390,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
         {/* Columna derecha: viaje activo + demo + onboarding */}
         {showSidePanel && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+              Tu estado actual
+            </p>
             <DashboardContinueTrip trips={allRealTrips} />
             {isFirstOnboardingVisit ? (
               <>
