@@ -17,10 +17,12 @@ import {
   ChevronDown,
   Clock,
   Download,
+  HelpCircle,
   MoreHorizontal,
   Plus,
   ScanText,
   Wallet,
+  X,
 } from "lucide-react";
 import PremiumUpsell from "@/components/premium/PremiumUpsell";
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
@@ -29,18 +31,22 @@ import Reveal from "@/components/ui/Reveal";
 import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
 import ExpenseBalanceCompact from "@/components/trip/expenses/ExpenseBalanceCompact";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { supabase } from "@/lib/supabase";
 
 export default function TripExpensesView({
   tripId,
   isPremium = true,
   canManageExpenses = true,
   budgetTarget: budgetTargetFromServer = null,
+  isExpenseGroup = false,
 }: {
   tripId: string;
   isPremium?: boolean;
   canManageExpenses?: boolean;
   /** Presupuesto cargado en servidor (Ajustes); evita depender solo del cliente. */
   budgetTarget?: number | null;
+  /** True cuando el viaje es un grupo de gastos (trip_mode = 'expenses'). */
+  isExpenseGroup?: boolean;
 }) {
   const {
     expenses,
@@ -72,7 +78,7 @@ export default function TripExpensesView({
     createWhatsAppLink,
   } = useTripExpenses(tripId);
 
-  const { trip: tripMeta } = useTripData(tripId);
+  const { trip: tripMeta, participants: tripMembers } = useTripData(tripId);
 
   const budgetTarget = useMemo(() => {
     const fromClient = parseTripBudgetTarget(tripMeta?.budget_target);
@@ -110,10 +116,38 @@ export default function TripExpensesView({
   type MobileExpensesPanel = null | "menu" | "analyze" | "converter" | "export" | "history" | "balances";
   const [mobilePanel, setMobilePanel] = useState<MobileExpensesPanel>(null);
   const [mounted, setMounted] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [myDisplayName, setMyDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (isExpenseGroup) {
+      const dismissed = localStorage.getItem(`kaviro_eg_ob_${tripId}`);
+      if (!dismissed) setShowOnboarding(true);
+    }
+  }, [isExpenseGroup, tripId]);
+
+  // Identifica el nombre del usuario actual dentro de los balances
+  useEffect(() => {
+    if (!tripMembers.length) return;
+    void supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id;
+      if (!uid) return;
+      const me = tripMembers.find((p) => p.user_id === uid);
+      if (me?.display_name) setMyDisplayName(me.display_name);
+    });
+  }, [tripMembers]);
+
+  const myBalance: number | null = useMemo(() => {
+    if (!myDisplayName) return null;
+    const entry = (balances as any[]).find((b: any) => b.person === myDisplayName);
+    return entry != null ? (entry.balance ?? null) : null;
+  }, [balances, myDisplayName]);
+
+  function dismissOnboarding() {
+    localStorage.setItem(`kaviro_eg_ob_${tripId}`, "1");
+    setShowOnboarding(false);
+  }
 
   const shouldShowForm =
     canManageExpenses && (isAddOpen || !!editingExpense || !!detectedData);
@@ -363,6 +397,129 @@ export default function TripExpensesView({
     <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden pb-20 md:pb-0">
       {!canManageExpenses ? <TripReadOnlyBanner moduleLabel="gastos" /> : null}
 
+      {/* Panel de onboarding — solo grupos de gastos */}
+      {isExpenseGroup && showOnboarding ? (
+        <div className="rounded-2xl border border-[color:var(--brand-border)] bg-[var(--brand-light)] p-5 dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)]/10">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                ¿Cómo funciona tu grupo de gastos?
+              </p>
+              <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                Todo lo que puedes hacer desde esta sección
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissOnboarding}
+              className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-white/60 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              aria-label="Cerrar guía"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: "⚖️",
+                title: "Balances automáticos",
+                desc: "Kaviro calcula quién ha pagado más y quién debe dinero al registrar cada gasto.",
+                pro: false,
+                href: null,
+              },
+              {
+                icon: "🔄",
+                title: "Pagos sugeridos",
+                desc: "Obtén la lista exacta de transferencias que saldan todas las deudas con el mínimo de movimientos.",
+                pro: false,
+                href: null,
+              },
+              {
+                icon: "💬",
+                title: "Compartir por WhatsApp",
+                desc: "Envía el resumen de lo que cada persona debe directamente por WhatsApp con un clic.",
+                pro: false,
+                href: null,
+              },
+              {
+                icon: "🤖",
+                title: "Analizar ticket con IA",
+                desc: "Sube una foto o PDF de un recibo y Kaviro rellena automáticamente el gasto.",
+                pro: true,
+                href: null,
+              },
+              {
+                icon: "🗺️",
+                title: "Convertir a viaje completo",
+                desc: "¿Quieres planificar también el itinerario? Convierte este grupo en un viaje sin perder los gastos.",
+                pro: false,
+                href: null,
+              },
+              {
+                icon: "👥",
+                title: "Invitar personas",
+                desc: "Comparte el grupo con tus compañeros para que puedan ver y añadir sus propios gastos.",
+                pro: false,
+                href: `/trip/${tripId}/participants`,
+              },
+            ].map((feat) => (
+              <div
+                key={feat.title}
+                className="flex flex-col gap-1 rounded-xl border border-white/70 bg-white/60 p-3 dark:border-slate-700/50 dark:bg-slate-900/40"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base leading-none">{feat.icon}</span>
+                  <span className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight">
+                    {feat.title}
+                  </span>
+                  {feat.pro && !isPremium ? (
+                    <span className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                      PRO
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
+                  {feat.desc}
+                </p>
+                {feat.href ? (
+                  <a
+                    href={feat.href}
+                    className="mt-auto pt-1 text-[11px] font-semibold text-[var(--brand-text)] hover:underline"
+                  >
+                    Ir a Personas →
+                  </a>
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Puedes volver a ver esta guía desde el botón <HelpCircle className="inline h-3 w-3" aria-hidden /> de la cabecera.
+            </p>
+            <button
+              type="button"
+              onClick={dismissOnboarding}
+              className="shrink-0 text-[11px] font-semibold text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Ya lo entendí, cerrar
+            </button>
+          </div>
+        </div>
+      ) : isExpenseGroup ? (
+        <div className="hidden md:flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowOnboarding(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-500 shadow-sm transition hover:border-[color:var(--brand-border)] hover:text-[var(--brand-text)] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+          >
+            <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+            ¿Cómo funciona?
+          </button>
+        </div>
+      ) : null}
+
       {/* Cabecera: tabs + botones de acción (inline en escritorio) */}
       <div className="flex items-center gap-2">
         <div className="inline-flex flex-1 rounded-xl bg-slate-100 p-1 gap-1 dark:bg-slate-800/60">
@@ -417,28 +574,54 @@ export default function TripExpensesView({
       {/* Franja de estadísticas — solo escritorio */}
       {expenses.length > 0 ? (
         <div className="hidden md:grid md:grid-cols-4 md:divide-x md:divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-700/60 dark:border-slate-700/50">
-          {[
-            {
-              label: "Gastos registrados",
-              value: String(expenses.length),
-              icon: "🧾",
-            },
-            {
-              label: "Importe total",
-              value: `${(expenses as any[]).reduce((s: number, e: any) => s + Number(e.amount || 0), 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })} ${tripBaseCurrency || "EUR"}`,
-              icon: "💰",
-            },
-            {
-              label: "Participantes",
-              value: String(participants.length),
-              icon: "👥",
-            },
-            {
-              label: "Pagos sugeridos",
-              value: String((suggestedSettlements as any[]).length),
-              icon: "🔄",
-            },
-          ].map((stat) => (
+          {((): Array<{ label: string; value: string; icon: string; valueClass?: string }> => {
+            const currency = balanceCurrency || tripBaseCurrency || "EUR";
+            let balanceValue = "—";
+            let balanceClass = "text-slate-900 dark:text-white";
+            if (myBalance !== null) {
+              try {
+                const fmt = new Intl.NumberFormat("es-ES", {
+                  style: "currency",
+                  currency,
+                  maximumFractionDigits: 2,
+                }).format(Math.abs(myBalance));
+                balanceValue = myBalance >= 0 ? `+${fmt}` : `-${fmt}`;
+              } catch {
+                balanceValue = `${myBalance >= 0 ? "+" : ""}${myBalance.toFixed(2)} ${currency}`;
+              }
+              balanceClass =
+                myBalance > 0
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : myBalance < 0
+                  ? "text-rose-700 dark:text-rose-400"
+                  : "text-slate-900 dark:text-white";
+            }
+            return [
+              {
+                label: "Gastos registrados",
+                value: String(expenses.length),
+                icon: "🧾",
+              },
+              {
+                label: "Importe total",
+                value: `${(expenses as any[])
+                  .reduce((s: number, e: any) => s + Number(e.amount || 0), 0)
+                  .toLocaleString("es-ES", { maximumFractionDigits: 2 })} ${tripBaseCurrency || "EUR"}`,
+                icon: "💰",
+              },
+              {
+                label: "Tu balance",
+                value: balanceValue,
+                icon: myBalance === null ? "👤" : myBalance >= 0 ? "💚" : "🔴",
+                valueClass: balanceClass,
+              },
+              {
+                label: "Pagos sugeridos",
+                value: String((suggestedSettlements as any[]).length),
+                icon: "🔄",
+              },
+            ];
+          })().map((stat) => (
             <div
               key={stat.label}
               className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]"
@@ -446,7 +629,7 @@ export default function TripExpensesView({
               <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
                 {stat.icon} {stat.label}
               </p>
-              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">
+              <p className={`text-lg font-extrabold leading-tight ${stat.valueClass ?? "text-slate-900 dark:text-white"}`}>
                 {stat.value}
               </p>
             </div>

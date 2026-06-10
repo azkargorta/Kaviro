@@ -36,12 +36,28 @@ export default async function TripExpensesPage({
     budgetTarget = null;
   }
 
+  let isExpenseGroup = false;
+  try {
+    const { data: tripRow } = await supabase
+      .from("trips")
+      .select("trip_mode")
+      .eq("id", tripId)
+      .single();
+    isExpenseGroup = tripRow?.trip_mode === "expenses";
+  } catch {
+    isExpenseGroup = false;
+  }
+
   return (
     <main className="space-y-6">
       <TripBoardPageHeader
-        section="Gastos del viaje"
-        title="Control de gastos"
-        description="Registra tickets, divide importes entre pasajeros, convierte moneda y marca pagos pendientes."
+        section={isExpenseGroup ? "Grupo de gastos" : "Gastos del viaje"}
+        title={isExpenseGroup ? "Gastos compartidos" : "Control de gastos"}
+        description={
+          isExpenseGroup
+            ? "Registra tickets, divide importes y lleva el control de quién debe qué en el grupo."
+            : "Registra tickets, divide importes entre pasajeros, convierte moneda y marca pagos pendientes."
+        }
         iconKey="expenses"
         iconAlt="Gastos"
         actions={<TripScreenActions tripId={tripId} />}
@@ -52,6 +68,7 @@ export default async function TripExpensesPage({
         isPremium={isPremium}
         canManageExpenses={access.can_manage_expenses}
         budgetTarget={budgetTarget}
+        isExpenseGroup={isExpenseGroup}
       />
     </main>
   );
