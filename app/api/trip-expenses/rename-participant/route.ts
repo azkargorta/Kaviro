@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { forbidUnlessCanManageExpenses, requireTripAccessApi } from "@/lib/trip-access-api";
 
 /** Reemplaza todas las ocurrencias de `oldName` por `newName` en un array de strings. */
@@ -103,24 +102,17 @@ export async function POST(request: Request) {
     }
 
     // ── 2. Settlements ─────────────────────────────────────────────────────────
-    const updates: Array<Promise<unknown>> = [];
+    await supabase
+      .from("trip_expense_settlements")
+      .update({ debtor_name: to })
+      .eq("trip_id", tripId)
+      .eq("debtor_name", from);
 
-    updates.push(
-      supabase
-        .from("trip_expense_settlements")
-        .update({ debtor_name: to })
-        .eq("trip_id", tripId)
-        .eq("debtor_name", from)
-    );
-    updates.push(
-      supabase
-        .from("trip_expense_settlements")
-        .update({ creditor_name: to })
-        .eq("trip_id", tripId)
-        .eq("creditor_name", from)
-    );
-
-    await Promise.all(updates);
+    await supabase
+      .from("trip_expense_settlements")
+      .update({ creditor_name: to })
+      .eq("trip_id", tripId)
+      .eq("creditor_name", from);
 
     return NextResponse.json({
       ok: true,
