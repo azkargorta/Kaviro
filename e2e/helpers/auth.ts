@@ -12,8 +12,8 @@ export async function loginE2E(page: Page) {
     throw new Error("Define E2E_USER_EMAIL y E2E_USER_PASSWORD para este test");
   }
   await page.goto("/auth/login");
-  await page.getByLabel("Email").fill(email!);
-  await page.getByLabel("Contraseña").fill(password!);
+  await page.locator("#login-email").fill(email!);
+  await page.locator("#login-password").fill(password!);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 });
 }

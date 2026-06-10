@@ -10,8 +10,8 @@ test.describe("Auth (sin sesión)", () => {
   test("login muestra formulario", async ({ page }) => {
     await page.goto("/auth/login");
     await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Contraseña")).toBeVisible();
+    await expect(page.locator("#login-email")).toBeVisible();
+    await expect(page.locator("#login-password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Iniciar sesión" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Crear cuenta" })).toHaveAttribute("href", "/auth/register");
   });
@@ -19,8 +19,8 @@ test.describe("Auth (sin sesión)", () => {
   test("register muestra formulario", async ({ page }) => {
     await page.goto("/auth/register");
     await expect(page.getByRole("heading", { name: "Crear cuenta" })).toBeVisible();
-    await expect(page.getByLabel("Nombre de usuario")).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
+    await expect(page.locator("#register-username")).toBeVisible();
+    await expect(page.locator("#register-email")).toBeVisible();
   });
 
   test("login respeta ?next=", async ({ page }) => {
