@@ -31,8 +31,6 @@ import Reveal from "@/components/ui/Reveal";
 import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
 import ExpenseBalanceCompact from "@/components/trip/expenses/ExpenseBalanceCompact";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { supabase } from "@/lib/supabase";
-
 export default function TripExpensesView({
   tripId,
   isPremium = true,
@@ -126,80 +124,15 @@ export default function TripExpensesView({
       const dismissed = localStorage.getItem(`kaviro_eg_ob_${tripId}`);
       if (!dismissed) setShowOnboarding(true);
     }
+    // Recuperar nombre guardado de sesiones anteriores
+    const stored = localStorage.getItem(`kaviro_myname_${tripId}`);
+    if (stored) setMyDisplayName(stored);
   }, [isExpenseGroup, tripId]);
 
-  // Identifica el nombre del usuario actual en el sistema de balances.
-  // Replica la misma lógica de prioridad que usa el API: display_name > name > full_name > username > email
-  useEffect(() => {
-    if (!tripId) return;
-    let cancelled = false;
-
-    /** Misma prioridad que extractNamesFromRows en el servidor */
-    function pickName(row: Record<string, unknown>): string | null {
-      for (const field of ["display_name", "name", "full_name", "username", "email"] as const) {
-        const v = row[field];
-        if (typeof v === "string" && v.trim()) return v.trim();
-      }
-      return null;
-    }
-
-    async function resolveMyName() {
-      try {
-        const { data: authData } = await supabase.auth.getUser();
-        const user = authData.user;
-        if (!user || cancelled) return;
-
-        let candidateName: string | null = null;
-
-        // 1. Buscar en trip_participants por user_id con TODOS los campos (misma prioridad que API)
-        const { data: byUid } = await supabase
-          .from("trip_participants")
-          .select("display_name, name, full_name, username, email")
-          .eq("trip_id", tripId)
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (byUid) candidateName = pickName(byUid as Record<string, unknown>);
-
-        // 2. Fallback por email si user_id no dio resultado
-        if (!candidateName && user.email) {
-          const { data: byEmail } = await supabase
-            .from("trip_participants")
-            .select("display_name, name, full_name, username, email")
-            .eq("trip_id", tripId)
-            .ilike("email", user.email)
-            .maybeSingle();
-          if (byEmail) candidateName = pickName(byEmail as Record<string, unknown>);
-        }
-
-        // 3. Fallback desde metadata de auth (nombre de registro)
-        if (!candidateName) {
-          candidateName =
-            (user.user_metadata?.display_name as string | undefined) ||
-            (user.user_metadata?.full_name as string | undefined) ||
-            (user.user_metadata?.name as string | undefined) ||
-            null;
-        }
-
-        if (!candidateName || cancelled) return;
-
-        // 4. Match case-insensitive contra los nombres reales del sistema de gastos
-        const lower = candidateName.toLowerCase();
-        const matched =
-          (participants as string[]).find((n) => n.toLowerCase() === lower) ??
-          candidateName;
-
-        if (!cancelled) setMyDisplayName(matched);
-      } catch {
-        // Silencio: "Tu balance" mostrará "—"
-      }
-    }
-
-    void resolveMyName();
-    return () => {
-      cancelled = true;
-    };
-  }, [tripId, participants]);
+  function selectMyName(name: string) {
+    localStorage.setItem(`kaviro_myname_${tripId}`, name);
+    setMyDisplayName(name);
+  }
 
   const myBalance: number | null = useMemo(() => {
     if (!myDisplayName) return null;
@@ -637,70 +570,72 @@ export default function TripExpensesView({
       </div>
 
       {/* Franja de estadísticas — solo escritorio */}
-      {expenses.length > 0 ? (
-        <div className="hidden md:grid md:grid-cols-4 md:divide-x md:divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-700/60 dark:border-slate-700/50">
-          {((): Array<{ label: string; value: string; icon: string; valueClass?: string }> => {
-            const currency = balanceCurrency || tripBaseCurrency || "EUR";
-            let balanceValue = "—";
-            let balanceClass = "text-slate-900 dark:text-white";
-            if (myBalance !== null) {
-              try {
-                const fmt = new Intl.NumberFormat("es-ES", {
-                  style: "currency",
-                  currency,
-                  maximumFractionDigits: 2,
-                }).format(Math.abs(myBalance));
-                balanceValue = myBalance >= 0 ? `+${fmt}` : `-${fmt}`;
-              } catch {
-                balanceValue = `${myBalance >= 0 ? "+" : ""}${myBalance.toFixed(2)} ${currency}`;
-              }
-              balanceClass =
-                myBalance > 0
-                  ? "text-emerald-700 dark:text-emerald-400"
-                  : myBalance < 0
-                  ? "text-rose-700 dark:text-rose-400"
-                  : "text-slate-900 dark:text-white";
-            }
-            return [
-              {
-                label: "Gastos registrados",
-                value: String(expenses.length),
-                icon: "🧾",
-              },
-              {
-                label: "Importe total",
-                value: `${(expenses as any[])
-                  .reduce((s: number, e: any) => s + Number(e.amount || 0), 0)
-                  .toLocaleString("es-ES", { maximumFractionDigits: 2 })} ${tripBaseCurrency || "EUR"}`,
-                icon: "💰",
-              },
-              {
-                label: "Tu balance",
-                value: balanceValue,
-                icon: myBalance === null ? "👤" : myBalance >= 0 ? "💚" : "🔴",
-                valueClass: balanceClass,
-              },
-              {
-                label: "Pagos sugeridos",
-                value: String((suggestedSettlements as any[]).length),
-                icon: "🔄",
-              },
-            ];
-          })().map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
-                {stat.icon} {stat.label}
-              </p>
-              <p className={`text-lg font-extrabold leading-tight ${stat.valueClass ?? "text-slate-900 dark:text-white"}`}>
-                {stat.value}
+      {expenses.length > 0 ? (() => {
+        const currency = balanceCurrency || tripBaseCurrency || "EUR";
+        let balanceValue = "";
+        let balanceClass = "text-slate-900 dark:text-white";
+        if (myBalance !== null) {
+          try {
+            const fmt = new Intl.NumberFormat("es-ES", { style: "currency", currency, maximumFractionDigits: 2 }).format(Math.abs(myBalance));
+            balanceValue = myBalance >= 0 ? `+${fmt}` : `-${fmt}`;
+          } catch {
+            balanceValue = `${myBalance >= 0 ? "+" : ""}${myBalance.toFixed(2)} ${currency}`;
+          }
+          balanceClass = myBalance > 0 ? "text-emerald-700 dark:text-emerald-400" : myBalance < 0 ? "text-rose-700 dark:text-rose-400" : "text-slate-900 dark:text-white";
+        }
+        const totalAmt = (expenses as any[]).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+        return (
+          <div className="hidden md:grid md:grid-cols-4 md:divide-x md:divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-700/60 dark:border-slate-700/50">
+            {/* Gastos registrados */}
+            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">🧾 Gastos registrados</p>
+              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{expenses.length}</p>
+            </div>
+            {/* Importe total */}
+            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">💰 Importe total</p>
+              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">
+                {totalAmt.toLocaleString("es-ES", { maximumFractionDigits: 2 })} {tripBaseCurrency || "EUR"}
               </p>
             </div>
-          ))}
-        </div>
-      ) : null}
+            {/* Tu balance — con selector si aún no se sabe quién eres */}
+            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
+                {myBalance === null ? "👤" : myBalance >= 0 ? "💚" : "🔴"} Tu balance
+              </p>
+              {myDisplayName === null ? (
+                <select
+                  defaultValue=""
+                  onChange={(e) => { if (e.target.value) selectMyName(e.target.value); }}
+                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-slate-50 py-1 pl-2 pr-6 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-border)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value="" disabled>¿Cuál es tu nombre?</option>
+                  {(participants as string[]).map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <p className={`text-lg font-extrabold leading-tight ${balanceClass}`}>{balanceValue}</p>
+                  <button
+                    type="button"
+                    onClick={() => { localStorage.removeItem(`kaviro_myname_${tripId}`); setMyDisplayName(null); }}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                    title="Cambiar persona"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Pagos sugeridos */}
+            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">🔄 Pagos sugeridos</p>
+              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{(suggestedSettlements as any[]).length}</p>
+            </div>
+          </div>
+        );
+      })() : null}
 
       {activeTab === "charts" ? (
         <div key="charts" className="step-enter">
