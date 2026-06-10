@@ -24,6 +24,7 @@ type Props = {
   isPremium: boolean;
   counts: TripOnboardingCounts;
   startExpanded?: boolean;
+  tripMode?: "travel" | "expenses";
 };
 
 export default function TripOnboardingChecklist({
@@ -32,11 +33,12 @@ export default function TripOnboardingChecklist({
   isPremium,
   counts: initialCounts,
   startExpanded = false,
+  tripMode = "travel",
 }: Props) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [counts, setCounts] = useState(initialCounts);
-  const steps = useMemo(() => buildOnboardingSteps(tripId, isPremium), [tripId, isPremium]);
+  const steps = useMemo(() => buildOnboardingSteps(tripId, isPremium, tripMode), [tripId, isPremium, tripMode]);
   const { done, total } = useMemo(() => onboardingProgress(counts, steps), [counts, steps]);
   const progressPct = total > 0 ? Math.round((done / total) * 100) : 0;
   const nextStep = steps.find((s) => !isOnboardingStepDone(s.id, counts)) ?? null;
@@ -146,7 +148,9 @@ export default function TripOnboardingChecklist({
     >
       <div className="flex flex-col gap-3 border-b border-[var(--brand-border)]/60 bg-white/60 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center dark:bg-[#0F1623]/80">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand)]">Configura tu viaje</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand)]">
+            {tripMode === "expenses" ? "Configura tu grupo de gastos" : "Configura tu viaje"}
+          </p>
           <p className="truncate text-sm font-extrabold text-slate-900 dark:text-white">
             {tripName} · {done}/{total} pasos
           </p>

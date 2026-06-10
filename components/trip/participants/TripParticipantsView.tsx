@@ -44,6 +44,7 @@ import {
   Users,
   UserCheck,
   FileSpreadsheet,
+  GitMerge,
 } from "lucide-react";
 import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -104,12 +105,14 @@ function ActionMenu({
   onEdit,
   onInvite,
   onLink,
+  onMerge,
   onRemove,
 }: {
   canInvite: boolean;
   onEdit: () => void;
   onInvite: () => void;
   onLink: () => void;
+  onMerge: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -162,6 +165,18 @@ function ActionMenu({
             </button>
           </>
         ) : null}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onMerge();
+            (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+          }}
+          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30"
+        >
+          <GitMerge className="h-4 w-4" aria-hidden />
+          Fusionar nombre en gastos
+        </button>
         <div className="my-1 h-px bg-slate-100 dark:bg-[#1E293B]" />
         <button
           type="button"
@@ -215,6 +230,10 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   type MobileParticipantsPanel = null | "menu" | "form" | "invite" | "link" | "import";
   const [mobilePanel, setMobilePanel] = useState<MobileParticipantsPanel>(null);
+
+  // Modal de fusión de nombre en gastos
+  type MergeState = { participantName: string; selectedAlias: string; expenseNames: string[]; loading: boolean; saving: boolean; done: number | null; error: string | null };
+  const [mergeState, setMergeState] = useState<MergeState | null>(null);
   const participantFormRef = useRef<HTMLDivElement | null>(null);
   const asidePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -243,6 +262,57 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
   function closeAsidePanel() {
     setAsidePanel("none");
     setAsideParticipant(null);
+  }
+
+  async function openMergeDialog(participantName: string) {
+    if (!participantName) return;
+    setMergeState({ participantName, selectedAlias: "", expenseNames: [], loading: true, saving: false, done: null, error: null });
+    try {
+      const res = await fetch(`/api/trip-expenses?tripId=${encodeURIComponent(tripId)}`);
+      if (!res.ok) throw new Error("No se pudieron cargar los gastos");
+      const data = await res.json();
+      const expenses = Array.isArray(data.expenses) ? data.expenses : [];
+      const settlements = Array.isArray(data.settlements) ? data.settlements : [];
+      const names = new Set<string>();
+      for (const e of expenses) {
+        if (e.payer_name) names.add(e.payer_name);
+        if (Array.isArray(e.participant_names)) e.participant_names.forEach((n: string) => names.add(n));
+        if (Array.isArray(e.paid_by_names)) e.paid_by_names.forEach((n: string) => names.add(n));
+        if (Array.isArray(e.owed_by_names)) e.owed_by_names.forEach((n: string) => names.add(n));
+      }
+      for (const s of settlements) {
+        if (s.debtor_name) names.add(s.debtor_name);
+        if (s.creditor_name) names.add(s.creditor_name);
+      }
+      // Excluir el propio nombre del participante y los nombres actuales de Gente
+      const currentParticipantNames = new Set(
+        participants.map((p) => (p.display_name || p.name || "").trim().toLowerCase()).filter(Boolean)
+      );
+      const aliases = Array.from(names).filter(
+        (n) => n.trim().toLowerCase() !== participantName.trim().toLowerCase() &&
+               !currentParticipantNames.has(n.trim().toLowerCase())
+      ).sort((a, b) => a.localeCompare(b));
+      setMergeState((prev) => prev ? { ...prev, expenseNames: aliases, loading: false } : null);
+    } catch (err) {
+      setMergeState((prev) => prev ? { ...prev, loading: false, error: err instanceof Error ? err.message : "Error" } : null);
+    }
+  }
+
+  async function executeMerge() {
+    if (!mergeState || !mergeState.selectedAlias) return;
+    setMergeState((prev) => prev ? { ...prev, saving: true, error: null } : null);
+    try {
+      const res = await fetch("/api/trip-expenses/rename-participant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId, fromName: mergeState.selectedAlias, toName: mergeState.participantName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al fusionar");
+      setMergeState((prev) => prev ? { ...prev, saving: false, done: data.updatedExpenses ?? 0 } : null);
+    } catch (err) {
+      setMergeState((prev) => prev ? { ...prev, saving: false, error: err instanceof Error ? err.message : "Error" } : null);
+    }
   }
 
   function openCreateParticipant() {
@@ -781,6 +851,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                           onEdit={() => openEditParticipant(participant)}
                           onInvite={() => openParticipantInvite(participant)}
                           onLink={() => openLinkProfile(participant)}
+                          onMerge={() => openMergeDialog(participant.display_name || participant.name || "")}
                           onRemove={() => void handleRemove(participant.id)}
                         />
                       </div>
@@ -1108,6 +1179,80 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
             ) : null}
           </MobileBottomSheet>
         </>
+      ) : null}
+
+      {/* Modal de fusión de nombre en gastos */}
+      {mergeState ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-[#0F1623]">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+                <GitMerge className="h-5 w-5 text-amber-700 dark:text-amber-300" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold text-slate-900 dark:text-white">Fusionar nombre en gastos</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Selecciona un alias antiguo en los gastos que corresponda a{" "}
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{mergeState.participantName}</span>.
+                  Todos los gastos y liquidaciones que usen ese alias quedarán unificados.
+                </p>
+              </div>
+            </div>
+
+            {mergeState.loading ? (
+              <p className="py-4 text-center text-sm text-slate-500">Cargando nombres de gastos…</p>
+            ) : mergeState.done !== null ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+                ✓ {mergeState.done > 0
+                  ? `Se actualizaron ${mergeState.done} registro${mergeState.done !== 1 ? "s" : ""} de gastos.`
+                  : "No había registros que actualizar con ese alias."
+                }
+              </div>
+            ) : (
+              <>
+                {mergeState.expenseNames.length === 0 ? (
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                    No hay nombres en gastos que no coincidan con los participantes actuales de Gente.
+                  </p>
+                ) : (
+                  <select
+                    value={mergeState.selectedAlias}
+                    onChange={(e) => setMergeState((prev) => prev ? { ...prev, selectedAlias: e.target.value } : null)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    <option value="">— Elegir alias a reemplazar —</option>
+                    {mergeState.expenseNames.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                )}
+                {mergeState.error ? (
+                  <p className="mt-2 text-xs font-semibold text-red-600">{mergeState.error}</p>
+                ) : null}
+              </>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setMergeState(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                {mergeState.done !== null ? "Cerrar" : "Cancelar"}
+              </button>
+              {mergeState.done === null && !mergeState.loading && mergeState.expenseNames.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={!mergeState.selectedAlias || mergeState.saving}
+                  onClick={() => void executeMerge()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {mergeState.saving ? "Fusionando…" : "Fusionar"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );

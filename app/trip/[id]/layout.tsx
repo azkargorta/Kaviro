@@ -136,6 +136,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                       tripId={params.id}
                       tripName={tripName}
                       isPremium={isPremium}
+                      tripMode={displayWorkspace.tripMode}
                     />
                   ) : null}
                   {!displayWorkspace.isAgencyTrip ? (

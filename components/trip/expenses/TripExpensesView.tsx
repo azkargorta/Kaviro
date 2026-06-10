@@ -182,11 +182,18 @@ export default function TripExpensesView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
-  // Cuando participants se cargue, intentar match con los candidatos almacenados
+  // Cuando registeredTravelers se cargue, intentar match con los candidatos almacenados.
+  // Se usa registeredTravelers (solo Gente actual) para evitar que aparezcan nombres de gastos históricos.
   useEffect(() => {
-    if (!tripId || !participants.length || myDisplayName) return;
+    if (!tripId || myDisplayName) return;
     const stored = localStorage.getItem(`kaviro_myname_${tripId}`);
     if (stored) { setMyDisplayName(stored); return; }
+
+    // Buscar en la lista de Gente actual primero; si aún no ha cargado, esperar
+    const pool = registeredTravelers.length > 0
+      ? registeredTravelers
+      : (participants as string[]);
+    if (!pool.length) return;
 
     try {
       const raw = sessionStorage.getItem(`kaviro_candidates_${tripId}`);
@@ -194,7 +201,7 @@ export default function TripExpensesView({
       const candidates: string[] = JSON.parse(raw);
       for (const candidate of candidates) {
         const lower = candidate.toLowerCase();
-        const match = (participants as string[]).find((p) => p.toLowerCase() === lower);
+        const match = pool.find((p) => p.toLowerCase() === lower);
         if (match) {
           localStorage.setItem(`kaviro_myname_${tripId}`, match);
           setMyDisplayName(match);
@@ -205,7 +212,7 @@ export default function TripExpensesView({
     } catch {
       // silencioso
     }
-  }, [tripId, participants, myDisplayName]);
+  }, [tripId, registeredTravelers, participants, myDisplayName]);
 
   const selectMyName = useCallback((name: string) => {
     localStorage.setItem(`kaviro_myname_${tripId}`, name);
@@ -688,7 +695,7 @@ export default function TripExpensesView({
                   className="mt-0.5 w-full rounded-lg border border-slate-200 bg-slate-50 py-1 pl-2 pr-6 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-border)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 >
                   <option value="" disabled>¿Cuál es tu nombre?</option>
-                  {(participants as string[]).map((p) => (
+                  {(registeredTravelers.length > 0 ? registeredTravelers : (participants as string[])).map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>

@@ -127,28 +127,51 @@ export function shouldShowTripOnboarding(
   return !isOnboardingComplete(counts, steps);
 }
 
-export function buildOnboardingSteps(tripId: string, isPremium: boolean): OnboardingStep[] {
+export function buildOnboardingSteps(
+  tripId: string,
+  isPremium: boolean,
+  tripMode: "travel" | "expenses" = "travel"
+): OnboardingStep[] {
   const id = encodeURIComponent(tripId);
   const participants: OnboardingStep = {
     id: "participants",
     icon: "👥",
     title: "Invita a tu grupo",
-    description: "Añade familia o amigos y define quién puede editar qué.",
+    description:
+      tripMode === "expenses"
+        ? "Añade a las personas que comparten gastos contigo."
+        : "Añade familia o amigos y define quién puede editar qué.",
     href: `/trip/${id}/participants`,
   };
+  const expenses: OnboardingStep = {
+    id: "expenses",
+    icon: "💶",
+    title: "Anota los gastos",
+    description:
+      tripMode === "expenses"
+        ? "Registra pagos, consulta balances y obtén los pagos exactos para saldar."
+        : "Splits y balances para que nadie lleve la cuenta en Excel.",
+    href: `/trip/${id}/expenses`,
+  };
+  const resources: OnboardingStep = {
+    id: "resources",
+    icon: "📎",
+    title: "Guarda facturas y documentos",
+    description: "Comprobantes, recibos y archivos del grupo.",
+    href: `/trip/${id}/resources`,
+  };
+
+  // Para grupos de gastos solo mostramos los pasos relevantes
+  if (tripMode === "expenses") {
+    return [participants, expenses, resources];
+  }
+
   const plan: OnboardingStep = {
     id: "plan",
     icon: "📅",
     title: "Crea el plan",
     description: "Actividades por día, visibilidad del grupo e IA sugiere.",
     href: `/trip/${id}/plan`,
-  };
-  const expenses: OnboardingStep = {
-    id: "expenses",
-    icon: "💶",
-    title: "Anota los gastos",
-    description: "Splits y balances para que nadie lleve la cuenta en Excel.",
-    href: `/trip/${id}/expenses`,
   };
   const map: OnboardingStep = {
     id: "map",
@@ -157,7 +180,7 @@ export function buildOnboardingSteps(tripId: string, isPremium: boolean): Onboar
     description: "Trayectos y paradas sobre el mapa.",
     href: `/trip/${id}/map`,
   };
-  const resources: OnboardingStep = {
+  const resourcesTravel: OnboardingStep = {
     id: "resources",
     icon: "📎",
     title: "Guarda reservas y documentos",
@@ -175,9 +198,9 @@ export function buildOnboardingSteps(tripId: string, isPremium: boolean): Onboar
   };
 
   if (isPremium) {
-    return [participants, plan, expenses, map, resources, ai];
+    return [participants, plan, expenses, map, resourcesTravel, ai];
   }
-  return [participants, plan, expenses, map, resources];
+  return [participants, plan, expenses, map, resourcesTravel];
 }
 
 /** Cuenta módulos del viaje en servidor (layout / resumen). */

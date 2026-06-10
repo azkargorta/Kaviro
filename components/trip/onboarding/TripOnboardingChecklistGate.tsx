@@ -10,13 +10,14 @@ type Props = {
   tripId: string;
   tripName: string;
   isPremium: boolean;
+  tripMode?: "travel" | "expenses";
 };
 
 /**
  * Carga el checklist en el cliente (no bloquea el layout del servidor).
  * Si el usuario ya lo cerró, no hace ninguna petición.
  */
-export default function TripOnboardingChecklistGate({ tripId, tripName, isPremium }: Props) {
+export default function TripOnboardingChecklistGate({ tripId, tripName, isPremium, tripMode = "travel" }: Props) {
   const isMobile = useIsMobile();
   const [counts, setCounts] = useState<TripOnboardingCounts | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -72,6 +73,7 @@ export default function TripOnboardingChecklistGate({ tripId, tripName, isPremiu
       isPremium={isPremium}
       counts={counts}
       startExpanded={isMobile && helpOpen}
+      tripMode={tripMode}
     />
   );
 }
