@@ -40,7 +40,7 @@ export default function DashboardTripSection({
   }, [open]);
 
   return (
-    <Reveal variant="slide" as="section" className="mx-auto max-w-2xl space-y-3">
+    <Reveal variant="slide" as="section" className="space-y-3">
       <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-[var(--shadow-card)] sm:flex-row sm:justify-between sm:gap-3 sm:p-4">
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-bold tracking-tight text-slate-950 sm:text-lg dark:text-white">{title}</h2>
@@ -71,7 +71,7 @@ export default function DashboardTripSection({
             ref={expandedRef}
             className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-page)] p-3 sm:p-4"
           >
-            <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
               {trips.map((trip) => (
                 <TripCardItem
                   key={trip.id}
