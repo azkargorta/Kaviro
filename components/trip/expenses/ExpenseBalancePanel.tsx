@@ -45,11 +45,24 @@ function formatMoney(value: number, currency?: string | null) {
   }
 }
 
+export type CompletedSettlement = {
+  id?: string;
+  debtor_name: string;
+  creditor_name: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paid_at?: string | null;
+  payment_method?: "bizum" | "transfer" | "cash" | null;
+};
+
 type Props = {
   tripId?: string;
   budgetTarget?: number | null;
   balances: BalanceRow[];
   settlements: SettlementSuggestion[];
+  /** Settlements brutos de BD (incluye pagados) para mostrar historial */
+  completedSettlements?: CompletedSettlement[];
   balanceCurrency: string;
   onChangeBalanceCurrency: (value: string) => void;
   onToggleSettlementStatus: (settlement: SettlementSuggestion) => Promise<void>;
@@ -69,6 +82,7 @@ type Props = {
 export default function ExpenseBalancePanel({
   balances,
   settlements,
+  completedSettlements,
   balanceCurrency,
   onChangeBalanceCurrency,
   onToggleSettlementStatus,
@@ -141,14 +155,16 @@ export default function ExpenseBalancePanel({
   }, [budgetTarget, totals.totalExpenses]);
 
   const orderedSettlements = useMemo(() => {
-    const pending = settlements.filter((s) => s.status !== "paid");
-    const paid = settlements.filter((s) => s.status === "paid");
-    return [...pending, ...paid];
+    // Solo pendientes — los pagados se muestran en el historial aparte
+    return settlements.filter((s) => s.status !== "paid");
   }, [settlements]);
 
-  const pendingSettlementCount = useMemo(
-    () => orderedSettlements.filter((s) => s.status !== "paid").length,
-    [orderedSettlements]
+  const pendingSettlementCount = orderedSettlements.length;
+
+  // Historial: settlements brutos de BD con status=paid
+  const paidHistory = useMemo(
+    () => (completedSettlements || []).filter((s) => s.status === "paid"),
+    [completedSettlements]
   );
 
   const bulkReminders = useMemo(() => {
@@ -701,40 +717,41 @@ export default function ExpenseBalancePanel({
           </div>
         ) : null}
 
-        {orderedSettlements.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+        {orderedSettlements.length === 0 && paidHistory.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700/50">
             No hay liquidaciones pendientes.
           </div>
-        ) : (
+        ) : null}
+
+        {/* Pagos pendientes */}
+        {orderedSettlements.length > 0 ? (
           <div className="mt-4 space-y-3">
             {orderedSettlements.map((s) => {
-              const isPaid = s.status === "paid";
-              const badge = isPaid ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900";
               const methodLabel =
                 s.payment_method === "bizum" ? "Bizum" : s.payment_method === "transfer" ? "Transferencia" : s.payment_method === "cash" ? "Efectivo" : null;
               return (
                 <div key={s.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm text-slate-700">
+                      <div className="text-sm text-slate-700 dark:text-slate-300">
                         <span className="font-semibold text-slate-950 dark:text-white">{s.debtor_name}</span>{" "}
                         <span>debe a</span>{" "}
                         <span className="font-semibold text-slate-950 dark:text-white">{s.creditor_name}</span>
                       </div>
-                      <div className="mt-2 text-lg font-black text-slate-950">
+                      <div className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                         {formatMoney(s.amount, s.currency || displayCurrency)}
                       </div>
                       {methodLabel ? (
                         <div className="mt-2">
-                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                             Método: {methodLabel}
                           </span>
                         </div>
                       ) : null}
                     </div>
-                    <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${badge}`}>
-                      {isPaid ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <Clock className="h-4 w-4" aria-hidden />}
-                      {isPaid ? "Pago realizado" : "Pago pendiente"}
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                      <Clock className="h-4 w-4" aria-hidden />
+                      Pendiente
                     </div>
                   </div>
 
@@ -742,28 +759,22 @@ export default function ExpenseBalancePanel({
                     <button
                       type="button"
                       onClick={() => {
-                        if (!isPaid) {
-                          const ok = window.confirm(
-                            `¿Confirmas que ${s.debtor_name} ya pagó ${formatMoney(s.amount, s.currency || displayCurrency)} a ${s.creditor_name}?`
-                          );
-                          if (!ok) return;
-                        }
+                        const ok = window.confirm(
+                          `¿Confirmas que ${s.debtor_name} ya pagó ${formatMoney(s.amount, s.currency || displayCurrency)} a ${s.creditor_name}?`
+                        );
+                        if (!ok) return;
                         void onToggleSettlementStatus(s);
                       }}
-                      className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
-                        isPaid
-                          ? "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
-                      }`}
+                      className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-200"
                     >
-                      {isPaid ? "Marcar pendiente" : "Marcar realizado"}
+                      <CheckCircle2 className="mr-1.5 inline h-4 w-4" aria-hidden />
+                      Marcar realizado
                     </button>
-
                     <a
                       href={createWhatsAppLink(s)}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800/50 dark:bg-slate-900 dark:text-emerald-300"
                       title="Enviar aviso por WhatsApp"
                     >
                       <MessageCircle className="h-4 w-4" aria-hidden />
@@ -774,7 +785,78 @@ export default function ExpenseBalancePanel({
               );
             })}
           </div>
-        )}
+        ) : null}
+
+        {/* Historial de pagos realizados */}
+        {paidHistory.length > 0 ? (
+          <>
+            <div className="mt-6 flex items-center gap-3">
+              <div className="flex-1 border-t border-slate-200 dark:border-slate-700/50" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Historial de pagos
+              </span>
+              <div className="flex-1 border-t border-slate-200 dark:border-slate-700/50" />
+            </div>
+            <div className="mt-3 space-y-2">
+              {paidHistory.map((s, i) => {
+                const methodLabel =
+                  s.payment_method === "bizum"
+                    ? "Bizum"
+                    : s.payment_method === "transfer"
+                    ? "Transferencia"
+                    : s.payment_method === "cash"
+                    ? "Efectivo"
+                    : null;
+                const paidDate = s.paid_at
+                  ? new Date(s.paid_at).toLocaleDateString("es-ES", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : null;
+                return (
+                  <div
+                    key={s.id || i}
+                    className="flex items-start justify-between gap-3 rounded-xl border border-emerald-200/70 bg-emerald-50/60 px-4 py-3 dark:border-emerald-800/30 dark:bg-emerald-950/20"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm text-slate-700 dark:text-slate-300">
+                        <span className="font-semibold text-slate-900 dark:text-white">{s.debtor_name}</span>
+                        {" "}le pagó a{" "}
+                        <span className="font-semibold text-slate-900 dark:text-white">{s.creditor_name}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="text-base font-black text-emerald-700 dark:text-emerald-400">
+                          {formatMoney(s.amount, s.currency || displayCurrency)}
+                        </span>
+                        {methodLabel ? (
+                          <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                            {methodLabel}
+                          </span>
+                        ) : null}
+                      </div>
+                      {paidDate ? (
+                        <div className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                          Realizado el {paidDate}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                      <button
+                        type="button"
+                        onClick={() => void onToggleSettlementStatus(s as unknown as SettlementSuggestion)}
+                        className="text-[11px] font-semibold text-slate-400 underline hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                      >
+                        Deshacer
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
           </>
         ) : null}
       </div>

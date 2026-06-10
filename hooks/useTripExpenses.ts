@@ -7,6 +7,7 @@ import {
   buildBalances,
   buildSettlementSuggestions,
   buildSettlementSuggestionsWithMethods,
+  type BalanceRow,
   type PaymentPreferenceRow,
   type PaymentPairRuleRow,
   type TripExpenseBalanceInput,
@@ -327,19 +328,51 @@ export function useTripExpenses(tripId: string) {
         if (cancelled) return;
 
         const nextBalances = buildBalances(convertedExpenses);
-        setBalances(nextBalances);
+
+        // Descontar settlements ya pagados del balance para reflejar la deuda real pendiente.
+        // Un pago realizado (debtor→creditor) reduce la deuda del deudor y el crédito del acreedor.
+        const paidSettlements = settlements.filter(
+          (s) =>
+            s.status === "paid" &&
+            (s.currency || "EUR").toUpperCase() === balanceCurrency.toUpperCase()
+        );
+
+        let adjustedBalances: BalanceRow[];
+        if (paidSettlements.length > 0) {
+          const balanceMap = new Map(nextBalances.map((b) => [b.person, { ...b }]));
+          for (const s of paidSettlements) {
+            const amt = Number(s.amount || 0);
+            const debtor = balanceMap.get(s.debtor_name);
+            const creditor = balanceMap.get(s.creditor_name);
+            // El deudor ha pagado → su saldo mejora (menos negativo / más positivo)
+            if (debtor) debtor.balance = Math.round((debtor.balance + amt) * 100) / 100;
+            // El acreedor ha cobrado → su saldo disminuye (menos positivo)
+            if (creditor) creditor.balance = Math.round((creditor.balance - amt) * 100) / 100;
+          }
+          adjustedBalances = Array.from(balanceMap.values());
+        } else {
+          adjustedBalances = nextBalances;
+        }
+
+        setBalances(adjustedBalances);
 
         const computed = buildSettlementSuggestionsWithMethods(
-          nextBalances,
+          adjustedBalances,
           balanceCurrency,
           paymentPreferences,
           strictPaymentMethods,
           paymentPairRules
         );
         setSettlementWarning(computed.warning);
-        const suggestions = computed.settlements.length ? computed.settlements : buildSettlementSuggestions(convertedExpenses, balanceCurrency);
+        const suggestions = computed.settlements.length
+          ? computed.settlements
+          : buildSettlementSuggestions(adjustedBalances, balanceCurrency);
+
+        // Solo propagar el id/status de settlements PENDIENTES (los pagados ya están aplicados al balance)
         const existingByKey = new Map(
-          settlements.map((item) => [item.source_balance_key || `${item.debtor_name}->${item.creditor_name}`, item])
+          settlements
+            .filter((item) => item.status !== "paid")
+            .map((item) => [item.source_balance_key || `${item.debtor_name}->${item.creditor_name}`, item])
         );
 
         setSuggestedSettlements(

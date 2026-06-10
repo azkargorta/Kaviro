@@ -50,6 +50,7 @@ export default function TripExpensesView({
 }) {
   const {
     expenses,
+    settlements: rawSettlements,
     registeredTravelers,
     tripBaseCurrency,
     participants,
@@ -918,6 +919,7 @@ export default function TripExpensesView({
                 tripId={tripId}
                 balances={balances}
                 settlements={suggestedSettlements}
+                completedSettlements={rawSettlements}
                 balanceCurrency={balanceCurrency}
                 onChangeBalanceCurrency={setBalanceCurrency}
                 onToggleSettlementStatus={toggleSettlementStatus}
@@ -1062,6 +1064,7 @@ export default function TripExpensesView({
           tripId={tripId}
           balances={balances}
           settlements={suggestedSettlements}
+          completedSettlements={rawSettlements}
           balanceCurrency={balanceCurrency}
           onChangeBalanceCurrency={setBalanceCurrency}
           onToggleSettlementStatus={toggleSettlementStatus}
