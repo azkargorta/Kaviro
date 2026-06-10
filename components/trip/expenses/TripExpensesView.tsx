@@ -79,7 +79,7 @@ export default function TripExpensesView({
     createWhatsAppLink,
   } = useTripExpenses(tripId);
 
-  const { trip: tripMeta, participants: tripMembers } = useTripData(tripId);
+  const { trip: tripMeta } = useTripData(tripId);
 
   const budgetTarget = useMemo(() => {
     const fromClient = parseTripBudgetTarget(tripMeta?.budget_target);
@@ -128,20 +128,65 @@ export default function TripExpensesView({
     }
   }, [isExpenseGroup, tripId]);
 
-  // Identifica el nombre del usuario actual dentro de los balances
+  // Identifica el nombre del usuario actual en el sistema de balances.
+  // Estrategia: consulta directa a trip_participants por user_id, con fallback por email
+  // y matching case-insensitive contra los participantes reales de los gastos.
   useEffect(() => {
-    if (!tripMembers.length) return;
-    void supabase.auth.getUser().then(({ data }) => {
-      const uid = data.user?.id;
-      if (!uid) return;
-      const me = tripMembers.find((p) => p.user_id === uid);
-      if (me?.display_name) setMyDisplayName(me.display_name);
-    });
-  }, [tripMembers]);
+    if (!tripId) return;
+    let cancelled = false;
+
+    async function resolveMyName() {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData.user;
+        if (!user || cancelled) return;
+
+        // 1. Buscar en trip_participants por user_id
+        const { data: byUid } = await supabase
+          .from("trip_participants")
+          .select("display_name, email")
+          .eq("trip_id", tripId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        let candidateName: string | null = byUid?.display_name ?? null;
+
+        // 2. Fallback: buscar por email si no se encontró por user_id
+        if (!candidateName && user.email) {
+          const { data: byEmail } = await supabase
+            .from("trip_participants")
+            .select("display_name")
+            .eq("trip_id", tripId)
+            .ilike("email", user.email)
+            .maybeSingle();
+          candidateName = byEmail?.display_name ?? null;
+        }
+
+        if (!candidateName || cancelled) return;
+
+        // 3. Match case-insensitive contra los nombres reales del sistema de gastos
+        const lower = candidateName.toLowerCase();
+        const matched =
+          (participants as string[]).find((n) => n.toLowerCase() === lower) ??
+          candidateName;
+
+        if (!cancelled) setMyDisplayName(matched);
+      } catch {
+        // Silencio: el balance simplemente mostrará "—"
+      }
+    }
+
+    void resolveMyName();
+    return () => {
+      cancelled = true;
+    };
+  }, [tripId, participants]); // participants se recalcula cuando cargan los gastos
 
   const myBalance: number | null = useMemo(() => {
     if (!myDisplayName) return null;
-    const entry = (balances as any[]).find((b: any) => b.person === myDisplayName);
+    const entry = (balances as any[]).find(
+      (b: any) => (b.person ?? "").toLowerCase() === myDisplayName.toLowerCase()
+    );
     return entry != null ? (entry.balance ?? null) : null;
   }, [balances, myDisplayName]);
 
