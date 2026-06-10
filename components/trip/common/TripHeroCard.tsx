@@ -3,6 +3,7 @@ import Image from "next/image";
 import KaviroTripHeroLockup from "@/components/brand/KaviroTripHeroLockup";
 import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
+import TripHeroShareDropdown from "@/components/trip/common/TripHeroShareDropdown";
 import type { AgencyBranding } from "@/lib/agency";
 import { agencyBrandedHeroGradientDiagonal } from "@/lib/agency-brand-tokens";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
@@ -136,7 +137,12 @@ export default function TripHeroCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          {!isAgencyTrip ? <TripHeroActions tripId={tripId} /> : null}
+          {!isAgencyTrip ? (
+            <div className="flex items-center gap-1.5">
+              <TripHeroShareDropdown tripId={tripId} tripName={tripName} destination={destination} />
+              <TripHeroActions tripId={tripId} />
+            </div>
+          ) : null}
           {shown.length > 0 ? (
             <div className="flex items-center -space-x-2">
               {shown.map((name, i) => (

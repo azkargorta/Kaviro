@@ -74,28 +74,23 @@ export default function RootTopBar() {
 
   if (!showOnPath) return null;
 
-  const headerGradient = isDashboardHome
-    ? undefined
-    : "linear-gradient(90deg, #F87171 0%, #EF4444 50%, #DC2626 100%)";
-
-  const dashboardNeutralClass =
-    "border-b border-slate-200/90 bg-[var(--surface-page)] dark:border-slate-800 dark:bg-[#080C14]";
+  const HEADER_GRADIENT = "linear-gradient(90deg, #F87171 0%, #EF4444 50%, #DC2626 100%)";
 
   const logoLink = (
     <Link
       href="/dashboard"
-      className="shrink-0 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
+      className="shrink-0 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
       aria-label="Ir al panel de viajes"
     >
-      <KaviroLogo variant={isDashboardHome ? "dark" : "light"} size={isDashboardHome ? "sm" : "md"} withWordmark />
+      <KaviroLogo variant="light" size="md" withWordmark />
     </Link>
   );
 
   return (
     <div className="sticky top-0 z-50 overflow-visible pt-safe">
       <div
-        className={`root-header relative overflow-visible ${isDashboardHome ? dashboardNeutralClass : "shadow-sm"}`}
-        style={headerGradient ? { background: headerGradient } : undefined}
+        className="root-header relative overflow-visible shadow-sm"
+        style={{ background: HEADER_GRADIENT }}
       >
         <div className="mx-auto max-w-[1200px] px-safe-inline sm:pl-6 sm:pr-6">
           {isDashboardHome ? (
@@ -107,17 +102,17 @@ export default function RootTopBar() {
                     className="min-w-0 shrink outline-none transition hover:opacity-90"
                     aria-label="Ir al panel de viajes"
                   >
-                    <KaviroLogo variant="dark" size="md" withWordmark />
+                    <KaviroLogo variant="light" size="md" withWordmark />
                   </Link>
-                  <HeaderActions session={session} isDashboardHome heroMode={false} />
+                  <HeaderActions session={session} isDashboardHome heroMode />
                 </div>
-                <DashboardRootBarPanel variant="stacked" neutral />
+                <DashboardRootBarPanel variant="stacked" />
               </div>
 
               <div className="hidden items-center gap-3 py-2.5 md:flex lg:gap-4">
                 {logoLink}
-                <DashboardRootBarPanel variant="inline" neutral />
-                <HeaderActions session={session} isDashboardHome heroMode={false} />
+                <DashboardRootBarPanel variant="inline" />
+                <HeaderActions session={session} isDashboardHome heroMode />
               </div>
             </>
           ) : (
