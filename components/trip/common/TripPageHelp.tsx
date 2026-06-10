@@ -578,7 +578,7 @@ export default function TripPageHelp({ heroMode = false }: { heroMode?: boolean 
   const params = useParams();
   const isDemoTrip = useIsDemoTrip();
   const { tripMode } = useTripWorkspace();
-  const isExpenseGroup = tripMode === "expense_group";
+  const isExpenseGroup = tripMode === "expenses";
   const tripId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
   const activeTour = isDemoTrip ? DEMO_TAB_TOUR : isExpenseGroup ? EXPENSE_GROUP_TAB_TOUR : TAB_TOUR;
 
