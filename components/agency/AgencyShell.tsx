@@ -39,7 +39,7 @@ export default function AgencyShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 border-b border-[#0f2744] bg-[#1e3a5f] shadow-md">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-safe-inline py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3 px-safe-inline py-3 sm:px-6">
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase leading-normal tracking-[0.18em] text-white/70">
                 {KAVIRO_TRIPS_PRODUCT_NAME}
@@ -63,7 +63,7 @@ export default function AgencyShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-safe-inline py-6 sm:px-6">{children}</main>
+        <main className="w-full flex-1 px-safe-inline py-6 sm:px-6">{children}</main>
       </div>
     </div>
   );

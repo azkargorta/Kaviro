@@ -252,12 +252,12 @@ textarea.input { resize: vertical; min-height: 120px; }
 /* ─── Layout shells ─────────────────────────────────────────────────────── */
 .page-shell {
   width: 100%;
-  max-width: 1200px;
+  max-width: none;
   margin: 0 auto;
   min-width: 0;
   padding: 1.25rem max(0.875rem, var(--safe-area-left)) 1.5rem max(0.875rem, var(--safe-area-right));
 }
-/* Dashboard: sin límite de ancho para aprovechar pantallas anchas */
+/* Mantenida por compatibilidad — ya no restringe ancho */
 .page-shell--fluid {
   max-width: none;
 }

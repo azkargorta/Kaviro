@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -276,6 +277,7 @@ export default function TripPlanView({
     deleteKind,
   } = useTripActivityKinds(tripId);
 
+  const [mounted, setMounted] = useState(false);
   const [editingActivity, setEditingActivity] = useState<TripActivity | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const formAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -311,6 +313,8 @@ export default function TripPlanView({
   const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
   const [plansAddedNotice, setPlansAddedNotice] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     function onPlanRefresh(event: Event) {
@@ -983,17 +987,21 @@ export default function TripPlanView({
         </div>
       ) : null}
 
-      {workspaceTab === "itinerary" && canManagePlan && !showForm && !bulkDeleteMode ? (
-        <button
-          type="button"
-          onClick={() => handleStartCreate()}
-          data-tour="plan-add-btn" className="btn-press fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
-          aria-label="Añadir plan"
-          title="Añadir plan"
-        >
-          <Plus className="h-6 w-6" aria-hidden />
-        </button>
-      ) : null}
+      {workspaceTab === "itinerary" && canManagePlan && !showForm && !bulkDeleteMode && mounted
+        ? createPortal(
+            <button
+              type="button"
+              onClick={() => handleStartCreate()}
+              data-tour="plan-add-btn"
+              className="btn-press fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
+              aria-label="Añadir plan"
+              title="Añadir plan"
+            >
+              <Plus className="h-6 w-6" aria-hidden />
+            </button>,
+            document.body
+          )
+        : null}
 
       {workspaceTab === "itinerary" ? (
         <div key="itinerary" className="step-enter min-w-0 max-w-full space-y-1.5 max-md:space-y-1.5 md:space-y-6">

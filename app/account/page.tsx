@@ -88,7 +88,8 @@ export default async function AccountPage() {
   }
 
   return (
-    <main className="page-shell page-shell--safe-top space-y-8">
+    <main className="page-shell page-shell--safe-top">
+      <div className="mx-auto max-w-4xl space-y-8">
       <div className="mb-4"><BackButton /></div>
       <TripBoardPremiumHero
         eyebrow="Cuenta"
@@ -173,6 +174,7 @@ export default async function AccountPage() {
       <AccountReferralsSection />
 
       <AccountDeleteSection />
+      </div>
     </main>
   );
 }

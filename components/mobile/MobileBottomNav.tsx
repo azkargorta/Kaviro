@@ -147,8 +147,8 @@ export default function MobileBottomNav({
             </button>
           </div>
 
-          {/* Sheet items */}
-          <div className="grid grid-cols-2 gap-2 px-4 pb-6">
+          {/* Sheet items — 3 columnas × 2 filas */}
+          <div className="grid grid-cols-3 gap-2 px-4 pb-6">
             {secondaryItems.map((item) => {
               const href = item.href(tripId);
               const active = isActivePath(href, item.key);
@@ -158,7 +158,7 @@ export default function MobileBottomNav({
                   href={href}
                   prefetch
                   onClick={() => setSheetOpen(false)}
-                  className={`flex items-center gap-3 rounded-2xl border p-4 transition ${
+                  className={`relative flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition ${
                     active
                       ? activeSheetClass
                       : "border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-secondary)] hover:bg-[var(--surface-card)]"
@@ -167,17 +167,15 @@ export default function MobileBottomNav({
                   <span className={active ? "text-[var(--brand)]" : "text-[var(--text-tertiary)]"}>
                     {item.icon}
                   </span>
-                  <span className="text-sm font-semibold leading-snug">{item.label}</span>
+                  <span className="text-xs font-semibold leading-snug">{item.label}</span>
                   {item.isPremiumGated && !isPremium ? (
-                    <span className="ml-auto rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
+                    <span className="absolute right-1.5 top-1.5 rounded-full bg-[var(--brand-light)] px-1 py-0.5 text-[8px] font-bold text-[var(--brand)] ring-1 ring-[var(--brand-border)]">
                       PRO
                     </span>
                   ) : null}
                   {item.key === "participants" && newParticipantCount > 0 && (
                     <span
-                      className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${
-                        accentDotClass
-                      }`}
+                      className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white ${accentDotClass}`}
                     >
                       {newParticipantCount}
                     </span>
@@ -202,7 +200,7 @@ export default function MobileBottomNav({
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
         aria-label="Navegación del viaje"
       >
-        <div className="mx-2 mb-1 rounded-2xl border border-slate-200/90 bg-[var(--surface-card)]/96 shadow-[0_-4px_24px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-[#1E293B] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <div className="mx-2 mb-1 rounded-2xl border border-slate-200 bg-[var(--surface-card)] shadow-[0_-4px_24px_rgba(15,23,42,0.10)] dark:border-[#1E293B] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
           <div className="flex">
             {/* Primary nav items */}
             {primaryItems.map((item) => {
