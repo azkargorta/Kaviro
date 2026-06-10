@@ -313,7 +313,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <DashboardTripInvitesInbox />
 
       {/* ── Área de acción principal ────────────────────────────────────── */}
-      <div className={showSidePanel ? "grid items-start gap-4 md:grid-cols-[1fr_320px]" : ""}>
+      <div className={showSidePanel ? "grid items-start gap-4 md:grid-cols-2" : ""}>
 
         {/* Columna izquierda: crear viaje */}
         <section
