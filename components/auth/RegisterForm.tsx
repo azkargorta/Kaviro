@@ -98,8 +98,14 @@ export default function RegisterForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Nombre de usuario</label>
+          <label
+            htmlFor="register-username"
+            className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
+          >
+            Nombre de usuario
+          </label>
           <input
+            id="register-username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
@@ -110,8 +116,14 @@ export default function RegisterForm() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
+          <label
+            htmlFor="register-email"
+            className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
+          >
+            Email
+          </label>
           <input
+            id="register-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
