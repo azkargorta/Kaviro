@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type {
   BalanceRow,
   PaymentMethod,
@@ -15,6 +15,7 @@ import {
   Clock,
   Copy,
   MessageCircle,
+  RefreshCcw,
   Settings2,
   SlidersHorizontal,
   Users,
@@ -77,6 +78,7 @@ type Props = {
   onResetAllPaymentRules: () => Promise<void>;
   strictPaymentMethods: boolean;
   onChangeStrictPaymentMethods: (value: boolean) => void;
+  onRecalculate?: () => void;
 };
 
 export default function ExpenseBalancePanel({
@@ -97,6 +99,7 @@ export default function ExpenseBalancePanel({
   onResetAllPaymentRules,
   strictPaymentMethods,
   onChangeStrictPaymentMethods,
+  onRecalculate,
   tripId,
   budgetTarget,
 }: Props) {
@@ -105,11 +108,39 @@ export default function ExpenseBalancePanel({
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [balancesOpen, setBalancesOpen] = useState(false);
   const [settlementsOpen, setSettlementsOpen] = useState(false);
+  const balancesRef = useRef<HTMLDivElement>(null);
+  const settlementsRef = useRef<HTMLDivElement>(null);
+
+  function toggleBalances() {
+    setBalancesOpen((v) => {
+      if (!v) {
+        setTimeout(() => {
+          balancesRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 80);
+      }
+      return !v;
+    });
+  }
+
+  function toggleSettlements() {
+    setSettlementsOpen((v) => {
+      if (!v) {
+        setTimeout(() => {
+          settlementsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 80);
+      }
+      return !v;
+    });
+  }
   const pdfHref = tripId ? `/api/trips/${tripId}/expenses/balance-report` : null;
   const [savingPref, setSavingPref] = useState<string | null>(null);
   const [resetAllBusy, setResetAllBusy] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkCopied, setBulkCopied] = useState(false);
+  const [expandedPrefName, setExpandedPrefName] = useState<string | null>(null);
+  const expandedPrefRef = useRef<HTMLDivElement>(null);
+  const [hasPendingRecalculation, setHasPendingRecalculation] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
   const methods: Array<{ id: PaymentMethod; label: string; chip: string }> = [
     { id: "bizum", label: "Bizum", chip: "bg-emerald-50 text-emerald-900 border-emerald-200" },
@@ -359,7 +390,7 @@ export default function ExpenseBalancePanel({
                 disabled={resetAllBusy}
                 onClick={() => {
                   setResetAllBusy(true);
-                  void onResetAllPaymentRules().finally(() => setResetAllBusy(false));
+                  void onResetAllPaymentRules().then(() => setHasPendingRecalculation(true)).finally(() => setResetAllBusy(false));
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
               >
@@ -370,11 +401,31 @@ export default function ExpenseBalancePanel({
                 <input
                   type="checkbox"
                   checked={strictPaymentMethods}
-                  onChange={(e) => onChangeStrictPaymentMethods(e.target.checked)}
+                  onChange={(e) => { onChangeStrictPaymentMethods(e.target.checked); setHasPendingRecalculation(true); }}
                 />
                 Modo estricto
               </label>
             </div>
+
+            {hasPendingRecalculation && onRecalculate ? (
+              <button
+                type="button"
+                disabled={recalculating}
+                onClick={async () => {
+                  setRecalculating(true);
+                  try {
+                    await onRecalculate();
+                    setHasPendingRecalculation(false);
+                  } finally {
+                    setRecalculating(false);
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-full bg-[var(--brand)] px-4 py-1.5 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] disabled:opacity-60"
+              >
+                <RefreshCcw className={`h-3.5 w-3.5 ${recalculating ? "animate-spin" : ""}`} aria-hidden />
+                {recalculating ? "Recalculando…" : "Recalcular pagos sugeridos"}
+              </button>
+            ) : null}
           </div>
 
           <div className="mt-4 grid gap-3">
@@ -394,6 +445,7 @@ export default function ExpenseBalancePanel({
                 setSavingPref(name);
                 try {
                   await onSavePaymentPreference(name, payload as any);
+                  setHasPendingRecalculation(true);
                 } finally {
                   setSavingPref(null);
                 }
@@ -402,11 +454,12 @@ export default function ExpenseBalancePanel({
               async function toggleAllowed(toName: string) {
                 const key = `${name}->${toName}`;
                 const current = pairRuleMap.get(key);
-                const allowed = current ? !current.allowed : false; // por defecto allowed=true; primer click lo bloquea
+                const allowed = current ? !current.allowed : false;
                 const prefer = current?.prefer ?? false;
                 setSavingPref(name);
                 try {
                   await onSavePaymentPairRule(name, toName, { allowed, prefer: allowed ? prefer : false });
+                  setHasPendingRecalculation(true);
                 } finally {
                   setSavingPref(null);
                 }
@@ -416,11 +469,12 @@ export default function ExpenseBalancePanel({
                 const key = `${name}->${toName}`;
                 const current = pairRuleMap.get(key);
                 const allowed = current?.allowed ?? true;
-                if (!allowed) return; // no tiene sentido preferir si está bloqueado
+                if (!allowed) return;
                 const prefer = !(current?.prefer ?? false);
                 setSavingPref(name);
                 try {
                   await onSavePaymentPairRule(name, toName, { allowed: true, prefer });
+                  setHasPendingRecalculation(true);
                 } finally {
                   setSavingPref(null);
                 }
@@ -430,19 +484,52 @@ export default function ExpenseBalancePanel({
                 setSavingPref(name);
                 try {
                   await onResetPaymentPairRules(name, others);
+                  setHasPendingRecalculation(true);
                 } finally {
                   setSavingPref(null);
                 }
               }
 
+              const isExpanded = expandedPrefName === name;
+
               return (
-                <div key={name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="font-semibold text-slate-950 dark:text-white">{name}</div>
-                    {savingPref === name ? (
-                      <span className="rounded-full bg-white dark:bg-[#1E293B] px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">Guardando…</span>
-                    ) : null}
-                  </div>
+                <div
+                  key={name}
+                  ref={isExpanded ? expandedPrefRef : null}
+                  className="scroll-mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-[#1E293B] dark:bg-[#080C14]"
+                >
+                  {/* Cabecera siempre visible — click para expandir/colapsar */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const opening = expandedPrefName !== name;
+                      setExpandedPrefName(opening ? name : null);
+                      if (opening) {
+                        setTimeout(() => {
+                          expandedPrefRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        }, 80);
+                      }
+                    }}
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-[#1E293B]"
+                    aria-expanded={isExpanded}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-[11px] font-extrabold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                        {name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="font-semibold text-slate-950 dark:text-white">{name}</span>
+                      {savingPref === name ? (
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-[#1E293B] dark:text-slate-400">Guardando…</span>
+                      ) : null}
+                    </div>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-slate-400 transition ${isExpanded ? "rotate-180" : ""}`}
+                      aria-hidden
+                    />
+                  </button>
+
+                  {isExpanded ? (
+                  <div className="border-t border-slate-200 p-4 dark:border-[#1E293B]">
 
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
                     <div>
@@ -548,6 +635,8 @@ export default function ExpenseBalancePanel({
                       Consejo: deja bloqueos solo cuando sea necesario. Si el modo estricto está activo y no hay forma de saldar, Kaviro te avisará.
                     </div>
                   </div>
+                  </div>
+                  ) : null}
                 </div>
               );
             })}
@@ -555,10 +644,10 @@ export default function ExpenseBalancePanel({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div ref={balancesRef} className="scroll-mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <button
           type="button"
-          onClick={() => setBalancesOpen((v) => !v)}
+          onClick={toggleBalances}
           className="flex w-full items-center justify-between gap-3 text-left"
           aria-expanded={balancesOpen}
         >
@@ -619,10 +708,10 @@ export default function ExpenseBalancePanel({
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div ref={settlementsRef} className="scroll-mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <button
           type="button"
-          onClick={() => setSettlementsOpen((v) => !v)}
+          onClick={toggleSettlements}
           className="flex w-full items-center justify-between gap-3 text-left"
           aria-expanded={settlementsOpen}
         >

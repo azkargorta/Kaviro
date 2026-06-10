@@ -42,8 +42,8 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
   })();
 
   return (
-    <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">
-      <div className="sticky top-24 space-y-2">
+    <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0 self-start sticky top-20">
+      <div className="space-y-2">
         <div
             className={`shadow-sm ${
             useAgencyBranding || !isAgencyTrip

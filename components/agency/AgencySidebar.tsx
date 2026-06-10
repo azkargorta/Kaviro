@@ -56,7 +56,7 @@ export default function AgencySidebar({
   const initials = agencyInitials(agency.name);
 
   return (
-    <aside className="flex w-full flex-col border-b border-[#0f2744] bg-[#0f2744] md:w-[248px] md:shrink-0 md:border-b-0 md:border-r">
+    <aside className="flex w-full flex-col border-b border-[#0f2744] bg-[#0f2744] md:sticky md:top-0 md:h-screen md:overflow-y-auto md:w-[248px] md:shrink-0 md:border-b-0 md:border-r">
       <div className="border-b border-white/10 px-4 py-4">
         <div className="flex items-center gap-2.5">
           {logoUrl ? (

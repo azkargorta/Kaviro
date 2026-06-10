@@ -809,7 +809,7 @@ export default function TripExpensesView({
         />
       </div>
 
-      <div className="grid min-w-0 max-w-full gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.5fr)]">
+      <div className="grid min-w-0 max-w-full gap-6 md:grid-cols-2">
         <div className="min-w-0 space-y-4">
           {canManageExpenses ? (
           <details
@@ -1019,6 +1019,7 @@ export default function TripExpensesView({
                 onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
                 strictPaymentMethods={strictPaymentMethods}
                 onChangeStrictPaymentMethods={setStrictPaymentMethods}
+                onRecalculate={reload}
               />
             </div>
           </Reveal>
@@ -1164,6 +1165,7 @@ export default function TripExpensesView({
           onResetAllPaymentRules={() => resetAllPaymentRules(participants)}
           strictPaymentMethods={strictPaymentMethods}
           onChangeStrictPaymentMethods={setStrictPaymentMethods}
+          onRecalculate={reload}
         />
       </MobileBottomSheet>
 
