@@ -295,6 +295,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const announcementUnreadByTripId = countUnreadAnnouncementsByTrip(unreadAnnouncementRows);
 
+  const showSidePanel = allRealTrips.length > 0 || demoTrips.length > 0;
+
   return (
     <main className="page-shell page-shell--fluid space-y-4 pb-8 md:space-y-5 md:pb-10">
       <DashboardOfflineRegistry
@@ -308,109 +310,108 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       />
       <DashboardOfflinePanel />
 
-      <div className="mx-auto max-w-2xl px-4">
-        <DashboardAgencyEntry />
-      </div>
-
       <DashboardTripInvitesInbox />
 
-      {realTrips.length > 0 ? (
-        <div className="mx-auto max-w-2xl px-4">
-          <DashboardContinueTrip trips={allRealTrips} />
-        </div>
-      ) : null}
+      {/* ── Área de acción principal ────────────────────────────────────── */}
+      <div className={showSidePanel ? "grid items-start gap-4 md:grid-cols-[1fr_320px]" : ""}>
 
-      <div className="mx-auto max-w-2xl px-4">
-        <PushNotificationPrompt />
+        {/* Columna izquierda: crear viaje */}
+        <section
+          className={`rounded-2xl px-5 py-5 md:px-6 md:py-6 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
+        >
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+            Crear viaje
+          </p>
+          <DashboardCreateFlowStepper isPremium={isPremium} canCreate={!freeTripLimitReached} />
+
+          <div className="mt-4 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50">
+            {isPremium ? (
+              <>
+                <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--brand)] dark:text-[#F87171]">
+                  Asistente personal
+                </p>
+                <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
+                  Tras crear el viaje, el asistente te guía con propuestas. También puedes abrirlo en cualquier viaje desde
+                  la pestaña del mismo nombre.
+                </p>
+                <div className="mt-4 flex justify-center">
+                  <Link
+                    href="/trips/new/planner"
+                    className="inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:bg-[var(--brand-light)] disabled:opacity-60 sm:w-auto sm:min-w-[320px] sm:text-sm"
+                    title="Genera un borrador con lugares reales y coordenadas"
+                  >
+                    <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />
+                    Planificador IA (borrador)
+                  </Link>
+                </div>
+                <DashboardAiShortcuts trips={realTrips} isPremium />
+              </>
+            ) : (
+              <>
+                <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">
+                  Plan gratuito
+                </p>
+                <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
+                  Sigue los 6 pasos del recuadro superior. Al pulsar <strong className="text-slate-800">Crear viaje</strong> y abrir el
+                  formulario verás una guía detallada en el mismo orden.
+                </p>
+                <div className="mt-4 flex justify-center">
+                  <Link
+                    href="/account?upgrade=premium&focus=premium#premium-plans"
+                    className="group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-amber-100/60 px-3 py-2.5 text-center text-xs font-semibold text-amber-950 shadow-sm ring-1 ring-slate-900/[0.02] transition hover:border-amber-300 hover:shadow-md active:translate-y-[0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 sm:w-auto sm:min-w-[260px] sm:text-sm"
+                  >
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm ring-1 ring-white/20">
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span>Asistente personal y más con Premium</span>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div
+            id="create-trip"
+            className="mt-4 scroll-mt-20 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50"
+          >
+            <CreateTripSection isPremium={isPremium} tripCount={realTrips.length} />
+          </div>
+        </section>
+
+        {/* Columna derecha: viaje activo + demo + onboarding */}
+        {showSidePanel && (
+          <div className="flex flex-col gap-4">
+            <DashboardContinueTrip trips={allRealTrips} />
+            {isFirstOnboardingVisit ? (
+              <>
+                <OnboardingNudge
+                  hasTrips={realTrips.length > 0}
+                  hasParticipants={hasParticipants}
+                  hasExpenses={hasExpenses}
+                  demoTripId={demoTripId}
+                />
+                <DashboardDemoTripSection trips={demoTrips} />
+              </>
+            ) : (
+              <>
+                <DashboardDemoTripSection trips={demoTrips} />
+                <OnboardingNudge
+                  hasTrips={realTrips.length > 0}
+                  hasParticipants={hasParticipants}
+                  hasExpenses={hasExpenses}
+                  demoTripId={demoTripId}
+                />
+              </>
+            )}
+            <PushNotificationPrompt />
+          </div>
+        )}
       </div>
 
-      {isFirstOnboardingVisit ? (
-        <>
-          <OnboardingNudge
-            hasTrips={realTrips.length > 0}
-            hasParticipants={hasParticipants}
-            hasExpenses={hasExpenses}
-            demoTripId={demoTripId}
-          />
-          <DashboardDemoTripSection trips={demoTrips} />
-        </>
-      ) : (
-        <>
-          <DashboardDemoTripSection trips={demoTrips} />
-          <OnboardingNudge
-            hasTrips={realTrips.length > 0}
-            hasParticipants={hasParticipants}
-            hasExpenses={hasExpenses}
-            demoTripId={demoTripId}
-          />
-        </>
-      )}
+      {/* Si no hay panel lateral, mostrar push notification debajo */}
+      {!showSidePanel && <PushNotificationPrompt />}
 
-      <section
-        className={`mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40`}
-      >
-        <DashboardCreateFlowStepper isPremium={isPremium} canCreate={!freeTripLimitReached} />
-
-        <div className="mx-auto mt-4 max-w-2xl border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50">
-          {isPremium ? (
-            <>
-              <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--brand)] dark:text-[#F87171]">
-                Asistente personal
-              </p>
-              <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
-                Tras crear el viaje, el asistente te guía con propuestas. También puedes abrirlo en cualquier viaje desde
-                la pestaña del mismo nombre.
-              </p>
-              <div className="mt-4 flex justify-center">
-                <Link
-                  href="/trips/new/planner"
-                  className="inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:bg-[var(--brand-light)] disabled:opacity-60 sm:w-auto sm:min-w-[320px] sm:text-sm"
-                  title="Genera un borrador con lugares reales y coordenadas"
-                >
-                  <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />
-                  Planificador IA (borrador)
-                </Link>
-              </div>
-              <DashboardAiShortcuts trips={realTrips} isPremium />
-            </>
-          ) : (
-            <>
-              <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">
-                Plan gratuito
-              </p>
-              <p className="mx-auto mt-1 max-w-lg text-center text-xs text-slate-600 md:text-sm dark:text-slate-300">
-                Sigue los 6 pasos del recuadro superior. Al pulsar <strong className="text-slate-800">Crear viaje</strong> y abrir el
-                formulario verás una guía detallada en el mismo orden.
-              </p>
-              <div className="mt-4 flex justify-center">
-                <Link
-                  href="/account?upgrade=premium&focus=premium#premium-plans"
-                  className="group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-amber-100/60 px-3 py-2.5 text-center text-xs font-semibold text-amber-950 shadow-sm ring-1 ring-slate-900/[0.02] transition hover:border-amber-300 hover:shadow-md active:translate-y-[0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 sm:w-auto sm:min-w-[260px] sm:text-sm"
-                >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm ring-1 ring-white/20">
-                    <Sparkles className="h-4 w-4" aria-hidden />
-                  </span>
-                  <span>Asistente personal y más con Premium</span>
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div
-          id="create-trip"
-          className="mx-auto mt-4 max-w-2xl scroll-mt-20 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50"
-        >
-          <CreateTripSection isPremium={isPremium} tripCount={realTrips.length} />
-        </div>
-      </section>
-
-      {!isPremium ? (
-        <section className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-700 md:text-sm dark:border-slate-700/50 dark:bg-slate-950/40 dark:text-slate-200">
-          {freePlanBanner()}
-        </section>
-      ) : null}
-
+      {/* ── Grid de viajes ──────────────────────────────────────────────── */}
       {realTrips.length > 0 ? (
         <DashboardTripsClient
           current={current}
@@ -424,6 +425,28 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           announcementUnreadByTripId={announcementUnreadByTripId}
         />
       ) : null}
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer className="mt-6 space-y-3 border-t border-slate-200/70 pt-5 dark:border-slate-700/50">
+        <DashboardAgencyEntry />
+        {!isPremium ? (
+          <section className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-700 md:text-sm dark:border-slate-700/50 dark:bg-slate-950/40 dark:text-slate-200">
+            {freePlanBanner()}
+          </section>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-2 text-[11px] text-slate-400 dark:text-slate-500">
+          <Link href="/privacy" className="transition hover:text-slate-600 hover:underline dark:hover:text-slate-300">
+            Política de privacidad
+          </Link>
+          <a
+            href="mailto:hola@kaviro.app"
+            className="transition hover:text-slate-600 hover:underline dark:hover:text-slate-300"
+          >
+            Contacto
+          </a>
+          <span>© {new Date().getFullYear()} Kaviro</span>
+        </div>
+      </footer>
     </main>
   );
 }

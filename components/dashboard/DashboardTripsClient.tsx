@@ -179,12 +179,12 @@ export default function DashboardTripsClient({
   // Tab definitions
   const tabDefs: { key: Filter; label: string; count: number }[] = [
     { key: "all"       , label: "Todos",            count: totalTrips },
+    { key: "favorites" , label: "Favoritos ⭐",       count: favoriteTrips.length },
     { key: "travel"    , label: "Viajes",            count: travelCount },
     { key: "expenses"  , label: "Grupos de gastos",  count: expenseGroups.length },
     { key: "active"    , label: "Activos",           count: current.length },
     { key: "future"    , label: "Próximos",          count: future.length },
     { key: "past"      , label: "Pasados",           count: past.length + unscheduled.length },
-    { key: "favorites" , label: "Favoritos ⭐",       count: favoriteTrips.length },
   ];
   const tabs = tabDefs.filter((t) => {
     // Hide "Grupos de gastos" si feature desactivada o sin grupos

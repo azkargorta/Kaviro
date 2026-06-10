@@ -56,7 +56,7 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
   const demoTrip = trips[0];
 
   return (
-    <section className="mx-auto max-w-2xl space-y-2">
+    <section className="space-y-2">
 
       {/* ── Header colapsable ─────────────────────────────────────────── */}
       <button
