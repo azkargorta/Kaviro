@@ -286,7 +286,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
       }
       // Excluir el propio nombre del participante y los nombres actuales de Gente
       const currentParticipantNames = new Set(
-        participants.map((p) => (p.display_name || p.name || "").trim().toLowerCase()).filter(Boolean)
+        participants.map((p) => (p.display_name || "").trim().toLowerCase()).filter(Boolean)
       );
       const aliases = Array.from(names).filter(
         (n) => n.trim().toLowerCase() !== participantName.trim().toLowerCase() &&
@@ -851,7 +851,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                           onEdit={() => openEditParticipant(participant)}
                           onInvite={() => openParticipantInvite(participant)}
                           onLink={() => openLinkProfile(participant)}
-                          onMerge={() => openMergeDialog(participant.display_name || participant.name || "")}
+                          onMerge={() => openMergeDialog(participant.display_name || "")}
                           onRemove={() => void handleRemove(participant.id)}
                         />
                       </div>
