@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import ExpenseForm from "@/components/trip/expenses/ExpenseForm";
 import ExpenseList from "@/components/trip/expenses/ExpenseList";
 import ExpenseBalancePanel from "@/components/trip/expenses/ExpenseBalancePanel";
@@ -108,6 +109,11 @@ export default function TripExpensesView({
   const [activeTab, setActiveTab] = useState<"list" | "charts">("list");
   type MobileExpensesPanel = null | "menu" | "analyze" | "converter" | "export" | "history" | "balances";
   const [mobilePanel, setMobilePanel] = useState<MobileExpensesPanel>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const shouldShowForm =
     canManageExpenses && (isAddOpen || !!editingExpense || !!detectedData);
@@ -357,16 +363,16 @@ export default function TripExpensesView({
     <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden pb-20 md:pb-0">
       {!canManageExpenses ? <TripReadOnlyBanner moduleLabel="gastos" /> : null}
 
-      {/* Tab switcher + menú móvil */}
+      {/* Cabecera: tabs + botones de acción (inline en escritorio) */}
       <div className="flex items-center gap-2">
-        <div className="inline-flex flex-1 rounded-xl bg-slate-100 p-1 gap-1">
+        <div className="inline-flex flex-1 rounded-xl bg-slate-100 p-1 gap-1 dark:bg-slate-800/60">
           <button
             type="button"
             onClick={() => setActiveTab("list")}
             className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition sm:flex-none sm:px-4 ${
               activeTab === "list"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
             Lista
@@ -380,10 +386,10 @@ export default function TripExpensesView({
             data-tour="expenses-stats-btn"
             type="button"
             onClick={() => setActiveTab("charts")}
-            className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition sm:flex-none sm:px-4 md:inline-flex ${
+            className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition sm:flex-none sm:px-4 ${
               activeTab === "charts"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
             <span className="md:hidden">📊</span>
@@ -391,39 +397,62 @@ export default function TripExpensesView({
             <span className="md:hidden">Stats</span>
           </button>
         </div>
+
+        {/* Botones de acción — solo escritorio, inline con los tabs */}
+        <div className="hidden md:flex min-w-0 items-center gap-2 shrink-0">
+          {topButtons}
+        </div>
+
+        {/* Menú móvil — solo móvil */}
         <button
           type="button"
           onClick={() => setMobilePanel("menu")}
-          className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 md:hidden"
+          className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 md:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
           aria-label="Más opciones"
         >
           <MoreHorizontal className="h-5 w-5" aria-hidden />
         </button>
       </div>
 
-      {/* Toolbar — escritorio */}
-      <div className="card-soft relative hidden overflow-hidden p-4 md:block">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-100"
-          style={{
-            background:
-              "radial-gradient(900px 160px at 0% 0%, rgba(248,113,113,0.10), transparent 60%), radial-gradient(700px 180px at 100% 0%, rgba(239,68,68,0.07), transparent 55%)",
-          }}
-          aria-hidden
-        />
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <Wallet className="h-4 w-4 text-[var(--brand)]" aria-hidden />
-              Gastos
+      {/* Franja de estadísticas — solo escritorio */}
+      {expenses.length > 0 ? (
+        <div className="hidden md:grid md:grid-cols-4 md:divide-x md:divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-700/60 dark:border-slate-700/50">
+          {[
+            {
+              label: "Gastos registrados",
+              value: String(expenses.length),
+              icon: "🧾",
+            },
+            {
+              label: "Importe total",
+              value: `${(expenses as any[]).reduce((s: number, e: any) => s + Number(e.amount || 0), 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })} ${tripBaseCurrency || "EUR"}`,
+              icon: "💰",
+            },
+            {
+              label: "Participantes",
+              value: String(participants.length),
+              icon: "👥",
+            },
+            {
+              label: "Pagos sugeridos",
+              value: String((suggestedSettlements as any[]).length),
+              icon: "🔄",
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
+                {stat.icon} {stat.label}
+              </p>
+              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">
+                {stat.value}
+              </p>
             </div>
-            <div className="mt-1 hidden text-xs text-slate-600 md:block">
-              Mantén el balance al día: añade tickets, analiza PDFs/imágenes y comparte pagos pendientes.
-            </div>
-          </div>
-          <div className="min-w-0 max-w-full">{topButtons}</div>
+          ))}
         </div>
-      </div>
+      ) : null}
 
       {activeTab === "charts" ? (
         <div key="charts" className="step-enter">
@@ -501,15 +530,18 @@ export default function TripExpensesView({
         </div>
       ) : null}
 
-      <ExpenseBalanceCompact
-        balances={balances}
-        settlements={suggestedSettlements}
-        balanceCurrency={balanceCurrency}
-        createWhatsAppLink={createWhatsAppLink}
-        onOpenAdvanced={isMobile ? () => openMobilePanel("balances") : undefined}
-      />
+      {/* Balance compacto — solo móvil; en escritorio el panel completo está en la columna derecha */}
+      <div className="md:hidden">
+        <ExpenseBalanceCompact
+          balances={balances}
+          settlements={suggestedSettlements}
+          balanceCurrency={balanceCurrency}
+          createWhatsAppLink={createWhatsAppLink}
+          onOpenAdvanced={() => openMobilePanel("balances")}
+        />
+      </div>
 
-      <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+      <div className="grid min-w-0 max-w-full gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.5fr)]">
         <div className="min-w-0 space-y-4">
           {canManageExpenses ? (
           <details
@@ -900,21 +932,24 @@ export default function TripExpensesView({
         />
       </MobileBottomSheet>
 
-      {canManageExpenses && !shouldShowForm && !editingExpense ? (
-        <button
-          type="button"
-          onClick={() => {
-            setIsAddOpen(true);
-            setIsAnalyzeOpen(false);
-            setEditingExpense(null);
-            setDetectedData(null);
-          }}
-          className="fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] active:scale-95 md:hidden"
-          aria-label="Añadir gasto"
-        >
-          <Plus className="h-7 w-7" />
-        </button>
-      ) : null}
+      {canManageExpenses && !shouldShowForm && !editingExpense && mounted
+        ? createPortal(
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddOpen(true);
+                setIsAnalyzeOpen(false);
+                setEditingExpense(null);
+                setDetectedData(null);
+              }}
+              className="btn-press fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
+              aria-label="Añadir gasto"
+            >
+              <Plus className="h-7 w-7" aria-hidden />
+            </button>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
