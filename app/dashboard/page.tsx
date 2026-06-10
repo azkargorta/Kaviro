@@ -7,6 +7,7 @@ import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvit
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
 import DashboardCreateTripOverlay from "@/components/dashboard/DashboardCreateTripOverlay";
+import DashboardCreateRow from "@/components/dashboard/DashboardCreateRow";
 import DashboardAgencyEntry from "@/components/dashboard/DashboardAgencyEntry";
 import PushNotificationPrompt from "@/components/pwa/PushNotificationPrompt";
 import DashboardOfflineRegistry, {
@@ -312,6 +313,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <DashboardTripInvitesInbox />
 
       {hasTrips ? <DashboardContinueTrip trips={allRealTrips} /> : null}
+
+      <DashboardCreateRow disabled={!isPremium && realTrips.length >= FREE_TRIP_LIMIT} />
 
       <DashboardTripsClient
         current={current}

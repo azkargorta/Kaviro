@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ChevronDown, Link2, MessageCircle, Share2 } from "lucide-react";
-import Link from "next/link";
+import { ChevronDown, Link2, MessageCircle, Share2 } from "lucide-react";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { useToast } from "@/components/ui/toast";
 import { buildTodayPlanWhatsAppText, whatsAppShareUrl } from "@/lib/today-plan-share";
@@ -149,17 +148,6 @@ export default function TripHeroShareDropdown({ tripId, tripName, destination }:
               {busy === "whatsapp" ? "Preparando…" : "Plan de hoy en WhatsApp"}
             </button>
 
-            <div className="my-1 mx-3 h-px bg-slate-100 dark:bg-[#1E293B]" aria-hidden />
-
-            <Link
-              href="/dashboard"
-              onClick={() => setOpen(false)}
-              className={`${ITEM_BASE} text-slate-600 dark:text-slate-400`}
-              role="menuitem"
-            >
-              <ArrowLeft className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
-              Mis viajes
-            </Link>
           </div>,
           document.body
         )
