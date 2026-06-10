@@ -20,18 +20,20 @@ const LOGGED_IN_SHELL_PREFIXES = [
 function HeaderActions({
   session,
   isDashboardHome,
+  heroMode,
 }: {
   session: "loading" | "guest" | "user";
   isDashboardHome: boolean;
+  heroMode: boolean;
 }) {
   return (
     <div className="relative z-[60] flex shrink-0 items-center gap-2">
       {!isDashboardHome ? <PremiumBadge /> : null}
-      <DarkModeToggle heroMode />
+      <DarkModeToggle heroMode={heroMode} />
       {session === "user" ? (
         <>
           <LoggedInRoutePrefetch />
-          <LoggedInHeaderActions heroMode />
+          <LoggedInHeaderActions heroMode={heroMode} showNewTripButton={isDashboardHome} />
         </>
       ) : null}
     </div>
@@ -73,48 +75,49 @@ export default function RootTopBar() {
   if (!showOnPath) return null;
 
   const headerGradient = isDashboardHome
-    ? "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)"
+    ? undefined
     : "linear-gradient(90deg, #F87171 0%, #EF4444 50%, #DC2626 100%)";
+
+  const dashboardNeutralClass =
+    "border-b border-slate-200/90 bg-[var(--surface-page)] dark:border-slate-800 dark:bg-[#080C14]";
 
   const logoLink = (
     <Link
       href="/dashboard"
-      className="shrink-0 outline-none ring-white/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
+      className="shrink-0 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40"
       aria-label="Ir al panel de viajes"
     >
-      <KaviroLogo variant="light" size={isDashboardHome ? "sm" : "md"} withWordmark />
+      <KaviroLogo variant={isDashboardHome ? "dark" : "light"} size={isDashboardHome ? "sm" : "md"} withWordmark />
     </Link>
   );
 
   return (
     <div className="sticky top-0 z-50 overflow-visible pt-safe">
       <div
-        className="root-header relative overflow-visible shadow-sm"
-        style={{ background: headerGradient }}
+        className={`root-header relative overflow-visible ${isDashboardHome ? dashboardNeutralClass : "shadow-sm"}`}
+        style={headerGradient ? { background: headerGradient } : undefined}
       >
         <div className="mx-auto max-w-[1200px] px-safe-inline sm:pl-6 sm:pr-6">
           {isDashboardHome ? (
             <>
-              {/* Móvil: logo + controles arriba; panel debajo (como antes) */}
               <div className="md:hidden">
                 <div className="flex items-center justify-between gap-3 py-3">
                   <Link
                     href="/dashboard"
-                    className="min-w-0 shrink outline-none ring-white/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
+                    className="min-w-0 shrink outline-none transition hover:opacity-90"
                     aria-label="Ir al panel de viajes"
                   >
-                    <KaviroLogo variant="light" size="md" withWordmark />
+                    <KaviroLogo variant="dark" size="md" withWordmark />
                   </Link>
-                  <HeaderActions session={session} isDashboardHome />
+                  <HeaderActions session={session} isDashboardHome heroMode={false} />
                 </div>
-                <DashboardRootBarPanel variant="stacked" />
+                <DashboardRootBarPanel variant="stacked" neutral />
               </div>
 
-              {/* Escritorio: logo · panel · controles en una fila compacta */}
-              <div className="hidden items-center gap-3 py-2 md:flex lg:gap-4">
+              <div className="hidden items-center gap-3 py-2.5 md:flex lg:gap-4">
                 {logoLink}
-                <DashboardRootBarPanel variant="inline" />
-                <HeaderActions session={session} isDashboardHome />
+                <DashboardRootBarPanel variant="inline" neutral />
+                <HeaderActions session={session} isDashboardHome heroMode={false} />
               </div>
             </>
           ) : (
@@ -126,7 +129,7 @@ export default function RootTopBar() {
               >
                 <KaviroLogo variant="light" size="md" withWordmark />
               </Link>
-              <HeaderActions session={session} isDashboardHome={false} />
+              <HeaderActions session={session} isDashboardHome={false} heroMode />
             </div>
           )}
         </div>

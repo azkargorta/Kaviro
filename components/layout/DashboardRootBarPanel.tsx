@@ -8,9 +8,10 @@ type HeaderMeta = { tripCount: number; isPremium: boolean };
 type Props = {
   /** Escritorio: texto entre logo y controles; móvil: bloque debajo como antes */
   variant?: "stacked" | "inline";
+  neutral?: boolean;
 };
 
-export default function DashboardRootBarPanel({ variant = "stacked" }: Props) {
+export default function DashboardRootBarPanel({ variant = "stacked", neutral = false }: Props) {
   const [meta, setMeta] = useState<HeaderMeta | null>(null);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function DashboardRootBarPanel({ variant = "stacked" }: Props) {
           tripCount={meta.tripCount}
           isPremium={meta.isPremium}
           compact={isInline}
+          neutral={neutral}
         />
       ) : (
         <div

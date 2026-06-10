@@ -9,7 +9,4 @@ export function openCreateTripForm(options?: { mode?: CreateTripOpenMode }) {
   if (window.location.hash !== hash) {
     window.location.hash = hash;
   }
-  window.requestAnimationFrame(() => {
-    document.getElementById("create-trip")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
 }

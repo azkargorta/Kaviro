@@ -1,21 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import CreateTripSection from "@/components/dashboard/CreateTripSection";
 import OnboardingNudge from "@/components/dashboard/OnboardingNudge";
-import DashboardAiShortcuts from "@/components/dashboard/DashboardAiShortcuts";
-import DashboardCreateFlowStepper from "@/components/dashboard/DashboardCreateFlowStepper";
-import { surfaceAccentCyan } from "@/components/ui/brandStyles";
-import { Sparkles, Plane } from "lucide-react";
 import DashboardDemoTripSection from "@/components/dashboard/DashboardDemoTripSection";
 import DashboardTripInvitesInbox from "@/components/dashboard/DashboardTripInvitesInbox";
 import DashboardContinueTrip from "@/components/dashboard/DashboardContinueTrip";
 import DashboardTripsClient from "@/components/dashboard/DashboardTripsClient";
+import DashboardCreateTripOverlay from "@/components/dashboard/DashboardCreateTripOverlay";
 import DashboardAgencyEntry from "@/components/dashboard/DashboardAgencyEntry";
 import PushNotificationPrompt from "@/components/pwa/PushNotificationPrompt";
 import DashboardOfflineRegistry, {
   DashboardOfflinePanel,
 } from "@/components/dashboard/DashboardOfflineRegistry";
+import { pickContinueTrip } from "@/lib/trip-active";
 import {
   detachLegacyDemoTripsForUser,
   ensureDemoTripForUser,
@@ -295,10 +292,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const announcementUnreadByTripId = countUnreadAnnouncementsByTrip(unreadAnnouncementRows);
 
-  const showSidePanel = allRealTrips.length > 0 || demoTrips.length > 0;
+  const heroTrip = pickContinueTrip(allRealTrips);
+  const hasTrips = realTrips.length > 0;
 
   return (
-    <main className="page-shell page-shell--fluid space-y-4 pb-8 md:space-y-5 md:pb-10">
+    <main className="page-shell page-shell--fluid space-y-6 pb-8 md:space-y-8 md:pb-10">
       <DashboardOfflineRegistry
         trips={allRealTrips.map((t) => ({
           id: t.id,
@@ -309,135 +307,50 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         }))}
       />
       <DashboardOfflinePanel />
+      <DashboardCreateTripOverlay isPremium={isPremium} tripCount={realTrips.length} />
 
       <DashboardTripInvitesInbox />
 
-      {/* ── Área de acción principal ────────────────────────────────────── */}
-      <div className={showSidePanel ? "grid gap-4 md:grid-cols-2 md:items-start" : ""}>
+      {hasTrips ? <DashboardContinueTrip trips={allRealTrips} /> : null}
 
-        {/* Columna izquierda: crear viaje — order-2 en móvil para que "estado actual" aparezca primero */}
-        <section
-          className={`min-w-0 overflow-hidden rounded-2xl px-5 py-5 md:px-6 md:py-6 ${surfaceAccentCyan} dark:border-slate-700/50 dark:bg-slate-950/40${showSidePanel ? " order-2 md:order-1" : ""}`}
-        >
-          {/* Header de sección */}
-          <div className="mb-4 flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-white shadow-sm">
-              <Plane className="h-4 w-4" aria-hidden />
-            </span>
-            <div>
-              <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">Crear viaje</h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Sigue los pasos o planifica con IA</p>
-            </div>
-          </div>
+      <DashboardTripsClient
+        current={current}
+        future={future}
+        past={past}
+        unscheduled={unscheduled}
+        expenseGroups={expenseGroups}
+        showExpenseGroupsSection={showExpenseGroupsSection}
+        favoriteTrips={favoriteTrips}
+        lockedTripIds={Array.from(lockedTripIds)}
+        announcementUnreadByTripId={announcementUnreadByTripId}
+        heroTripId={hasTrips ? heroTrip?.id ?? null : null}
+      />
 
-          <DashboardCreateFlowStepper isPremium={isPremium} canCreate={!freeTripLimitReached} />
-
-          {/* Tarjeta compacta IA / Premium */}
-          <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700/50">
-            {isPremium ? (
-              <>
-                <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-[var(--brand-border)] bg-white/70 px-4 py-3 dark:border-slate-600/40 dark:bg-slate-800/40">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]">
-                      <Sparkles className="h-4 w-4" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[var(--brand)] dark:text-[#F87171]">Asistente personal</p>
-                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                        Genera planes completos con IA para cualquier destino
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/trips/new/planner"
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
-                    title="Genera un borrador con lugares reales y coordenadas"
-                  >
-                    <Sparkles className="h-3 w-3" aria-hidden />
-                    Planificar
-                  </Link>
-                </div>
-                <DashboardAiShortcuts trips={realTrips} isPremium />
-              </>
-            ) : (
-              <Link
-                href="/account?upgrade=premium&focus=premium#premium-plans"
-                className="group flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-50/40 px-4 py-3 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-800/30 dark:from-amber-950/20 dark:to-transparent"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
-                    <Sparkles className="h-4 w-4" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="text-xs font-bold text-amber-900 dark:text-amber-300">Asistente IA con Premium</p>
-                    <p className="text-[11px] text-amber-700/80 dark:text-amber-500">Sin límite de viajes y mucho más</p>
-                  </div>
-                </div>
-                <span className="shrink-0 text-xs font-semibold text-amber-700 transition group-hover:underline dark:text-amber-400">
-                  Ver planes →
-                </span>
-              </Link>
-            )}
-          </div>
-
-          <div
-            id="create-trip"
-            className="mt-4 scroll-mt-20 border-t border-slate-100 pt-4 md:mt-5 md:pt-5 dark:border-slate-700/50"
-          >
-            <CreateTripSection isPremium={isPremium} tripCount={realTrips.length} />
-          </div>
-        </section>
-
-        {/* Columna derecha: viaje activo + demo + onboarding — order-1 en móvil (aparece primero) */}
-        {showSidePanel && (
-          <div className="order-1 min-w-0 flex flex-col gap-3 md:order-2">
-            <p className="hidden text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 md:block dark:text-slate-500">
-              Tu estado actual
-            </p>
-            <DashboardContinueTrip trips={allRealTrips} />
-            {isFirstOnboardingVisit ? (
-              <>
-                <OnboardingNudge
-                  hasTrips={realTrips.length > 0}
-                  hasParticipants={hasParticipants}
-                  hasExpenses={hasExpenses}
-                  demoTripId={demoTripId}
-                />
-                <DashboardDemoTripSection trips={demoTrips} />
-              </>
-            ) : (
-              <>
-                <DashboardDemoTripSection trips={demoTrips} />
-                <OnboardingNudge
-                  hasTrips={realTrips.length > 0}
-                  hasParticipants={hasParticipants}
-                  hasExpenses={hasExpenses}
-                  demoTripId={demoTripId}
-                />
-              </>
-            )}
-            <PushNotificationPrompt />
-          </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {isFirstOnboardingVisit ? (
+          <>
+            <OnboardingNudge
+              hasTrips={realTrips.length > 0}
+              hasParticipants={hasParticipants}
+              hasExpenses={hasExpenses}
+              demoTripId={demoTripId}
+            />
+            <DashboardDemoTripSection trips={demoTrips} />
+          </>
+        ) : (
+          <>
+            <DashboardDemoTripSection trips={demoTrips} />
+            <OnboardingNudge
+              hasTrips={realTrips.length > 0}
+              hasParticipants={hasParticipants}
+              hasExpenses={hasExpenses}
+              demoTripId={demoTripId}
+            />
+          </>
         )}
       </div>
 
-      {/* Si no hay panel lateral, mostrar push notification debajo */}
-      {!showSidePanel && <PushNotificationPrompt />}
-
-      {/* ── Grid de viajes ──────────────────────────────────────────────── */}
-      {realTrips.length > 0 ? (
-        <DashboardTripsClient
-          current={current}
-          future={future}
-          past={past}
-          unscheduled={unscheduled}
-          expenseGroups={expenseGroups}
-          showExpenseGroupsSection={showExpenseGroupsSection}
-          favoriteTrips={favoriteTrips}
-          lockedTripIds={Array.from(lockedTripIds)}
-          announcementUnreadByTripId={announcementUnreadByTripId}
-        />
-      ) : null}
+      <PushNotificationPrompt />
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="mt-6 space-y-3 border-t border-slate-200/70 pt-5 dark:border-slate-700/50">
