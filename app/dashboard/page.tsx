@@ -353,12 +353,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <PushNotificationPrompt />
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="mt-6 space-y-3 border-t border-slate-200/70 pt-5 dark:border-slate-700/50">
+      <footer className="mt-6 space-y-4 border-t border-slate-200/70 pt-5 dark:border-slate-700/50">
         <DashboardAgencyEntry />
         {!isPremium ? (
-          <section className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-700 md:text-sm dark:border-slate-700/50 dark:bg-slate-950/40 dark:text-slate-200">
-            {freePlanBanner()}
-          </section>
+          <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 sm:flex-row sm:items-center dark:border-[#1E293B] dark:bg-[#0F1623]">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Plan gratuito</span>
+              {" · "}hasta {FREE_TRIP_LIMIT} viajes. Desbloquea el asistente IA y análisis de documentos con Premium.
+            </p>
+            <Link
+              href="/pricing"
+              className="shrink-0 rounded-lg border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10"
+            >
+              Ver Premium →
+            </Link>
+          </div>
         ) : null}
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-2 text-[11px] text-slate-400 dark:text-slate-500">
           <Link href="/privacy" className="transition hover:text-slate-600 hover:underline dark:hover:text-slate-300">
