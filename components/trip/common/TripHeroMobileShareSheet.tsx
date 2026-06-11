@@ -123,7 +123,16 @@ export default function TripHeroMobileShareSheet({ tripId, tripName, destination
 
   return (
     <>
-      <div className="flex items-center justify-end border-t border-white/20 px-3 py-1.5 max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))]">
+      {/* Solo visible en móvil; en desktop se usa la barra hidden md:flex de TripHeroShareBar */}
+      <div className="md:hidden flex items-center justify-between border-t border-white/20 px-3 py-1.5 max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))]">
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-white/35 bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25"
+          aria-label="Volver a Mis viajes"
+        >
+          <Home className="h-3.5 w-3.5" aria-hidden />
+          Mis viajes
+        </Link>
         <button
           type="button"
           onClick={() => setOpen(true)}

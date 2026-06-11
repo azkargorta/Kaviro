@@ -8,6 +8,8 @@ type Props = {
   size?: "sm" | "md";
   href?: string;
   className?: string;
+  /** Oculta el texto del nombre; solo muestra el icono (para móvil con poco espacio). */
+  hideText?: boolean;
 };
 
 const ringPx = { sm: 36, md: 44 } as const;
@@ -18,7 +20,7 @@ const markPx = { sm: 22, md: 26 } as const;
  * Lockup del banner coral: anillo blanco + solo la K del icono + «Kaviro».
  * El icono coral se funde con el fondo (`mix-blend-lighten`) y deja visible la K blanca.
  */
-export default function KaviroTripHeroLockup({ size = "sm", href = "/dashboard", className = "" }: Props) {
+export default function KaviroTripHeroLockup({ size = "sm", href = "/dashboard", className = "", hideText = false }: Props) {
   const ring = ringPx[size];
   const mark = markPx[size];
 
@@ -38,7 +40,9 @@ export default function KaviroTripHeroLockup({ size = "sm", href = "/dashboard",
           style={{ width: mark, height: mark }}
         />
       </span>
-      <span className={`font-extrabold tracking-tight text-white leading-none ${textClass[size]}`}>{APP_NAME}</span>
+      {!hideText ? (
+        <span className={`font-extrabold tracking-tight text-white leading-none ${textClass[size]}`}>{APP_NAME}</span>
+      ) : null}
     </span>
   );
 

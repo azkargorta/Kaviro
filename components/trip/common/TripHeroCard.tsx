@@ -104,11 +104,21 @@ export default function TripHeroCard({
             </span>
           </Link>
         ) : (
-          <KaviroTripHeroLockup
-            size="sm"
-            href={isAgencyTrip ? "/agency" : "/dashboard"}
-            className="shrink-0"
-          />
+          <>
+            {/* Móvil: solo icono K, sin texto, para dejar espacio al nombre del viaje */}
+            <KaviroTripHeroLockup
+              size="sm"
+              href={isAgencyTrip ? "/agency" : "/dashboard"}
+              className="shrink-0 md:hidden"
+              hideText
+            />
+            {/* Desktop: lockup completo con nombre */}
+            <KaviroTripHeroLockup
+              size="sm"
+              href={isAgencyTrip ? "/agency" : "/dashboard"}
+              className="hidden md:inline-flex shrink-0"
+            />
+          </>
         )}
 
         <div className="min-w-0 flex-1 self-center">
