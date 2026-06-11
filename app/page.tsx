@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PublicLanding from "@/components/PublicLanding";
+import JsonLdScript from "@/components/marketing/JsonLdScript";
 import type { Metadata } from "next";
 import { APP_MARKETING_DESCRIPTION, APP_MARKETING_TITLE, APP_NAME } from "@/lib/brand";
+import { kaviroHomeJsonLd } from "@/lib/kaviro-json-ld";
 
 export const metadata: Metadata = {
   title: APP_MARKETING_TITLE,
@@ -27,5 +29,10 @@ export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
-  return <PublicLanding />;
+  return (
+    <>
+      <JsonLdScript data={kaviroHomeJsonLd()} />
+      <PublicLanding />
+    </>
+  );
 }
