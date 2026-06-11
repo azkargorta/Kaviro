@@ -42,8 +42,8 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
   })();
 
   return (
-    <aside className="hidden md:block w-[200px] shrink-0 self-start lg:w-[224px]">
-      <div className="sticky top-5 z-20 max-h-[calc(100vh-2.5rem)] space-y-2 overflow-y-auto overscroll-contain">
+    <aside className="hidden md:block w-[200px] shrink-0 self-stretch lg:w-[224px]">
+      <div className="sticky top-4 z-30 max-h-[calc(100dvh-2rem)] space-y-2 overflow-y-auto overscroll-contain md:top-5 md:max-h-[calc(100dvh-2.5rem)]">
         <div
             className={`shadow-sm ${
             useAgencyBranding || !isAgencyTrip
