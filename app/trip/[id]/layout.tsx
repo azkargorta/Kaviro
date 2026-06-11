@@ -110,7 +110,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
             style={agencyBrandStyle}
           >
             <div className="page-shell max-md:!pt-0 !pb-6 md:!pt-5 md:!pb-10">
-              <div className="mb-2 md:mb-5">
+              <div className="mb-2 md:hidden">
                 <TripHeroCard
                   tripId={params.id}
                   tripName={tripName}
@@ -127,7 +127,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                 />
               </div>
 
-              <div className="min-w-0 md:grid md:grid-cols-[200px_1fr] md:items-stretch lg:grid-cols-[230px_1fr] xl:grid-cols-[260px_1fr] md:gap-4 xl:gap-6">
+              <div className="min-w-0 md:grid md:grid-cols-[200px_1fr] md:items-start lg:grid-cols-[230px_1fr] xl:grid-cols-[260px_1fr] md:gap-4 xl:gap-6">
                 <DesktopTripSidebar
                   tripId={params.id}
                   isPremium={isPremium}
@@ -135,6 +135,22 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   endDate={tripMeta?.end_date ?? null}
                 />
                 <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:space-y-8">
+                  <div className="hidden md:block">
+                    <TripHeroCard
+                      tripId={params.id}
+                      tripName={tripName}
+                      destination={destination}
+                      participants={participantNames}
+                      isAgencyTrip={displayWorkspace.isAgencyTrip}
+                      useAgencyBranding={useAgencyBranding}
+                      agencyBranding={displayWorkspace.agencyBranding}
+                      clientPortalHref={
+                        workspace.isAgencyManaged && workspace.agencySlug && workspace.clientPortalSlug
+                          ? clientPortalPath(workspace.agencySlug, workspace.clientPortalSlug)
+                          : null
+                      }
+                    />
+                  </div>
                   {isTravelerPreview ? <TripTravelerPreviewBanner tripId={params.id} /> : null}
                   {isDemo ? <DemoTripBanner /> : null}
                   {showOnboarding ? (
