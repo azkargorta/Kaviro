@@ -3,6 +3,8 @@ import Image from "next/image";
 import KaviroTripHeroLockup from "@/components/brand/KaviroTripHeroLockup";
 import TripHeroActions from "@/components/trip/common/TripHeroActions";
 import TripHeroShareBar from "@/components/trip/common/TripHeroShareBar";
+import TripHeroShareDropdown from "@/components/trip/common/TripHeroShareDropdown";
+import TripMisViajesLink from "@/components/trip/common/TripMisViajesLink";
 import type { AgencyBranding } from "@/lib/agency";
 import { agencyBrandedHeroGradientDiagonal } from "@/lib/agency-brand-tokens";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
@@ -77,6 +79,10 @@ export default function TripHeroCard({
         data-tour="trip-hero-toolbar"
         className="flex items-center justify-between gap-2 px-4 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top))] max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))] md:gap-3 md:pb-2 md:pt-[max(0.75rem,env(safe-area-inset-top))]"
       >
+        {!isAgencyTrip ? (
+          <TripMisViajesLink variant="hero" tour />
+        ) : null}
+
         {branded ? (
           <Link
             href={isAgencyTrip ? "/agency" : "/dashboard"}
@@ -104,21 +110,15 @@ export default function TripHeroCard({
             </span>
           </Link>
         ) : (
-          <>
-            {/* Móvil: solo icono K, sin texto, para dejar espacio al nombre del viaje */}
+          !isAgencyTrip ? (
+            <span className="h-4 w-px shrink-0 bg-white/25" aria-hidden />
+          ) : (
             <KaviroTripHeroLockup
               size="sm"
-              href={isAgencyTrip ? "/agency" : "/dashboard"}
-              className="shrink-0 md:hidden"
-              hideText
+              href="/agency"
+              className="shrink-0"
             />
-            {/* Desktop: lockup completo con nombre */}
-            <KaviroTripHeroLockup
-              size="sm"
-              href={isAgencyTrip ? "/agency" : "/dashboard"}
-              className="hidden md:inline-flex shrink-0"
-            />
-          </>
+          )
         )}
 
         <div className="min-w-0 flex-1 self-center">
@@ -146,7 +146,12 @@ export default function TripHeroCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          {!isAgencyTrip ? <TripHeroActions tripId={tripId} /> : null}
+          {!isAgencyTrip ? (
+            <div className="flex items-center gap-1.5">
+              <TripHeroShareDropdown tripId={tripId} tripName={tripName} destination={destination} />
+              <TripHeroActions tripId={tripId} />
+            </div>
+          ) : null}
           {shown.length > 0 ? (
             <div className="flex items-center -space-x-2">
               {shown.map((name, i) => (
