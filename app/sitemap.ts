@@ -19,8 +19,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...SEO_LANDING_ENTRIES,
     { url: `${BASE_URL}/help`,         lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/changelog`,    lastModified: now, changeFrequency: "weekly",  priority: 0.7 },
-    { url: `${BASE_URL}/auth/login`,   lastModified: now, changeFrequency: "yearly",  priority: 0.6 },
-    { url: `${BASE_URL}/auth/register`,lastModified: now, changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE_URL}/privacy`,      lastModified: now, changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE_URL}/terms`,        lastModified: now, changeFrequency: "yearly",  priority: 0.3 },
   ];
