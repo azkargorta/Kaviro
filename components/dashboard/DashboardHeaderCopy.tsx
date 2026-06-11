@@ -42,7 +42,7 @@ export default function DashboardHeaderCopy({
   if (neutral) {
     if (compact) {
       return (
-        <div className="min-w-0 flex-1 border-l-2 border-[var(--brand)] pl-3">
+        <div className="min-w-0 flex-1 border-l border-[var(--brand)]/35 pl-3">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h1 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-base">
               Mis viajes

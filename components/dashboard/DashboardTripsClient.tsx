@@ -79,6 +79,14 @@ function DashboardEmptyState() {
   );
 }
 
+function listRowAccent(badge: string) {
+  if (badge === "En curso") return "border-l-[4px] border-l-[var(--brand)]";
+  if (badge === "Próximo") return "border-l-[4px] border-l-sky-300 dark:border-l-sky-600/70";
+  if (badge === "Finalizado") return "border-l-[4px] border-l-slate-300 dark:border-l-slate-600";
+  if (badge === "Pendiente") return "border-l-[4px] border-l-amber-300 dark:border-l-amber-700/55";
+  return "border-l-[4px] border-l-slate-200/90 dark:border-l-slate-700";
+}
+
 function listCountdown(badge: string, startDate: string | null): string | null {
   if (badge !== "Próximo" || !startDate) return null;
   const today = new Date();
@@ -123,9 +131,7 @@ function TripListRow({
 
   return (
     <div
-      className={`group flex min-h-[60px] items-center gap-3 ${DASHBOARD_CARD} ${DASHBOARD_CARD_HOVER} px-3.5 py-3.5 ${
-        isActive ? "border-l-[4px] border-l-[var(--brand)]" : "border-l-[4px] border-l-slate-200/90 dark:border-l-slate-700"
-      } ${locked ? "opacity-80" : "cursor-pointer"}`}
+      className={`group grid min-h-[64px] grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 ${DASHBOARD_CARD} ${DASHBOARD_CARD_HOVER} px-3.5 py-3 lg:grid-cols-[40px_minmax(0,1fr)_minmax(130px,1fr)_auto_92px] lg:gap-x-4 lg:py-3.5 ${listRowAccent(badge)} ${locked ? "opacity-80" : "cursor-pointer"}`}
       onClick={() => {
         if (locked) return;
         router.push(
@@ -161,10 +167,10 @@ function TripListRow({
         </div>
       ) : null}
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 lg:col-span-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="truncate text-sm font-extrabold tracking-tight text-slate-900 dark:text-white">{trip.name}</p>
-          <TripStatusBadge badge={badge} className="sm:hidden" />
+          <TripStatusBadge badge={badge} className="lg:hidden" />
         </div>
         {trip.destination ? (
           <p className="flex items-center gap-1 truncate text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -173,10 +179,17 @@ function TripListRow({
           </p>
         ) : null}
         {countdown ? (
-          <p className="mt-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">{countdown}</p>
+          <p className="mt-0.5 text-[10px] font-bold text-sky-600/90 dark:text-sky-400/90">{countdown}</p>
         ) : null}
+      </div>
+
+      <div className="hidden min-w-0 flex-col justify-center lg:flex">
+        <span className="flex items-center gap-1 truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+          <Calendar className="h-3 w-3 shrink-0" aria-hidden />
+          {dateLabel}
+        </span>
         {isActive && progress !== null ? (
-          <div className="mt-1.5 hidden max-w-[140px] sm:block">
+          <div className="mt-1.5 max-w-[160px]">
             <div className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
               <div
                 className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-500"
@@ -187,14 +200,7 @@ function TripListRow({
         ) : null}
       </div>
 
-      <div className="hidden shrink-0 items-center gap-2 sm:flex">
-        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-          <Calendar className="h-3 w-3" aria-hidden />
-          {dateLabel}
-        </span>
-      </div>
-
-      <TripStatusBadge badge={badge} className="hidden shrink-0 sm:inline-flex" />
+      <TripStatusBadge badge={badge} className="hidden shrink-0 lg:inline-flex" />
 
       <button
         type="button"
@@ -255,7 +261,7 @@ function TripListView({
 }) {
   if (!trips.length) return null;
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {trips.map((trip) => (
         <TripListRow
           key={trip.id}
@@ -506,6 +512,9 @@ export default function DashboardTripsClient({
 
         {/* Toolbar: búsqueda + tabs + toggle vista */}
         <div className={`${DASHBOARD_CARD} space-y-3 p-3 sm:p-4`}>
+        <div className="flex items-center justify-between gap-2">
+          <p className={DASHBOARD_SECTION_EYEBROW}>Tu biblioteca</p>
+        </div>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Búsqueda */}
           <div className="relative min-w-0 flex-1 lg:max-w-xs">

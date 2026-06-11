@@ -16,6 +16,7 @@ import DashboardOfflineRegistry, {
 import { pickContinueTrip } from "@/lib/trip-active";
 import { pickNextActivityFromRows } from "@/lib/dashboard-hero-activity";
 import type { DashboardContinueNextActivity } from "@/components/dashboard/DashboardContinueTrip";
+import type { DashboardHeroSnapshot } from "@/lib/dashboard-hero-snapshot";
 import {
   detachLegacyDemoTripsForUser,
   ensureDemoTripForUser,
@@ -299,18 +300,43 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const hasTrips = realTrips.length > 0;
 
   let heroNextActivity: DashboardContinueNextActivity | null = null;
+  let heroSnapshot: DashboardHeroSnapshot | null = null;
   if (heroTrip?.id) {
     const todayYmd = new Date().toISOString().slice(0, 10);
     const nowHHMM = new Date().toTimeString().slice(0, 5);
-    const { data: heroActivities } = await supabase
-      .from("trip_activities")
-      .select("title, activity_time, activity_date")
-      .eq("trip_id", heroTrip.id)
-      .gte("activity_date", todayYmd)
-      .order("activity_date", { ascending: true })
-      .order("activity_time", { ascending: true })
-      .limit(30);
+    const [
+      { data: heroActivities },
+      { count: participantsCount },
+      { count: expensesCount },
+      { count: documentsCount },
+    ] = await Promise.all([
+      supabase
+        .from("trip_activities")
+        .select("title, activity_time, activity_date")
+        .eq("trip_id", heroTrip.id)
+        .gte("activity_date", todayYmd)
+        .order("activity_date", { ascending: true })
+        .order("activity_time", { ascending: true })
+        .limit(30),
+      supabase
+        .from("trip_participants")
+        .select("*", { count: "exact", head: true })
+        .eq("trip_id", heroTrip.id),
+      supabase
+        .from("trip_expenses")
+        .select("*", { count: "exact", head: true })
+        .eq("trip_id", heroTrip.id),
+      supabase
+        .from("trip_resources")
+        .select("*", { count: "exact", head: true })
+        .eq("trip_id", heroTrip.id),
+    ]);
     heroNextActivity = pickNextActivityFromRows(heroActivities ?? [], todayYmd, nowHHMM);
+    heroSnapshot = {
+      participantsCount: participantsCount ?? 0,
+      expensesCount: expensesCount ?? 0,
+      documentsCount: documentsCount ?? 0,
+    };
   }
 
   const recentTrips = [...realTrips]
@@ -336,7 +362,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       <section className="space-y-4" aria-label="Acceso principal">
         {hasTrips ? (
-          <DashboardContinueTrip trips={allRealTrips} nextActivity={heroNextActivity} />
+          <DashboardContinueTrip
+            trips={allRealTrips}
+            nextActivity={heroNextActivity}
+            snapshot={heroSnapshot}
+          />
         ) : null}
         <DashboardCreateRow disabled={!isPremium && realTrips.length >= FREE_TRIP_LIMIT} />
       </section>

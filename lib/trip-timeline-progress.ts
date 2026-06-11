@@ -17,3 +17,19 @@ export function tripTimelineProgress(
 
   return Math.round(((now - startMs) / (endMs - startMs)) * 100);
 }
+
+function daysBetween(a: string, b: string) {
+  return Math.round(
+    (new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / 86400000
+  );
+}
+
+/** Etiqueta «Día X de Y» para viajes en curso; null si faltan fechas o aún no ha empezado. */
+export function tripDayLabel(startDate: string | null, endDate: string | null): string | null {
+  if (!startDate || !endDate) return null;
+  const today = new Intl.DateTimeFormat("en-CA").format(new Date());
+  if (today < startDate) return null;
+  const total = daysBetween(startDate, endDate) + 1;
+  const elapsed = Math.min(total, Math.max(1, daysBetween(startDate, today) + 1));
+  return `Día ${elapsed} de ${total}`;
+}

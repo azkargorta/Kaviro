@@ -18,7 +18,7 @@ const TONE_CLASS: Record<ReturnType<typeof tripStatusBadgeTone>, string> = {
   active:
     "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[var(--brand-border)]",
   upcoming:
-    "bg-slate-100 text-slate-700 ring-1 ring-slate-200/90 dark:bg-slate-800/80 dark:text-slate-200 dark:ring-slate-700",
+    "bg-sky-50 text-sky-800 ring-1 ring-sky-200/80 dark:bg-sky-950/25 dark:text-sky-200 dark:ring-sky-800/35",
   past: "bg-slate-50 text-slate-500 ring-1 ring-slate-200/70 dark:bg-slate-900/50 dark:text-slate-500 dark:ring-slate-800",
   pending:
     "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-800/35",
