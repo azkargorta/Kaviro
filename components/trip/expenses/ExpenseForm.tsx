@@ -80,12 +80,12 @@ function Chip({
 }) {
   const activeClass =
     tone === "paid"
-      ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
-      : "border-sky-500 bg-sky-500 text-white shadow-sm";
+      ? "border-[var(--brand)] bg-[var(--brand)] text-white shadow-sm"
+      : "border-slate-700 bg-slate-800 text-white shadow-sm dark:border-slate-500 dark:bg-slate-700";
   const idleClass =
     tone === "paid"
-      ? "border-slate-200 bg-white text-slate-700 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
-      : "border-slate-200 bg-slate-50 text-slate-600 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300";
+      ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)] dark:border-[var(--brand-border)] dark:bg-[var(--brand-light)]"
+      : "border-slate-200 bg-white text-slate-700 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200";
 
   return (
     <button
@@ -112,7 +112,7 @@ export default function ExpenseForm({
   onSubmit,
 }: Props) {
   const isMobile = useIsMobile();
-  const [mobileStep, setMobileStep] = useState<1 | 2>(1);
+  const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -368,7 +368,7 @@ export default function ExpenseForm({
   const chipsBlock = (
     <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
       <div>
-        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Quién pagó</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-[var(--brand-text)]">Quién pagó</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {travelerOptions.map((name) => (
             <Chip key={`paid-${name}`} name={name} active={paidByNames.includes(name)} tone="paid" onClick={() => togglePaid(name)} />
@@ -377,7 +377,7 @@ export default function ExpenseForm({
       </div>
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">Entre quién se reparte</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Entre quién se reparte</p>
           <button type="button" onClick={selectAllOwed} className="text-xs font-bold text-[var(--brand)] underline">
             Todos
           </button>
@@ -592,6 +592,57 @@ export default function ExpenseForm({
     return true;
   }
 
+  function validateStep2(): boolean {
+    if (!paidByNames.length) {
+      setError("Indica quién ha pagado.");
+      return false;
+    }
+    if (!owedByNames.length) {
+      setError("Indica entre quién se reparte.");
+      return false;
+    }
+    setError(null);
+    return true;
+  }
+
+  const mobileStepLabels = ["Ticket", "Reparto", "Resumen"] as const;
+
+  const mobileStepReview = (
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-[#1E293B] dark:bg-[#080C14]">
+      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Resumen antes de guardar</p>
+      <div className="text-center">
+        <p className="text-3xl font-black text-slate-900 dark:text-white">{formatMoney(numericAmount, currency)}</p>
+        <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">{title}</p>
+      </div>
+      <div className="space-y-2 text-sm">
+        <p>
+          <span className="font-semibold text-[var(--brand-text)]">Pagó:</span>{" "}
+          {paidByNames.join(", ") || payerName || "—"}
+        </p>
+        <p>
+          <span className="font-semibold text-slate-700 dark:text-slate-200">Se reparte entre:</span>{" "}
+          {owedByNames.join(", ")}
+        </p>
+        {perPerson != null ? (
+          <p className="rounded-xl bg-[var(--brand-light)] px-3 py-2 text-center text-base font-extrabold text-[var(--brand-text)]">
+            {formatMoney(perPerson, currency)} por persona
+          </p>
+        ) : unevenSplit ? (
+          <p className="text-xs font-semibold text-slate-500">Reparto personalizado por importes</p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={() => setMoreOpen((v) => !v)}
+        className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-[#334155]"
+      >
+        Categoría y notas (opcional)
+        {moreOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+      {moreOpen ? extraOptions : null}
+    </div>
+  );
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] md:rounded-2xl md:p-5">
       <div>
@@ -600,7 +651,38 @@ export default function ExpenseForm({
           <span>{isEditing ? "Editar gasto" : isDuplicating ? "Duplicar gasto" : "Nuevo gasto"}</span>
         </div>
         {isMobile && !isEditing ? (
-          <p className="mt-2 text-xs font-bold text-slate-500">Paso {mobileStep} de 2</p>
+          <div className="mt-3 flex items-center gap-2">
+            {mobileStepLabels.map((label, idx) => {
+              const stepNum = (idx + 1) as 1 | 2 | 3;
+              const active = mobileStep === stepNum;
+              const done = mobileStep > stepNum;
+              return (
+                <div key={label} className="flex min-w-0 flex-1 items-center gap-2">
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${
+                      active
+                        ? "bg-[var(--brand)] text-white"
+                        : done
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                    }`}
+                  >
+                    {done ? "✓" : stepNum}
+                  </div>
+                  <span
+                    className={`truncate text-[11px] font-bold ${
+                      active ? "text-[var(--brand-text)]" : "text-slate-500"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                  {idx < mobileStepLabels.length - 1 ? (
+                    <div className={`h-px flex-1 ${done ? "bg-emerald-300" : "bg-slate-200 dark:bg-slate-700"}`} />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         ) : null}
       </div>
 
@@ -609,6 +691,11 @@ export default function ExpenseForm({
           if (isMobile && !isEditing && mobileStep === 1) {
             e.preventDefault();
             if (validateStep1()) setMobileStep(2);
+            return;
+          }
+          if (isMobile && !isEditing && mobileStep === 2) {
+            e.preventDefault();
+            if (validateStep2()) setMobileStep(3);
             return;
           }
           void handleSubmit(e);
@@ -627,20 +714,8 @@ export default function ExpenseForm({
                 {step1Fields}
               </>
             ) : null}
-            {mobileStep === 2 ? (
-              <>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-[#1E293B] dark:bg-[#080C14]">
-                  <span className="font-bold">{formatMoney(numericAmount, currency)}</span>
-                  <span className="text-slate-600 dark:text-slate-300"> · {title}</span>
-                </div>
-                {chipsBlock}
-                <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold">
-                  Categoría y notas
-                  {moreOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </button>
-                {moreOpen ? extraOptions : null}
-              </>
-            ) : null}
+            {mobileStep === 2 ? chipsBlock : null}
+            {mobileStep === 3 ? mobileStepReview : null}
           </>
         ) : (
           <>
@@ -664,7 +739,7 @@ export default function ExpenseForm({
             <button
               type="button"
               onClick={() => {
-                setMobileStep(1);
+                setMobileStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
                 setError(null);
               }}
               className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold"
@@ -676,10 +751,12 @@ export default function ExpenseForm({
             {saving
               ? "Guardando..."
               : isMobile && !isEditing && mobileStep === 1
-                ? "Reparto →"
-                : isEditing
-                  ? "Guardar cambios"
-                  : "Guardar gasto"}
+                ? "Siguiente: Reparto →"
+                : isMobile && !isEditing && mobileStep === 2
+                  ? "Siguiente: Resumen →"
+                  : isEditing
+                    ? "Guardar cambios"
+                    : "Guardar gasto"}
           </button>
           {isEditing && onCancelEdit ? (
             <button type="button" onClick={onCancelEdit} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold">

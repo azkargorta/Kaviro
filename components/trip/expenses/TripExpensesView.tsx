@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import ExpenseForm from "@/components/trip/expenses/ExpenseForm";
+import MobileExpenseSheet from "@/components/trip/expenses/MobileExpenseSheet";
 import ExpenseList from "@/components/trip/expenses/ExpenseList";
 import ExpenseBalancePanel from "@/components/trip/expenses/ExpenseBalancePanel";
 import CurrencyConverterCard from "@/components/trip/expenses/CurrencyConverterCard";
@@ -654,6 +655,19 @@ export default function TripExpensesView({
         </button>
       </div>
 
+      {/* Balance compacto — móvil, visible sin scroll */}
+      {expenses.length > 0 ? (
+        <div className="md:hidden">
+          <ExpenseBalanceCompact
+            balances={balances}
+            settlements={suggestedSettlements}
+            balanceCurrency={balanceCurrency}
+            createWhatsAppLink={createWhatsAppLink}
+            onOpenAdvanced={() => openMobilePanel("balances")}
+          />
+        </div>
+      ) : null}
+
       {/* Franja de estadísticas — solo escritorio */}
       {expenses.length > 0 ? (() => {
         const currency = balanceCurrency || tripBaseCurrency || "EUR";
@@ -797,17 +811,6 @@ export default function TripExpensesView({
           {historyPanelBody}
         </div>
       ) : null}
-
-      {/* Balance compacto — solo móvil; en escritorio el panel completo está en la columna derecha */}
-      <div className="md:hidden">
-        <ExpenseBalanceCompact
-          balances={balances}
-          settlements={suggestedSettlements}
-          balanceCurrency={balanceCurrency}
-          createWhatsAppLink={createWhatsAppLink}
-          onOpenAdvanced={() => openMobilePanel("balances")}
-        />
-      </div>
 
       <div className="grid min-w-0 max-w-full gap-6 md:grid-cols-2">
         <div className="min-w-0 space-y-4">
@@ -1178,7 +1181,7 @@ export default function TripExpensesView({
         }}
         title={editingExpense?.id ? "Editar gasto" : "Nuevo gasto"}
       >
-        <ExpenseForm
+        <MobileExpenseSheet
           saving={saving}
           existingParticipants={participants}
           registeredTravelers={registeredTravelers}

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { getBudgetProgress } from "@/lib/trip-budget-progress";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import SettlementConfirmDialog from "@/components/trip/expenses/SettlementConfirmDialog";
 
 function safeCurrency(currency?: string | null) {
   const code = (currency || "EUR").toUpperCase().trim();
@@ -141,6 +142,8 @@ export default function ExpenseBalancePanel({
   const expandedPrefRef = useRef<HTMLDivElement>(null);
   const [hasPendingRecalculation, setHasPendingRecalculation] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [confirmSettlement, setConfirmSettlement] = useState<SettlementSuggestion | null>(null);
+  const [confirmingSettlement, setConfirmingSettlement] = useState(false);
 
   const methods: Array<{ id: PaymentMethod; label: string; chip: string }> = [
     { id: "bizum", label: "Bizum", chip: "bg-emerald-50 text-emerald-900 border-emerald-200" },
@@ -847,13 +850,7 @@ export default function ExpenseBalancePanel({
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        const ok = window.confirm(
-                          `¿Confirmas que ${s.debtor_name} ya pagó ${formatMoney(s.amount, s.currency || displayCurrency)} a ${s.creditor_name}?`
-                        );
-                        if (!ok) return;
-                        void onToggleSettlementStatus(s);
-                      }}
+                      onClick={() => setConfirmSettlement(s)}
                       className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-200"
                     >
                       <CheckCircle2 className="mr-1.5 inline h-4 w-4" aria-hidden />
@@ -949,6 +946,28 @@ export default function ExpenseBalancePanel({
           </>
         ) : null}
       </div>
+
+      <SettlementConfirmDialog
+        open={Boolean(confirmSettlement)}
+        debtorName={confirmSettlement?.debtor_name || ""}
+        creditorName={confirmSettlement?.creditor_name || ""}
+        amountLabel={
+          confirmSettlement
+            ? formatMoney(confirmSettlement.amount, confirmSettlement.currency || displayCurrency)
+            : ""
+        }
+        confirming={confirmingSettlement}
+        onCancel={() => {
+          if (!confirmingSettlement) setConfirmSettlement(null);
+        }}
+        onConfirm={() => {
+          if (!confirmSettlement) return;
+          setConfirmingSettlement(true);
+          void onToggleSettlementStatus(confirmSettlement)
+            .then(() => setConfirmSettlement(null))
+            .finally(() => setConfirmingSettlement(false));
+        }}
+      />
     </div>
   );
 }
