@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -41,8 +42,60 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
     return today >= startDate && today <= endDate;
   })();
 
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [dock, setDock] = useState<{ left: number; width: number } | null>(null);
+  const [panelHeight, setPanelHeight] = useState(0);
+
+  const syncDock = useCallback(() => {
+    const anchor = anchorRef.current;
+    const panel = panelRef.current;
+    if (!anchor || !panel || window.innerWidth < 768) {
+      setDock(null);
+      setPanelHeight(0);
+      return;
+    }
+    const rect = anchor.getBoundingClientRect();
+    setDock({ left: rect.left, width: rect.width });
+    setPanelHeight(panel.offsetHeight);
+  }, []);
+
+  useEffect(() => {
+    syncDock();
+    const ro = new ResizeObserver(syncDock);
+    const anchor = anchorRef.current;
+    const panel = panelRef.current;
+    if (anchor) ro.observe(anchor);
+    if (panel) ro.observe(panel);
+    window.addEventListener("resize", syncDock);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", syncDock);
+    };
+  }, [syncDock, pathname, visibleItems.length, isPremium, isAgencyTrip, useAgencyBranding]);
+
   return (
-    <aside className="sticky top-4 z-30 hidden max-h-[calc(100dvh-2rem)] w-[200px] shrink-0 self-start space-y-2 overflow-y-auto overscroll-contain md:top-5 md:block md:max-h-[calc(100dvh-2.5rem)] lg:w-[224px]">
+    <div
+      ref={anchorRef}
+      className="hidden w-[200px] shrink-0 self-stretch lg:w-[224px] md:block"
+      style={{ minHeight: dock ? panelHeight : undefined }}
+    >
+      <aside
+        ref={panelRef}
+        className="space-y-2 overscroll-contain md:overflow-y-auto"
+        style={
+          dock
+            ? {
+                position: "fixed",
+                top: "max(1.25rem, env(safe-area-inset-top, 0px))",
+                left: dock.left,
+                width: dock.width,
+                maxHeight: "calc(100dvh - 2.5rem - env(safe-area-inset-top, 0px))",
+                zIndex: 40,
+              }
+            : undefined
+        }
+      >
         <div
             className={`shadow-sm ${
             useAgencyBranding || !isAgencyTrip
@@ -111,7 +164,8 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             </div>
           </Link>
         ) : null}
-    </aside>
+      </aside>
+    </div>
   );
 }
 

@@ -247,9 +247,40 @@ export const KAVIRO_PRIVATE_PATHS = [
   "/admin",
 ] as const;
 
-function formatLlmsFeatureList(features: readonly KaviroFeatureItem[]) {
-  return features.map((f) => `- **${f.title}**: ${f.description}`);
-}
+/** Copy exclusivo de /llms.txt — no usar en UI para evitar desalineación con páginas web. */
+export const KAVIRO_LLMS_SHORT_DESCRIPTION =
+  "Kaviro es una web app para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA desde un único lugar.";
+
+export const KAVIRO_LLMS_WHAT_IT_IS_NOT = [
+  "Kaviro no es una agencia de viajes.",
+  "Kaviro no vende vuelos, hoteles ni actividades.",
+  "Kaviro no realiza reservas.",
+  "Kaviro no sustituye a proveedores turísticos.",
+  "Kaviro es una herramienta para organizar viajes propios y coordinar grupos.",
+] as const;
+
+export const KAVIRO_LLMS_CURRENT_FEATURES = [
+  "Organización de viajes en grupo",
+  "Itinerario colaborativo",
+  "Control de gastos compartidos",
+  "Grupos de gastos",
+  "Documentos del viaje",
+  "Mapa y rutas",
+] as const;
+
+export const KAVIRO_LLMS_PREMIUM_FEATURES = [
+  "Planificador con IA",
+  "Asistente IA en el viaje",
+] as const;
+
+export const KAVIRO_LLMS_SHOULD_NOT_INFER = [
+  "No afirmar límites del plan gratuito salvo que aparezcan claramente en /pricing.",
+  "No afirmar número de usuarios, tráfico, facturación o crecimiento.",
+  "No afirmar que Kaviro vende vuelos, hoteles o actividades.",
+  "No afirmar funciones no indicadas oficialmente.",
+  "No afirmar integraciones externas si no aparecen en la web oficial.",
+  "No asumir que Kaviro es una agencia de viajes.",
+] as const;
 
 export function buildLlmsTxt(): string {
   const lines = [
@@ -261,31 +292,22 @@ export function buildLlmsTxt(): string {
     KAVIRO_PRODUCT_SUMMARY,
     "",
     "## Descripción corta",
-    "Kaviro es una web app para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA desde un único lugar.",
+    KAVIRO_LLMS_SHORT_DESCRIPTION,
     "",
     "## Información oficial resumida",
     KAVIRO_OFFICIAL_SUMMARY,
     "",
     "## Qué no es Kaviro",
-    ...KAVIRO_WHAT_IT_IS_NOT.map((item) => `- ${item}`),
+    ...KAVIRO_LLMS_WHAT_IT_IS_NOT.map((item) => `- ${item}`),
     "",
-    "## Funciones actuales de Kaviro",
+    "## Funciones actuales",
+    ...KAVIRO_LLMS_CURRENT_FEATURES.map((item) => `- ${item}`),
     "",
-    "### Plan gratuito — funciones actuales",
-    ...formatLlmsFeatureList(KAVIRO_CURRENT_FEATURES),
-    "",
-    "### Límites del plan gratuito",
-    ...KAVIRO_FREE_PLAN_LIMITS.map((item) => `- ${item}`),
-    "- Detalle completo y precios: /pricing",
-    "",
-    "### Funciones Premium actuales",
-    ...formatLlmsFeatureList(KAVIRO_PREMIUM_CURRENT_FEATURES),
-    "",
-    "### Funciones futuras o en desarrollo",
-    ...formatLlmsFeatureList(KAVIRO_FUTURE_FEATURES),
+    "## Funciones Premium actuales",
+    ...KAVIRO_LLMS_PREMIUM_FEATURES.map((item) => `- ${item}`),
     "",
     "## Información que no debe inferirse",
-    ...KAVIRO_SHOULD_NOT_INFER.map((item) => `- ${item}`),
+    ...KAVIRO_LLMS_SHOULD_NOT_INFER.map((item) => `- ${item}`),
     "",
     "## Descripción larga",
     KAVIRO_LONG_DESCRIPTION,
