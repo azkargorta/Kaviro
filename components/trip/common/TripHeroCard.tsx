@@ -80,7 +80,7 @@ export default function TripHeroCard({
         className="flex items-center justify-between gap-2 px-4 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top))] max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))] md:gap-3 md:pb-2 md:pt-[max(0.75rem,env(safe-area-inset-top))]"
       >
         {!isAgencyTrip ? (
-          <TripMisViajesLink variant="hero" tour />
+          <TripMisViajesLink variant="hero" tour className="hidden md:inline-flex" />
         ) : null}
 
         {branded ? (
@@ -111,7 +111,7 @@ export default function TripHeroCard({
           </Link>
         ) : (
           !isAgencyTrip ? (
-            <span className="h-4 w-px shrink-0 bg-white/25" aria-hidden />
+            <span className="hidden h-4 w-px shrink-0 bg-white/25 md:inline" aria-hidden />
           ) : (
             <KaviroTripHeroLockup
               size="sm"
@@ -149,7 +149,9 @@ export default function TripHeroCard({
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           {!isAgencyTrip ? (
             <div className="flex items-center gap-1.5">
-              <TripHeroShareDropdown tripId={tripId} tripName={tripName} destination={destination} />
+              <span className="hidden md:inline-flex">
+                <TripHeroShareDropdown tripId={tripId} tripName={tripName} destination={destination} />
+              </span>
               <TripHeroActions tripId={tripId} />
             </div>
           ) : null}
