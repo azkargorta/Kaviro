@@ -9,6 +9,8 @@ import PricingPlansGrid from "@/components/pricing/PricingPlansGrid";
 import PricingComparisonTable from "@/components/pricing/PricingComparisonTable";
 import PricingFaqSection from "@/components/pricing/PricingFaqSection";
 import PricingBottomCta from "@/components/pricing/PricingBottomCta";
+import PricingViewTracker from "@/components/analytics/PricingViewTracker";
+import TrackPremiumLink from "@/components/analytics/TrackPremiumLink";
 import { FREE_TRIP_LIMIT } from "@/lib/premium-copy";
 import { createClient } from "@/lib/supabase/server";
 import { PREMIUM_UPGRADE_HREF, PREMIUM_UPGRADE_LOGIN_HREF } from "@/lib/auth-routes";
@@ -31,6 +33,7 @@ export default async function PricingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#080C14]">
+      <PricingViewTracker />
       <PublicMarketingHeader />
 
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
@@ -52,13 +55,14 @@ export default async function PricingPage() {
             >
               Empezar gratis
             </Link>
-            <Link
+            <TrackPremiumLink
               href={premiumHref}
+              source="pricing_hero"
               className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/15"
             >
               <Zap className="h-4 w-4" />
               Premium — {PRICING_PRICES.monthly}/mes
-            </Link>
+            </TrackPremiumLink>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import TrackPremiumLink from "@/components/analytics/TrackPremiumLink";
 import { Star } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { PRICING_PRICES } from "@/lib/pricing-public";
@@ -27,13 +28,14 @@ export default function PricingBottomCta({ premiumHref }: PricingBottomCtaProps)
           >
             Empezar gratis
           </Link>
-          <Link
+          <TrackPremiumLink
             href={premiumHref}
+            source="pricing_bottom_cta"
             className="btn-press inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl bg-[var(--brand)] px-6 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
           >
             <Star className="h-4 w-4" />
             Premium — {PRICING_PRICES.monthly}/mes
-          </Link>
+          </TrackPremiumLink>
         </div>
       </div>
     </Reveal>

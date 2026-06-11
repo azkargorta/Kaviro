@@ -11,6 +11,7 @@ import {
   isBroadDestination,
 } from "@/lib/destination-region";
 import { useToast } from "@/components/ui/toast";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import PlanActivityCard from "@/components/trip/plan/PlanActivityCard";
 import {
   ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
@@ -685,7 +686,12 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
   );
 
   async function fetchPlan() {
-    setError(null); setStep("planning");
+    setError(null);
+    setStep("planning");
+    trackEvent(ANALYTICS_EVENTS.AI_PLANNER_STARTED, {
+      destinations: effectiveDestinations.length,
+      total_days: totalDays,
+    });
     try {
       const res = await fetch("/api/trips/ai-planner/generate", {
         method: "POST",
@@ -743,8 +749,20 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           "El itinerario quedó vacío. Prueba de nuevo o añade una ciudad base más grande cerca (ej. Gijón si vas a Llanes)."
         );
       }
-      setDraft(draftData); setConfirmedStays(stays); setExpandedDays(new Set([1])); setStep("preview");
-      if (!chatMessages.length) setChatMessages([{ role: "assistant", text: `He generado un itinerario de ${draftData.totalDays} días con lugares reales. ¿Quieres ajustar algo?` }]);
+      setDraft(draftData);
+      setConfirmedStays(stays);
+      setExpandedDays(new Set([1]));
+      setStep("preview");
+      trackEvent(ANALYTICS_EVENTS.AI_PLANNER_COMPLETED, {
+        total_days: draftData.totalDays,
+        activity_count: activityCount,
+        destinations: effectiveDestinations.length,
+      });
+      if (!chatMessages.length) {
+        setChatMessages([
+          { role: "assistant", text: `He generado un itinerario de ${draftData.totalDays} días con lugares reales. ¿Quieres ajustar algo?` },
+        ]);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "No se pudo generar el itinerario.";
       setError(msg);
@@ -784,6 +802,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       if (!createRes.ok) throw new Error(createPayload?.error || "No se pudo crear el viaje.");
       const tripId = String(createPayload?.tripId || "");
       if (!tripId) throw new Error("No se pudo crear el viaje.");
+      trackEvent(ANALYTICS_EVENTS.TRIP_CREATED, { trip_id: tripId, source: "ai_planner" });
       for (const k of CATEGORY_KINDS) {
         await fetch("/api/trip-activity-kinds", {
           method: "POST",

@@ -23,6 +23,7 @@ import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
 import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
 import TripWelcomeBanner from "@/components/trip/TripWelcomeBanner";
 import TripSectionHintHost from "@/components/trip/TripSectionHintHost";
+import TripOpenedTracker from "@/components/analytics/TripOpenedTracker";
 
 const TripPageAssistantDock = dynamic(
   () => import("@/components/trip/ai/TripPageAssistantDock"),
@@ -94,6 +95,11 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
     <TripBoardHeaderProvider>
       <TripWorkspaceProvider tripId={params.id} meta={displayWorkspace}>
         <TripDemoProvider isDemo={isDemo}>
+          <TripOpenedTracker
+            tripId={params.id}
+            tripMode={displayWorkspace.tripMode}
+            isDemo={isDemo}
+          />
           <LoggedInRoutePrefetch />
           <TripAgencyRouteGuard />
           <TripOfflineSync tripId={params.id} />

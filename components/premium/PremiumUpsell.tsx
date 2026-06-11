@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import TrackPremiumLink from "@/components/analytics/TrackPremiumLink";
 import {
   PREMIUM_FEATURE_COPY,
   PREMIUM_UPGRADE_HREF,
@@ -38,12 +39,13 @@ export default function PremiumUpsell({
         <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{tripPremiumCoopHint()}</p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Link
+        <TrackPremiumLink
           href={PREMIUM_UPGRADE_HREF}
+          source={`upsell_${feature}`}
           className="inline-flex min-h-[40px] items-center justify-center rounded-2xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
         >
           Mejorar a Premium
-        </Link>
+        </TrackPremiumLink>
         {secondaryHref && secondaryLabel ? (
           <Link
             href={secondaryHref}

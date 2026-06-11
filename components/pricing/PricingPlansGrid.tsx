@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import TrackPremiumLink from "@/components/analytics/TrackPremiumLink";
 import { Check, Zap, ArrowRight, Lock } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import {
@@ -89,14 +90,15 @@ export default function PricingPlansGrid({ premiumHref }: PricingPlansGridProps)
             ))}
           </ul>
           <div className="mt-8 flex flex-col gap-2.5">
-            <Link
+            <TrackPremiumLink
               href={premiumHref}
+              source="pricing_plans_grid"
               className="btn-press flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[var(--brand)] text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
             >
               <Zap className="h-4 w-4" />
               Hazte Premium
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </TrackPremiumLink>
             <p className="text-center text-xs text-slate-400">
               <Lock className="mr-1 inline h-3 w-3" />
               Cancela cuando quieras · Pago seguro con Stripe

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import TripPlacesFields from "@/components/dashboard/TripPlacesFields";
@@ -125,6 +126,12 @@ export default function CreateTripForm({
       }
       const newTripId = String(payload?.tripId || "");
       if (!newTripId) throw new Error("No se pudo crear el viaje (sin id).");
+
+      if (creationMode === "expenses") {
+        trackEvent(ANALYTICS_EVENTS.EXPENSE_GROUP_CREATED, { trip_id: newTripId });
+      } else {
+        trackEvent(ANALYTICS_EVENTS.TRIP_CREATED, { trip_id: newTripId, source: "dashboard_form" });
+      }
 
       setName("");
       setPlaces([""]);
