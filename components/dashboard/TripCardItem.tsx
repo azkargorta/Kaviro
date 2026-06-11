@@ -159,46 +159,42 @@ export default function TripCardItem({
   return (
     <>
       <article
-        className={`group flex flex-col rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
-          locked ? "opacity-80" : "cursor-pointer"
-        } ${compact ? "p-3" : "p-4"}`}
-        onClick={openTrip}
-        onKeyDown={(e) => {
-          if (locked || editOpen || duplicateOpen) return;
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            openTrip();
-          }
-        }}
-        role={locked ? undefined : "button"}
-        tabIndex={locked ? -1 : 0}
+        className={`group flex flex-col rounded-xl border border-slate-200/90 bg-white transition hover:border-slate-300 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
+          locked ? "opacity-80" : ""
+        } ${compact ? "p-3" : "p-3.5"}`}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <TripStatusBadge badge={badge} />
               {locked ? (
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Premium</span>
+                <span className="text-[10px] font-medium text-slate-400">Premium</span>
               ) : countdown ? (
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{countdown}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">{countdown}</span>
               ) : null}
             </div>
             <h3
-              className={`mt-2 font-semibold leading-snug tracking-tight text-slate-900 dark:text-white ${
-                compact ? "line-clamp-1 text-sm" : "line-clamp-2 text-base"
+              className={`mt-1.5 font-semibold leading-snug tracking-tight text-slate-900 dark:text-white ${
+                compact ? "line-clamp-1 text-sm" : "line-clamp-2 text-[15px]"
               }`}
               title={trip.name}
             >
               {trip.name}
             </h3>
             {isExpenseGroup ? (
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <Receipt className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                Grupo de gastos
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                <Receipt className="h-3 w-3 shrink-0" aria-hidden />
+                Gastos compartidos
               </p>
             ) : trip.destination ? (
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{trip.destination}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{trip.destination}</p>
             ) : null}
+            <p className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+              <Calendar className="h-3 w-3 shrink-0" aria-hidden />
+              {formatRangeShort(trip.start_date, trip.end_date)}
+              <span className="text-slate-300 dark:text-slate-600">·</span>
+              {(trip.base_currency || "EUR").toUpperCase()}
+            </p>
           </div>
 
           {!isDemo ? (
@@ -209,36 +205,25 @@ export default function TripCardItem({
                 void handleToggleFavorite();
               }}
               disabled={favoriteLoading}
-              className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-amber-500 disabled:opacity-60 dark:hover:bg-[#1E293B]"
+              className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-amber-500 disabled:opacity-60 dark:hover:bg-[#1E293B]"
               title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
               aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
             >
               <Star
-                className={`h-4 w-4 ${isFavorite ? "fill-amber-400 text-amber-400" : ""}`}
+                className={`h-3.5 w-3.5 ${isFavorite ? "fill-amber-400 text-amber-400" : ""}`}
               />
             </button>
           ) : null}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-          <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 font-medium dark:bg-[#1E293B]">
-            <Calendar className="h-3 w-3" aria-hidden />
-            {formatRangeShort(trip.start_date, trip.end_date)}
-          </span>
-          <span className="rounded-md bg-slate-50 px-2 py-1 font-medium dark:bg-[#1E293B]">
-            {(trip.base_currency || "EUR").toUpperCase()}
-          </span>
-        </div>
-
         {timelineProgress !== null && badge === "En curso" && (
-          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-            <div className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+          <div className="mt-2.5">
+            <div className="h-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
               <div
                 className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-500"
                 style={{ width: `${timelineProgress}%` }}
               />
             </div>
-            <p className="mt-1 text-right text-[10px] text-slate-400">{timelineProgress}% del viaje</p>
           </div>
         )}
 
@@ -259,10 +244,7 @@ export default function TripCardItem({
           </div>
         )}
 
-        <div
-          className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="mt-2.5 flex items-center justify-between gap-2 pt-2">
           {isDemo ? (
             <span className="text-[11px] font-medium text-slate-400">Viaje de práctica</span>
           ) : (
@@ -318,10 +300,14 @@ export default function TripCardItem({
             type="button"
             onClick={openTrip}
             disabled={locked}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--brand-hover)] disabled:opacity-50"
+            className={`ml-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
+              badge === "En curso" && !locked
+                ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
+                : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:border-slate-600"
+            }`}
           >
             {locked ? "Premium" : "Abrir"}
-            {!locked && <ArrowRight className="h-4 w-4" />}
+            {!locked && <ArrowRight className="h-3.5 w-3.5" />}
           </button>
         </div>
       </article>

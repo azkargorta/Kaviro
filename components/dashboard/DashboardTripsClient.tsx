@@ -30,7 +30,7 @@ import { useRouter } from "next/navigation";
 type Trip = DashboardTrip;
 type FavoriteTrip = Trip & { badge: string; accent: string; is_favorite: true };
 type TripWithMeta = Trip & { badge: string; accent: string };
-type Filter = "all" | "upcoming" | "past" | "favorites" | "expenses";
+type Filter = "all" | "current" | "upcoming" | "past" | "favorites" | "expenses";
 type ViewMode = "grid" | "list";
 
 const ACCENT_CURRENT = DASHBOARD_TRIP_BADGE_ACCENTS.current;
@@ -156,9 +156,27 @@ function TripListRow({
 
       <TripStatusBadge badge={badge} className="hidden shrink-0 sm:inline-flex" />
 
-      <span className="shrink-0 text-slate-400 transition group-hover:text-[var(--brand)] dark:text-slate-500">
-        <ArrowRight className="h-4 w-4" aria-hidden />
-      </span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (locked) return;
+          router.push(
+            isExpenseGroup
+              ? `/trip/${encodeURIComponent(trip.id)}/summary`
+              : `/trip/${encodeURIComponent(trip.id)}`
+          );
+        }}
+        disabled={locked}
+        className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+          isActive && !locked
+            ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
+            : "border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600"
+        }`}
+      >
+        Abrir
+        <ArrowRight className="h-3 w-3" aria-hidden />
+      </button>
     </div>
   );
 }
@@ -174,7 +192,7 @@ function TripGrid({
 }) {
   if (!trips.length) return null;
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {trips.map((trip) => (
         <TripCardItem
           key={trip.id}
@@ -289,26 +307,35 @@ export default function DashboardTripsClient({
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const travelCount = current.length + future.length + past.length + unscheduled.length;
-  const totalTrips = travelCount + (showExpenseGroupsSection ? expenseGroups.length : 0);
 
-  const allWithMeta = useMemo<TripWithMeta[]>(
+  const travelWithMeta = useMemo<TripWithMeta[]>(
     () => [
       ...current.map((t) => ({ ...t, badge: "En curso", accent: ACCENT_CURRENT })),
       ...future.map((t) => ({ ...t, badge: "Próximo", accent: ACCENT_FUTURE })),
       ...past.map((t) => ({ ...t, badge: "Finalizado", accent: ACCENT_PAST })),
       ...unscheduled.map((t) => ({ ...t, badge: "Pendiente", accent: ACCENT_UNSCHED })),
-      ...(showExpenseGroupsSection
+    ],
+    [current, future, past, unscheduled]
+  );
+
+  const expenseWithMeta = useMemo<TripWithMeta[]>(
+    () =>
+      showExpenseGroupsSection
         ? expenseGroups.map((t) => ({
             ...t,
             badge: "Grupo de gastos",
             accent: DASHBOARD_TRIP_BADGE_ACCENTS.expenseGroup,
           }))
-        : []),
-    ],
-    [current, future, past, unscheduled, expenseGroups, showExpenseGroupsSection]
+        : [],
+    [expenseGroups, showExpenseGroupsSection]
+  );
+
+  const allWithMeta = useMemo<TripWithMeta[]>(
+    () => [...travelWithMeta, ...expenseWithMeta],
+    [travelWithMeta, expenseWithMeta]
   );
 
   const matchesQuery = useCallback(
@@ -335,22 +362,31 @@ export default function DashboardTripsClient({
   );
 
   const pool: TripWithMeta[] = useMemo(() => {
-    if (filter === "expenses") return allWithMeta.filter((t) => isExpenseGroupTrip(t));
+    if (filter === "expenses") return expenseWithMeta;
     if (filter === "favorites") return allWithMeta.filter((t) => favoriteIds.has(t.id));
+    if (filter === "current")
+      return excludeHero(travelWithMeta.filter((t) => current.some((c) => c.id === t.id)));
     if (filter === "upcoming")
       return excludeHero(
-        allWithMeta.filter(
-          (t) =>
-            !isExpenseGroupTrip(t) &&
-            (future.some((f) => f.id === t.id) || unscheduled.some((u) => u.id === t.id))
+        travelWithMeta.filter(
+          (t) => future.some((f) => f.id === t.id) || unscheduled.some((u) => u.id === t.id)
         )
       );
     if (filter === "past")
-      return excludeHero(
-        allWithMeta.filter((t) => !isExpenseGroupTrip(t) && past.some((p) => p.id === t.id))
-      );
-    return excludeHero(allWithMeta);
-  }, [filter, allWithMeta, favoriteIds, future, unscheduled, past, excludeHero]);
+      return excludeHero(travelWithMeta.filter((t) => past.some((p) => p.id === t.id)));
+    return excludeHero(travelWithMeta);
+  }, [
+    filter,
+    allWithMeta,
+    travelWithMeta,
+    expenseWithMeta,
+    favoriteIds,
+    future,
+    unscheduled,
+    past,
+    current,
+    excludeHero,
+  ]);
 
   const results = pool.filter(matchesQuery);
   const isSearching = query.trim() !== "";
@@ -379,7 +415,8 @@ export default function DashboardTripsClient({
   const showSections = filter === "all" && !isSearching;
 
   const tabs: { key: Filter; label: string; count: number }[] = [
-    { key: "all", label: "Todos", count: totalTrips },
+    { key: "all", label: "Todos", count: travelCount },
+    { key: "current", label: "En curso", count: current.length },
     { key: "upcoming", label: "Próximos", count: future.length + unscheduled.length },
     { key: "past", label: "Pasados", count: past.length },
   ];
@@ -388,10 +425,17 @@ export default function DashboardTripsClient({
   if (showExpenseGroupsSection && expenseGroups.length > 0)
     tabs.push({ key: "expenses", label: "Gastos", count: expenseGroups.length });
 
-  const viewToggleClass = (active: boolean) =>
-    `inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
+  const tabClass = (active: boolean) =>
+    `inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition sm:px-3 ${
       active
-        ? "bg-white text-slate-900 shadow-sm dark:bg-[#1E293B] dark:text-white"
+        ? "bg-[var(--brand)] text-white shadow-sm"
+        : "text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#1E293B] dark:hover:text-slate-200"
+    }`;
+
+  const viewToggleClass = (active: boolean) =>
+    `inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+      active
+        ? "bg-[var(--brand)] text-white shadow-sm"
         : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
     }`;
 
@@ -406,6 +450,7 @@ export default function DashboardTripsClient({
         />
 
         {/* Toolbar: búsqueda + tabs + toggle vista */}
+        <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white p-3 dark:border-[#1E293B] dark:bg-[#0F1623] sm:p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {/* Búsqueda */}
           <div className="relative min-w-0 flex-1 sm:max-w-sm">
@@ -415,7 +460,7 @@ export default function DashboardTripsClient({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar viaje o destino…"
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[var(--brand)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-border)] dark:border-slate-700 dark:bg-[#0f1623] dark:text-slate-100"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-9 text-sm text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-200 dark:border-slate-700 dark:bg-[#080C14] dark:text-slate-100 dark:focus:border-slate-600 dark:focus:ring-slate-700"
             />
             {query ? (
               <button
@@ -432,7 +477,7 @@ export default function DashboardTripsClient({
           {/* Tabs + toggle vista */}
           <div className="flex items-center gap-2">
             <div
-              className="inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-[#0F1623]"
+              className="inline-flex max-w-full flex-wrap gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-[#080C14]"
               role="tablist"
               aria-label="Filtrar viajes"
             >
@@ -443,20 +488,22 @@ export default function DashboardTripsClient({
                   role="tab"
                   aria-selected={filter === tab.key}
                   onClick={() => setFilter(tab.key)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    filter === tab.key
-                      ? "bg-white text-slate-900 shadow-sm dark:bg-[#1E293B] dark:text-white"
-                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-                  }`}
+                  className={tabClass(filter === tab.key)}
                 >
                   {tab.label}
-                  <span className="text-[10px] font-bold text-slate-400">{tab.count}</span>
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      filter === tab.key ? "text-white/80" : "text-slate-400"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
                 </button>
               ))}
             </div>
 
             {/* Toggle grid / lista */}
-            <div className="inline-flex items-center gap-0.5 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-[#0F1623]">
+            <div className="inline-flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-[#080C14]">
               <button
                 type="button"
                 aria-label="Vista en cuadrícula"
@@ -476,6 +523,7 @@ export default function DashboardTripsClient({
             </div>
           </div>
         </div>
+        </div>
 
         {/* Contador búsqueda */}
         {isSearching && (
@@ -491,17 +539,20 @@ export default function DashboardTripsClient({
         )}
 
         {/* Contenido principal */}
-        {totalTrips === 0 ? (
+        {travelCount === 0 && expenseWithMeta.length === 0 ? (
           <DashboardEmptyState />
-        ) : results.length === 0 && isSearching ? (
+        ) : results.length === 0 && (isSearching || filter !== "all") ? (
           <div className="rounded-xl border border-dashed border-slate-200 px-6 py-10 text-center dark:border-slate-700">
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Sin resultados</p>
             <button
               type="button"
-              onClick={() => setQuery("")}
-              className="mt-3 text-xs font-semibold text-[var(--brand)] hover:underline"
+              onClick={() => {
+                setQuery("");
+                setFilter("all");
+              }}
+              className="mt-3 text-xs font-semibold text-slate-600 hover:underline dark:text-slate-400"
             >
-              Borrar búsqueda
+              {isSearching ? "Borrar búsqueda" : "Ver todos los viajes"}
             </button>
           </div>
         ) : showSections ? (
@@ -541,27 +592,6 @@ export default function DashboardTripsClient({
           <TripGrid trips={results} lockedTripIds={lockedTripIds} />
         )}
 
-        {/* Pie: CTA discretos */}
-        {totalTrips > 0 && !isSearching ? (
-          <p className="text-center text-xs text-slate-400">
-            ¿Nuevo destino?{" "}
-            <button
-              type="button"
-              onClick={() => openCreateTripForm()}
-              className="font-semibold text-[var(--brand)] hover:underline"
-            >
-              Crear viaje
-            </button>
-            {" · "}
-            <Link
-              href="/trips/new/planner"
-              className="font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            >
-              Planificar con IA
-              <ArrowRight className="ml-0.5 inline h-3 w-3" />
-            </Link>
-          </p>
-        ) : null}
       </div>
     </DashboardAnnouncementUnreadProvider>
   );

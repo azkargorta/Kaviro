@@ -297,7 +297,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const hasTrips = realTrips.length > 0;
 
   return (
-    <main className="page-shell page-shell--fluid space-y-6 pb-8 md:space-y-8 md:pb-10">
+    <main className="page-shell page-shell--fluid space-y-5 pb-8 md:space-y-6 md:pb-10">
       <DashboardOfflineRegistry
         trips={allRealTrips.map((t) => ({
           id: t.id,
@@ -312,9 +312,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       <DashboardTripInvitesInbox />
 
-      {hasTrips ? <DashboardContinueTrip trips={allRealTrips} /> : null}
-
-      <DashboardCreateRow disabled={!isPremium && realTrips.length >= FREE_TRIP_LIMIT} />
+      <section className="space-y-3" aria-label="Acceso principal">
+        {hasTrips ? <DashboardContinueTrip trips={allRealTrips} /> : null}
+        <DashboardCreateRow disabled={!isPremium && realTrips.length >= FREE_TRIP_LIMIT} />
+      </section>
 
       <DashboardTripsClient
         current={current}

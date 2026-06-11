@@ -14,7 +14,7 @@ export function tripStatusBadgeTone(badge: string): "active" | "upcoming" | "pas
 
 const TONE_CLASS: Record<ReturnType<typeof tripStatusBadgeTone>, string> = {
   active:
-    "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[var(--brand-border)] dark:bg-[var(--brand)]/15 dark:text-[var(--brand-light)]",
+    "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80 dark:bg-slate-800/80 dark:text-slate-200 dark:ring-slate-700",
   upcoming: "bg-slate-100 text-slate-600 ring-1 ring-slate-200/80 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700",
   past: "bg-slate-50 text-slate-400 ring-1 ring-slate-200/60 dark:bg-slate-900/60 dark:text-slate-500 dark:ring-slate-800",
   pending: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80 dark:bg-amber-950/30 dark:text-amber-200 dark:ring-amber-800/40",

@@ -43,7 +43,7 @@ export default function DashboardFavoriteChips({
           <Link
             key={trip.id}
             href={`/trip/${encodeURIComponent(trip.id)}`}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-100 dark:hover:border-slate-600"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:border-slate-600"
           >
             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
             <span className="max-w-[10rem] truncate">{trip.name}</span>

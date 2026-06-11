@@ -38,10 +38,12 @@ export default function DashboardRootBarPanel({ variant = "stacked", neutral = f
       className={
         isInline
           ? "relative min-w-0 flex-1 px-1"
-          : "relative z-0 border-t border-white/10 pb-5 pt-4"
+          : neutral
+            ? "relative z-0 pb-4 pt-1"
+            : "relative z-0 border-t border-white/10 pb-5 pt-4"
       }
     >
-      {!isInline ? (
+      {!isInline && !neutral ? (
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <span
             className="absolute -right-10 -top-10 h-40 w-40 rounded-full"

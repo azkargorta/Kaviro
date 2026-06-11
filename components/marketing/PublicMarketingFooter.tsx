@@ -18,6 +18,18 @@ export default function PublicMarketingFooter() {
           <Link href="/pricing" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Precios
           </Link>
+          <Link href="/organizador-viajes" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+            Organizador
+          </Link>
+          <Link href="/control-gastos-viaje" className="hidden text-slate-500 transition hover:text-slate-900 sm:inline dark:text-slate-400 dark:hover:text-white">
+            Gastos
+          </Link>
+          <Link href="/itinerario-viaje" className="hidden text-slate-500 transition hover:text-slate-900 md:inline dark:text-slate-400 dark:hover:text-white">
+            Itinerario
+          </Link>
+          <Link href="/planificador-viajes-ia" className="hidden text-slate-500 transition hover:text-slate-900 lg:inline dark:text-slate-400 dark:hover:text-white">
+            Planificador IA
+          </Link>
           <Link href="/privacy" className="text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
             Privacidad
           </Link>

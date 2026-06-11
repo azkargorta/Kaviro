@@ -76,59 +76,51 @@ export default function RootTopBar() {
 
   const HEADER_GRADIENT = "linear-gradient(90deg, #F87171 0%, #EF4444 50%, #DC2626 100%)";
 
-  const logoLink = (
+  const logoLink = (variant: "light" | "dark" = "light") => (
     <Link
       href="/dashboard"
-      className="shrink-0 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
+      className={`shrink-0 outline-none transition hover:opacity-90 focus-visible:ring-2 ${
+        variant === "light" ? "focus-visible:ring-white/50" : "focus-visible:ring-[var(--brand)]/40"
+      }`}
       aria-label="Ir al panel de viajes"
     >
-      <KaviroLogo variant="light" size="md" withWordmark />
+      <KaviroLogo variant={variant} size="md" withWordmark />
     </Link>
   );
 
   return (
     <div className="sticky top-0 z-50 overflow-visible pt-safe">
-      <div
-        className="root-header relative overflow-visible shadow-sm"
-        style={{ background: HEADER_GRADIENT }}
-      >
-        <div className="mx-auto max-w-[1200px] px-safe-inline sm:pl-6 sm:pr-6">
-          {isDashboardHome ? (
-            <>
-              <div className="md:hidden">
-                <div className="flex items-center justify-between gap-3 py-3">
-                  <Link
-                    href="/dashboard"
-                    className="min-w-0 shrink outline-none transition hover:opacity-90"
-                    aria-label="Ir al panel de viajes"
-                  >
-                    <KaviroLogo variant="light" size="md" withWordmark />
-                  </Link>
-                  <HeaderActions session={session} isDashboardHome heroMode />
-                </div>
-                <DashboardRootBarPanel variant="stacked" />
+      {isDashboardHome ? (
+        <div className="root-header relative overflow-visible border-b border-slate-200/80 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#080C14]">
+          <div className="mx-auto max-w-[1200px] px-safe-inline sm:pl-6 sm:pr-6">
+            <div className="md:hidden">
+              <div className="flex items-center justify-between gap-3 py-3">
+                {logoLink("dark")}
+                <HeaderActions session={session} isDashboardHome={false} heroMode={false} />
               </div>
+              <DashboardRootBarPanel variant="stacked" neutral />
+            </div>
 
-              <div className="hidden items-center gap-3 py-2.5 md:flex lg:gap-4">
-                {logoLink}
-                <DashboardRootBarPanel variant="inline" />
-                <HeaderActions session={session} isDashboardHome heroMode />
-              </div>
-            </>
-          ) : (
+            <div className="hidden items-center gap-3 py-2.5 md:flex lg:gap-4">
+              {logoLink("dark")}
+              <DashboardRootBarPanel variant="inline" neutral />
+              <HeaderActions session={session} isDashboardHome={false} heroMode={false} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="root-header relative overflow-visible shadow-sm"
+          style={{ background: HEADER_GRADIENT }}
+        >
+          <div className="mx-auto max-w-[1200px] px-safe-inline sm:pl-6 sm:pr-6">
             <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
-              <Link
-                href="/dashboard"
-                className="min-w-0 shrink outline-none ring-white/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/50"
-                aria-label="Ir al panel de viajes"
-              >
-                <KaviroLogo variant="light" size="md" withWordmark />
-              </Link>
+              {logoLink("light")}
               <HeaderActions session={session} isDashboardHome={false} heroMode />
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
