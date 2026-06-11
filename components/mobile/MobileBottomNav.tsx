@@ -34,7 +34,7 @@ type Props = {
   newParticipantCount?: number;
 };
 
-const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "map", "expenses"];
+const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "expenses", "participants"];
 const EXPENSES_GROUP_PRIMARY_KEYS: TripTabKey[] = ["summary", "expenses", "participants"];
 const AGENCY_PRIMARY_KEYS: TripTabKey[] = ["plan", "map", "resources"];
 
@@ -49,7 +49,7 @@ const SECONDARY_META: Record<
   resources: { label: "Documentos", icon: <FileText className="h-5 w-5" /> },
   settings: { label: "Ajustes", icon: <Settings className="h-5 w-5" /> },
   announcements: { label: "Avisos", icon: <Megaphone className="h-5 w-5" /> },
-  chat: { label: "IA", icon: <Sparkles className="h-5 w-5" /> },
+  chat: { label: "Asistente", icon: <Sparkles className="h-5 w-5" /> },
   today: { label: "Hoy", icon: <CalendarDays className="h-5 w-5" /> },
   recap: { label: "Recap", icon: <Star className="h-5 w-5" /> },
   expenses: { label: "Gastos", icon: <Star className="h-5 w-5" /> },

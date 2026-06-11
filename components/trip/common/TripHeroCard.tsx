@@ -55,7 +55,7 @@ export default function TripHeroCard({
     ? agencyBrandedHeroGradientDiagonal(agencyBranding.brandColor)
     : isAgencyTrip
       ? agencyHeroGradient
-      : "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%)";
+      : "linear-gradient(135deg, #F87171 0%, #EF4444 60%, #B91C1C 100%)";
 
   return (
     <div
@@ -140,6 +140,7 @@ export default function TripHeroCard({
             className={`truncate leading-tight text-white ${
               isAgencyTrip ? "text-lg font-semibold sm:text-xl" : "text-lg font-black sm:text-xl"
             }`}
+            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.30)" }}
           >
             {tripName}
           </h1>
