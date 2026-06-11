@@ -42,8 +42,8 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
   })();
 
   return (
-    <aside className="hidden md:block w-[200px] lg:w-[224px] shrink-0">
-      <div className="sticky top-4 space-y-2">
+    <aside className="hidden md:block w-[200px] shrink-0 self-start lg:w-[224px]">
+      <div className="sticky top-5 z-20 max-h-[calc(100vh-2.5rem)] space-y-2 overflow-y-auto overscroll-contain">
         <div
             className={`shadow-sm ${
             useAgencyBranding || !isAgencyTrip
@@ -148,18 +148,24 @@ function SidebarLink({
         ${
           active
             ? useAgencyBranding || isAI
-              ? "bg-[var(--brand)] text-white shadow-md"
+              ? "bg-[var(--brand)] text-white shadow-sm"
               : isAgencyTrip
                 ? "bg-[#1e3a5f] text-white shadow-sm"
-                : "bg-gradient-to-r from-slate-900 to-slate-800 shadow-md dark:from-[#F87171] dark:to-[#EF4444]"
-            : "hover:bg-slate-50 dark:hover:bg-slate-800"
+                : "border border-slate-200/80 border-l-2 border-l-[var(--brand)] bg-slate-50 text-slate-900 shadow-sm dark:border-[#334155] dark:bg-[#1E293B] dark:text-white"
+            : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
         }
       `}
     >
       <span
         className={`
           relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md
-          ${active ? "bg-white/15 ring-1 ring-white/20" : "bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-600"}
+          ${
+            active
+              ? useAgencyBranding || isAI || isAgencyTrip
+                ? "bg-white/15 ring-1 ring-white/20"
+                : "bg-white ring-1 ring-slate-200 dark:bg-[#0F1623] dark:ring-slate-600"
+              : "bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-600"
+          }
         `}
         aria-hidden
       >
@@ -170,21 +176,35 @@ function SidebarLink({
           height={28}
           sizes="28px"
           className={`h-7 w-7 object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""} ${
-            active ? "brightness-[2] saturate-0" : isAgencyTrip ? "opacity-80" : ""
+            active && (useAgencyBranding || isAI || isAgencyTrip)
+              ? "brightness-[2] saturate-0"
+              : isAgencyTrip
+                ? "opacity-80"
+                : ""
           }`}
         />
       </span>
 
       <div className="min-w-0 flex-1">
         <p
-          className={`text-[13px] font-semibold leading-snug truncate ${active ? "text-white" : "text-slate-900 dark:text-slate-100"}`}
+          className={`text-[13px] font-semibold leading-snug truncate ${
+            active
+              ? useAgencyBranding || isAI || isAgencyTrip
+                ? "text-white"
+                : "text-slate-900 dark:text-white"
+              : "text-slate-900 dark:text-slate-100"
+          }`}
         >
           {item.label}
         </p>
         {item.sublabel ? (
           <p
             className={`mt-0.5 truncate text-[10px] font-medium leading-snug ${
-              active ? "text-white/80" : "text-slate-500"
+              active
+                ? useAgencyBranding || isAI || isAgencyTrip
+                  ? "text-white/80"
+                  : "text-slate-500 dark:text-slate-400"
+                : "text-slate-500"
             }`}
           >
             {item.sublabel}

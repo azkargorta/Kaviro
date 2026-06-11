@@ -152,7 +152,7 @@ export default function TripTodayClient({
             {currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
-        <h1 className="text-2xl font-extrabold capitalize text-white md:text-[var(--text-primary)]">
+        <h1 className="text-2xl font-bold capitalize tracking-tight text-white md:text-[var(--text-primary)]">
           {formatDate(today)}
         </h1>
         {destination ? (
@@ -178,18 +178,29 @@ export default function TripTodayClient({
       {currentActivity ? (
         <Reveal
           variant="scale"
-          className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5 md:mx-0 md:mt-0"
+          className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5 md:mx-0 md:mt-0 md:rounded-2xl md:border md:border-slate-200 md:bg-white md:p-5 md:shadow-sm dark:md:border-[#1E293B] dark:md:bg-[#0F1623]"
         >
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/70">Ahora mismo</p>
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/70 md:text-slate-500 dark:md:text-slate-400">
+            <span className="hidden h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--brand)] md:inline" aria-hidden />
+            Ahora mismo
+          </p>
           <div className="flex items-start gap-3">
-            <span className="shrink-0 text-3xl">{kindMeta(currentActivity.activity_kind).icon}</span>
+            <span className="shrink-0 text-3xl md:flex md:h-11 md:w-11 md:items-center md:justify-center md:rounded-xl md:bg-slate-50 md:text-2xl dark:md:bg-[#1E293B]">
+              {kindMeta(currentActivity.activity_kind).icon}
+            </span>
             <div className="min-w-0 flex-1">
-              <p className="text-lg font-extrabold leading-tight">{currentActivity.title}</p>
+              <p className="text-lg font-extrabold leading-tight text-white md:text-slate-900 dark:md:text-white">
+                {currentActivity.title}
+              </p>
               {currentActivity.place_name ? (
-                <p className="mt-0.5 text-sm text-white/70">{currentActivity.place_name}</p>
+                <p className="mt-0.5 text-sm text-white/70 md:text-slate-600 dark:md:text-slate-300">
+                  {currentActivity.place_name}
+                </p>
               ) : null}
               {currentActivity.description ? (
-                <p className="mt-1 line-clamp-2 text-xs text-white/70">{currentActivity.description}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-white/70 md:text-slate-500 dark:md:text-slate-400">
+                  {currentActivity.description}
+                </p>
               ) : null}
             </div>
           </div>
@@ -198,7 +209,7 @@ export default function TripTodayClient({
               href={buildGmapsUrl(currentActivity)!}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-4 py-3 text-sm font-bold transition hover:bg-white/30"
+              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/30 md:rounded-lg md:bg-[var(--brand)] md:px-4 md:py-2.5 md:text-sm md:font-semibold md:hover:bg-[var(--brand-hover)]"
             >
               <Navigation className="h-4 w-4" />
               Cómo llegar
@@ -267,15 +278,17 @@ export default function TripTodayClient({
                   key={a.id}
                   className={`motion-stagger-item flex items-center gap-3 px-4 py-3 ${
                     isCurrent
-                      ? "bg-violet-900/30 md:bg-[var(--brand-light)]"
+                      ? "bg-violet-900/30 md:border-l-2 md:border-l-[var(--brand)] md:bg-slate-50 dark:md:bg-[#141c2b]"
                       : ""
-                  } ${isPast && !isCurrent ? "opacity-50" : ""}`}
+                  } ${isPast && !isCurrent ? "opacity-50 md:opacity-60" : ""}`}
                 >
                   <span className={`shrink-0 text-xl ${isPast && !isCurrent ? "grayscale" : ""}`}>{meta.icon}</span>
                   <div className="min-w-0 flex-1">
                     <p
                       className={`truncate text-sm font-semibold ${
-                        isCurrent ? "text-violet-200 md:text-[var(--brand-text)]" : "md:text-[var(--text-primary)]"
+                        isCurrent
+                          ? "text-violet-200 md:text-slate-900 dark:md:text-white"
+                          : "text-white md:text-[var(--text-primary)]"
                       }`}
                     >
                       {a.title}

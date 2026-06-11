@@ -127,7 +127,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                 />
               </div>
 
-              <div className="min-w-0 md:grid md:grid-cols-[200px_1fr] lg:grid-cols-[230px_1fr] xl:grid-cols-[260px_1fr] md:gap-4 xl:gap-6">
+              <div className="min-w-0 md:grid md:grid-cols-[200px_1fr] md:items-start lg:grid-cols-[230px_1fr] xl:grid-cols-[260px_1fr] md:gap-4 xl:gap-6">
                 <DesktopTripSidebar
                   tripId={params.id}
                   isPremium={isPremium}
