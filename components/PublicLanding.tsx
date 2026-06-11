@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import KaviroOfficialBrandBanner from "@/components/marketing/KaviroOfficialBrandBanner";
 import PublicMarketingHeader from "@/components/marketing/PublicMarketingHeader";
 import PublicMarketingFooter from "@/components/marketing/PublicMarketingFooter";
 import Reveal from "@/components/ui/Reveal";
@@ -83,8 +84,8 @@ function Testimonial({ text, name, trip }: { text: string; name: string; trip: s
 const FEATURES = [
   { icon: CalendarDays, color: "bg-[#F87171]", title: "Plan día a día", desc: "Arrastra y ordena actividades. Añade horas, lugares y notas. Exporta a PDF o calendario." },
   { icon: MapPinned, color: "bg-emerald-500", title: "Rutas en el mapa", desc: "Conecta tus paradas sobre el mapa. Calcula distancias y tiempos de desplazamiento." },
-  { icon: Wallet, color: "bg-amber-500", title: "Gastos del grupo", desc: "Registra tickets, divide por persona y calcula quién debe a quién al instante." },
-  { icon: Sparkles, color: "bg-[#F87171]", title: "Asistente IA (Premium)", desc: "Itinerarios en lenguaje natural, rutas automáticas y análisis de tickets. También activo si un compañero tiene Premium." },
+  { icon: Wallet, color: "bg-amber-500", title: "Gastos del grupo", desc: "Registra gastos manualmente, divide por persona y calcula quién debe a quién al instante." },
+  { icon: Sparkles, color: "bg-[#F87171]", title: "Asistente IA (Premium)", desc: "Itinerarios con IA, rutas automáticas y OCR de tickets o documentos. Activo si tú o un compañero tiene Premium." },
   { icon: Users, color: "bg-pink-500", title: "Viaja en grupo", desc: "Invita a los compañeros con un enlace. Todos ven el plan en tiempo real." },
   { icon: Share2, color: "bg-sky-500", title: "Comparte el recuerdo", desc: "Al volver, genera una tarjeta resumen con stats del viaje para compartir en redes." },
 ] as const;
@@ -238,6 +239,8 @@ export default function PublicLanding() {
             </Reveal>
           </div>
         </div>
+
+        <KaviroOfficialBrandBanner className="mx-auto mt-8 max-w-3xl px-4 sm:px-0" />
       </section>
 
       <section className="border-y border-slate-200 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]">

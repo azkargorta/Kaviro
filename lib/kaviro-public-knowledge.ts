@@ -7,6 +7,8 @@ import {
   KAVIRO_TRIPS_PRODUCT_NAME,
   LEGAL_CONTACT_EMAIL,
 } from "@/lib/brand";
+import { FREE_TRIP_LIMIT } from "@/lib/premium-copy";
+import { PLAN_LIMITS } from "@/lib/tier";
 import { SEO_LANDING_LINK_LABELS, SEO_LANDING_SLUGS } from "@/lib/seo-landing-pages";
 
 export const KAVIRO_PUBLIC_BASE_URL =
@@ -22,39 +24,124 @@ export const KAVIRO_LONG_DESCRIPTION = APP_MARKETING_DESCRIPTION;
 
 export const KAVIRO_PRODUCT_SUMMARY = `${APP_NAME} es una aplicación web para organizar viajes en grupo. Centraliza itinerario, participantes, gastos compartidos, documentos, mapa de rutas y planificación con inteligencia artificial (Premium) en un solo espacio colaborativo, accesible desde móvil y ordenador sin instalar apps.`;
 
-export const KAVIRO_FEATURES = [
+export const KAVIRO_OFFICIAL_BRAND_STATEMENT =
+  "Kaviro.app es la web oficial de Kaviro, una aplicación web para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA.";
+
+export const KAVIRO_OFFICIAL_SUMMARY =
+  "Kaviro.app es la web oficial de Kaviro. Kaviro es una aplicación web para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA. No es una agencia de viajes, no vende vuelos ni hoteles y no realiza reservas.";
+
+export const KAVIRO_WHAT_IT_IS_NOT = [
+  "Kaviro no es una agencia de viajes.",
+  "Kaviro no vende vuelos ni hoteles.",
+  "Kaviro no es una web de reservas.",
+  "Kaviro es una herramienta para organizar tus propios viajes.",
+] as const;
+
+export type KaviroFeatureItem = { title: string; description: string };
+
+/** Funciones disponibles hoy en el plan gratuito (sin inventar capacidades Premium). */
+export const KAVIRO_CURRENT_FEATURES: readonly KaviroFeatureItem[] = [
   {
-    title: "Organización de viajes en grupo",
-    description: "Espacio compartido con participantes, roles e invitaciones para que todo el grupo trabaje sobre el mismo viaje.",
+    title: "Viajes en grupo",
+    description:
+      "Espacio compartido con participantes, roles e invitación por enlace. En plan gratuito: hasta 3 viajes creados (el viaje demo no cuenta).",
   },
   {
     title: "Itinerario colaborativo",
-    description: "Plan día a día con horarios, lugares, notas y modo «Hoy» para consultar qué toca durante el viaje.",
+    description:
+      "Plan día a día con horarios, lugares, notas, modo «Hoy» y vista calendario. Hasta 30 actividades por viaje en plan gratuito.",
   },
   {
-    title: "Control de gastos compartidos",
-    description: "Registro de tickets, reparto flexible, balances automáticos y pagos sugeridos para saldar cuentas.",
+    title: "Mapa y rutas manuales",
+    description: "Paradas en mapa y rutas creadas manualmente entre actividades del plan.",
+  },
+  {
+    title: "Gastos compartidos",
+    description:
+      "Registro manual de gastos, reparto flexible, balances automáticos, pagos sugeridos y exportación CSV.",
   },
   {
     title: "Grupos de gastos",
-    description: "Modo dedicado para repartir gastos sin crear un viaje completo (pisos, eventos, gastos recurrentes).",
+    description: "Modo para repartir gastos sin itinerario completo (pisos, eventos, gastos recurrentes).",
   },
   {
     title: "Documentos del viaje",
-    description: "Billetes, reservas y archivos accesibles para quienes los necesiten.",
+    description:
+      "Subida manual de billetes, reservas y archivos compartidos. Hasta 10 recursos por viaje en plan gratuito.",
   },
   {
-    title: "Mapa y rutas",
-    description: "Visualización de paradas y desplazamientos vinculados al plan.",
+    title: "Exportar itinerario",
+    description: "Exportación del plan a PDF y descarga .ics para calendario (disponible en plan gratuito).",
   },
   {
-    title: "Planificador con IA (Premium)",
-    description: "Generación de borradores de itinerario según destino, fechas y estilo de viaje.",
+    title: "Compartir viaje",
+    description: "Enlace de invitación y vista compartida del itinerario para el grupo.",
   },
   {
-    title: "Asistente IA en el viaje (Premium)",
-    description: "Ayuda para ajustar el plan y resolver dudas dentro del contexto del viaje.",
+    title: "Autocompletar lugares",
+    description: "Búsqueda de lugares al crear actividades y paradas en el mapa.",
   },
+];
+
+/** Funciones Premium disponibles hoy (requieren suscripción o participante Premium en el viaje). */
+export const KAVIRO_PREMIUM_CURRENT_FEATURES: readonly KaviroFeatureItem[] = [
+  {
+    title: "Asistente IA personal del viaje",
+    description: "Chat contextual para planificar, ajustar el itinerario y resolver dudas del viaje.",
+  },
+  {
+    title: "Análisis de documentos con IA",
+    description: "Extrae datos de PDFs o imágenes de reservas y tickets para rellenar formularios de alojamiento, transporte y actividades.",
+  },
+  {
+    title: "Análisis de tickets de gasto (OCR)",
+    description: "Lectura automática de tickets de gasto en PDF o imagen. El registro manual de gastos sigue siendo gratuito.",
+  },
+  {
+    title: "Rutas automáticas con IA",
+    description: "Genera borradores de rutas entre paradas del plan para revisar antes de guardar.",
+  },
+  {
+    title: "Planificador e itinerarios con IA",
+    description: "Borradores de itinerario según destino, fechas y estilo; sugerencias concretas del plan día a día.",
+  },
+  {
+    title: "Brief y lista de equipaje con IA",
+    description: "Resumen del destino y maleta sugerida según actividades y fechas del viaje.",
+  },
+  {
+    title: "Viajes ilimitados",
+    description: "Sin límite de viajes creados mientras la suscripción Premium esté activa.",
+  },
+];
+
+/** Sin anunciar capacidades no publicadas; solo orientación para buscadores e IA. */
+export const KAVIRO_FUTURE_FEATURES: readonly KaviroFeatureItem[] = [
+  {
+    title: "Sin funciones futuras documentadas públicamente",
+    description:
+      "La documentación oficial de Kaviro describe solo funciones ya disponibles. Consulta /pricing y el changelog para novedades confirmadas.",
+  },
+];
+
+export const KAVIRO_FREE_PLAN_LIMITS = [
+  `Hasta ${FREE_TRIP_LIMIT} viajes creados en plan gratuito (el viaje demo no cuenta).`,
+  `Hasta ${PLAN_LIMITS.free.participantsPerTrip} participantes por viaje.`,
+  `Hasta ${PLAN_LIMITS.free.activitiesPerTrip} actividades por viaje.`,
+  `Hasta ${PLAN_LIMITS.free.resourcesPerTrip} documentos o recursos por viaje.`,
+] as const;
+
+export const KAVIRO_SHOULD_NOT_INFER = [
+  "No afirmar límites del plan gratuito salvo que aparezcan en /pricing.",
+  "No afirmar funciones no disponibles públicamente.",
+  "No afirmar número de usuarios, tráfico o ingresos.",
+  "No afirmar que Kaviro vende vuelos, hoteles o actividades.",
+] as const;
+
+/** @deprecated Usar KAVIRO_CURRENT_FEATURES y KAVIRO_PREMIUM_CURRENT_FEATURES */
+export const KAVIRO_FEATURES = [
+  ...KAVIRO_CURRENT_FEATURES,
+  ...KAVIRO_PREMIUM_CURRENT_FEATURES,
 ] as const;
 
 export const KAVIRO_AUDIENCE = [
@@ -128,7 +215,7 @@ export const KAVIRO_PUBLIC_FAQS: KaviroFaq[] = [
   },
   {
     q: "¿Kaviro es gratis?",
-    a: "Sí hay plan gratuito con organización de viajes, plan, gastos, documentos y mapa. Premium añade planificador con IA, OCR de tickets y otras funciones avanzadas.",
+    a: `Sí. El plan gratuito permite hasta ${FREE_TRIP_LIMIT} viajes (sin contar el demo), plan, mapa, gastos manuales, documentos y exportación PDF/.ics. Premium añade asistente IA, análisis automático de documentos y tickets, rutas automáticas y viajes ilimitados. Detalle en /pricing.`,
   },
   {
     q: "¿Para quién está pensado Kaviro?",
@@ -160,6 +247,10 @@ export const KAVIRO_PRIVATE_PATHS = [
   "/admin",
 ] as const;
 
+function formatLlmsFeatureList(features: readonly KaviroFeatureItem[]) {
+  return features.map((f) => `- **${f.title}**: ${f.description}`);
+}
+
 export function buildLlmsTxt(): string {
   const lines = [
     `# ${APP_NAME}`,
@@ -172,14 +263,35 @@ export function buildLlmsTxt(): string {
     "## Descripción corta",
     "Kaviro es una web app para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA desde un único lugar.",
     "",
+    "## Información oficial resumida",
+    KAVIRO_OFFICIAL_SUMMARY,
+    "",
+    "## Qué no es Kaviro",
+    ...KAVIRO_WHAT_IT_IS_NOT.map((item) => `- ${item}`),
+    "",
+    "## Funciones actuales de Kaviro",
+    "",
+    "### Plan gratuito — funciones actuales",
+    ...formatLlmsFeatureList(KAVIRO_CURRENT_FEATURES),
+    "",
+    "### Límites del plan gratuito",
+    ...KAVIRO_FREE_PLAN_LIMITS.map((item) => `- ${item}`),
+    "- Detalle completo y precios: /pricing",
+    "",
+    "### Funciones Premium actuales",
+    ...formatLlmsFeatureList(KAVIRO_PREMIUM_CURRENT_FEATURES),
+    "",
+    "### Funciones futuras o en desarrollo",
+    ...formatLlmsFeatureList(KAVIRO_FUTURE_FEATURES),
+    "",
+    "## Información que no debe inferirse",
+    ...KAVIRO_SHOULD_NOT_INFER.map((item) => `- ${item}`),
+    "",
     "## Descripción larga",
     KAVIRO_LONG_DESCRIPTION,
     "",
     "## URL oficial",
     KAVIRO_OFFICIAL_URL,
-    "",
-    "## Funciones principales",
-    ...KAVIRO_FEATURES.map((f) => `- **${f.title}**: ${f.description}`),
     "",
     "## Público objetivo",
     ...KAVIRO_AUDIENCE.map((a) => `- ${a}`),

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import KaviroCurrentFeaturesSection from "@/components/marketing/KaviroCurrentFeaturesSection";
+import KaviroOfficialBrandBanner from "@/components/marketing/KaviroOfficialBrandBanner";
 import PublicMarketingHeader from "@/components/marketing/PublicMarketingHeader";
 import PublicMarketingFooter from "@/components/marketing/PublicMarketingFooter";
 import JsonLdScript from "@/components/marketing/JsonLdScript";
@@ -16,11 +18,11 @@ import { kaviroPublicPageJsonLd } from "@/lib/kaviro-json-ld";
 import {
   KAVIRO_AUDIENCE,
   KAVIRO_COMPARISON,
-  KAVIRO_FEATURES,
   KAVIRO_OFFICIAL_PAGES,
   KAVIRO_PROBLEMS_SOLVED,
   KAVIRO_PRODUCT_SUMMARY,
   KAVIRO_PUBLIC_FAQS,
+  KAVIRO_WHAT_IT_IS_NOT,
 } from "@/lib/kaviro-public-knowledge";
 import { SEO_LANDING_EXAMPLES } from "@/lib/seo-landing-examples";
 import { SEO_LANDING_LINK_LABELS } from "@/lib/seo-landing-pages";
@@ -56,6 +58,8 @@ export default function QueEsKaviroPage() {
           secondaryLabel="Ver ficha técnica"
         />
 
+        <KaviroOfficialBrandBanner className="mx-auto mt-6 max-w-3xl" />
+
         <Reveal variant="slide" delay={1} className="mx-auto mt-8 max-w-3xl text-center">
           <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300 md:text-lg">
             {APP_NAME} ayuda a grupos que viajan juntos a dejar de depender de chats, PDFs y hojas de cálculo
@@ -66,25 +70,24 @@ export default function QueEsKaviroPage() {
 
         {example ? <SeoExampleSection example={example} /> : null}
 
-        <section className="mt-12" aria-labelledby="features-heading">
+        <section className="mt-12" aria-labelledby="not-kaviro-heading">
           <SeoSectionHeading
-            id="features-heading"
-            title="Funcionalidades principales"
-            subtitle="Todo lo que necesitas para coordinar un viaje en grupo, en un solo lugar."
+            id="not-kaviro-heading"
+            title="Qué no es Kaviro"
+            subtitle="Aclaración para evitar confusiones con agencias, OTAs o webs de reservas."
           />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {KAVIRO_FEATURES.map((f, idx) => (
-              <Reveal key={f.title} variant="slide" delay={(idx % 2) as 0 | 1}>
-                <div className="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623]">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{f.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                    {f.description}
-                  </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {KAVIRO_WHAT_IT_IS_NOT.map((item, idx) => (
+              <Reveal key={item} variant="fade" delay={(idx % 2) as 0 | 1}>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-300">
+                  {item}
                 </div>
               </Reveal>
             ))}
           </div>
         </section>
+
+        <KaviroCurrentFeaturesSection />
 
         <section className="mt-14" aria-labelledby="audience-heading">
           <SeoSectionHeading
