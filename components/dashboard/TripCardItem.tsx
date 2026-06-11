@@ -23,6 +23,7 @@ import TripDashboardEditDialog from "@/components/dashboard/TripDashboardEditDia
 import DuplicateTripDialog from "@/components/dashboard/DuplicateTripDialog";
 import TripStatusBadge from "@/components/dashboard/TripStatusBadge";
 import { tripTimelineProgress } from "@/lib/trip-timeline-progress";
+import { DASHBOARD_CARD, DASHBOARD_CARD_HOVER } from "@/components/dashboard/dashboard-ui";
 
 type Trip = {
   id: string;
@@ -176,7 +177,7 @@ export default function TripCardItem({
   return (
     <>
       <article
-        className={`group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
+        className={`group relative flex flex-col overflow-hidden ${DASHBOARD_CARD} ${DASHBOARD_CARD_HOVER} ${
           locked ? "opacity-80" : ""
         } ${cardAccentClass(badge)} ${compact ? "p-3" : "p-4"}`}
       >

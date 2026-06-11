@@ -16,8 +16,8 @@ export default function DashboardHeaderCopy({
 }: Props) {
   const subtitle =
     tripCount === 0
-      ? "Crea tu primer viaje o importa un itinerario."
-      : `${tripCount} viaje${tripCount !== 1 ? "s" : ""} en tu biblioteca.`;
+      ? "Tu biblioteca de viajes empieza con un solo plan."
+      : `${tripCount} viaje${tripCount !== 1 ? "s" : ""} en tu biblioteca · planifica, viaja y recuerda.`;
 
   const planPill = isPremium ? (
     <span className="inline-flex items-center rounded-md bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-semibold text-[var(--brand-text)] ring-1 ring-[var(--brand-border)] sm:text-[11px]">

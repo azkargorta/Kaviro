@@ -22,6 +22,12 @@ import {
   isExpenseGroupTrip,
   type DashboardTrip,
 } from "@/lib/dashboard-trip-types";
+import {
+  DASHBOARD_CARD,
+  DASHBOARD_CARD_HOVER,
+  DASHBOARD_FILTER_SHELL,
+  DASHBOARD_SECTION_EYEBROW,
+} from "@/components/dashboard/dashboard-ui";
 import { DashboardAnnouncementUnreadProvider } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 import { openCreateTripForm } from "@/lib/open-create-trip";
 import { tripTimelineProgress } from "@/lib/trip-timeline-progress";
@@ -42,8 +48,8 @@ const ACCENT_UNSCHED = DASHBOARD_TRIP_BADGE_ACCENTS.unscheduled;
 
 function DashboardEmptyState() {
   return (
-    <div className="mx-auto max-w-lg py-12 text-center">
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl dark:bg-[#1E293B]">
+    <div className={`mx-auto max-w-lg py-12 text-center ${DASHBOARD_CARD} px-6`}>
+      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--brand-light)] text-3xl ring-1 ring-[var(--brand-border)]">
         ✈️
       </div>
       <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -71,6 +77,17 @@ function DashboardEmptyState() {
       </div>
     </div>
   );
+}
+
+function listCountdown(badge: string, startDate: string | null): string | null {
+  if (badge !== "Próximo" || !startDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(`${startDate}T00:00:00`);
+  const diff = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff <= 0) return null;
+  if (diff === 1) return "Empieza mañana";
+  return `En ${diff} días`;
 }
 
 // ── Fila lista densa ──────────────────────────────────────────────────────────
@@ -102,11 +119,12 @@ function TripListRow({
         : "Sin fechas";
 
   const destMark = trip.destination?.trim().charAt(0).toUpperCase();
+  const countdown = listCountdown(badge, trip.start_date);
 
   return (
     <div
-      className={`group flex min-h-[56px] items-center gap-3 rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm transition hover:-translate-y-px hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
-        isActive ? "border-l-[3px] border-l-[var(--brand)]" : "border-l-[3px] border-l-slate-200 dark:border-l-slate-700"
+      className={`group flex min-h-[60px] items-center gap-3 ${DASHBOARD_CARD} ${DASHBOARD_CARD_HOVER} px-3.5 py-3.5 ${
+        isActive ? "border-l-[4px] border-l-[var(--brand)]" : "border-l-[4px] border-l-slate-200/90 dark:border-l-slate-700"
       } ${locked ? "opacity-80" : "cursor-pointer"}`}
       onClick={() => {
         if (locked) return;
@@ -145,14 +163,17 @@ function TripListRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{trip.name}</p>
+          <p className="truncate text-sm font-extrabold tracking-tight text-slate-900 dark:text-white">{trip.name}</p>
           <TripStatusBadge badge={badge} className="sm:hidden" />
         </div>
         {trip.destination ? (
-          <p className="flex items-center gap-1 truncate text-xs text-slate-500 dark:text-slate-400">
+          <p className="flex items-center gap-1 truncate text-xs font-medium text-slate-600 dark:text-slate-300">
             <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
             {trip.destination}
           </p>
+        ) : null}
+        {countdown ? (
+          <p className="mt-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">{countdown}</p>
         ) : null}
         {isActive && progress !== null ? (
           <div className="mt-1.5 hidden max-w-[140px] sm:block">
@@ -251,6 +272,7 @@ function TripListView({
 
 function SectionBlock({
   title,
+  subtitle,
   trips,
   lockedTripIds,
   viewMode,
@@ -258,6 +280,7 @@ function SectionBlock({
   defaultOpen = true,
 }: {
   title: string;
+  subtitle?: string;
   trips: TripWithMeta[];
   lockedTripIds: string[];
   viewMode: ViewMode;
@@ -268,26 +291,33 @@ function SectionBlock({
   if (!trips.length) return null;
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       <button
         type="button"
-        className={`flex w-full items-center justify-between gap-2 text-left ${collapsible ? "cursor-pointer" : "cursor-default"}`}
+        className={`flex w-full items-start justify-between gap-2 text-left ${collapsible ? "cursor-pointer" : "cursor-default"}`}
         onClick={() => collapsible && setOpen((v) => !v)}
         aria-expanded={collapsible ? open : undefined}
         disabled={!collapsible}
       >
-        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          <span className="h-1 w-4 rounded-full bg-[var(--brand)]/70" aria-hidden />
-          {title}
-          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-[#141c2b] dark:text-slate-400">
-            {trips.length}
+        <span className="min-w-0">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className={`${DASHBOARD_SECTION_EYEBROW} flex items-center gap-2`}>
+              <span className="h-1 w-5 rounded-full bg-[var(--brand)]" aria-hidden />
+              {title}
+            </span>
+            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300 dark:ring-slate-700">
+              {trips.length}
+            </span>
           </span>
+          {subtitle ? (
+            <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{subtitle}</span>
+          ) : null}
         </span>
         {collapsible ? (
           open ? (
-            <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+            <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
           ) : (
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
           )
         ) : null}
       </button>
@@ -315,6 +345,7 @@ export default function DashboardTripsClient({
   lockedTripIds,
   announcementUnreadByTripId = {},
   heroTripId = null,
+  recentTrips = [],
 }: {
   current: Trip[];
   future: Trip[];
@@ -326,6 +357,7 @@ export default function DashboardTripsClient({
   lockedTripIds: string[];
   announcementUnreadByTripId?: Record<string, number>;
   heroTripId?: string | null;
+  recentTrips?: Pick<Trip, "id" | "name" | "destination">[];
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -448,10 +480,10 @@ export default function DashboardTripsClient({
     tabs.push({ key: "expenses", label: "Gastos", count: expenseGroups.length });
 
   const tabClass = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition sm:px-3 ${
+    `inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition sm:text-[13px] ${
       active
-        ? "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[var(--brand-border)]"
-        : "text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#141c2b] dark:hover:text-slate-200"
+        ? "bg-[var(--brand-light)] text-[var(--brand-text)] shadow-sm ring-1 ring-[var(--brand-border)]"
+        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#141c2b] dark:hover:text-slate-200"
     }`;
 
   const viewToggleClass = (active: boolean) =>
@@ -468,11 +500,12 @@ export default function DashboardTripsClient({
         {/* Chips de favoritos */}
         <DashboardFavoriteChips
           trips={favoriteTrips}
+          recentTrips={recentTrips}
           onSelectFilter={() => setFilter("favorites")}
         />
 
         {/* Toolbar: búsqueda + tabs + toggle vista */}
-        <div className="space-y-3">
+        <div className={`${DASHBOARD_CARD} space-y-3 p-3 sm:p-4`}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Búsqueda */}
           <div className="relative min-w-0 flex-1 lg:max-w-xs">
@@ -498,11 +531,7 @@ export default function DashboardTripsClient({
 
           {/* Tabs + toggle vista */}
           <div className="flex flex-wrap items-center gap-2">
-            <div
-              className="inline-flex max-w-full flex-wrap gap-1"
-              role="tablist"
-              aria-label="Filtrar viajes"
-            >
+            <div className={DASHBOARD_FILTER_SHELL} role="tablist" aria-label="Filtrar viajes">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
@@ -578,21 +607,24 @@ export default function DashboardTripsClient({
             </button>
           </div>
         ) : showSections ? (
-          <div className="space-y-8">
+          <div className="space-y-10">
             <SectionBlock
               title="En curso"
+              subtitle="Viajes que están ocurriendo ahora"
               trips={sectionCurrent}
               lockedTripIds={lockedTripIds}
               viewMode={viewMode}
             />
             <SectionBlock
               title="Próximamente"
+              subtitle="Tus próximos planes"
               trips={[...sectionFuture, ...sectionUnsched]}
               lockedTripIds={lockedTripIds}
               viewMode={viewMode}
             />
             <SectionBlock
               title="Pasados"
+              subtitle="Recuerdos y viajes anteriores"
               trips={sectionPast}
               lockedTripIds={lockedTripIds}
               viewMode={viewMode}
@@ -602,6 +634,7 @@ export default function DashboardTripsClient({
             {showExpenseGroupsSection && sectionExpenses.length > 0 ? (
               <SectionBlock
                 title="Gastos compartidos"
+                subtitle="Grupos para liquidar gastos en equipo"
                 trips={sectionExpenses}
                 lockedTripIds={lockedTripIds}
                 viewMode={viewMode}

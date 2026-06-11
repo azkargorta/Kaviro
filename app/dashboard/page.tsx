@@ -14,6 +14,8 @@ import DashboardOfflineRegistry, {
   DashboardOfflinePanel,
 } from "@/components/dashboard/DashboardOfflineRegistry";
 import { pickContinueTrip } from "@/lib/trip-active";
+import { pickNextActivityFromRows } from "@/lib/dashboard-hero-activity";
+import type { DashboardContinueNextActivity } from "@/components/dashboard/DashboardContinueTrip";
 import {
   detachLegacyDemoTripsForUser,
   ensureDemoTripForUser,
@@ -296,8 +298,28 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const heroTrip = pickContinueTrip(allRealTrips);
   const hasTrips = realTrips.length > 0;
 
+  let heroNextActivity: DashboardContinueNextActivity | null = null;
+  if (heroTrip?.id) {
+    const todayYmd = new Date().toISOString().slice(0, 10);
+    const nowHHMM = new Date().toTimeString().slice(0, 5);
+    const { data: heroActivities } = await supabase
+      .from("trip_activities")
+      .select("title, activity_time, activity_date")
+      .eq("trip_id", heroTrip.id)
+      .gte("activity_date", todayYmd)
+      .order("activity_date", { ascending: true })
+      .order("activity_time", { ascending: true })
+      .limit(30);
+    heroNextActivity = pickNextActivityFromRows(heroActivities ?? [], todayYmd, nowHHMM);
+  }
+
+  const recentTrips = [...realTrips]
+    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+    .slice(0, 4)
+    .map((t) => ({ id: t.id, name: t.name, destination: t.destination }));
+
   return (
-    <main className="page-shell page-shell--fluid space-y-5 pb-8 md:space-y-6 md:pb-10">
+    <main className="dashboard-workspace-bg page-shell page-shell--fluid min-h-screen space-y-5 pb-8 md:space-y-6 md:pb-10">
       <DashboardOfflineRegistry
         trips={allRealTrips.map((t) => ({
           id: t.id,
@@ -312,8 +334,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       <DashboardTripInvitesInbox />
 
-      <section className="space-y-3" aria-label="Acceso principal">
-        {hasTrips ? <DashboardContinueTrip trips={allRealTrips} /> : null}
+      <section className="space-y-4" aria-label="Acceso principal">
+        {hasTrips ? (
+          <DashboardContinueTrip trips={allRealTrips} nextActivity={heroNextActivity} />
+        ) : null}
         <DashboardCreateRow disabled={!isPremium && realTrips.length >= FREE_TRIP_LIMIT} />
       </section>
 
@@ -328,6 +352,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         lockedTripIds={Array.from(lockedTripIds)}
         announcementUnreadByTripId={announcementUnreadByTripId}
         heroTripId={hasTrips ? heroTrip?.id ?? null : null}
+        recentTrips={recentTrips}
       />
 
       <div className="grid gap-3 sm:grid-cols-2">
