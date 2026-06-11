@@ -26,6 +26,10 @@ import Reveal from "@/components/ui/Reveal";
 import { useTripPermissions } from "@/hooks/useTripPermissions";
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import { supabase } from "@/lib/supabase";
+import TripModuleIntro from "@/components/trip/ui/TripModuleIntro";
+import TripSectionHeader from "@/components/trip/ui/TripSectionHeader";
+import { TRIP_PANEL } from "@/components/trip/ui/trip-ui-classes";
+import { FolderOpen } from "lucide-react";
 
 function templateFromDetected(data: DetectedDocumentData): ReservationTemplateType {
   if (data.documentType === "hotel_reservation") return "lodging";
@@ -128,6 +132,11 @@ export default function TripResourcesView({
 
   return (
     <div className="min-w-0 max-w-full space-y-6">
+      <TripModuleIntro
+        title="Biblioteca del viaje"
+        description="Billetes, reservas, PDFs e imágenes en un solo lugar. Sube documentos o analízalos con IA para rellenar reservas automáticamente."
+        icon={<FolderOpen className="h-5 w-5" aria-hidden />}
+      />
       {!canManageResources ? <TripReadOnlyBanner moduleLabel="documentos y reservas" /> : null}
       {error ? (
         <div className="break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -135,23 +144,21 @@ export default function TripResourcesView({
         </div>
       ) : null}
 
-      <Reveal variant="fade" data-tour="resources-lists-section" as="section" className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 max-w-full flex-1">
-            <h3 className="text-lg font-semibold text-slate-900">Listas</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Crea listas privadas o compartidas (compra, maleta, documentos…).
-            </p>
-          </div>
-          <button
-            data-tour="resources-lists-btn"
-            type="button"
-            onClick={() => setShowLists((v) => !v)}
-            className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
-          >
-            {showLists ? "Cerrar listas" : "Crear/ver listas"}
-          </button>
-        </div>
+      <Reveal variant="fade" data-tour="resources-lists-section" as="section" className={`min-w-0 max-w-full ${TRIP_PANEL} p-4 sm:p-5`}>
+        <TripSectionHeader
+          title="Listas del viaje"
+          description="Crea listas privadas o compartidas (compra, maleta, documentos…)."
+          actions={
+            <button
+              data-tour="resources-lists-btn"
+              type="button"
+              onClick={() => setShowLists((v) => !v)}
+              className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
+            >
+              {showLists ? "Cerrar listas" : "Crear/ver listas"}
+            </button>
+          }
+        />
 
         {showLists ? (
           <div key="lists-panel" data-tour="resources-lists-panel" className="step-enter">
@@ -161,26 +168,23 @@ export default function TripResourcesView({
       </Reveal>
 
       <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2">
-        <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <div className="min-w-0 max-w-full flex-1">
-              <h3 className="text-lg font-semibold text-slate-900">Adjuntar documento</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Sube imágenes o PDFs de reservas, tickets o documentos del viaje.
-              </p>
-            </div>
-
-            {canManageResources ? (
-              <button
-                data-tour="resources-upload-btn"
-                type="button"
-                onClick={() => setShowUploadForm((current) => !current)}
-                className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
-              >
-                {showUploadForm ? "Cerrar" : "Adjuntar documento"}
-              </button>
-            ) : null}
-          </div>
+        <div className={`min-w-0 max-w-full ${TRIP_PANEL} p-4 sm:p-5`}>
+          <TripSectionHeader
+            title="Adjuntar documento"
+            description="Sube imágenes o PDFs de reservas, tickets o documentos del viaje."
+            actions={
+              canManageResources ? (
+                <button
+                  data-tour="resources-upload-btn"
+                  type="button"
+                  onClick={() => setShowUploadForm((current) => !current)}
+                  className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm`}
+                >
+                  {showUploadForm ? "Cerrar" : "Adjuntar documento"}
+                </button>
+              ) : undefined
+            }
+          />
 
           {canManageResources && showUploadForm ? (
             <div className="mt-5">
@@ -207,30 +211,29 @@ export default function TripResourcesView({
           ) : null}
         </div>
 
-        <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <div className="min-w-0 max-w-full flex-1">
-              <h3 className="text-lg font-semibold text-slate-900">Analizador de documento</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Analiza PDFs e imágenes para rellenar formularios automáticamente.
-              </p>
-            </div>
+        <div className={`min-w-0 max-w-full ${TRIP_PANEL} p-4 sm:p-5`}>
+          <TripSectionHeader
+            eyebrow="IA"
+            title="Analizador de documento"
+            description="Analiza PDFs e imágenes para rellenar formularios automáticamente."
+            actions={
 
-            {canManageResources ? (
-              <button
-                data-tour="resources-analyze-btn"
-                type="button"
-                onClick={() => {
-                  if (!isPremium) return;
-                  setShowAnalyzerForm((current) => !current);
-                }}
-                disabled={!isPremium}
-                className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
-              >
-                {showAnalyzerForm ? "Cerrar" : "Analizar documento"}
-              </button>
-            ) : null}
-          </div>
+              canManageResources ? (
+                <button
+                  data-tour="resources-analyze-btn"
+                  type="button"
+                  onClick={() => {
+                    if (!isPremium) return;
+                    setShowAnalyzerForm((current) => !current);
+                  }}
+                  disabled={!isPremium}
+                  className={`btn-press ${btnPrimary} shrink-0 whitespace-normal px-4 py-2 text-sm disabled:opacity-60`}
+                >
+                  {showAnalyzerForm ? "Cerrar" : "Analizar documento"}
+                </button>
+              ) : undefined
+            }
+          />
 
           {!isPremium ? (
             <div className="mt-5">

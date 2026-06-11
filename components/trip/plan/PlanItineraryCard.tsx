@@ -9,6 +9,7 @@ import {
   formatPlanDestinationLabel,
   planParticipantInitials,
 } from "@/lib/plan-activity-meta";
+import { todayYMD } from "@/lib/trip-activity-visual";
 
 const HEADER_ACTION_BTN =
   "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/90 bg-white px-2.5 py-1.5 text-[11px] font-bold text-[var(--brand)] shadow-sm transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/80";
@@ -165,8 +166,10 @@ export default function PlanItineraryCard({
     el.scrollBy({ left: direction === "left" ? -delta : delta, behavior: "smooth" });
   }
 
+  const today = todayYMD();
+
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.07)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
       <div data-tour="plan-itinerary-highlight">
       <div className="bg-gradient-to-r from-[var(--brand)] to-[var(--brand-hover)] px-4 py-3 md:px-5 md:py-4">
         <div className="flex items-start justify-between gap-3">
@@ -225,6 +228,7 @@ export default function PlanItineraryCard({
           >
             {days.map((date, i) => {
               const isActive = selectedDate === date;
+              const isToday = date === today;
               const tab = formatPlanDayTabLabel(date, i + 1);
               const activityCount = activityCountByDate?.[date] ?? 0;
               const countLabel = formatPlanDayActivityCount(activityCount);
@@ -239,10 +243,20 @@ export default function PlanItineraryCard({
                   aria-label={`${ariaDay}, ${countLabel}`}
                   title={`${ariaDay} · ${countLabel}`}
                   onClick={() => onSelectDate(date)}
-                  className={`relative flex min-w-[5rem] shrink-0 flex-col items-center justify-center gap-0.5 px-2 py-2 transition md:min-w-[5.25rem] md:py-2.5 ${
-                    isActive ? "text-[var(--brand)]" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  className={`relative mx-0.5 my-1 flex min-w-[5rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 transition md:min-w-[5.25rem] md:py-2.5 ${
+                    isActive
+                      ? "bg-[var(--brand-light)] text-[var(--brand)] shadow-sm ring-1 ring-[var(--brand-border)]"
+                      : isToday
+                        ? "text-[var(--brand-text)] hover:bg-white"
+                        : "text-slate-400 hover:bg-white/80 hover:text-slate-600 dark:hover:text-slate-300"
                   }`}
                 >
+                  {isToday && !isActive ? (
+                    <span
+                      aria-hidden
+                      className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--brand)]"
+                    />
+                  ) : null}
                   <span className="text-xs font-bold leading-none">{tab.day}</span>
                   {tab.date ? (
                     <span
@@ -260,9 +274,6 @@ export default function PlanItineraryCard({
                   >
                     {countLabel}
                   </span>
-                  {isActive ? (
-                    <span aria-hidden className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-[var(--brand)]" />
-                  ) : null}
                 </button>
               );
             })}
@@ -281,7 +292,7 @@ export default function PlanItineraryCard({
       ) : null}
       </div>
 
-      <div className="p-4">{children}</div>
+      <div className="bg-slate-50/40 p-4 dark:bg-[#080C14]/30">{children}</div>
 
       {!hideExpenseFooter
         ? expenseFooter ?? (

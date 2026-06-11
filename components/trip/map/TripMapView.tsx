@@ -235,7 +235,7 @@ function MapSurface({
 
   return (
     <section
-      className={`min-w-0 max-w-full overflow-hidden border border-slate-200 bg-white shadow-sm lg:sticky lg:top-4 lg:self-start ${
+      className={`min-w-0 max-w-full overflow-hidden border border-slate-200/90 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 lg:sticky lg:top-4 lg:self-start dark:border-[#1E293B] dark:bg-[#0F1623] dark:ring-[#1E293B] ${
         mobileFullBleed ? "max-xl:rounded-2xl" : "rounded-[28px]"
       }`}
     >
@@ -254,7 +254,7 @@ function MapSurface({
       </div>
       <div
         data-tour="map-container"
-        className={`w-full bg-slate-100 ${
+        className={`w-full bg-gradient-to-b from-slate-100 to-slate-200/80 dark:from-[#080C14] dark:to-[#0F1623] ${
           mobileFullBleed
             ? "h-[min(52dvh,480px)] max-xl:h-[calc(100dvh-15rem-env(safe-area-inset-bottom,0px))] sm:max-xl:h-[calc(100dvh-14rem)]"
             : `h-[min(420px,55vh)] sm:h-[min(480px,50vh)] ${
@@ -1423,7 +1423,7 @@ export default function TripMapView({
       {canManageMap ? (
       <section
         data-tour="map-ai-section"
-        className="hidden overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm md:block"
+        className="hidden overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06)] md:block dark:border-[#1E293B] dark:bg-[#0F1623]"
       >
         <div className="flex min-w-0 flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">

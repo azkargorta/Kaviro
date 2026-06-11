@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { TripStatCard } from "@/components/trip/ui";
 
 type TripParticipantsViewProps = {
   tripId: string;
@@ -80,7 +81,7 @@ function avatarColor(name: string) {
 }
 
 function roleStyle(role: string) {
-  if (role === "owner") return "bg-violet-100 text-violet-800 border-violet-200";
+  if (role === "owner") return "bg-[var(--brand-light)] text-[var(--brand-text)] border-[var(--brand-border)]";
   if (role === "editor") return "bg-sky-100 text-sky-800 border-sky-200";
   return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-[#1E293B] dark:text-slate-300 dark:border-[#334155]";
 }
@@ -574,40 +575,26 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
         actions={mapFlow ? <TripTabActions tripId={tripId} /> : <TripScreenActions tripId={tripId} />}
       />
 
-      {/* Ge1 — stats compactos en móvil */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Reveal variant="scale" className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl dark:border-[#1E293B] dark:bg-[#0F1623]">
-          <div className="px-2.5 py-2.5 text-center sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left">
-            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 sm:flex dark:bg-[#1E293B]">
-              <Users className="h-5 w-5 text-slate-600 dark:text-slate-300" aria-hidden />
-            </div>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400 sm:text-[10px]">Total</p>
-              <p className="text-xl font-extrabold leading-none text-slate-950 tabular-nums sm:text-3xl">{stats.total}</p>
-            </div>
-          </div>
+        <Reveal variant="scale">
+          <TripStatCard icon={<Users className="h-4 w-4" aria-hidden />} label="Participantes" value={String(stats.total)} />
         </Reveal>
-        <Reveal variant="scale" delay={1} className="overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm sm:rounded-2xl dark:border-emerald-900/40 dark:bg-[#0F1623]">
-          <div className="px-2.5 py-2.5 text-center sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left">
-            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 sm:flex">
-              <UserCheck className="h-5 w-5 text-emerald-700" aria-hidden />
-            </div>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 sm:text-[10px]">Cuenta</p>
-              <p className="text-xl font-extrabold leading-none text-emerald-700 tabular-nums sm:text-3xl">{stats.linked}</p>
-            </div>
-          </div>
+        <Reveal variant="scale" delay={1}>
+          <TripStatCard
+            icon={<UserCheck className="h-4 w-4" aria-hidden />}
+            label="Con cuenta"
+            value={String(stats.linked)}
+            valueClassName="text-emerald-700 dark:text-emerald-400"
+          />
         </Reveal>
-        <Reveal variant="scale" delay={2} className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm sm:rounded-2xl dark:border-amber-900/40 dark:bg-[#0F1623]">
-          <div className="px-2.5 py-2.5 text-center sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-3.5 sm:text-left">
-            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 sm:flex">
-              <Sparkles className="h-5 w-5 text-amber-700" aria-hidden />
-            </div>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-amber-600 sm:text-[10px]">Pend.</p>
-              <p className="text-xl font-extrabold leading-none text-amber-700 tabular-nums sm:text-3xl">{stats.unlinked}</p>
-            </div>
-          </div>
+        <Reveal variant="scale" delay={2}>
+          <TripStatCard
+            icon={<Sparkles className="h-4 w-4" aria-hidden />}
+            label="Pendientes"
+            value={String(stats.unlinked)}
+            highlight={stats.unlinked > 0}
+            valueClassName="text-amber-700 dark:text-amber-300"
+          />
         </Reveal>
       </div>
 
@@ -646,7 +633,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por nombre, @usuario, email o teléfono…"
-                className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-violet-200 transition focus:border-violet-300 focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
+                className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-[var(--brand-light)] transition focus:border-[var(--brand-border)] focus:ring-2 dark:border-[#334155] dark:bg-[#080C14] dark:text-white"
               />
             </div>
           </div>
@@ -666,7 +653,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
               onClick={() => setLinkFilter(chip.id)}
               className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${
                 linkFilter === chip.id
-                  ? "border-violet-300 bg-violet-50 text-violet-900"
+                  ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
                   : "border-slate-200 bg-white text-slate-600"
               }`}
             >
@@ -708,7 +695,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   onClick={() => setLinkFilter(chip.id)}
                   className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
                     linkFilter === chip.id
-                      ? "border-violet-300 bg-violet-50 text-violet-900"
+                      ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300 dark:hover:bg-[#1E293B]"
                   }`}
                 >
@@ -766,8 +753,8 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                   variant="slide"
                   delay={(pIdx % 4) as RevealDelay}
                   as="article"
-                  className={`trip-card-hover group rounded-3xl border bg-white p-4 shadow-sm ${
-                    isYou ? "border-violet-200 ring-1 ring-violet-100" : "border-slate-200"
+                  className={`trip-card-hover group rounded-3xl border bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.06)] ${
+                    isYou ? "border-[var(--brand-border)] ring-1 ring-[var(--brand-border)]/40" : "border-slate-200/90"
                   }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -801,7 +788,7 @@ export default function TripParticipantsView({ tripId, mapFlow = false }: TripPa
                             />
                           </div>
                           {isYou ? (
-                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-violet-800">
+                            <span className="rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
                               Tú
                             </span>
                           ) : null}

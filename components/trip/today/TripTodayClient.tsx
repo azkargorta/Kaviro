@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import Reveal from "@/components/ui/Reveal";
 import { MapPin, Clock, ChevronRight, Navigation, Phone } from "lucide-react";
+import TripHighlightCard from "@/components/trip/ui/TripHighlightCard";
+import TripActivityCard from "@/components/trip/ui/TripActivityCard";
+import TripEmptyState from "@/components/trip/ui/TripEmptyState";
+import TripPanel from "@/components/trip/ui/TripPanel";
+import { resolveActivityVisualState } from "@/lib/trip-activity-visual";
 
 type Activity = {
   id: string;
@@ -116,18 +121,21 @@ export default function TripTodayClient({
 
   if (!isActive) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-6 text-center md:min-h-0 md:rounded-2xl md:border md:border-[var(--border-default)] md:bg-[var(--surface-card)] md:px-8 md:py-10 md:shadow-[var(--shadow-card)]">
-        <div className="text-5xl">📅</div>
-        <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">{tripName}</h1>
-        <p className="text-sm font-medium text-slate-500">
-          {today < tripStart
+      <TripEmptyState
+        icon="📅"
+        title={tripName}
+        description={
+          today < tripStart
             ? `El viaje empieza el ${formatDate(tripStart)}`
-            : `El viaje terminó el ${formatDate(tripEnd)}`}
-        </p>
-        <Link href={`/trip/${tripId}/plan`} className="btn-primary mt-2 px-5 py-2.5 text-sm">
-          Ver el plan completo
-        </Link>
-      </div>
+            : `El viaje terminó el ${formatDate(tripEnd)}`
+        }
+        action={
+          <Link href={`/trip/${tripId}/plan`} className="btn-primary px-5 py-2.5 text-sm">
+            Ver el plan completo
+          </Link>
+        }
+        className="min-h-[50vh] md:min-h-0"
+      />
     );
   }
 
@@ -176,45 +184,40 @@ export default function TripTodayClient({
 
       {/* Current activity spotlight */}
       {currentActivity ? (
-        <Reveal
-          variant="scale"
-          className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5 md:mx-0 md:mt-0 md:rounded-2xl md:border md:border-slate-200 md:bg-white md:p-5 md:shadow-sm dark:md:border-[#1E293B] dark:md:bg-[#0F1623]"
-        >
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/70 md:text-slate-500 dark:md:text-slate-400">
-            <span className="hidden h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--brand)] md:inline" aria-hidden />
-            Ahora mismo
-          </p>
-          <div className="flex items-start gap-3">
-            <span className="shrink-0 text-3xl md:flex md:h-11 md:w-11 md:items-center md:justify-center md:rounded-xl md:bg-slate-50 md:text-2xl dark:md:bg-[#1E293B]">
-              {kindMeta(currentActivity.activity_kind).icon}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-extrabold leading-tight text-white md:text-slate-900 dark:md:text-white">
-                {currentActivity.title}
-              </p>
-              {currentActivity.place_name ? (
-                <p className="mt-0.5 text-sm text-white/70 md:text-slate-600 dark:md:text-slate-300">
-                  {currentActivity.place_name}
+        <Reveal variant="scale" className="mx-4 mt-4 md:mx-0 md:mt-0">
+          <TripHighlightCard eyebrow="Ahora mismo" variant="coral" className="max-md:border-0 max-md:bg-gradient-to-br max-md:from-[#F87171] max-md:to-[#EF4444] max-md:text-white max-md:shadow-none max-md:ring-0">
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 text-3xl md:flex md:h-11 md:w-11 md:items-center md:justify-center md:rounded-xl md:bg-white md:text-2xl md:shadow-sm md:ring-1 md:ring-[var(--brand-border)]">
+                {kindMeta(currentActivity.activity_kind).icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg font-extrabold leading-tight max-md:text-white md:text-slate-900 dark:md:text-white">
+                  {currentActivity.title}
                 </p>
-              ) : null}
-              {currentActivity.description ? (
-                <p className="mt-1 line-clamp-2 text-xs text-white/70 md:text-slate-500 dark:md:text-slate-400">
-                  {currentActivity.description}
-                </p>
-              ) : null}
+                {currentActivity.place_name ? (
+                  <p className="mt-0.5 text-sm max-md:text-white/80 md:text-slate-600 dark:md:text-slate-300">
+                    {currentActivity.place_name}
+                  </p>
+                ) : null}
+                {currentActivity.description ? (
+                  <p className="mt-1 line-clamp-2 text-xs max-md:text-white/75 md:text-slate-500 dark:md:text-slate-400">
+                    {currentActivity.description}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-          {buildGmapsUrl(currentActivity) ? (
-            <a
-              href={buildGmapsUrl(currentActivity)!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/30 md:rounded-lg md:bg-[var(--brand)] md:px-4 md:py-2.5 md:text-sm md:font-semibold md:hover:bg-[var(--brand-hover)]"
-            >
-              <Navigation className="h-4 w-4" />
-              Cómo llegar
-            </a>
-          ) : null}
+            {buildGmapsUrl(currentActivity) ? (
+              <a
+                href={buildGmapsUrl(currentActivity)!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/30 md:bg-[var(--brand)] md:hover:bg-[var(--brand-hover)]"
+              >
+                <Navigation className="h-4 w-4" />
+                Cómo llegar
+              </a>
+            ) : null}
+          </TripHighlightCard>
         </Reveal>
       ) : null}
 
@@ -223,8 +226,9 @@ export default function TripTodayClient({
         <Reveal
           variant="slide"
           delay={1}
-          className="mx-4 mt-3 flex items-center gap-3 rounded-3xl bg-slate-800 p-4 md:card-soft md:mx-0 md:mt-0 md:bg-[var(--surface-card)]"
+          className="mx-4 mt-3 md:mx-0 md:mt-0"
         >
+          <TripPanel className="flex items-center gap-3 max-md:border-0 max-md:bg-slate-800 max-md:text-white" padding="sm">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${kindMeta(nextActivity.activity_kind).bg}`}
           >
@@ -252,83 +256,83 @@ export default function TripTodayClient({
               <Navigation className="h-4 w-4 text-slate-300 md:text-[var(--text-secondary)]" />
             </a>
           ) : null}
+          </TripPanel>
         </Reveal>
       ) : null}
 
       {/* Today's full schedule */}
       {todayActivities.length > 0 ? (
-        <Reveal
-          variant="fade"
-          delay={2}
-          className="mx-4 mt-4 overflow-hidden rounded-3xl bg-slate-800 md:card-soft md:mx-0 md:mt-0 md:bg-[var(--surface-card)]"
-        >
-          <div className="border-b border-slate-700 px-4 py-3 md:border-[var(--border-default)]">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 md:text-[var(--text-tertiary)]">
+        <Reveal variant="fade" delay={2} className="mx-4 mt-4 md:mx-0 md:mt-0">
+          <TripPanel padding="none" className="overflow-hidden max-md:border-0 max-md:bg-slate-800">
+          <div className="border-b border-slate-700 px-4 py-3 md:border-slate-100 dark:md:border-[#1E293B]">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 md:text-slate-500">
               Plan de hoy — {todayActivities.length} actividades
             </p>
           </div>
-          <div className="motion-stagger-list divide-y divide-slate-700 md:divide-[var(--border-default)]">
+          <div className="motion-stagger-list space-y-2 p-3">
             {todayActivities.map((a) => {
               const meta = kindMeta(a.activity_kind);
+              const state = resolveActivityVisualState({
+                activityDate: a.activity_date ?? today,
+                activityTime: a.activity_time,
+              });
               const isCurrent = a.id === currentActivity?.id;
-              const isPast = formatTime(a.activity_time) ? formatTime(a.activity_time)! < nowHHMM : false;
+              const visualState = isCurrent ? "current" : state;
               const mapsUrl = buildGmapsUrl(a);
               return (
-                <div
-                  key={a.id}
-                  className={`motion-stagger-item flex items-center gap-3 px-4 py-3 ${
-                    isCurrent
-                      ? "bg-violet-900/30 md:border-l-2 md:border-l-[var(--brand)] md:bg-slate-50 dark:md:bg-[#141c2b]"
-                      : ""
-                  } ${isPast && !isCurrent ? "opacity-50 md:opacity-60" : ""}`}
-                >
-                  <span className={`shrink-0 text-xl ${isPast && !isCurrent ? "grayscale" : ""}`}>{meta.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`truncate text-sm font-semibold ${
-                        isCurrent
-                          ? "text-violet-200 md:text-slate-900 dark:md:text-white"
-                          : "text-white md:text-[var(--text-primary)]"
-                      }`}
-                    >
-                      {a.title}
-                    </p>
-                    {formatTime(a.activity_time) ? (
-                      <p className="text-xs text-slate-400 md:text-[var(--text-secondary)]">
-                        {formatTime(a.activity_time)}
+                <TripActivityCard key={a.id} state={visualState} className="motion-stagger-item !py-3 max-md:!border-slate-700 max-md:!bg-slate-800/60">
+                  <div className="flex items-center gap-3 pr-12">
+                    <span className={`shrink-0 text-xl ${visualState === "past" ? "grayscale opacity-70" : ""}`}>{meta.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate text-sm font-semibold ${
+                          visualState === "past"
+                            ? "text-slate-400 line-through max-md:text-slate-500"
+                            : "max-md:text-white md:text-slate-900 dark:md:text-white"
+                        }`}
+                      >
+                        {a.title}
                       </p>
+                      {formatTime(a.activity_time) ? (
+                        <p className="text-xs text-slate-400 md:text-slate-500">{formatTime(a.activity_time)}</p>
+                      ) : null}
+                    </div>
+                    {mapsUrl ? (
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-slate-500 hover:text-[var(--brand)] max-md:text-slate-400"
+                      >
+                        <Navigation className="h-3.5 w-3.5" />
+                      </a>
                     ) : null}
                   </div>
-                  {mapsUrl ? (
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-slate-500 hover:text-slate-300 md:text-[var(--text-tertiary)] md:hover:text-[var(--brand)]"
-                    >
-                      <Navigation className="h-3.5 w-3.5" />
-                    </a>
-                  ) : null}
-                </div>
+                </TripActivityCard>
               );
             })}
           </div>
+          </TripPanel>
         </Reveal>
       ) : null}
 
       {todayActivities.length === 0 ? (
-        <div className="mx-4 mt-4 rounded-3xl bg-slate-800 p-6 text-center md:card-soft md:mx-0 md:mt-0 md:bg-[var(--surface-card)]">
-          <p className="text-sm text-slate-400 md:text-[var(--text-secondary)]">
-            No hay actividades programadas para hoy.
-          </p>
-          {canEdit ? (
-            <Link
-              href={`/trip/${tripId}/plan`}
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-400 hover:text-violet-200 md:text-[var(--brand)] md:hover:text-[var(--brand-hover)]"
-            >
-              Añadir al plan <ChevronRight className="h-4 w-4" />
-            </Link>
-          ) : null}
+        <div className="mx-4 mt-4 md:mx-0 md:mt-0">
+          <TripEmptyState
+            title="Sin actividades hoy"
+            description="No hay nada programado para este día."
+            action={
+              canEdit ? (
+                <Link
+                  href={`/trip/${tripId}/plan`}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]"
+                >
+                  Añadir al plan <ChevronRight className="h-4 w-4" />
+                </Link>
+              ) : undefined
+            }
+            className="max-md:border-0 max-md:bg-slate-800"
+          />
         </div>
       ) : null}
 

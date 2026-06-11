@@ -1,5 +1,8 @@
 "use client";
 
+import TripStatusPill from "@/components/trip/ui/TripStatusPill";
+import { TRIP_PANEL } from "@/components/trip/ui/trip-ui-classes";
+
 type ResourceItem = {
   id: string;
   title?: string | null;
@@ -18,6 +21,8 @@ type Props = {
 // D1 — File type with semantic color
 function fileTypeMeta(type: string | null | undefined) {
   const t = (type || "").toLowerCase();
+  if (t.includes("ticket") || t.includes("boarding") || t.includes("billete")) return { icon: "🎫", bg: "bg-[var(--brand-light)]", text: "text-[var(--brand-text)]", label: "Billete" };
+  if (t.includes("reserva") || t.includes("reservation") || t.includes("hotel")) return { icon: "🏨", bg: "bg-violet-100", text: "text-violet-800", label: "Reserva" };
   if (t.includes("pdf")) return { icon: "📄", bg: "bg-red-100", text: "text-red-800", label: "PDF" };
   if (t.includes("image") || t.includes("jpg") || t.includes("jpeg") || t.includes("png") || t.includes("webp"))
     return { icon: "🖼️", bg: "bg-blue-100", text: "text-blue-800", label: "Imagen" };
@@ -35,24 +40,26 @@ export default function ResourceCard({ item, onOpen, onDelete }: Props) {
   const meta = fileTypeMeta(item.type || item.file_name?.split(".").pop());
 
   return (
-    <div className="trip-card-hover overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className={`trip-card-hover overflow-hidden ${TRIP_PANEL} transition hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)]`}>
       <div className="flex items-start justify-between gap-3 p-4">
         <div className="min-w-0 flex-1 flex items-start gap-3">
-          {/* D1 — Semantic file type icon */}
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${meta.bg}`}>
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg ring-1 ring-slate-200/80 ${meta.bg}`}>
             {meta.icon}
           </div>
           <div className="min-w-0 flex-1">
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.bg} ${meta.text}`}>
-              {meta.label}
-            </span>
-            <h4 className="mt-1.5 truncate text-sm font-semibold text-slate-950 dark:text-white">{title}</h4>
-            {item.created_at ? <p className="mt-0.5 text-xs text-slate-400">{item.created_at}</p> : null}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.bg} ${meta.text}`}>
+                {meta.label}
+              </span>
+              <TripStatusPill variant="uploaded" label="Subido" />
+            </div>
+            <h4 className="mt-1.5 truncate text-sm font-extrabold text-slate-950 dark:text-white">{title}</h4>
+            {item.created_at ? <p className="mt-0.5 text-xs text-slate-500">{item.created_at}</p> : null}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 border-t border-slate-100 px-4 pb-4 pt-3 dark:border-[#1E293B]">
         {item.url ? (
           <a
             href={item.url}

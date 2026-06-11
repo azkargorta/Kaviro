@@ -12,7 +12,6 @@ import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 import {
   ArrowRight,
   CalendarDays,
-  Check,
   Clock,
   MapPin,
   Share2,
@@ -24,6 +23,12 @@ import {
 import Reveal from "@/components/ui/Reveal";
 import type { RevealDelay } from "@/components/ui/Reveal";
 import TripBudgetSummaryCard from "@/components/trip/summary/TripBudgetSummaryCard";
+import {
+  TripStatCard,
+  TripActivityCard,
+  TripProgressBar,
+  TRIP_TILE_CARD,
+} from "@/components/trip/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,120 +92,38 @@ function daysBetween(a: string, b: string) {
   );
 }
 
-const TILE_CARD =
-  "trip-tile-hover group flex h-full flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:hover:border-slate-600";
-const TILE_CARD_HIGHLIGHT =
-  "trip-tile-hover group flex h-full flex-col rounded-2xl border border-[var(--brand-border)] bg-white p-4 shadow-[0_4px_16px_rgba(248,113,113,0.1)] ring-1 ring-[var(--brand-border)]/40 transition hover:-translate-y-0.5 hover:shadow-[0_6px_22px_rgba(248,113,113,0.14)] dark:border-[var(--brand-border)] dark:bg-[#0F1623]";
 const TILE_ICON_WRAP =
   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]";
 const coralPngFilterDark =
   "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
-
-// ─── Subcomponents ────────────────────────────────────────────────────────────
-
-function TripProgressBar({ startDate, endDate }: { startDate: string; endDate: string }) {
-  const today = todayYMD();
-  const total = daysBetween(startDate, endDate) + 1;
-  const elapsed = Math.min(total, Math.max(0, daysBetween(startDate, today) + 1));
-  const pct = Math.round((elapsed / total) * 100);
-  return (
-    <div>
-      <div className="mb-2 flex justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
-        <span>
-          Día {elapsed} de {total}
-        </span>
-        <span className="tabular-nums text-[var(--brand-text)]">{pct}%</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/70 shadow-inner ring-1 ring-slate-200/80 dark:bg-[#1E293B] dark:ring-[#334155]">
-        <div
-          className="h-full rounded-full bg-[var(--brand)] shadow-[0_0_8px_rgba(248,113,113,0.35)] transition-all duration-700"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function QuickStatCard({
-  icon,
-  label,
-  value,
-  href,
-  highlight = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  href?: string;
-  highlight?: boolean;
-}) {
-  const cardClass = highlight ? TILE_CARD_HIGHLIGHT : TILE_CARD;
-  const inner = (
-    <>
-      <div
-        className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-          highlight
-            ? "bg-[var(--brand-light)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]"
-            : "bg-slate-100 text-slate-600 ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300 dark:ring-slate-700"
-        }`}
-      >
-        {icon}
-      </div>
-      <div className="mt-2.5 min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-          {label}
-        </p>
-        <p className="mt-1 truncate text-sm font-extrabold tracking-tight text-slate-900 dark:text-white">
-          {value}
-        </p>
-      </div>
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className={`${cardClass} p-3.5`}>
-        {inner}
-      </Link>
-    );
-  }
-
-  return <div className={`${cardClass} p-3.5`}>{inner}</div>;
-}
 
 function TodayActivityRow({
   activity,
 }: {
   activity: TripSummaryActivityPreview & { isPast: boolean };
 }) {
-  if (activity.isPast) {
-    return (
-      <li className="relative rounded-xl border border-dashed border-slate-200 bg-slate-100/90 px-4 py-3 dark:border-[#334155] dark:bg-[#0a0e14]/50">
-        <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-slate-200/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:bg-[#1E293B] dark:text-slate-400">
-          <Check className="h-2.5 w-2.5" aria-hidden />
-          Hecha
-        </span>
-        <p className="pr-16 text-sm font-medium text-slate-400 line-through decoration-slate-400/80 dark:text-slate-500">
+  return (
+    <li>
+      <TripActivityCard state={activity.isPast ? "past" : "upcoming"}>
+        <p
+          className={`pr-16 text-sm font-bold ${
+            activity.isPast
+              ? "font-medium text-slate-400 line-through decoration-slate-400/80 dark:text-slate-500"
+              : "text-slate-900 dark:text-white"
+          }`}
+        >
           {activity.title}
         </p>
-        <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{formatActivityWhen(activity)}</p>
-        {(activity.place_name || activity.address) ? (
-          <p className="mt-0.5 text-xs text-slate-400/80">{activity.place_name || activity.address}</p>
-        ) : null}
-      </li>
-    );
-  }
-
-  return (
-    <li className="rounded-xl border border-slate-200/90 bg-white px-4 py-3.5 shadow-[0_2px_10px_rgba(15,23,42,0.06)] ring-1 ring-slate-100 dark:border-[#334155] dark:bg-[#141c2b] dark:ring-[#1E293B]">
-      <p className="text-sm font-bold text-slate-900 dark:text-white">{activity.title}</p>
-      <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">{formatActivityWhen(activity)}</p>
-      {(activity.place_name || activity.address) ? (
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-          <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
-          {activity.place_name || activity.address}
+        <p className={`mt-1 text-xs ${activity.isPast ? "text-slate-400 dark:text-slate-500" : "font-semibold text-slate-600 dark:text-slate-300"}`}>
+          {formatActivityWhen(activity)}
         </p>
-      ) : null}
+        {(activity.place_name || activity.address) ? (
+          <p className={`mt-0.5 flex items-center gap-1 text-xs ${activity.isPast ? "text-slate-400/80" : "text-slate-500 dark:text-slate-400"}`}>
+            {!activity.isPast ? <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden /> : null}
+            {activity.place_name || activity.address}
+          </p>
+        ) : null}
+      </TripActivityCard>
     </li>
   );
 }
@@ -295,38 +218,38 @@ export default function TripSummaryOverview({
 
       {/* ── Resumen rápido ── */}
       <Reveal variant="fade" as="section" className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
-        <QuickStatCard
+        <TripStatCard
           icon={<CalendarDays className="h-4 w-4" aria-hidden />}
           label="Días"
           value={totalDays !== null ? `${totalDays} días` : "Sin fechas"}
           href={planHref}
           highlight={phase === "during"}
         />
-        <QuickStatCard
+        <TripStatCard
           icon={<Users className="h-4 w-4" aria-hidden />}
           label="Participantes"
           value={`${participantsCount ?? 0}`}
           href={`/trip/${tripId}/participants`}
         />
-        <QuickStatCard
+        <TripStatCard
           icon={<Wallet className="h-4 w-4" aria-hidden />}
           label="Gastos"
           value={expensesTab?.metric ?? "0 gastos"}
           href={expensesTab?.href}
         />
-        <QuickStatCard
+        <TripStatCard
           icon={<FileText className="h-4 w-4" aria-hidden />}
           label="Documentos"
           value={resourcesTab?.metric ?? "0 ítems"}
           href={resourcesTab?.href}
         />
-        <QuickStatCard
+        <TripStatCard
           icon={<Route className="h-4 w-4" aria-hidden />}
           label="Rutas"
           value={routesTab?.metric ?? "0 rutas"}
           href={routesTab?.href}
         />
-        <QuickStatCard
+        <TripStatCard
           icon={<Clock className="h-4 w-4" aria-hidden />}
           label="Estado"
           value={phaseLabel}
@@ -487,7 +410,7 @@ export default function TripSummaryOverview({
             const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
             return (
               <Reveal key={tab.href} variant="scale" delay={(tabIdx % 4) as RevealDelay} className="h-full">
-                <Link href={tab.href} className={`${TILE_CARD} sm:p-5`}>
+                <Link href={tab.href} className={`${TRIP_TILE_CARD} sm:p-5`}>
                   <div className="flex items-start gap-3">
                     <div className={TILE_ICON_WRAP}>
                       <Image

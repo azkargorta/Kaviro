@@ -149,7 +149,7 @@ export default function TripRecapClient({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-start py-8 px-4 gap-6">
+    <div className="trip-workspace-bg flex min-h-screen flex-col items-center justify-start gap-6 px-4 py-8">
       {/* Back + Help */}
       <div className="w-full max-w-sm flex items-center justify-between">
         <Link href={`/trip/${tripId}`} className="text-slate-500 text-xs font-semibold hover:text-slate-300">
@@ -232,18 +232,18 @@ export default function TripRecapClient({
         </div>
 
         {/* ── Stats grid — sin coste ── */}
-        <div className="bg-white dark:bg-[#0F1623] grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-[#1E293B]">
+        <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 bg-gradient-to-b from-white to-slate-50/80 dark:divide-[#1E293B] dark:from-[#0F1623] dark:to-[#080C14]">
           <div className="p-4 text-center">
             <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{totalDays}</p>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">días de viaje</p>
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">días de viaje</p>
           </div>
           <div className="p-4 text-center">
-            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{activitiesCount}</p>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">actividades</p>
+            <p className="text-3xl font-extrabold text-[var(--brand)]">{activitiesCount}</p>
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">actividades</p>
           </div>
           <div className="p-4 text-center">
             <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{participantsCount}</p>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">viajeros</p>
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">viajeros</p>
           </div>
           <div className="p-4 text-center">
             {kmTravelled > 0 ? (

@@ -14,6 +14,7 @@ import PlanUtilizarArchivoButton from "@/components/trip/plan/PlanUtilizarArchiv
 import PlanActivityDetailSheet from "@/components/trip/plan/PlanActivityDetailSheet";
 import PlanAiSuggestBadge from "@/components/trip/plan/PlanAiSuggestBadge";
 import { isLodgingPlanActivity } from "@/lib/plan-activity-meta";
+import { resolveActivityVisualState } from "@/lib/trip-activity-visual";
 import PlanForm, { type PlanFormValues } from "@/components/trip/plan/PlanForm";
 import { useTripActivities, type TripActivity } from "@/hooks/useTripActivities";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";;
@@ -1697,6 +1698,11 @@ export default function TripPlanView({
                   const bulkSelectable = canManagePlan && bulkDeleteMode && canBulkDeletePlanActivity(activity);
                   const bulkSelected = selectedActivityIds.has(activity.id);
 
+                  const visualState = resolveActivityVisualState({
+                    activityDate: activity.activity_date,
+                    activityTime: activity.activity_time,
+                  });
+
                   const row = (
                     <div key={activity.id} className="motion-stagger-item">
                       <PlanActivityRow
@@ -1709,6 +1715,7 @@ export default function TripPlanView({
                         customByKey={customByKey}
                         selectable={bulkSelectable}
                         selected={bulkSelected}
+                        visualState={visualState}
                         tripId={tripId}
                         activityId={activity.id}
                         currentUserId={currentUserId}

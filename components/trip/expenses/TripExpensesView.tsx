@@ -14,6 +14,7 @@ import { useTripExpenses } from "@/hooks/useTripExpenses";
 import { useTripData } from "@/hooks/useTripData";
 import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
 import {
+  ArrowLeftRight,
   BarChart3,
   ChevronDown,
   Clock,
@@ -21,7 +22,9 @@ import {
   HelpCircle,
   MoreHorizontal,
   Plus,
+  Receipt,
   ScanText,
+  Users,
   Wallet,
   X,
 } from "lucide-react";
@@ -33,6 +36,7 @@ import MobileBottomSheet from "@/components/ui/MobileBottomSheet";
 import ExpenseBalanceCompact from "@/components/trip/expenses/ExpenseBalanceCompact";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { supabase } from "@/lib/supabase";
+import { TripStatCard } from "@/components/trip/ui";
 export default function TripExpensesView({
   tripId,
   isPremium = true,
@@ -684,29 +688,28 @@ export default function TripExpensesView({
         }
         const totalAmt = (expenses as any[]).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
         return (
-          <div className="hidden md:grid md:grid-cols-4 md:divide-x md:divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 dark:divide-slate-700/60 dark:border-slate-700/50">
-            {/* Gastos registrados */}
-            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">🧾 Gastos registrados</p>
-              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{expenses.length}</p>
-            </div>
-            {/* Importe total */}
-            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">💰 Importe total</p>
-              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">
-                {totalAmt.toLocaleString("es-ES", { maximumFractionDigits: 2 })} {tripBaseCurrency || "EUR"}
-              </p>
-            </div>
-            {/* Tu balance — con selector si aún no se sabe quién eres */}
-            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
-                {myBalance === null ? "👤" : myBalance >= 0 ? "💚" : "🔴"} Tu balance
-              </p>
+          <div className="hidden md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-4">
+            <TripStatCard
+              icon={<Receipt className="h-4 w-4" aria-hidden />}
+              label="Gastos registrados"
+              value={String(expenses.length)}
+            />
+            <TripStatCard
+              icon={<Wallet className="h-4 w-4" aria-hidden />}
+              label="Total gastado"
+              value={`${totalAmt.toLocaleString("es-ES", { maximumFractionDigits: 2 })} ${tripBaseCurrency || "EUR"}`}
+              highlight
+            />
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-[0_2px_12px_rgba(15,23,42,0.06)] dark:border-[#1E293B] dark:bg-[#0F1623]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300 dark:ring-slate-700">
+                <Users className="h-4 w-4" aria-hidden />
+              </div>
+              <p className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Tu balance</p>
               {myDisplayName === null ? (
                 <select
                   defaultValue=""
                   onChange={(e) => { if (e.target.value) selectMyName(e.target.value); }}
-                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-slate-50 py-1 pl-2 pr-6 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-border)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-2 pr-6 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-border)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 >
                   <option value="" disabled>¿Cuál es tu nombre?</option>
                   {(registeredTravelers.length > 0 ? registeredTravelers : (participants as string[])).map((p) => (
@@ -714,12 +717,12 @@ export default function TripExpensesView({
                   ))}
                 </select>
               ) : (
-                <div className="flex items-baseline gap-2">
-                  <p className={`text-lg font-extrabold leading-tight ${balanceClass}`}>{balanceValue}</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <p className={`text-sm font-extrabold ${balanceClass}`}>{balanceValue}</p>
                   <button
                     type="button"
                     onClick={() => { localStorage.removeItem(`kaviro_myname_${tripId}`); setMyDisplayName(null); }}
-                    className="text-[10px] text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                    className="text-[10px] text-slate-400 hover:text-slate-600"
                     title="Cambiar persona"
                   >
                     ✕
@@ -727,11 +730,11 @@ export default function TripExpensesView({
                 </div>
               )}
             </div>
-            {/* Pagos sugeridos */}
-            <div className="flex flex-col gap-0.5 bg-white px-5 py-3.5 dark:bg-[var(--surface-card)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">🔄 Pagos sugeridos</p>
-              <p className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{(suggestedSettlements as any[]).length}</p>
-            </div>
+            <TripStatCard
+              icon={<ArrowLeftRight className="h-4 w-4" aria-hidden />}
+              label="Quién debe a quién"
+              value={String((suggestedSettlements as any[]).length)}
+            />
           </div>
         );
       })() : null}

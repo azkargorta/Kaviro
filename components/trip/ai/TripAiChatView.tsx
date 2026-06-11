@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
+import TripModuleIntro from "@/components/trip/ui/TripModuleIntro";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -1813,6 +1814,37 @@ export default function TripAiChatView({
           iconAlt="Asistente personal"
           actions={<TripScreenActions tripId={tripId} />}
         />
+      ) : null}
+
+      {showPageHeader && !onboardingActive ? (
+        <TripModuleIntro
+          title="Tu copiloto de viaje"
+          description="Pregunta, reorganiza o mejora el plan sin salir del viaje. Elige un atajo o escribe lo que necesites."
+          icon={<Sparkles className="h-5 w-5" aria-hidden />}
+        >
+          <div data-tour="ai-quick-prompts" className="mt-4 flex flex-wrap gap-2">
+            {[
+              "Mejorar itinerario",
+              "Buscar plan para hoy",
+              "Reorganizar día",
+              "Sugerir restaurante",
+              "Resolver duda del viaje",
+            ].map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                disabled={loading || aiBudgetExceeded || !isPremium}
+                onClick={() => {
+                  setQuestion(prompt);
+                  void sendMessage(prompt);
+                }}
+                className="rounded-full border border-[var(--brand-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--brand-text)] shadow-sm transition hover:bg-[var(--brand-light)] disabled:opacity-50 dark:bg-[#0F1623] dark:hover:bg-[#141c2b]"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </TripModuleIntro>
       ) : null}
 
       {onboardingActive ? (

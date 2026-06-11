@@ -17,6 +17,8 @@ import {
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import AgencyTripDeleteButton from "@/components/agency/AgencyTripDeleteButton";
 import { agencyCardClass } from "@/lib/agency-theme";
+import { TRIP_PANEL } from "@/components/trip/ui/trip-ui-classes";
+import TripSectionHeader from "@/components/trip/ui/TripSectionHeader";
 
 type TripSettingsViewProps = {
   tripId: string;
@@ -255,7 +257,8 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
     );
   }
 
-  const sectionCard = "rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm max-md:p-3 p-5";
+  const sectionCard = `${TRIP_PANEL} max-md:p-3 p-5 space-y-4`;
+  const dangerCard = `${TRIP_PANEL} space-y-3 border-rose-200/80 bg-gradient-to-br from-rose-50/80 via-white to-slate-50 p-5 dark:border-rose-900/30 dark:from-rose-950/20 dark:via-[#0F1623] dark:to-[#080C14]`;
 
   return (
     <div className="space-y-3 md:space-y-5">
@@ -270,17 +273,15 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
         </div>
       )}
 
-      <details className={`${sectionCard} space-y-4`} open={!isMobile || undefined}>
+      <details className={sectionCard} open={!isMobile || undefined}>
         <summary className="cursor-pointer list-none text-sm font-extrabold uppercase tracking-[0.1em] text-[var(--text-primary)] md:hidden">
           Datos del viaje
         </summary>
         <div className="hidden md:block">
-          <h3 className="text-sm font-extrabold text-[var(--text-primary)] uppercase tracking-[0.1em]">
-            Datos del viaje
-          </h3>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-            Nombre, fechas y destino general que aparecen en el encabezado del viaje.
-          </p>
+          <TripSectionHeader
+            title="Datos del viaje"
+            description="Nombre, fechas y destino general que aparecen en el encabezado del viaje."
+          />
         </div>
 
         <div>
@@ -557,13 +558,12 @@ export default function TripSettingsView({ tripId, readOnly = false }: TripSetti
       )}
 
       {isAgencyTrip && !readOnly ? (
-        <div className={`${agencyCardClass} space-y-3 p-5`}>
-          <h3 className="text-sm font-extrabold uppercase tracking-[0.1em] text-red-700 dark:text-red-300">
-            Zona de peligro
-          </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            Elimina este viaje de Kaviro Trips y todos sus datos. No se puede deshacer.
-          </p>
+        <div className={dangerCard}>
+          <TripSectionHeader
+            eyebrow="Peligro"
+            title="Eliminar viaje"
+            description="Elimina este viaje de Kaviro Trips y todos sus datos. No se puede deshacer."
+          />
           <AgencyTripDeleteButton tripId={tripId} tripName={name || "Viaje"} />
         </div>
       ) : null}

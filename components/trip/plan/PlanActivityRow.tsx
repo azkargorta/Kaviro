@@ -3,6 +3,8 @@
 import { Check, GripVertical } from "lucide-react";
 import { ActivityReactions } from "@/components/trip/plan/ActivityReactions";
 import { effectivePlanKind, getPlanActivityDisplayMeta } from "@/lib/plan-activity-meta";
+import type { ActivityVisualState } from "@/lib/trip-activity-visual";
+import TripStatusPill from "@/components/trip/ui/TripStatusPill";
 
 type Props = {
   title: string;
@@ -23,6 +25,7 @@ type Props = {
   currentUserId?: string | null;
   currentDisplayName?: string;
   showReactions?: boolean;
+  visualState?: ActivityVisualState;
 };
 
 export default function PlanActivityRow({
@@ -44,10 +47,26 @@ export default function PlanActivityRow({
   currentUserId = null,
   currentDisplayName = "Yo",
   showReactions = false,
+  visualState = "default",
 }: Props) {
   const meta = getPlanActivityDisplayMeta(isLodging ? "lodging" : effectivePlanKind({ activity_kind: activityKind }), customByKey);
   const subtitle = (place || "").trim() || "Sin ubicación";
   const timeLabel = (time || "").trim().slice(0, 5) || "—";
+  const isPast = visualState === "past";
+  const isCurrent = visualState === "current";
+
+  const shellClass =
+    isDragging
+      ? "border-[var(--brand-border)] bg-[var(--brand-light)] shadow-md ring-1 ring-[var(--brand-border)]/50"
+      : selectable && selected
+        ? "border-[var(--brand-border)] bg-[var(--brand-light)] ring-2 ring-[var(--brand-border)]/60"
+        : isCurrent
+          ? "border-[var(--brand-border)] bg-white shadow-[0_4px_14px_rgba(248,113,113,0.12)] ring-1 ring-[var(--brand-border)]/40 dark:bg-[#141c2b]"
+          : isPast
+            ? "border border-dashed border-slate-200 bg-slate-100/80 dark:border-[#334155] dark:bg-[#0a0e14]/40"
+            : visualState === "upcoming"
+              ? "border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:border-slate-300 dark:border-[#1E293B] dark:bg-[#080C14]"
+              : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/80 dark:border-[#1E293B] dark:bg-[#080C14] dark:hover:border-[#334155]";
 
   return (
     <div
@@ -65,15 +84,14 @@ export default function PlanActivityRow({
             }
           : undefined
       }
-      className={`rounded-xl border transition ${
-        isDragging
-          ? "border-violet-300 bg-violet-50 shadow-md"
-          : selectable && selected
-            ? "border-violet-400 bg-violet-50 ring-2 ring-violet-300/60"
-            : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/80 dark:border-[#1E293B] dark:bg-[#080C14] dark:hover:border-[#334155]"
-      } ${onClick ? "cursor-pointer" : ""}`}
+      className={`relative rounded-xl border transition ${shellClass} ${onClick ? "cursor-pointer" : ""}`}
     >
-      <div className="flex items-start gap-2 p-3">
+      {visualState !== "default" ? (
+        <span className="absolute right-2 top-2 z-[1]">
+          <TripStatusPill variant={visualState === "past" ? "past" : visualState === "current" ? "current" : "upcoming"} />
+        </span>
+      ) : null}
+      <div className={`flex items-start gap-2 p-3 ${isPast ? "opacity-80" : ""}`}>
       {dragHandleProps ? (
         <button
           type="button"
@@ -98,9 +116,17 @@ export default function PlanActivityRow({
       <span className="mt-0.5 shrink-0 text-xl leading-none" aria-hidden>
         {icon || meta.icon}
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{title}</p>
-        <p className="truncate text-[10px] text-slate-400">{subtitle}</p>
+      <div className="min-w-0 flex-1 pr-14">
+        <p
+          className={`truncate text-xs font-bold ${
+            isPast
+              ? "text-slate-400 line-through decoration-slate-400/70 dark:text-slate-500"
+              : "text-slate-900 dark:text-white"
+          }`}
+        >
+          {title}
+        </p>
+        <p className={`truncate text-[10px] ${isPast ? "text-slate-400/80" : "text-slate-400"}`}>{subtitle}</p>
       </div>
       <span className="shrink-0 rounded-md bg-[var(--brand)] px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">{timeLabel}</span>
       </div>
