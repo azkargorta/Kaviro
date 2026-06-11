@@ -8,7 +8,7 @@ import TripHighlightCard from "@/components/trip/ui/TripHighlightCard";
 import TripActivityCard from "@/components/trip/ui/TripActivityCard";
 import TripEmptyState from "@/components/trip/ui/TripEmptyState";
 import TripPanel from "@/components/trip/ui/TripPanel";
-import { resolveActivityVisualState } from "@/lib/trip-activity-visual";
+import { resolveTodayDayTimeline } from "@/lib/trip-activity-visual";
 
 type Activity = {
   id: string;
@@ -106,18 +106,8 @@ export default function TripTodayClient({
   }, []);
 
   const nowHHMM = currentTime.toTimeString().slice(0, 5);
-  const currentActivity =
-    todayActivities.find((a) => {
-      const t = formatTime(a.activity_time);
-      return t && t <= nowHHMM;
-    }) ??
-    todayActivities[0] ??
-    null;
-  const nextActivity =
-    todayActivities.find((a) => {
-      const t = formatTime(a.activity_time);
-      return t && t > nowHHMM;
-    }) ?? null;
+  const { sorted: sortedTodayActivities, spotlight: currentActivity, next: nextActivity, stateFor } =
+    resolveTodayDayTimeline(todayActivities, nowHHMM);
 
   if (!isActive) {
     return (
@@ -270,14 +260,9 @@ export default function TripTodayClient({
             </p>
           </div>
           <div className="motion-stagger-list space-y-2 p-3">
-            {todayActivities.map((a) => {
+            {sortedTodayActivities.map((a) => {
               const meta = kindMeta(a.activity_kind);
-              const state = resolveActivityVisualState({
-                activityDate: a.activity_date ?? today,
-                activityTime: a.activity_time,
-              });
-              const isCurrent = a.id === currentActivity?.id;
-              const visualState = isCurrent ? "current" : state;
+              const visualState = stateFor(a);
               const mapsUrl = buildGmapsUrl(a);
               return (
                 <TripActivityCard key={a.id} state={visualState} className="motion-stagger-item !py-3 max-md:!border-slate-700 max-md:!bg-slate-800/60">
