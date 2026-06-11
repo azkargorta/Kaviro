@@ -9,7 +9,18 @@ import type { TripWeatherCityForecast, TripWeatherResult } from "@/lib/trip-weat
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
-import { ArrowRight, CalendarDays, Clock, MapPin, Share2, Users, Wallet, FileText, Route } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Clock,
+  MapPin,
+  Share2,
+  Users,
+  Wallet,
+  FileText,
+  Route,
+} from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import type { RevealDelay } from "@/components/ui/Reveal";
 import TripBudgetSummaryCard from "@/components/trip/summary/TripBudgetSummaryCard";
@@ -77,7 +88,9 @@ function daysBetween(a: string, b: string) {
 }
 
 const TILE_CARD =
-  "trip-tile-hover group flex h-full flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600";
+  "trip-tile-hover group flex h-full flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:hover:border-slate-600";
+const TILE_CARD_HIGHLIGHT =
+  "trip-tile-hover group flex h-full flex-col rounded-2xl border border-[var(--brand-border)] bg-white p-4 shadow-[0_4px_16px_rgba(248,113,113,0.1)] ring-1 ring-[var(--brand-border)]/40 transition hover:-translate-y-0.5 hover:shadow-[0_6px_22px_rgba(248,113,113,0.14)] dark:border-[var(--brand-border)] dark:bg-[#0F1623]";
 const TILE_ICON_WRAP =
   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]";
 const coralPngFilterDark =
@@ -92,15 +105,15 @@ function TripProgressBar({ startDate, endDate }: { startDate: string; endDate: s
   const pct = Math.round((elapsed / total) * 100);
   return (
     <div>
-      <div className="mb-1.5 flex justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+      <div className="mb-2 flex justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
         <span>
           Día {elapsed} de {total}
         </span>
-        <span className="tabular-nums">{pct}%</span>
+        <span className="tabular-nums text-[var(--brand-text)]">{pct}%</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+      <div className="h-2 overflow-hidden rounded-full bg-white/70 shadow-inner ring-1 ring-slate-200/80 dark:bg-[#1E293B] dark:ring-[#334155]">
         <div
-          className="h-full rounded-full bg-[var(--brand)] transition-all duration-700"
+          className="h-full rounded-full bg-[var(--brand)] shadow-[0_0_8px_rgba(248,113,113,0.35)] transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -113,33 +126,83 @@ function QuickStatCard({
   label,
   value,
   href,
+  highlight = false,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   href?: string;
+  highlight?: boolean;
 }) {
+  const cardClass = highlight ? TILE_CARD_HIGHLIGHT : TILE_CARD;
   const inner = (
     <>
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-[var(--brand)] dark:bg-[#141c2b]">
+      <div
+        className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+          highlight
+            ? "bg-[var(--brand-light)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]"
+            : "bg-slate-100 text-slate-600 ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300 dark:ring-slate-700"
+        }`}
+      >
         {icon}
       </div>
-      <div className="mt-2 min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="mt-0.5 truncate text-sm font-extrabold text-slate-900 dark:text-white">{value}</p>
+      <div className="mt-2.5 min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+          {label}
+        </p>
+        <p className="mt-1 truncate text-sm font-extrabold tracking-tight text-slate-900 dark:text-white">
+          {value}
+        </p>
       </div>
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} className={`${TILE_CARD} p-3.5 hover:border-[var(--brand-border)]`}>
+      <Link href={href} className={`${cardClass} p-3.5`}>
         {inner}
       </Link>
     );
   }
 
-  return <div className={`${TILE_CARD} p-3.5`}>{inner}</div>;
+  return <div className={`${cardClass} p-3.5`}>{inner}</div>;
+}
+
+function TodayActivityRow({
+  activity,
+}: {
+  activity: TripSummaryActivityPreview & { isPast: boolean };
+}) {
+  if (activity.isPast) {
+    return (
+      <li className="relative rounded-xl border border-dashed border-slate-200 bg-slate-100/90 px-4 py-3 dark:border-[#334155] dark:bg-[#0a0e14]/50">
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-slate-200/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:bg-[#1E293B] dark:text-slate-400">
+          <Check className="h-2.5 w-2.5" aria-hidden />
+          Hecha
+        </span>
+        <p className="pr-16 text-sm font-medium text-slate-400 line-through decoration-slate-400/80 dark:text-slate-500">
+          {activity.title}
+        </p>
+        <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{formatActivityWhen(activity)}</p>
+        {(activity.place_name || activity.address) ? (
+          <p className="mt-0.5 text-xs text-slate-400/80">{activity.place_name || activity.address}</p>
+        ) : null}
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded-xl border border-slate-200/90 bg-white px-4 py-3.5 shadow-[0_2px_10px_rgba(15,23,42,0.06)] ring-1 ring-slate-100 dark:border-[#334155] dark:bg-[#141c2b] dark:ring-[#1E293B]">
+      <p className="text-sm font-bold text-slate-900 dark:text-white">{activity.title}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">{formatActivityWhen(activity)}</p>
+      {(activity.place_name || activity.address) ? (
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+          <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
+          {activity.place_name || activity.address}
+        </p>
+      ) : null}
+    </li>
+  );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -237,6 +300,7 @@ export default function TripSummaryOverview({
           label="Días"
           value={totalDays !== null ? `${totalDays} días` : "Sin fechas"}
           href={planHref}
+          highlight={phase === "during"}
         />
         <QuickStatCard
           icon={<Users className="h-4 w-4" aria-hidden />}
@@ -266,6 +330,7 @@ export default function TripSummaryOverview({
           icon={<Clock className="h-4 w-4" aria-hidden />}
           label="Estado"
           value={phaseLabel}
+          highlight={phase === "during"}
         />
       </Reveal>
 
@@ -274,140 +339,144 @@ export default function TripSummaryOverview({
         variant="fade"
         as="section"
         data-tour="summary-countdown"
-        className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm md:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]"
+        className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white shadow-[0_8px_30px_rgba(248,113,113,0.1)] ring-1 ring-[var(--brand-border)]/50 dark:from-[#1a2438] dark:via-[#0F1623] dark:to-[#0F1623] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
       >
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4 dark:border-[#1E293B]">
-          <div className="min-w-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-light)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" aria-hidden />
-              Hoy
-            </span>
-            <h2 className="mt-2 text-lg font-extrabold capitalize text-slate-900 dark:text-white md:text-xl">
-              {todayLabel}
-            </h2>
-            {tripDestination ? (
-              <p className="mt-0.5 flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--brand)]" aria-hidden />
-                {tripDestination}
-              </p>
-            ) : null}
+        <div className="border-b border-[var(--brand-border)]/40 bg-[var(--brand-light)]/40 px-4 py-5 md:px-6 md:py-6 dark:border-[var(--brand-border)]/30 dark:bg-[var(--brand-light)]/10">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-2 rounded-full bg-[var(--brand)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-sm">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-white/90" aria-hidden />
+                Hoy
+              </span>
+              <h2 className="mt-3 text-xl font-extrabold capitalize tracking-tight text-slate-900 dark:text-white md:text-2xl">
+                {todayLabel}
+              </h2>
+              {tripDestination ? (
+                <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+                  <MapPin className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
+                  {tripDestination}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link
+                href={todayHref}
+                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200/90 bg-white px-4 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-100"
+              >
+                Modo día
+              </Link>
+              <Link
+                href={planHref}
+                className="btn-press inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-5 text-xs font-bold text-white shadow-md shadow-[var(--brand)]/20 transition hover:bg-[var(--brand-hover)]"
+              >
+                Ver itinerario
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </div>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Link
-              href={todayHref}
-              className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-200"
-            >
-              Modo día
-            </Link>
-            <Link
-              href={planHref}
-              className="btn-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
-            >
-              Ver itinerario
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          </div>
+
+          {phase === "during" && tripStartDate && tripEndDate ? (
+            <div className="mt-5 max-w-lg">
+              <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
+            </div>
+          ) : null}
         </div>
 
-        {phase === "during" && tripStartDate && tripEndDate ? (
-          <div className="mt-4">
-            <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
-          </div>
-        ) : null}
-
-        {(activitiesCount ?? 0) === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-[#334155] dark:bg-[#080C14]/50">
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Sin actividades todavía</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Crea tu primer plan o pide ayuda al asistente IA para montar el itinerario.
-            </p>
-            <Link
-              href={planHref}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
-            >
-              Ir al plan
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          </div>
-        ) : plansToday.length > 0 ? (
-          <ul className="mt-4 space-y-2">
-            {plansToday.map((a) => (
-              <li
-                key={a.id}
-                className={`rounded-xl border px-4 py-3 ${
-                  a.isPast
-                    ? "border-slate-100 bg-slate-50/80 opacity-70 dark:border-[#1E293B] dark:bg-[#080C14]/40"
-                    : "border-slate-200/90 bg-white shadow-sm dark:border-[#334155] dark:bg-[#141c2b]"
-                }`}
+        <div className="px-4 py-5 md:px-6 md:py-6">
+          {(activitiesCount ?? 0) === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300/80 bg-white/80 px-4 py-4 dark:border-[#334155] dark:bg-[#080C14]/40">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Sin actividades todavía</p>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                Crea tu primer plan o pide ayuda al asistente IA para montar el itinerario.
+              </p>
+              <Link
+                href={planHref}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
               >
-                <p
-                  className={`text-sm font-semibold text-slate-900 dark:text-white ${
-                    a.isPast ? "line-through decoration-slate-400" : ""
-                  }`}
-                >
-                  {a.title}
-                </p>
-                <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {formatActivityWhen(a)}
-                </p>
-                {(a.place_name || a.address) ? (
-                  <p className="mt-0.5 text-xs text-slate-400">{a.place_name || a.address}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-            No hay actividades programadas para hoy.
-          </p>
-        )}
+                Ir al plan
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </div>
+          ) : plansToday.length > 0 ? (
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+                Plan de hoy
+              </p>
+              <ul className="space-y-2.5">
+                {plansToday.map((a) => (
+                  <TodayActivityRow key={a.id} activity={a} />
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+              No hay actividades programadas para hoy.
+            </p>
+          )}
+        </div>
+      </Reveal>
 
-        {nextPlan ? (
-          <div className="mt-4 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
-              Próxima actividad
-            </p>
-            <p className="mt-1 text-base font-extrabold text-slate-900 dark:text-white">{nextPlan.title}</p>
-            <p className="mt-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-              {formatActivityWhen(nextPlan)}
-            </p>
-            {(nextPlan.place_name || nextPlan.address) ? (
-              <p className="mt-0.5 text-xs text-slate-500">{nextPlan.place_name || nextPlan.address}</p>
-            ) : null}
-            <div className="mt-3 flex flex-wrap gap-2">
+      {/* ── Próxima actividad — bloque destacado ── */}
+      {nextPlan ? (
+        <Reveal
+          variant="fade"
+          as="section"
+          className="overflow-hidden rounded-2xl border-2 border-[var(--brand-border)] bg-gradient-to-r from-[var(--brand-light)] via-white to-white p-5 shadow-[0_6px_24px_rgba(248,113,113,0.12)] md:p-6 dark:from-[#1a2438] dark:via-[#0F1623] dark:to-[#0F1623]"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">
+                Próxima actividad
+              </p>
+              <p className="mt-2 text-xl font-extrabold leading-snug tracking-tight text-slate-900 dark:text-white md:text-2xl">
+                {nextPlan.title}
+              </p>
+              <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                {formatActivityWhen(nextPlan)}
+              </p>
+              {(nextPlan.place_name || nextPlan.address) ? (
+                <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+                  <MapPin className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
+                  {nextPlan.place_name || nextPlan.address}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
               {buildMapsUrl(nextPlan) ? (
                 <a
                   href={buildMapsUrl(nextPlan)!}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-100"
                 >
-                  <MapPin className="h-3 w-3" aria-hidden />
+                  <MapPin className="h-3.5 w-3.5 text-[var(--brand)]" aria-hidden />
                   Cómo llegar
                 </a>
               ) : null}
               <Link
                 href={planHref}
-                className="inline-flex min-h-8 items-center gap-1 text-xs font-bold text-[var(--brand)] hover:underline"
+                className="btn-press inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--brand-hover)]"
               >
                 Abrir en plan
-                <ArrowRight className="h-3 w-3" aria-hidden />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             </div>
           </div>
-        ) : (activitiesCount ?? 0) > 0 ? (
-          <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500 dark:border-[#1E293B] dark:bg-[#080C14]/40 dark:text-slate-400">
-            No hay actividades futuras con fecha. Revisa el plan.
-          </p>
-        ) : null}
-      </Reveal>
+        </Reveal>
+      ) : (activitiesCount ?? 0) > 0 ? (
+        <p className="rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-sm font-medium text-slate-600 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-300">
+          No hay actividades futuras con fecha. Revisa el plan.
+        </p>
+      ) : null}
 
       {/* ── Secciones del viaje ── */}
       <section className="min-w-0 space-y-3">
         <Reveal variant="fade">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Centro de control</p>
-            <h2 className="mt-0.5 text-lg font-extrabold text-slate-900 dark:text-white md:text-xl">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              Centro de control
+            </p>
+            <h2 className="mt-1 text-lg font-extrabold tracking-tight text-slate-900 dark:text-white md:text-xl">
               Todo tu viaje, a un toque
             </h2>
           </div>

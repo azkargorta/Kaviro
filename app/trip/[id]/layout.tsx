@@ -104,7 +104,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
           <TripAgencyRouteGuard />
           <TripOfflineSync tripId={params.id} />
           <div
-            className={`pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
+            className={`trip-workspace-bg min-h-screen pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 ${
               useAgencyBranding ? "trip-agency-branded" : ""
             }`}
             style={agencyBrandStyle}
@@ -136,7 +136,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   startDate={tripMeta?.start_date ?? null}
                   endDate={tripMeta?.end_date ?? null}
                 />
-                <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:space-y-8">
+                <div className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:space-y-6 lg:space-y-8">
                   <div className="hidden md:block">
                     <TripHeroCard
                       tripId={params.id}

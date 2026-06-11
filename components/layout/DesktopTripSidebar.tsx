@@ -106,10 +106,10 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
         }
       >
         <div
-            className={`shadow-sm ${
+          className={`${
             useAgencyBranding || !isAgencyTrip
-              ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-[var(--surface-card)] shadow-[var(--shadow-card)] dark:border-[#1E293B]"
-              : "overflow-visible rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+              ? "overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.07)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
+              : "overflow-visible rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
           }`}
         >
           <div
@@ -118,16 +118,16 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
                 ? "border-white/10 bg-[var(--brand)]"
                 : isAgencyTrip
                   ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
-                  : "border-[var(--border-default)]"
+                  : "border-slate-100 bg-slate-50/80 dark:border-[#1E293B] dark:bg-[#141c2b]/60"
             }`}
           >
             <p
-              className={`truncate text-[10px] font-bold uppercase leading-normal tracking-[0.18em] ${
+              className={`truncate text-[10px] font-bold uppercase leading-normal tracking-[0.2em] ${
                 useAgencyBranding
                   ? "text-white/90"
                   : isAgencyTrip
                     ? "text-slate-300"
-                    : "text-[var(--text-tertiary)]"
+                    : "text-slate-600 dark:text-slate-300"
               }`}
             >
               {useAgencyBranding && agencyBranding
@@ -142,7 +142,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             aria-label="Navegación del viaje"
             data-tour="sidebar-nav"
             data-trip-sidebar-nav
-            className="space-y-3 p-2"
+            className="space-y-4 bg-white p-2.5 dark:bg-[#0F1623]"
           >
             {NAV_GROUPS.map((group) => {
               const groupItems = visibleItems.filter((item) => group.keys.includes(item.key));
@@ -150,14 +150,20 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
               return (
                 <div key={group.label}>
                   <p
-                    className={`mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.16em] ${
+                    className={`mb-1.5 flex items-center gap-2 px-2 text-[9px] font-extrabold uppercase tracking-[0.18em] ${
                       useAgencyBranding
                         ? "text-white/60"
                         : isAgencyTrip
                           ? "text-slate-400"
-                          : "text-slate-400 dark:text-slate-500"
+                          : "text-slate-500 dark:text-slate-400"
                     }`}
                   >
+                    <span
+                      className={`h-px w-3 shrink-0 ${
+                        useAgencyBranding || isAgencyTrip ? "bg-slate-400" : "bg-[var(--brand)]/60"
+                      }`}
+                      aria-hidden
+                    />
                     {group.label}
                   </p>
                   <div className="space-y-0.5">
@@ -233,8 +239,8 @@ function SidebarLink({
               ? "bg-[var(--brand)] text-white shadow-sm"
               : isAgencyTrip
                 ? "bg-[#1e3a5f] text-white shadow-sm"
-                : "border border-[var(--brand-border)] border-l-[3px] border-l-[var(--brand)] bg-[var(--brand-light)] text-slate-900 shadow-sm dark:bg-[#141c2b] dark:text-white"
-            : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60"
+                : "border border-[var(--brand-border)] border-l-[3px] border-l-[var(--brand)] bg-[var(--brand-light)] text-slate-900 shadow-[0_2px_10px_rgba(248,113,113,0.12)] dark:bg-[#1a2438] dark:text-white"
+            : "text-slate-700 hover:border-slate-200/80 hover:bg-slate-50 hover:shadow-sm dark:text-slate-200 dark:hover:border-[#334155] dark:hover:bg-[#141c2b]"
         }
       `}
     >

@@ -85,7 +85,7 @@ function PersonalTripHeader({
   const overflow = participants.length - shown.length;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.07)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
       <div
         data-tour="trip-hero-toolbar"
         className="flex items-start gap-3 px-4 pb-3 pt-[max(0.625rem,env(safe-area-inset-top))] max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))] md:items-center md:gap-4 md:px-5 md:py-4"

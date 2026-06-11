@@ -249,6 +249,14 @@ textarea.input { resize: vertical; min-height: 120px; }
   color: var(--text-secondary);
 }
 
+/* Fondo del workspace interior de viaje (capa 0) */
+.trip-workspace-bg {
+  background-color: #f6f7fb;
+}
+.dark .trip-workspace-bg {
+  background-color: #080c14;
+}
+
 /* ─── Layout shells ─────────────────────────────────────────────────────── */
 .page-shell {
   width: 100%;
