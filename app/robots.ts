@@ -22,6 +22,6 @@ export default function robots(): MetadataRoute.Robots {
       publicCrawlerRule("*"),
     ],
     sitemap: `${BASE_URL}/sitemap.xml`,
-    host: BASE_URL,
+    host: "www.kaviro.app",
   };
 }

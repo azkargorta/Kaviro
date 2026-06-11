@@ -170,7 +170,7 @@ export function buildLlmsTxt(): string {
     KAVIRO_PRODUCT_SUMMARY,
     "",
     "## Descripción corta",
-    KAVIRO_SHORT_DESCRIPTION,
+    "Kaviro es una web app para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA desde un único lugar.",
     "",
     "## Descripción larga",
     KAVIRO_LONG_DESCRIPTION,
