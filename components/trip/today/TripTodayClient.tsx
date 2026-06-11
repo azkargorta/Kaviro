@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import Reveal from "@/components/ui/Reveal";
-import { MapPin, Clock, ChevronRight, Navigation, Phone, ExternalLink, Calendar } from "lucide-react";
+import { MapPin, Clock, ChevronRight, Navigation, Phone } from "lucide-react";
 
 type Activity = {
   id: string;
@@ -20,16 +20,16 @@ type Activity = {
 };
 
 const KIND_META: Record<string, { icon: string; color: string; bg: string }> = {
-  culture:           { icon: "🏛️", color: "text-amber-800", bg: "bg-amber-50 dark:bg-amber-900/20" },
-  nature:            { icon: "🌿", color: "text-emerald-800", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-  viewpoint:         { icon: "🌄", color: "text-sky-800", bg: "bg-sky-50 dark:bg-sky-900/20" },
-  neighborhood:      { icon: "🧭", color: "text-slate-700", bg: "bg-slate-50 dark:bg-[#1E293B]" },
-  market:            { icon: "🧺", color: "text-orange-800", bg: "bg-orange-50" },
-  excursion:         { icon: "🚌", color: "text-blue-800", bg: "bg-blue-50" },
+  culture: { icon: "🏛️", color: "text-amber-800", bg: "bg-amber-50 dark:bg-amber-900/20" },
+  nature: { icon: "🌿", color: "text-emerald-800", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+  viewpoint: { icon: "🌄", color: "text-sky-800", bg: "bg-sky-50 dark:bg-sky-900/20" },
+  neighborhood: { icon: "🧭", color: "text-slate-700", bg: "bg-slate-50 dark:bg-[#1E293B]" },
+  market: { icon: "🧺", color: "text-orange-800", bg: "bg-orange-50" },
+  excursion: { icon: "🚌", color: "text-blue-800", bg: "bg-blue-50" },
   gastro_experience: { icon: "🍷", color: "text-pink-800", bg: "bg-pink-50" },
-  shopping:          { icon: "🛍️", color: "text-purple-800", bg: "bg-purple-50" },
-  night:             { icon: "🌙", color: "text-indigo-800", bg: "bg-indigo-50" },
-  transport:         { icon: "✈️", color: "text-slate-600", bg: "bg-slate-50 dark:bg-[#1E293B]" },
+  shopping: { icon: "🛍️", color: "text-purple-800", bg: "bg-purple-50" },
+  night: { icon: "🌙", color: "text-indigo-800", bg: "bg-indigo-50" },
+  transport: { icon: "✈️", color: "text-slate-600", bg: "bg-slate-50 dark:bg-[#1E293B]" },
 };
 
 function kindMeta(kind?: string | null) {
@@ -42,7 +42,9 @@ function formatTime(time: string | null | undefined) {
 }
 
 function formatDate(d: string) {
-  return new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${d}T12:00:00`));
+  return new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" }).format(
+    new Date(`${d}T12:00:00`)
+  );
 }
 
 function buildGmapsUrl(activity: Activity): string | null {
@@ -68,17 +70,28 @@ type Props = {
   canEdit: boolean;
 };
 
-export default function TripTodayClient({ tripId, tripName, destination, today, isActive, tripStart, tripEnd, todayActivities, upcoming, canEdit }: Props) {
+export default function TripTodayClient({
+  tripId,
+  tripName,
+  destination,
+  today,
+  isActive,
+  tripStart,
+  tripEnd,
+  todayActivities,
+  upcoming,
+  canEdit,
+}: Props) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeIdx, setActiveIdx] = useState(0);
   const [weather, setWeather] = useState<{ temp_c: number; description: string; icon: string } | null>(null);
 
-  // Fetch weather for destination
   useEffect(() => {
     if (!destination) return;
     void fetch(`/api/weather?destination=${encodeURIComponent(destination)}`)
       .then((r) => r.json())
-      .then((d) => { if (d?.temp_c != null) setWeather(d); })
+      .then((d) => {
+        if (d?.temp_c != null) setWeather(d);
+      })
       .catch(() => {});
   }, [destination]);
 
@@ -87,20 +100,23 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
     return () => clearInterval(id);
   }, []);
 
-  // Find current/next activity
   const nowHHMM = currentTime.toTimeString().slice(0, 5);
-  const currentActivity = todayActivities.find((a) => {
-    const t = formatTime(a.activity_time);
-    return t && t <= nowHHMM;
-  }) ?? todayActivities[0] ?? null;
-  const nextActivity = todayActivities.find((a) => {
-    const t = formatTime(a.activity_time);
-    return t && t > nowHHMM;
-  }) ?? null;
+  const currentActivity =
+    todayActivities.find((a) => {
+      const t = formatTime(a.activity_time);
+      return t && t <= nowHHMM;
+    }) ??
+    todayActivities[0] ??
+    null;
+  const nextActivity =
+    todayActivities.find((a) => {
+      const t = formatTime(a.activity_time);
+      return t && t > nowHHMM;
+    }) ?? null;
 
   if (!isActive) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] flex flex-col items-center justify-center p-6 text-center gap-4">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-6 text-center md:min-h-0 md:rounded-2xl md:border md:border-[var(--border-default)] md:bg-[var(--surface-card)] md:px-8 md:py-10 md:shadow-[var(--shadow-card)]">
         <div className="text-5xl">📅</div>
         <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">{tripName}</h1>
         <p className="text-sm font-medium text-slate-500">
@@ -108,7 +124,7 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
             ? `El viaje empieza el ${formatDate(tripStart)}`
             : `El viaje terminó el ${formatDate(tripEnd)}`}
         </p>
-        <Link href={`/trip/${tripId}/plan`} className="btn-primary text-sm py-2.5 px-5 mt-2">
+        <Link href={`/trip/${tripId}/plan`} className="btn-primary mt-2 px-5 py-2.5 text-sm">
           Ver el plan completo
         </Link>
       </div>
@@ -116,141 +132,227 @@ export default function TripTodayClient({ tripId, tripName, destination, today, 
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-900 text-white md:min-h-0 md:gap-5 md:bg-transparent md:text-[var(--text-primary)]">
       {/* Header */}
-      <div className="px-5 pt-safe-top pt-6 pb-4 bg-gradient-to-b from-slate-900 to-slate-800">
-        <div className="flex items-center justify-between mb-1">
-          <Link href={`/trip/${tripId}`} className="text-slate-400 text-xs font-semibold hover:text-slate-200">← {tripName}</Link>
-          <span className="text-slate-400 text-xs font-semibold">{currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
+      <Reveal
+        variant="fade"
+        className="bg-gradient-to-b from-slate-900 to-slate-800 px-5 pb-4 pt-6 pt-safe-top md:card-soft md:from-transparent md:to-transparent md:bg-[var(--surface-card)] md:px-6 md:py-5 md:pt-5"
+      >
+        <div className="mb-1 flex items-center justify-between">
+          <Link
+            href={`/trip/${tripId}`}
+            className="text-xs font-semibold text-slate-400 hover:text-slate-200 md:hidden"
+          >
+            ← {tripName}
+          </Link>
+          <span className="hidden text-xs font-semibold uppercase tracking-widest text-[var(--text-tertiary)] md:inline">
+            Modo día
+          </span>
+          <span className="text-xs font-semibold text-slate-400 md:text-[var(--text-secondary)]">
+            {currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+          </span>
         </div>
-        <h1 className="text-2xl font-extrabold">{formatDate(today)}</h1>
-        {destination && <p className="text-slate-400 text-sm font-medium mt-0.5 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{destination}</p>}
-        {weather && (
-          <div className="flex items-center gap-2 mt-2">
+        <h1 className="text-2xl font-extrabold capitalize text-white md:text-[var(--text-primary)]">
+          {formatDate(today)}
+        </h1>
+        {destination ? (
+          <p className="mt-0.5 flex items-center gap-1 text-sm font-medium text-slate-400 md:text-[var(--text-secondary)]">
+            <MapPin className="h-3.5 w-3.5" />
+            {destination}
+          </p>
+        ) : null}
+        {weather ? (
+          <div className="mt-2 flex items-center gap-2">
             <span className="text-2xl">{weather.icon ?? "🌤️"}</span>
-            <span className="text-white font-bold text-lg">{Math.round(weather.temp_c ?? 0)}°C</span>
-            <span className="text-slate-400 text-sm capitalize">{weather.description ?? ""}</span>
+            <span className="text-lg font-bold text-white md:text-[var(--text-primary)]">
+              {Math.round(weather.temp_c ?? 0)}°C
+            </span>
+            <span className="text-sm capitalize text-slate-400 md:text-[var(--text-secondary)]">
+              {weather.description ?? ""}
+            </span>
           </div>
-        )}
-      </div>
+        ) : null}
+      </Reveal>
 
       {/* Current activity spotlight */}
-      {currentActivity && (
-        <Reveal variant="scale" className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5">
-          <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2">Ahora mismo</p>
+      {currentActivity ? (
+        <Reveal
+          variant="scale"
+          className="mx-4 mt-4 rounded-3xl bg-gradient-to-br from-[#F87171] to-[#EF4444] p-5 md:mx-0 md:mt-0"
+        >
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/70">Ahora mismo</p>
           <div className="flex items-start gap-3">
-            <span className="text-3xl shrink-0">{kindMeta(currentActivity.activity_kind).icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-extrabold text-lg leading-tight">{currentActivity.title}</p>
-              {currentActivity.place_name && <p className="text-white/70 text-sm mt-0.5">{currentActivity.place_name}</p>}
-              {currentActivity.description && <p className="text-white/70 text-xs mt-1 line-clamp-2">{currentActivity.description}</p>}
+            <span className="shrink-0 text-3xl">{kindMeta(currentActivity.activity_kind).icon}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-extrabold leading-tight">{currentActivity.title}</p>
+              {currentActivity.place_name ? (
+                <p className="mt-0.5 text-sm text-white/70">{currentActivity.place_name}</p>
+              ) : null}
+              {currentActivity.description ? (
+                <p className="mt-1 line-clamp-2 text-xs text-white/70">{currentActivity.description}</p>
+              ) : null}
             </div>
           </div>
-          {/* Navigate button */}
-          {buildGmapsUrl(currentActivity) && (
+          {buildGmapsUrl(currentActivity) ? (
             <a
               href={buildGmapsUrl(currentActivity)!}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 hover:bg-white/30 px-4 py-3 text-sm font-bold transition"
+              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-4 py-3 text-sm font-bold transition hover:bg-white/30"
             >
-              <Navigation className="w-4 h-4" />
+              <Navigation className="h-4 w-4" />
               Cómo llegar
             </a>
-          )}
+          ) : null}
         </Reveal>
-      )}
+      ) : null}
 
       {/* Next activity */}
-      {nextActivity && (
-        <Reveal variant="slide" delay={1} className="mx-4 mt-3 rounded-3xl bg-slate-800 p-4 flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${kindMeta(nextActivity.activity_kind).bg}`}>
+      {nextActivity ? (
+        <Reveal
+          variant="slide"
+          delay={1}
+          className="mx-4 mt-3 flex items-center gap-3 rounded-3xl bg-slate-800 p-4 md:card-soft md:mx-0 md:mt-0 md:bg-[var(--surface-card)]"
+        >
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${kindMeta(nextActivity.activity_kind).bg}`}
+          >
             {kindMeta(nextActivity.activity_kind).icon}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Próximo</p>
-            <p className="font-bold text-sm truncate">{nextActivity.title}</p>
-            {formatTime(nextActivity.activity_time) && (
-              <p className="text-slate-400 text-xs flex items-center gap-1 mt-0.5">
-                <Clock className="w-3 h-3" />{formatTime(nextActivity.activity_time)}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 md:text-[var(--text-tertiary)]">
+              Próximo
+            </p>
+            <p className="truncate text-sm font-bold md:text-[var(--text-primary)]">{nextActivity.title}</p>
+            {formatTime(nextActivity.activity_time) ? (
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400 md:text-[var(--text-secondary)]">
+                <Clock className="h-3 w-3" />
+                {formatTime(nextActivity.activity_time)}
               </p>
-            )}
+            ) : null}
           </div>
-          {buildGmapsUrl(nextActivity) && (
-            <a href={buildGmapsUrl(nextActivity)!} target="_blank" rel="noopener noreferrer" className="shrink-0 w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center hover:bg-slate-600 transition">
-              <Navigation className="w-4 h-4 text-slate-300" />
+          {buildGmapsUrl(nextActivity) ? (
+            <a
+              href={buildGmapsUrl(nextActivity)!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-700 transition hover:bg-slate-600 md:border md:border-[var(--border-default)] md:bg-slate-50 md:hover:bg-slate-100 dark:md:bg-slate-800 dark:md:hover:bg-slate-700"
+            >
+              <Navigation className="h-4 w-4 text-slate-300 md:text-[var(--text-secondary)]" />
             </a>
-          )}
+          ) : null}
         </Reveal>
-      )}
+      ) : null}
 
       {/* Today's full schedule */}
-      {todayActivities.length > 0 && (
-        <Reveal variant="fade" delay={2} className="mx-4 mt-4 rounded-3xl bg-slate-800 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Plan de hoy — {todayActivities.length} actividades</p>
+      {todayActivities.length > 0 ? (
+        <Reveal
+          variant="fade"
+          delay={2}
+          className="mx-4 mt-4 overflow-hidden rounded-3xl bg-slate-800 md:card-soft md:mx-0 md:mt-0 md:bg-[var(--surface-card)]"
+        >
+          <div className="border-b border-slate-700 px-4 py-3 md:border-[var(--border-default)]">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 md:text-[var(--text-tertiary)]">
+              Plan de hoy — {todayActivities.length} actividades
+            </p>
           </div>
-          <div className="motion-stagger-list divide-y divide-slate-700">
+          <div className="motion-stagger-list divide-y divide-slate-700 md:divide-[var(--border-default)]">
             {todayActivities.map((a) => {
               const meta = kindMeta(a.activity_kind);
               const isCurrent = a.id === currentActivity?.id;
               const isPast = formatTime(a.activity_time) ? formatTime(a.activity_time)! < nowHHMM : false;
               const mapsUrl = buildGmapsUrl(a);
               return (
-                <div key={a.id} className={`motion-stagger-item px-4 py-3 flex items-center gap-3 ${isCurrent ? "bg-violet-900/30" : ""} ${isPast && !isCurrent ? "opacity-50" : ""}`}>
-                  <span className={`text-xl shrink-0 ${isPast && !isCurrent ? "grayscale" : ""}`}>{meta.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold ${isCurrent ? "text-violet-200" : ""} truncate`}>{a.title}</p>
-                    {formatTime(a.activity_time) && <p className="text-slate-400 text-xs">{formatTime(a.activity_time)}</p>}
+                <div
+                  key={a.id}
+                  className={`motion-stagger-item flex items-center gap-3 px-4 py-3 ${
+                    isCurrent
+                      ? "bg-violet-900/30 md:bg-[var(--brand-light)]"
+                      : ""
+                  } ${isPast && !isCurrent ? "opacity-50" : ""}`}
+                >
+                  <span className={`shrink-0 text-xl ${isPast && !isCurrent ? "grayscale" : ""}`}>{meta.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`truncate text-sm font-semibold ${
+                        isCurrent ? "text-violet-200 md:text-[var(--brand-text)]" : "md:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      {a.title}
+                    </p>
+                    {formatTime(a.activity_time) ? (
+                      <p className="text-xs text-slate-400 md:text-[var(--text-secondary)]">
+                        {formatTime(a.activity_time)}
+                      </p>
+                    ) : null}
                   </div>
-                  {mapsUrl && (
-                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-slate-500 hover:text-slate-300">
-                      <Navigation className="w-3.5 h-3.5" />
+                  {mapsUrl ? (
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-slate-500 hover:text-slate-300 md:text-[var(--text-tertiary)] md:hover:text-[var(--brand)]"
+                    >
+                      <Navigation className="h-3.5 w-3.5" />
                     </a>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
           </div>
         </Reveal>
-      )}
+      ) : null}
 
-      {todayActivities.length === 0 && (
-        <div className="mx-4 mt-4 rounded-3xl bg-slate-800 p-6 text-center">
-          <p className="text-slate-400 text-sm">No hay actividades programadas para hoy.</p>
-          {canEdit && (
-            <Link href={`/trip/${tripId}/plan`} className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-violet-400 hover:text-violet-200">
-              Añadir al plan <ChevronRight className="w-4 h-4" />
+      {todayActivities.length === 0 ? (
+        <div className="mx-4 mt-4 rounded-3xl bg-slate-800 p-6 text-center md:card-soft md:mx-0 md:mt-0 md:bg-[var(--surface-card)]">
+          <p className="text-sm text-slate-400 md:text-[var(--text-secondary)]">
+            No hay actividades programadas para hoy.
+          </p>
+          {canEdit ? (
+            <Link
+              href={`/trip/${tripId}/plan`}
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-400 hover:text-violet-200 md:text-[var(--brand)] md:hover:text-[var(--brand-hover)]"
+            >
+              Añadir al plan <ChevronRight className="h-4 w-4" />
             </Link>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       {/* Upcoming days preview */}
-      {upcoming.length > 0 && (
-        <div className="mx-4 mt-4 mb-8">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 px-1">Próximos días</p>
+      {upcoming.length > 0 ? (
+        <div className="mx-4 mb-8 mt-4 md:mx-0 md:mb-0 md:mt-0">
+          <p className="mb-2 px-1 text-xs font-bold uppercase tracking-widest text-slate-500 md:text-[var(--text-tertiary)]">
+            Próximos días
+          </p>
           <div className="space-y-2">
             {upcoming.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 rounded-2xl bg-slate-800/60 px-4 py-3">
-                <span className="text-lg shrink-0">{kindMeta(a.activity_kind).icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{a.title}</p>
-                  {a.activity_date && <p className="text-slate-400 text-xs">{formatDate(a.activity_date)}</p>}
+              <div
+                key={a.id}
+                className="flex items-center gap-3 rounded-2xl bg-slate-800/60 px-4 py-3 md:card-soft md:bg-[var(--surface-card)]"
+              >
+                <span className="shrink-0 text-lg">{kindMeta(a.activity_kind).icon}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold md:text-[var(--text-primary)]">{a.title}</p>
+                  {a.activity_date ? (
+                    <p className="text-xs text-slate-400 md:text-[var(--text-secondary)]">
+                      {formatDate(a.activity_date)}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Emergency numbers */}
-      <div className="mx-4 mb-safe-bottom mb-8 mt-auto pt-4">
+      <div className="mx-4 mb-safe-bottom mb-8 mt-auto pt-4 md:mx-0 md:mb-0 md:mt-0 md:pt-0">
         <a
           href="tel:112"
-          className="flex items-center justify-center gap-2 rounded-2xl border border-red-800 bg-red-900/30 px-4 py-3 text-red-300 text-sm font-bold hover:bg-red-900/50 transition"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-red-800 bg-red-900/30 px-4 py-3 text-sm font-bold text-red-300 transition hover:bg-red-900/50 md:border-red-200 md:bg-red-50 md:text-red-700 md:hover:bg-red-100 dark:md:border-red-900 dark:md:bg-red-950/40 dark:md:text-red-300"
         >
-          <Phone className="w-4 h-4" />
+          <Phone className="h-4 w-4" />
           Emergencias: 112
         </a>
       </div>
