@@ -15,7 +15,7 @@ type Props = {
 };
 
 const HERO_BTN =
-  "inline-flex shrink-0 min-h-9 items-center justify-center gap-1.5 rounded-xl border border-white/90 bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#F87171] shadow-sm transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/80 disabled:opacity-60";
+  "inline-flex shrink-0 min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-2.5 py-1.5 text-[11px] font-bold text-[var(--brand)] shadow-sm transition hover:border-[var(--brand-border)] hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:hover:bg-[#141c2b]";
 
 const ITEM_BASE =
   "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60 dark:text-slate-100 dark:hover:bg-[#1E293B]";

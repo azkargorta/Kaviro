@@ -25,13 +25,13 @@ export const EXPENSES_GROUP_NAV: TripNavItem[] = [
 ];
 
 export const PERSONAL_TRIP_NAV: TripNavItem[] = [
-  { key: "summary", label: "Inicio", sublabel: "Vista general", href: (id) => `/trip/${id}/summary` },
+  { key: "summary", label: "Resumen", sublabel: "Vista general", href: (id) => `/trip/${id}/summary` },
   { key: "plan", label: "Plan", sublabel: "Itinerario", href: (id) => `/trip/${id}/plan` },
-  { key: "map", label: "Rutas", sublabel: "Mapa", href: (id) => `/trip/${id}/map` },
+  { key: "map", label: "Mapa", sublabel: "Rutas", href: (id) => `/trip/${id}/map` },
   { key: "expenses", label: "Gastos", sublabel: "Finanzas", href: (id) => `/trip/${id}/expenses` },
-  { key: "participants", label: "Gente", sublabel: "Participantes", href: (id) => `/trip/${id}/participants` },
+  { key: "participants", label: "Participantes", sublabel: "Grupo", href: (id) => `/trip/${id}/participants` },
   { key: "resources", label: "Documentos", sublabel: "Recursos", href: (id) => `/trip/${id}/resources` },
-  { key: "chat", label: "Asistente", sublabel: "Chat IA", href: (id) => `/trip/${id}/ai-chat`, isPremiumGated: true },
+  { key: "chat", label: "IA", sublabel: "Asistente", href: (id) => `/trip/${id}/ai-chat`, isPremiumGated: true },
   { key: "today", label: "Hoy", sublabel: "Modo día", href: (id) => `/trip/${id}/today` },
   { key: "recap", label: "Recap", sublabel: "Recuerdos del viaje", href: (id) => `/trip/${id}/recap` },
   { key: "settings", label: "Ajustes", sublabel: "Datos del viaje", href: (id) => `/trip/${id}/settings` },

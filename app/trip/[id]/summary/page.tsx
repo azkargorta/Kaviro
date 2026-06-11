@@ -331,7 +331,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     },
     {
       href: `/trip/${tripId}/map`,
-      label: "Rutas",
+      label: "Mapa",
       subtitle: "Rutas, trayectos y paradas sobre el mapa",
       metric: `${routesCount ?? 0} rutas`,
       iconKey: "map",
@@ -349,7 +349,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     },
     {
       href: `/trip/${tripId}/participants`,
-      label: "Gente",
+      label: "Participantes",
       subtitle: "Invitaciones, roles y permisos",
       metric: `${participantsCount ?? 0} ${(participantsCount ?? 0) === 1 ? "persona" : "personas"}`,
       iconKey: "participants",
@@ -358,7 +358,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     },
     {
       href: `/trip/${tripId}/resources`,
-      label: "Recursos",
+      label: "Documentos",
       subtitle: "Documentos, reservas y listas",
       metric: `${resourcesCount ?? 0} ítems`,
       iconKey: "resources",
@@ -367,7 +367,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     },
     {
       href: `/trip/${tripId}/ai-chat`,
-      label: "Asistente personal",
+      label: "IA",
       subtitle: isPremium ? "Conversación con el contexto de este viaje" : "Requiere plan Premium",
       metric: isPremium ? "Premium activo" : "Ver Premium",
       iconKey: "chat",
@@ -406,9 +406,9 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   return (
     <main className="w-full min-w-0 max-w-full space-y-5 md:space-y-6">
       <TripBoardPageHeader
-        section="Resumen del viaje"
-        title={currentTrip.name}
-        description={`${currentTrip.destination || "Destino pendiente"} · ${formatDateRange(currentTrip.start_date, currentTrip.end_date)}`}
+        section="Resumen"
+        title="Centro de control"
+        description="Itinerario, gastos, documentos y equipo en un vistazo"
         iconKey="summary"
         iconAlt="Resumen"
         actions={<TripScreenActions tripId={tripId} homeLabel="Mis viajes" />}
@@ -437,21 +437,23 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       />
 
       {alerts.length ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-          <div className="text-sm font-extrabold text-amber-900">Siguientes pasos</div>
-          <ul className="mt-3 space-y-2 text-sm text-amber-950">
+        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <div className="text-sm font-extrabold text-slate-900 dark:text-white">Siguientes pasos</div>
+          <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
             {alerts.slice(0, 5).map((a) => (
               <li key={a} className="flex gap-2">
-                <span aria-hidden>•</span>
+                <span className="text-[var(--brand)]" aria-hidden>
+                  •
+                </span>
                 <span>{a}</span>
               </li>
             ))}
           </ul>
         </section>
       ) : (
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <div className="text-sm font-extrabold text-emerald-900">Todo listo</div>
-          <div className="mt-1 text-sm text-emerald-950">
+        <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-5">
+          <div className="text-sm font-extrabold text-slate-900 dark:text-white">Todo listo</div>
+          <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             El viaje tiene contenido en las distintas áreas. Sigue desde las tarjetas de arriba o el menú lateral.
           </div>
         </section>

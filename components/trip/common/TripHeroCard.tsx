@@ -9,8 +9,9 @@ import type { AgencyBranding } from "@/lib/agency";
 import { agencyBrandedHeroGradientDiagonal } from "@/lib/agency-brand-tokens";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { agencyHeroGradient } from "@/lib/agency-theme";
-import { ExternalLink, Eye, Globe } from "lucide-react";
+import { ExternalLink, Eye, Globe, MapPin } from "lucide-react";
 import { travelerPreviewEntryHref } from "@/lib/trip-traveler-preview";
+import { tripTimelineProgress } from "@/lib/trip-timeline-progress";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -24,6 +25,8 @@ type Props = {
   tripName: string;
   destination: string | null;
   participants: string[];
+  startDate?: string | null;
+  endDate?: string | null;
   isAgencyTrip?: boolean;
   useAgencyBranding?: boolean;
   agencyBranding?: AgencyBranding | null;
@@ -33,8 +36,140 @@ type Props = {
 function formatDestination(raw: string | null) {
   if (!raw) return "";
   const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0]!.toUpperCase()} · ${parts[1]!.toUpperCase()}`;
-  return raw.toUpperCase();
+  if (parts.length >= 2) return `${parts[0]} · ${parts[1]}`;
+  return raw;
+}
+
+function formatDateRange(start: string | null | undefined, end: string | null | undefined) {
+  const fmt = (v: string) =>
+    new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", year: "numeric" }).format(
+      new Date(`${v}T12:00:00`)
+    );
+  if (start && end) return `${fmt(start)} – ${fmt(end)}`;
+  if (start) return `Desde ${fmt(start)}`;
+  if (end) return `Hasta ${fmt(end)}`;
+  return null;
+}
+
+function tripStatus(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined
+): { label: string; tone: "upcoming" | "active" | "done" | "unknown" } {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!startDate || !endDate) return { label: "Planificando", tone: "unknown" };
+  if (today < startDate) return { label: "Próximo viaje", tone: "upcoming" };
+  if (today > endDate) return { label: "Viaje completado", tone: "done" };
+  return { label: "En curso", tone: "active" };
+}
+
+function PersonalTripHeader({
+  tripId,
+  tripName,
+  destination,
+  participants,
+  startDate,
+  endDate,
+}: {
+  tripId: string;
+  tripName: string;
+  destination: string | null;
+  participants: string[];
+  startDate?: string | null;
+  endDate?: string | null;
+}) {
+  const destLabel = formatDestination(destination);
+  const dateRange = formatDateRange(startDate, endDate);
+  const status = tripStatus(startDate, endDate);
+  const progress = tripTimelineProgress(startDate ?? null, endDate ?? null);
+  const shown = participants.slice(0, 5);
+  const overflow = participants.length - shown.length;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div
+        data-tour="trip-hero-toolbar"
+        className="flex items-start gap-3 px-4 pb-3 pt-[max(0.625rem,env(safe-area-inset-top))] max-md:pl-[max(0.75rem,var(--safe-area-left))] max-md:pr-[max(0.75rem,var(--safe-area-right))] md:items-center md:gap-4 md:px-5 md:py-4"
+      >
+        <TripMisViajesLink tour className="hidden shrink-0 md:inline-flex" />
+
+        <div className="min-w-0 flex-1 border-l-0 md:border-l-2 md:border-[var(--brand)] md:pl-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                status.tone === "active"
+                  ? "bg-[var(--brand-light)] text-[var(--brand-text)]"
+                  : "bg-slate-100 text-slate-600 dark:bg-[#141c2b] dark:text-slate-400"
+              }`}
+            >
+              {status.tone === "active" ? (
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--brand)]" aria-hidden />
+              ) : null}
+              {status.label}
+            </span>
+            {destLabel ? (
+              <span className="inline-flex min-w-0 items-center gap-1 truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
+                {destLabel}
+              </span>
+            ) : null}
+          </div>
+
+          <h1 className="mt-1 truncate text-lg font-extrabold tracking-tight text-slate-900 dark:text-white md:text-xl">
+            {tripName}
+          </h1>
+
+          {dateRange ? (
+            <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">{dateRange}</p>
+          ) : null}
+
+          {status.tone === "active" && progress !== null ? (
+            <div className="mt-2.5 max-w-md">
+              <div className="flex justify-between text-[10px] font-semibold text-slate-400">
+                <span>Progreso del viaje</span>
+                <span className="tabular-nums text-slate-500">{progress}%</span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+                <div
+                  className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className="hidden items-center gap-1.5 md:flex">
+            <TripHeroShareDropdown tripId={tripId} tripName={tripName} destination={destination} />
+            <TripHeroActions tripId={tripId} />
+          </div>
+          {shown.length > 0 ? (
+            <div className="flex items-center -space-x-2" title={`${participants.length} participantes`}>
+              {shown.map((name, i) => (
+                <span
+                  key={i}
+                  title={name}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200 dark:border-[#0F1623] dark:bg-[#1E293B] dark:text-slate-200 dark:ring-[#334155]"
+                >
+                  {initials(name)}
+                </span>
+              ))}
+              {overflow > 0 ? (
+                <span
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[var(--brand-light)] text-[10px] font-bold text-[var(--brand-text)] ring-1 ring-[var(--brand-border)] dark:border-[#0F1623]"
+                  title={`+${overflow} más`}
+                >
+                  +{overflow}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <TripHeroShareBar tripId={tripId} tripName={tripName} destination={destination} />
+    </div>
+  );
 }
 
 export default function TripHeroCard({
@@ -42,11 +177,26 @@ export default function TripHeroCard({
   tripName,
   destination,
   participants,
+  startDate,
+  endDate,
   isAgencyTrip = false,
   useAgencyBranding = false,
   agencyBranding = null,
   clientPortalHref = null,
 }: Props) {
+  if (!isAgencyTrip && !useAgencyBranding) {
+    return (
+      <PersonalTripHeader
+        tripId={tripId}
+        tripName={tripName}
+        destination={destination}
+        participants={participants}
+        startDate={startDate}
+        endDate={endDate}
+      />
+    );
+  }
+
   const destLabel = formatDestination(destination);
   const shown = participants.slice(0, 5);
   const overflow = participants.length - shown.length;
@@ -109,22 +259,18 @@ export default function TripHeroCard({
               {agencyBranding.name}
             </span>
           </Link>
+        ) : !isAgencyTrip ? (
+          <span className="hidden h-4 w-px shrink-0 bg-white/25 md:inline" aria-hidden />
         ) : (
-          !isAgencyTrip ? (
-            <span className="hidden h-4 w-px shrink-0 bg-white/25 md:inline" aria-hidden />
-          ) : (
-            <KaviroTripHeroLockup
-              size="sm"
-              href="/agency"
-              className="shrink-0"
-            />
-          )
+          <KaviroTripHeroLockup size="sm" href="/agency" className="shrink-0" />
         )}
 
         <div className="min-w-0 flex-1 self-center">
           {branded ? (
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
-              {isAgencyTrip ? `${KAVIRO_TRIPS_PRODUCT_NAME} · ${agencyBranding.name}` : `Tu viaje con ${agencyBranding.name}`}
+              {isAgencyTrip
+                ? `${KAVIRO_TRIPS_PRODUCT_NAME} · ${agencyBranding.name}`
+                : `Tu viaje con ${agencyBranding.name}`}
             </p>
           ) : isAgencyTrip ? (
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
@@ -133,7 +279,7 @@ export default function TripHeroCard({
           ) : null}
           {destLabel ? (
             <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
-              {destLabel}
+              {destLabel.toUpperCase()}
             </p>
           ) : null}
           <h1

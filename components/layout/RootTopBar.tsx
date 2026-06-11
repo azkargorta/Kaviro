@@ -101,7 +101,7 @@ export default function RootTopBar() {
               <DashboardRootBarPanel variant="stacked" neutral />
             </div>
 
-            <div className="hidden items-center gap-3 py-2.5 md:flex lg:gap-4">
+            <div className="hidden items-center gap-2.5 py-2 md:flex lg:gap-3">
               {logoLink("dark")}
               <DashboardRootBarPanel variant="inline" neutral />
               <HeaderActions session={session} isDashboardHome={false} heroMode={false} />

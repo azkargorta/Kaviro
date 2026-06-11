@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Calendar,
   Copy,
+  MapPin,
   Megaphone,
   MoreHorizontal,
   Pencil,
@@ -14,6 +15,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import { tripStatusBadgeTone } from "@/components/dashboard/TripStatusBadge";
 import { isExpenseGroupTrip } from "@/lib/dashboard-trip-types";
 import { useTripAnnouncementUnreadCount } from "@/components/dashboard/DashboardAnnouncementUnreadContext";
 import { useToast } from "@/components/ui/toast";
@@ -42,6 +44,20 @@ function formatRangeShort(start: string | null, end: string | null) {
     );
   if (start && end) return `${fmt(start)} — ${fmt(end)}`;
   return start ? `Desde ${fmt(start)}` : `Hasta ${fmt(end!)}`;
+}
+
+function destinationMark(destination: string | null) {
+  if (!destination?.trim()) return null;
+  return destination.trim().charAt(0).toUpperCase();
+}
+
+function cardAccentClass(badge: string) {
+  const tone = tripStatusBadgeTone(badge);
+  if (tone === "active") return "border-l-[3px] border-l-[var(--brand)]";
+  if (tone === "upcoming") return "border-l-[3px] border-l-slate-300 dark:border-l-slate-600";
+  if (tone === "past") return "border-l-[3px] border-l-slate-200 dark:border-l-slate-700";
+  if (tone === "pending") return "border-l-[3px] border-l-amber-300 dark:border-l-amber-700/60";
+  return "border-l-[3px] border-l-slate-200 dark:border-l-slate-700";
 }
 
 function computeCountdown(badge: string, startDate: string | null): string | null {
@@ -146,6 +162,7 @@ export default function TripCardItem({
   const isExpenseGroup = isExpenseGroupTrip(trip);
   const timelineProgress = tripTimelineProgress(trip.start_date, trip.end_date);
   const countdown = computeCountdown(badge, trip.start_date);
+  const destMark = destinationMark(trip.destination);
 
   function openTrip() {
     if (locked || editOpen || duplicateOpen) return;
@@ -159,20 +176,64 @@ export default function TripCardItem({
   return (
     <>
       <article
-        className={`group flex flex-col rounded-xl border border-slate-200/90 bg-white transition hover:border-slate-300 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
+        className={`group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
           locked ? "opacity-80" : ""
-        } ${compact ? "p-3" : "p-3.5"}`}
+        } ${cardAccentClass(badge)} ${compact ? "p-3" : "p-4"}`}
       >
-        <div className="flex items-start justify-between gap-2">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[var(--brand)]/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"
+          aria-hidden
+        />
+
+        <div className="flex items-start gap-3">
+          {destMark && !isExpenseGroup ? (
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
+                badge === "En curso"
+                  ? "bg-[var(--brand-light)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]"
+                  : "bg-slate-50 text-slate-600 ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300 dark:ring-slate-700"
+              }`}
+              aria-hidden
+            >
+              {destMark}
+            </div>
+          ) : isExpenseGroup ? (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300">
+              <Receipt className="h-4 w-4" aria-hidden />
+            </div>
+          ) : null}
+
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <TripStatusBadge badge={badge} />
-              {locked ? (
-                <span className="text-[10px] font-medium text-slate-400">Premium</span>
-              ) : countdown ? (
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">{countdown}</span>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <TripStatusBadge badge={badge} />
+                {locked ? (
+                  <span className="text-[10px] font-medium text-slate-400">Premium</span>
+                ) : countdown ? (
+                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{countdown}</span>
+                ) : null}
+              </div>
+              {!isDemo ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleToggleFavorite();
+                  }}
+                  disabled={favoriteLoading}
+                  className={`shrink-0 rounded-lg p-1 transition disabled:opacity-60 ${
+                    isFavorite
+                      ? "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                      : "text-slate-400 hover:bg-slate-100 hover:text-amber-500 dark:hover:bg-[#1E293B]"
+                  }`}
+                  title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                  aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                >
+                  <Star className={`h-3.5 w-3.5 ${isFavorite ? "fill-amber-400 text-amber-400" : ""}`} />
+                </button>
               ) : null}
             </div>
+
             <h3
               className={`mt-1.5 font-semibold leading-snug tracking-tight text-slate-900 dark:text-white ${
                 compact ? "line-clamp-1 text-sm" : "line-clamp-2 text-[15px]"
@@ -181,44 +242,37 @@ export default function TripCardItem({
             >
               {trip.name}
             </h3>
+
             {isExpenseGroup ? (
               <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                 <Receipt className="h-3 w-3 shrink-0" aria-hidden />
                 Gastos compartidos
               </p>
             ) : trip.destination ? (
-              <p className="mt-0.5 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{trip.destination}</p>
-            ) : null}
-            <p className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+              <p className="mt-0.5 flex items-center gap-1 line-clamp-1 text-xs text-slate-600 dark:text-slate-300">
+                <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
+                {trip.destination}
+              </p>
+            ) : (
+              <p className="mt-0.5 text-xs text-slate-400">Sin destino</p>
+            )}
+
+            <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
               <Calendar className="h-3 w-3 shrink-0" aria-hidden />
               {formatRangeShort(trip.start_date, trip.end_date)}
               <span className="text-slate-300 dark:text-slate-600">·</span>
               {(trip.base_currency || "EUR").toUpperCase()}
             </p>
           </div>
-
-          {!isDemo ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleToggleFavorite();
-              }}
-              disabled={favoriteLoading}
-              className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-amber-500 disabled:opacity-60 dark:hover:bg-[#1E293B]"
-              title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-              aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-            >
-              <Star
-                className={`h-3.5 w-3.5 ${isFavorite ? "fill-amber-400 text-amber-400" : ""}`}
-              />
-            </button>
-          ) : null}
         </div>
 
         {timelineProgress !== null && badge === "En curso" && (
-          <div className="mt-2.5">
-            <div className="h-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+          <div className="mt-3">
+            <div className="mb-1 flex justify-between text-[10px] font-semibold text-slate-400">
+              <span>Progreso</span>
+              <span className="tabular-nums">{timelineProgress}%</span>
+            </div>
+            <div className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
               <div
                 className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-500"
                 style={{ width: `${timelineProgress}%` }}
@@ -244,7 +298,7 @@ export default function TripCardItem({
           </div>
         )}
 
-        <div className="mt-2.5 flex items-center justify-between gap-2 pt-2">
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-[#1E293B]">
           {isDemo ? (
             <span className="text-[11px] font-medium text-slate-400">Viaje de práctica</span>
           ) : (

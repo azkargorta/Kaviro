@@ -101,9 +101,13 @@ function TripListRow({
         ? fmt(trip.start_date)
         : "Sin fechas";
 
+  const destMark = trip.destination?.trim().charAt(0).toUpperCase();
+
   return (
     <div
-      className={`group flex min-h-[52px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${locked ? "opacity-80" : "cursor-pointer"}`}
+      className={`group flex min-h-[56px] items-center gap-3 rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm transition hover:-translate-y-px hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600 ${
+        isActive ? "border-l-[3px] border-l-[var(--brand)]" : "border-l-[3px] border-l-slate-200 dark:border-l-slate-700"
+      } ${locked ? "opacity-80" : "cursor-pointer"}`}
       onClick={() => {
         if (locked) return;
         router.push(
@@ -126,24 +130,39 @@ function TripListRow({
         }
       }}
     >
-      {isActive && progress !== null ? (
+      {destMark && !isExpenseGroup ? (
         <div
-          className="h-8 w-1.5 shrink-0 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+            isActive
+              ? "bg-[var(--brand-light)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]"
+              : "bg-slate-50 text-slate-600 ring-1 ring-slate-200/80 dark:bg-[#141c2b] dark:text-slate-300"
+          }`}
           aria-hidden
         >
-          <div
-            className="w-full rounded-full bg-[var(--brand)] transition-[height] duration-500"
-            style={{ height: `${progress}%` }}
-          />
+          {destMark}
         </div>
-      ) : (
-        <div className="h-8 w-1.5 shrink-0 rounded-full bg-slate-100 dark:bg-[#1E293B]" aria-hidden />
-      )}
+      ) : null}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{trip.name}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{trip.name}</p>
+          <TripStatusBadge badge={badge} className="sm:hidden" />
+        </div>
         {trip.destination ? (
-          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{trip.destination}</p>
+          <p className="flex items-center gap-1 truncate text-xs text-slate-500 dark:text-slate-400">
+            <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
+            {trip.destination}
+          </p>
+        ) : null}
+        {isActive && progress !== null ? (
+          <div className="mt-1.5 hidden max-w-[140px] sm:block">
+            <div className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
+              <div
+                className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
         ) : null}
       </div>
 
@@ -192,7 +211,7 @@ function TripGrid({
 }) {
   if (!trips.length) return null;
   return (
-    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {trips.map((trip) => (
         <TripCardItem
           key={trip.id}
@@ -215,7 +234,7 @@ function TripListView({
 }) {
   if (!trips.length) return null;
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       {trips.map((trip) => (
         <TripListRow
           key={trip.id}
@@ -257,9 +276,12 @@ function SectionBlock({
         aria-expanded={collapsible ? open : undefined}
         disabled={!collapsible}
       >
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          <span className="h-1 w-4 rounded-full bg-[var(--brand)]/70" aria-hidden />
           {title}
-          <span className="ml-2 text-[10px] font-bold text-slate-400">{trips.length}</span>
+          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-[#141c2b] dark:text-slate-400">
+            {trips.length}
+          </span>
         </span>
         {collapsible ? (
           open ? (
@@ -426,17 +448,17 @@ export default function DashboardTripsClient({
     tabs.push({ key: "expenses", label: "Gastos", count: expenseGroups.length });
 
   const tabClass = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition sm:px-3 ${
+    `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition sm:px-3 ${
       active
-        ? "bg-[var(--brand)] text-white shadow-sm"
-        : "text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#1E293B] dark:hover:text-slate-200"
+        ? "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[var(--brand-border)]"
+        : "text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#141c2b] dark:hover:text-slate-200"
     }`;
 
   const viewToggleClass = (active: boolean) =>
-    `inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+    `inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${
       active
-        ? "bg-[var(--brand)] text-white shadow-sm"
-        : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+        ? "bg-[var(--brand-light)] text-[var(--brand)] ring-1 ring-[var(--brand-border)]"
+        : "text-slate-500 hover:bg-white hover:text-slate-700 dark:text-slate-400 dark:hover:bg-[#141c2b]"
     }`;
 
   return (
@@ -450,17 +472,17 @@ export default function DashboardTripsClient({
         />
 
         {/* Toolbar: búsqueda + tabs + toggle vista */}
-        <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white p-3 dark:border-[#1E293B] dark:bg-[#0F1623] sm:p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Búsqueda */}
-          <div className="relative min-w-0 flex-1 sm:max-w-sm">
+          <div className="relative min-w-0 flex-1 lg:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar viaje o destino…"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-9 text-sm text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-200 dark:border-slate-700 dark:bg-[#080C14] dark:text-slate-100 dark:focus:border-slate-600 dark:focus:ring-slate-700"
+              className="w-full rounded-xl border border-slate-200/90 bg-white py-2.5 pl-10 pr-9 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[var(--brand-border)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-100"
             />
             {query ? (
               <button
@@ -475,9 +497,9 @@ export default function DashboardTripsClient({
           </div>
 
           {/* Tabs + toggle vista */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div
-              className="inline-flex max-w-full flex-wrap gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-[#080C14]"
+              className="inline-flex max-w-full flex-wrap gap-1"
               role="tablist"
               aria-label="Filtrar viajes"
             >
@@ -492,8 +514,8 @@ export default function DashboardTripsClient({
                 >
                   {tab.label}
                   <span
-                    className={`text-[10px] font-semibold ${
-                      filter === tab.key ? "text-white/80" : "text-slate-400"
+                    className={`text-[10px] font-semibold tabular-nums ${
+                      filter === tab.key ? "text-[var(--brand)]" : "text-slate-400"
                     }`}
                   >
                     {tab.count}
@@ -503,7 +525,7 @@ export default function DashboardTripsClient({
             </div>
 
             {/* Toggle grid / lista */}
-            <div className="inline-flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-[#080C14]">
+            <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200/90 bg-white p-1 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
               <button
                 type="button"
                 aria-label="Vista en cuadrícula"

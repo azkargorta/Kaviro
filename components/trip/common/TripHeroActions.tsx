@@ -8,14 +8,14 @@ import LoggedInHeaderActions from "@/components/layout/LoggedInHeaderActions";
 export default function TripHeroActions({ tripId }: { tripId: string }) {
   return (
     <div className="flex items-center gap-0.5">
-      <TripPageHelp heroMode />
+      <TripPageHelp />
       <span data-tour="topbar-novedades">
-        <TripActivityFeedButton tripId={tripId} heroMode />
+        <TripActivityFeedButton tripId={tripId} />
       </span>
       <span data-tour="topbar-darkmode">
-        <DarkModeToggle heroMode />
+        <DarkModeToggle />
       </span>
-      <LoggedInHeaderActions heroMode showNotifications={false} />
+      <LoggedInHeaderActions showNotifications={false} />
     </div>
   );
 }

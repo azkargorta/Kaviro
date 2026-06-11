@@ -10,6 +10,15 @@ import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import { getTripNavItems, type TripNavItem } from "@/lib/kaviro-trips-trip-nav";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 
+const NAV_GROUPS: { label: string; keys: TripTabKey[] }[] = [
+  { label: "Viaje", keys: ["summary", "plan", "today", "map"] },
+  { label: "Organización", keys: ["expenses", "resources", "participants"] },
+  {
+    label: "Más",
+    keys: ["chat", "recap", "announcements", "messages", "payments", "settings"],
+  },
+];
+
 type Props = {
   tripId: string;
   isPremium: boolean;
@@ -133,20 +142,41 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             aria-label="Navegación del viaje"
             data-tour="sidebar-nav"
             data-trip-sidebar-nav
-            className="space-y-0.5 p-1.5"
+            className="space-y-3 p-2"
           >
-            {visibleItems.map((item) => (
-              <SidebarLink
-                key={item.key}
-                item={item}
-                tripId={tripId}
-                active={isActivePath(pathname, item.href(tripId), item.key)}
-                isDark={isDark}
-                isAgencyTrip={isAgencyTrip}
-                useAgencyBranding={useAgencyBranding}
-                showHoyBadge={item.key === "plan" && isTripActiveToday}
-              />
-            ))}
+            {NAV_GROUPS.map((group) => {
+              const groupItems = visibleItems.filter((item) => group.keys.includes(item.key));
+              if (!groupItems.length) return null;
+              return (
+                <div key={group.label}>
+                  <p
+                    className={`mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.16em] ${
+                      useAgencyBranding
+                        ? "text-white/60"
+                        : isAgencyTrip
+                          ? "text-slate-400"
+                          : "text-slate-400 dark:text-slate-500"
+                    }`}
+                  >
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {groupItems.map((item) => (
+                      <SidebarLink
+                        key={item.key}
+                        item={item}
+                        tripId={tripId}
+                        active={isActivePath(pathname, item.href(tripId), item.key)}
+                        isDark={isDark}
+                        isAgencyTrip={isAgencyTrip}
+                        useAgencyBranding={useAgencyBranding}
+                        showHoyBadge={item.key === "today" && isTripActiveToday}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </nav>
         </div>
 
@@ -195,7 +225,7 @@ function SidebarLink({
       prefetch
       title={item.label}
       className={`
-        group relative flex min-h-[52px] items-center gap-3 rounded-md px-2.5 py-2.5
+        group relative flex min-h-[46px] items-center gap-2.5 rounded-xl px-2.5 py-2
         transition-all duration-150
         ${
           active
@@ -203,20 +233,20 @@ function SidebarLink({
               ? "bg-[var(--brand)] text-white shadow-sm"
               : isAgencyTrip
                 ? "bg-[#1e3a5f] text-white shadow-sm"
-                : "border border-slate-200/80 border-l-2 border-l-[var(--brand)] bg-slate-50 text-slate-900 shadow-sm dark:border-[#334155] dark:bg-[#1E293B] dark:text-white"
-            : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                : "border border-[var(--brand-border)] border-l-[3px] border-l-[var(--brand)] bg-[var(--brand-light)] text-slate-900 shadow-sm dark:bg-[#141c2b] dark:text-white"
+            : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60"
         }
       `}
     >
       <span
         className={`
-          relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md
+          relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg
           ${
             active
               ? useAgencyBranding || isAI || isAgencyTrip
                 ? "bg-white/15 ring-1 ring-white/20"
-                : "bg-white ring-1 ring-slate-200 dark:bg-[#0F1623] dark:ring-slate-600"
-              : "bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-600"
+                : "bg-white ring-1 ring-[var(--brand-border)] dark:bg-[#0F1623] dark:ring-[var(--brand-border)]"
+              : "bg-slate-100 ring-1 ring-slate-200/80 dark:bg-slate-800 dark:ring-slate-600"
           }
         `}
         aria-hidden

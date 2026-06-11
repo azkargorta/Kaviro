@@ -42,14 +42,14 @@ export default function DashboardHeaderCopy({
   if (neutral) {
     if (compact) {
       return (
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-white sm:text-lg">
+        <div className="min-w-0 flex-1 border-l-2 border-[var(--brand)] pl-3">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h1 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-base">
               Mis viajes
             </h1>
             {planPill}
           </div>
-          <p className="mt-0.5 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500 dark:text-slate-400">{subtitle}</p>
         </div>
       );
     }

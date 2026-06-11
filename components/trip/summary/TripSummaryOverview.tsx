@@ -9,7 +9,7 @@ import type { TripWeatherCityForecast, TripWeatherResult } from "@/lib/trip-weat
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
-import { Share2 } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, MapPin, Share2, Users, Wallet, FileText, Route } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import type { RevealDelay } from "@/components/ui/Reveal";
 import TripBudgetSummaryCard from "@/components/trip/summary/TripBudgetSummaryCard";
@@ -76,51 +76,70 @@ function daysBetween(a: string, b: string) {
   );
 }
 
-function formatFullDate(d: string) {
-  return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", year: "numeric" }).format(
-    new Date(`${d}T12:00:00`)
-  );
-}
-
-// ─── Tile accent colors per tone ──────────────────────────────────────────────
-
-const TILE_ACCENT: Record<TripSummaryTabDef["tone"], { bg: string; border: string; icon: string; chip: string; arrow: string }> = {
-  violet:  { bg: "bg-violet-50 dark:bg-[#0F1623]",  border: "border-violet-200/70 dark:border-[#F87171]/20", icon: "bg-violet-100 dark:bg-[#F87171]/15", chip: "bg-violet-100 text-violet-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",  arrow: "text-violet-600 dark:text-[#F87171]" },
-  cyan:    { bg: "bg-sky-50 dark:bg-[#0F1623]",     border: "border-sky-200/70 dark:border-[#F87171]/20",    icon: "bg-sky-100 dark:bg-[#F87171]/15",    chip: "bg-sky-100 text-sky-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",       arrow: "text-sky-600 dark:text-[#F87171]"    },
-  emerald: { bg: "bg-emerald-50 dark:bg-[#0F1623]", border: "border-emerald-200/70 dark:border-[#F87171]/20",icon: "bg-emerald-100 dark:bg-[#F87171]/15",chip: "bg-emerald-100 text-emerald-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",arrow: "text-emerald-600 dark:text-[#F87171]"},
-  amber:   { bg: "bg-amber-50 dark:bg-[#0F1623]",   border: "border-amber-200/70 dark:border-[#F87171]/20",  icon: "bg-amber-100 dark:bg-[#F87171]/15",  chip: "bg-amber-100 text-amber-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",   arrow: "text-amber-600 dark:text-[#F87171]"  },
-  slate:   { bg: "bg-slate-50 dark:bg-[#0F1623]",   border: "border-slate-200/70 dark:border-[#F87171]/20",  icon: "bg-slate-100 dark:bg-[#F87171]/15",  chip: "bg-slate-100 text-slate-700 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",   arrow: "text-slate-500 dark:text-[#F87171]"  },
-  rose:    { bg: "bg-rose-50 dark:bg-[#0F1623]",    border: "border-rose-200/70 dark:border-[#F87171]/20",   icon: "bg-rose-100 dark:bg-[#F87171]/15",   chip: "bg-rose-100 text-rose-800 dark:bg-[#F87171]/15 dark:text-[#FCA5A5]",     arrow: "text-rose-600 dark:text-[#F87171]"   },
-};
-
-const coralBorderDark = "dark:border-[color:var(--brand-border)]";
-const coralRingDark = "dark:ring-1 dark:ring-[color:var(--brand-light)]";
-// Aproximación para teñir un PNG blanco al acento en dark mode.
+const TILE_CARD =
+  "trip-tile-hover group flex h-full flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:border-slate-600";
+const TILE_ICON_WRAP =
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]";
 const coralPngFilterDark =
   "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
 
 // ─── Subcomponents ────────────────────────────────────────────────────────────
 
-// R6 — Progress bar for active trip
 function TripProgressBar({ startDate, endDate }: { startDate: string; endDate: string }) {
   const today = todayYMD();
   const total = daysBetween(startDate, endDate) + 1;
   const elapsed = Math.min(total, Math.max(0, daysBetween(startDate, today) + 1));
   const pct = Math.round((elapsed / total) * 100);
   return (
-    <div className="mt-4">
-      <div className="flex justify-between text-xs font-semibold text-slate-400 mb-1.5">
-        <span>Día {elapsed} de {total}</span>
-        <span>{pct}% completado</span>
+    <div>
+      <div className="mb-1.5 flex justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+        <span>
+          Día {elapsed} de {total}
+        </span>
+        <span className="tabular-nums">{pct}%</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#1E293B]">
         <div
-          className="h-full rounded-full bg-white/70 transition-all duration-700"
+          className="h-full rounded-full bg-[var(--brand)] transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
     </div>
   );
+}
+
+function QuickStatCard({
+  icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-[var(--brand)] dark:bg-[#141c2b]">
+        {icon}
+      </div>
+      <div className="mt-2 min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-extrabold text-slate-900 dark:text-white">{value}</p>
+      </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={`${TILE_CARD} p-3.5 hover:border-[var(--brand-border)]`}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={`${TILE_CARD} p-3.5`}>{inner}</div>;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -194,237 +213,251 @@ export default function TripSummaryOverview({
     ? daysBetween(tripStartDate, tripEndDate) + 1
     : null;
 
+  const expensesTab = tabs.find((t) => t.href.includes("/expenses"));
+  const resourcesTab = tabs.find((t) => t.href.includes("/resources"));
+  const routesTab = tabs.find((t) => t.href.includes("/map"));
+  const todayHref = `/trip/${tripId}/today`;
+
+  const phaseLabel =
+    phase === "before" && daysUntilStart !== null
+      ? `Faltan ${daysUntilStart} día${daysUntilStart !== 1 ? "s" : ""}`
+      : phase === "during" && daysLeft !== null
+        ? `${daysLeft} día${daysLeft !== 1 ? "s" : ""} restantes`
+        : phase === "after"
+          ? "Viaje completado"
+          : "Planificando";
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
 
-      {/* ── R1+R2+R4+R5+R6 — Hero rediseñado ─────────────────────────────── */}
-      <div
-        className={`grid gap-4 md:gap-5 lg:items-start ${
-          hideWeather ? "" : "lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
-        }`}
+      {/* ── Resumen rápido ── */}
+      <Reveal variant="fade" as="section" className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
+        <QuickStatCard
+          icon={<CalendarDays className="h-4 w-4" aria-hidden />}
+          label="Días"
+          value={totalDays !== null ? `${totalDays} días` : "Sin fechas"}
+          href={planHref}
+        />
+        <QuickStatCard
+          icon={<Users className="h-4 w-4" aria-hidden />}
+          label="Participantes"
+          value={`${participantsCount ?? 0}`}
+          href={`/trip/${tripId}/participants`}
+        />
+        <QuickStatCard
+          icon={<Wallet className="h-4 w-4" aria-hidden />}
+          label="Gastos"
+          value={expensesTab?.metric ?? "0 gastos"}
+          href={expensesTab?.href}
+        />
+        <QuickStatCard
+          icon={<FileText className="h-4 w-4" aria-hidden />}
+          label="Documentos"
+          value={resourcesTab?.metric ?? "0 ítems"}
+          href={resourcesTab?.href}
+        />
+        <QuickStatCard
+          icon={<Route className="h-4 w-4" aria-hidden />}
+          label="Rutas"
+          value={routesTab?.metric ?? "0 rutas"}
+          href={routesTab?.href}
+        />
+        <QuickStatCard
+          icon={<Clock className="h-4 w-4" aria-hidden />}
+          label="Estado"
+          value={phaseLabel}
+        />
+      </Reveal>
+
+      {/* ── Hoy — protagonista ── */}
+      <Reveal
+        variant="fade"
+        as="section"
+        data-tour="summary-countdown"
+        className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm md:p-5 dark:border-[#1E293B] dark:bg-[#0F1623]"
       >
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4 dark:border-[#1E293B]">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-light)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" aria-hidden />
+              Hoy
+            </span>
+            <h2 className="mt-2 text-lg font-extrabold capitalize text-slate-900 dark:text-white md:text-xl">
+              {todayLabel}
+            </h2>
+            {tripDestination ? (
+              <p className="mt-0.5 flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--brand)]" aria-hidden />
+                {tripDestination}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              href={todayHref}
+              className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-200"
+            >
+              Modo día
+            </Link>
+            <Link
+              href={planHref}
+              className="btn-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
+            >
+              Ver itinerario
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </div>
+        </div>
 
-        {/* Hero card — countdown + today's plan + next activity */}
-        <Reveal variant="fade" as="section" data-tour="summary-countdown" className="relative overflow-hidden rounded-2xl border border-slate-900/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-xl md:rounded-3xl md:p-7">
-          {/* Subtle glow — solo escritorio */}
-          <div
-            className="pointer-events-none absolute -right-20 -top-10 hidden h-52 w-52 rounded-full bg-violet-500/15 blur-3xl dark:bg-[var(--brand-light)] md:block"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -bottom-10 -left-10 hidden h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl dark:bg-[var(--brand-light)] md:block"
-            aria-hidden
-          />
+        {phase === "during" && tripStartDate && tripEndDate ? (
+          <div className="mt-4">
+            <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
+          </div>
+        ) : null}
 
-          <div className="relative">
-            {/* R1 — Countdown / state hero */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 md:mb-5 md:items-start">
-              <div>
-                {/* Phase-aware headline */}
-                {phase === "before" && daysUntilStart !== null && (
-                  <>
-                    <p className="text-xs font-bold text-violet-200 dark:text-[var(--accent)] md:text-sm">
-                      <span className="md:hidden">⏳ </span>
-                      Faltan <span className="tabular-nums">{daysUntilStart}</span> día{daysUntilStart !== 1 ? "s" : ""}
-                      <span className="hidden md:inline">
-                        {" "}para el viaje{tripStartDate ? ` · ${formatFullDate(tripStartDate)}` : ""}
-                      </span>
-                    </p>
-                  </>
-                )}
-                {phase === "during" && daysLeft !== null && (
-                  <>
-                    <p className="text-xs font-bold text-emerald-200 dark:text-[var(--accent)] md:text-sm">
-                      ✈️ En curso · <span className="tabular-nums">{daysLeft}</span>d
-                      <span className="hidden md:inline">
-                        {" "}restantes{tripDestination ? ` · ${tripDestination}` : ""}
-                      </span>
-                    </p>
-                  </>
-                )}
-                {phase === "after" && (
-                  <>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Viaje completado 🏁</p>
-                    <p className="mt-1 text-2xl font-extrabold">
-                      {totalDays !== null ? `${totalDays} días` : "Resumen"}
-                    </p>
-                    {tripDestination && <p className="mt-1 text-sm text-slate-400">{tripDestination}</p>}
-                  </>
-                )}
-                {phase === "unknown" && (
-                  <>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Tu viaje</p>
-                    <p className="mt-1 text-2xl font-extrabold">Añade fechas para ver la cuenta atrás</p>
-                  </>
-                )}
-              </div>
+        {(activitiesCount ?? 0) === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-[#334155] dark:bg-[#080C14]/50">
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Sin actividades todavía</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Crea tu primer plan o pide ayuda al asistente IA para montar el itinerario.
+            </p>
+            <Link
+              href={planHref}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
+            >
+              Ir al plan
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </div>
+        ) : plansToday.length > 0 ? (
+          <ul className="mt-4 space-y-2">
+            {plansToday.map((a) => (
+              <li
+                key={a.id}
+                className={`rounded-xl border px-4 py-3 ${
+                  a.isPast
+                    ? "border-slate-100 bg-slate-50/80 opacity-70 dark:border-[#1E293B] dark:bg-[#080C14]/40"
+                    : "border-slate-200/90 bg-white shadow-sm dark:border-[#334155] dark:bg-[#141c2b]"
+                }`}
+              >
+                <p
+                  className={`text-sm font-semibold text-slate-900 dark:text-white ${
+                    a.isPast ? "line-through decoration-slate-400" : ""
+                  }`}
+                >
+                  {a.title}
+                </p>
+                <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {formatActivityWhen(a)}
+                </p>
+                {(a.place_name || a.address) ? (
+                  <p className="mt-0.5 text-xs text-slate-400">{a.place_name || a.address}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            No hay actividades programadas para hoy.
+          </p>
+        )}
 
+        {nextPlan ? (
+          <div className="mt-4 rounded-xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--brand-text)]">
+              Próxima actividad
+            </p>
+            <p className="mt-1 text-base font-extrabold text-slate-900 dark:text-white">{nextPlan.title}</p>
+            <p className="mt-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+              {formatActivityWhen(nextPlan)}
+            </p>
+            {(nextPlan.place_name || nextPlan.address) ? (
+              <p className="mt-0.5 text-xs text-slate-500">{nextPlan.place_name || nextPlan.address}</p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {buildMapsUrl(nextPlan) ? (
+                <a
+                  href={buildMapsUrl(nextPlan)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+                >
+                  <MapPin className="h-3 w-3" aria-hidden />
+                  Cómo llegar
+                </a>
+              ) : null}
               <Link
                 href={planHref}
-                className="hidden min-h-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20 md:inline-flex"
+                className="inline-flex min-h-8 items-center gap-1 text-xs font-bold text-[var(--brand)] hover:underline"
               >
-                Ver Plan →
+                Abrir en plan
+                <ArrowRight className="h-3 w-3" aria-hidden />
               </Link>
-              {phase === "before" && daysUntilStart !== null ? (
-                <p className="shrink-0 text-base font-black tabular-nums text-white md:hidden">{daysUntilStart}d</p>
-              ) : null}
-              {phase === "during" && daysLeft !== null ? (
-                <p className="shrink-0 text-base font-black tabular-nums text-white md:hidden">{daysLeft}d</p>
-              ) : null}
             </div>
+          </div>
+        ) : (activitiesCount ?? 0) > 0 ? (
+          <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500 dark:border-[#1E293B] dark:bg-[#080C14]/40 dark:text-slate-400">
+            No hay actividades futuras con fecha. Revisa el plan.
+          </p>
+        ) : null}
+      </Reveal>
 
-            {/* R6 — Progress bar (only during) */}
-            {phase === "during" && tripStartDate && tripEndDate && (
-              <div className="max-md:scale-y-90 max-md:origin-top">
-                <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
-              </div>
-            )}
-
-            {/* R5 — Empty state */}
-            {(activitiesCount ?? 0) === 0 && (
-              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 md:mt-5 md:px-4 md:py-4">
-                <p className="text-sm font-bold text-white">🗺️ Sin actividades todavía</p>
-                <p className="mt-1 text-xs text-slate-300">Crea tu primer plan o usa el asistente IA para generar el itinerario completo.</p>
-                <Link
-                  href={planHref}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
-                >
-                  Ir al Plan →
-                </Link>
-              </div>
-            )}
-
-            {/* Today's activities — detalle solo en escritorio */}
-            {plansToday.length > 0 && (
-              <div className="mt-5 hidden md:block">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-300/90 mb-2 dark:text-[var(--accent)]">Planes para hoy</p>
-                <ul className="space-y-2">
-                  {plansToday.map((a) => (
-                    <li
-                      key={a.id}
-                      className={`rounded-2xl border px-4 py-3 ${
-                        a.isPast
-                          ? "border-white/5 bg-black/15 text-slate-400"
-                          : "border-white/10 bg-white/5 text-white"
-                      }`}
-                    >
-                      <p className={`text-sm font-semibold ${a.isPast ? "line-through decoration-slate-500/80" : ""}`}>
-                        {a.title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-violet-200/80 dark:text-[var(--brand-text)]">{formatActivityWhen(a)}</p>
-                      {(a.place_name || a.address) && (
-                        <p className="mt-0.5 text-xs text-slate-400">{a.place_name || a.address}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* R4 — Next activity as featured card (escritorio) */}
-            {nextPlan && (
-              <div
-                className={`mt-5 hidden rounded-2xl border border-[#F87171]/30 bg-gradient-to-br from-[#F87171]/20 to-transparent p-4 ring-1 ring-[#F87171]/15 md:block
-                dark:border-[color:var(--brand-border)] dark:bg-[var(--brand-light)] dark:ring-[color:var(--brand-light)]`}
-              >
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#FCA5A5] dark:text-[var(--accent)]">Próximo en el calendario</p>
-                <p className="mt-1.5 text-xl font-extrabold text-white leading-snug">{nextPlan.title}</p>
-                <p className="mt-1 text-sm font-semibold text-white/70 dark:text-[var(--brand-text)]">{formatActivityWhen(nextPlan)}</p>
-                {(nextPlan.place_name || nextPlan.address) && (
-                  <p className="mt-0.5 text-xs text-slate-300">{nextPlan.place_name || nextPlan.address}</p>
-                )}
-                {/* Maps button */}
-                {buildMapsUrl(nextPlan) && (
-                  <a
-                    href={buildMapsUrl(nextPlan)!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
-                  >
-                    📍 Cómo llegar
-                  </a>
-                )}
-              </div>
-            )}
-
-            {!nextPlan && (activitiesCount ?? 0) > 0 && (
-              <p className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                No hay planes futuros con fecha. Añade fechas en Plan.
-              </p>
-            )}
+      {/* ── Secciones del viaje ── */}
+      <section className="min-w-0 space-y-3">
+        <Reveal variant="fade">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Centro de control</p>
+            <h2 className="mt-0.5 text-lg font-extrabold text-slate-900 dark:text-white md:text-xl">
+              Todo tu viaje, a un toque
+            </h2>
           </div>
         </Reveal>
 
-        {/* R3 — Módulos del viaje (móvil: antes de presupuesto/clima) */}
-        <section className="order-2 col-span-full min-w-0 space-y-2 lg:col-span-2 md:space-y-3">
-          <Reveal variant="fade">
-            <div className="hidden flex-wrap items-end justify-between gap-2 md:flex">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-400">Navegación rápida</p>
-                <h2 className="mt-0.5 text-xl font-extrabold text-slate-950 dark:text-slate-50">Módulos del viaje</h2>
-              </div>
-            </div>
-          </Reveal>
-
-          <div data-tour="summary-stats" className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
-            {tabs.map((tab, tabIdx) => {
-              const ac = TILE_ACCENT[tab.tone];
-              const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
-              const tileBorder = isDark ? "border-[color:var(--brand-border)] hover:border-[var(--accent)]" : ac.border;
-              const tileBg = isDark ? "bg-[var(--surface-card)]/80 hover:bg-[var(--surface-card)]" : "bg-white";
-              const tileShadow = isDark ? "shadow-[0_10px_30px_rgba(0,0,0,0.40)]" : "shadow-sm";
-              return (
-                <Reveal
-                  key={tab.href}
-                  variant="scale"
-                  delay={(tabIdx % 4) as RevealDelay}
-                  className="h-full"
-                >
-                  <Link
-                    href={tab.href}
-                    className={`trip-tile-hover group flex h-full flex-col items-center rounded-xl border p-2.5 text-center sm:items-stretch sm:rounded-2xl sm:p-4 sm:text-left ${tileBg} ${tileShadow} ${tileBorder} ${coralRingDark}`}
-                  >
-                    <div
-                      className={
-                        isDark
-                          ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-light)] ring-1 ring-[color:var(--brand-border)] sm:h-11 sm:w-11 sm:rounded-xl"
-                          : `flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11 sm:rounded-xl ${ac.icon}`
-                      }
-                    >
+        <div data-tour="summary-stats" className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+          {tabs.map((tab, tabIdx) => {
+            const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
+            return (
+              <Reveal key={tab.href} variant="scale" delay={(tabIdx % 4) as RevealDelay} className="h-full">
+                <Link href={tab.href} className={`${TILE_CARD} sm:p-5`}>
+                  <div className="flex items-start gap-3">
+                    <div className={TILE_ICON_WRAP}>
                       <Image
                         src={iconSrc}
                         alt=""
                         width={24}
                         height={24}
-                        className={`h-5 w-5 object-contain sm:h-6 sm:w-6 ${isDark ? coralPngFilterDark : ""}`}
+                        className={`h-5 w-5 object-contain ${isDark ? coralPngFilterDark : ""}`}
                       />
                     </div>
-                    <p className="mt-1.5 text-[11px] font-extrabold leading-tight text-slate-950 dark:text-slate-50 sm:mt-3 sm:text-[15px]">
-                      {tab.label}
-                    </p>
-                    <span
-                      className={`mt-1 hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold sm:inline-block ${
-                        isDark
-                          ? "bg-[var(--brand-light)] text-[var(--brand-text)] ring-1 ring-[color:var(--brand-border)]"
-                          : ac.chip
-                      }`}
-                    >
-                      {tab.metric}
-                    </span>
-                    <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-slate-300 sm:block">{tab.subtitle}</p>
-                    {tab.hint ? (
-                      <p className="mt-2 hidden rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 line-clamp-2 dark:border-[color:var(--brand-border)] dark:bg-black/20 dark:text-slate-200 sm:block">
-                        {tab.hint}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-extrabold text-slate-900 dark:text-white">{tab.label}</p>
+                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:text-[var(--brand)]" aria-hidden />
+                      </div>
+                      <span className="mt-1 inline-flex rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--brand-text)]">
+                        {tab.metric}
+                      </span>
+                      <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        {tab.subtitle}
                       </p>
-                    ) : null}
-                  </Link>
-                </Reveal>
-              );
-            })}
-          </div>
-        </section>
+                      {tab.hint ? (
+                        <p className="mt-2 line-clamp-2 text-[11px] text-slate-400 dark:text-slate-500">{tab.hint}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                </Link>
+              </Reveal>
+            );
+          })}
+        </div>
+      </section>
 
-        <div className="order-3 flex min-w-0 flex-col gap-4 md:order-2 md:gap-5">
+      <div
+        className={`grid gap-4 md:gap-5 ${
+          hideWeather ? "" : "lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
+        }`}
+      >
+        <div className="flex min-w-0 flex-col gap-4 md:gap-5">
         {budgetTarget != null && budgetTarget > 0 ? (
           <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
             <TripBudgetSummaryCard
@@ -437,7 +470,7 @@ export default function TripSummaryOverview({
           </Reveal>
         ) : (
           <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
-            <section className="rounded-3xl border border-amber-200/70 bg-gradient-to-b from-amber-50 via-white to-slate-50 p-5 shadow-md md:p-6 dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)]">
+            <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-6 dark:border-[#1E293B] dark:bg-[#0F1623]">
               <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-amber-800 dark:text-[var(--accent)]">
                 Presupuesto del viaje
               </p>
@@ -454,6 +487,7 @@ export default function TripSummaryOverview({
             </section>
           </Reveal>
         )}
+        </div>
 
         {!hideWeather ? (
         <Reveal
@@ -461,8 +495,7 @@ export default function TripSummaryOverview({
           delay={budgetTarget != null && budgetTarget > 0 ? 2 : 1}
           as="section"
           data-tour="summary-weather"
-          className={`min-w-0 rounded-3xl border border-sky-200/60 bg-gradient-to-b from-sky-50 via-white to-slate-50 p-5 shadow-md md:p-6
-          dark:border-[color:var(--brand-border)] dark:from-[var(--surface-card)] dark:via-[var(--surface-card)] dark:to-[var(--surface-card)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)]`}
+          className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-6 dark:border-[#1E293B] dark:bg-[#0F1623]"
         >
           <div className="flex items-start justify-between gap-2 mb-4">
             <div>
@@ -597,21 +630,9 @@ export default function TripSummaryOverview({
           )}
         </Reveal>
         ) : null}
-        </div>
       </div>
 
-      {nextPlan ? (
-        <Link
-          href={planHref}
-          className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:hover:bg-[#1a2438] md:hidden"
-        >
-          <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--brand)]" aria-hidden />
-          <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900 dark:text-white">{nextPlan.title}</span>
-          <span className="shrink-0 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{formatActivityWhen(nextPlan)}</span>
-        </Link>
-      ) : null}
-
-      <details className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <details className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
         <summary className="cursor-pointer text-sm font-bold text-slate-800 dark:text-slate-200">
           Buscar vuelos y alojamiento
         </summary>
@@ -677,15 +698,17 @@ function SummaryRecapCta({
   }
 
   return (
-    <div data-tour="summary-recap-cta" className="rounded-2xl overflow-hidden border border-slate-200 dark:border-[#1E293B] shadow-sm">
-      <div className="bg-gradient-to-br from-[#F87171] via-[#ef4444] to-[#0f172a] px-5 py-4 flex items-center gap-3">
+    <div data-tour="summary-recap-cta" className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+      <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 dark:border-[#1E293B]">
         <KaviroMark size={32} className="shrink-0 rounded-full" title="Kaviro" />
         <div className="min-w-0">
-          <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Kaviro · Recap</p>
-          <p className="text-base font-extrabold text-white leading-tight">Crea el recap de tu viaje</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--brand)]">Recap del viaje</p>
+          <p className="text-base font-extrabold leading-tight text-slate-900 dark:text-white">
+            Guarda el recuerdo para el grupo
+          </p>
         </div>
       </div>
-      <div className="bg-white dark:bg-[#0F1623] px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
           Estadísticas, foto del destino y tarjeta para compartir con el grupo.
         </p>

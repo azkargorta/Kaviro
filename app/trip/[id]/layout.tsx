@@ -116,6 +116,8 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   tripName={tripName}
                   destination={destination}
                   participants={participantNames}
+                  startDate={tripMeta?.start_date ?? null}
+                  endDate={tripMeta?.end_date ?? null}
                   isAgencyTrip={displayWorkspace.isAgencyTrip}
                   useAgencyBranding={useAgencyBranding}
                   agencyBranding={displayWorkspace.agencyBranding}
@@ -141,6 +143,8 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                       tripName={tripName}
                       destination={destination}
                       participants={participantNames}
+                      startDate={tripMeta?.start_date ?? null}
+                      endDate={tripMeta?.end_date ?? null}
                       isAgencyTrip={displayWorkspace.isAgencyTrip}
                       useAgencyBranding={useAgencyBranding}
                       agencyBranding={displayWorkspace.agencyBranding}
