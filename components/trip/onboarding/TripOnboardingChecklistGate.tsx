@@ -13,6 +13,8 @@ type Props = {
   tripMode?: "travel" | "expenses";
   /** En Resumen el checklist es visible también en móvil sin abrir ayuda. */
   summaryPage?: boolean;
+  /** Si el servidor ya calculó los conteos, no se llama a la API al montar. */
+  initialCounts?: TripOnboardingCounts | null;
 };
 
 /**
@@ -25,9 +27,10 @@ export default function TripOnboardingChecklistGate({
   isPremium,
   tripMode = "travel",
   summaryPage = false,
+  initialCounts = null,
 }: Props) {
   const isMobile = useIsMobile();
-  const [counts, setCounts] = useState<TripOnboardingCounts | null>(null);
+  const [counts, setCounts] = useState<TripOnboardingCounts | null>(initialCounts);
   const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
@@ -41,6 +44,10 @@ export default function TripOnboardingChecklistGate({
   }, [isMobile]);
 
   useEffect(() => {
+    if (initialCounts) {
+      setCounts(initialCounts);
+      return;
+    }
     if (isTripOnboardingDismissed(tripId)) return;
 
     let cancelled = false;
@@ -69,7 +76,7 @@ export default function TripOnboardingChecklistGate({
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [tripId]);
+  }, [tripId, initialCounts]);
 
   if (!counts) return null;
   if (isMobile && !helpOpen && !summaryPage) return null;

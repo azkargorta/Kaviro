@@ -45,7 +45,7 @@ export async function getTripWeatherByDestination(
   try {
     const geoResponse = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(dest)}&count=1&language=es&format=json`,
-      { cache: "no-store" }
+      { next: { revalidate: 3600 } }
     );
     const geoPayload = (await geoResponse.json().catch(() => null)) as {
       results?: Array<{ latitude: number; longitude: number; name?: string; admin1?: string; country?: string }>;
@@ -59,7 +59,7 @@ export async function getTripWeatherByDestination(
 
     const weatherResponse = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(String(latitude))}&longitude=${encodeURIComponent(String(longitude))}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&forecast_days=14&timezone=auto`,
-      { cache: "no-store" }
+      { next: { revalidate: 3600 } }
     );
     const weatherPayload = (await weatherResponse.json().catch(() => null)) as {
       daily?: { time?: string[]; temperature_2m_max?: number[]; temperature_2m_min?: number[]; weather_code?: number[]; precipitation_sum?: number[]; precipitation_probability_max?: number[] };

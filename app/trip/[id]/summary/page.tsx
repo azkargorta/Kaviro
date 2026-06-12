@@ -9,18 +9,17 @@ import TripSummaryOverview, {
   type TripSummaryTabDef,
 } from "@/components/trip/summary/TripSummaryOverview";
 import { getCachedTripPremium } from "@/lib/entitlements";
-import { getTripWeatherBundle } from "@/lib/trip-weather";
+import { getCachedProfileDemoTripId, getCachedTripWorkspaceMeta } from "@/lib/trip-page-cache";
 import { normalizeWeatherStays } from "@/lib/trip-weather-stays";
 import { parseActivityLocalMoment } from "@/lib/trip-activity-moment";
+import type { TripOnboardingCounts } from "@/lib/trip-onboarding";
+import TripOnboardingSummarySlot from "@/components/trip/onboarding/TripOnboardingSummarySlot";
 import { computeExpenseTotalsInBase } from "@/lib/trip-expense-totals";
 import { loadTripSettingsRow } from "@/lib/load-trip-settings-row";
 import { loadTripExpenseAmountRows } from "@/lib/load-trip-expense-amounts";
 import { parseTripBudgetTarget } from "@/lib/parse-trip-budget";
-import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 import TripExpensesSummaryPanel from "@/components/trip/expenses/TripExpensesSummaryPanel";
-
-export const dynamic = "force-dynamic";
 
 type TripPageProps = {
   params: { id: string };
@@ -134,57 +133,109 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   const tripId = params.id;
   const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const workspace = await loadTripWorkspaceMeta(supabase, tripId, access.userId);
+  const [workspace, isPremium] = await Promise.all([
+    getCachedTripWorkspaceMeta(tripId, access.userId),
+    getCachedTripPremium(tripId, access.userId),
+  ]);
   const previewCookie = (await cookies()).get(TRAVELER_PREVIEW_COOKIE)?.value;
   const travelerPreview =
     workspace.isAgencyManaged && isTravelerPreviewActive(previewCookie, tripId);
   if (workspace.isAgencyTrip && !travelerPreview) {
     redirect(`/trip/${tripId}/plan`);
   }
-  const isPremium = await getCachedTripPremium(tripId, access.userId);
-
-  const [
-    { data: profileRow },
-    { count: participantsCount },
-    { count: activitiesCount, data: activitiesData },
-    { count: routesCount },
-    { count: expensesCount },
-    { count: resourcesCount },
-    { data: lastExpenseRow },
-    { data: lastResourceRow },
-    { data: firstRouteRow },
-  ] = await Promise.all([
-    supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
-    supabase.from("trip_participants").select("id", { count: "exact", head: true }).eq("trip_id", tripId).neq("status", "removed"),
-    supabase
-      .from("trip_activities")
-      .select("id, title, activity_date, activity_time, place_name, address", { count: "exact" })
-      .eq("trip_id", tripId)
-      .order("activity_date", { ascending: true })
-      .order("activity_time", { ascending: true })
-      .order("created_at", { ascending: true }),
-    supabase.from("trip_routes").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
-    supabase.from("trip_expenses").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
-    supabase.from("trip_resources").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
-    supabase.from("trip_expenses").select("title").eq("trip_id", tripId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("trip_resources").select("title").eq("trip_id", tripId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase
-      .from("trip_routes")
-      .select("title, route_day")
-      .eq("trip_id", tripId)
-      .order("route_day", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
-  const expenseAmountRows = await loadTripExpenseAmountRows(supabase, tripId);
 
   let tripRow: TripRow & { is_demo?: boolean; weather_stays?: unknown };
+  let profileRow: { demo_trip_id?: string } | null;
+  let participantsCount: number | null;
+  let activitiesCount: number | null;
+  let activitiesData: ActivityRow[] | null;
+  let routesCount: number | null;
+  let expensesCount: number | null;
+  let resourcesCount: number | null;
+  let aiConversationsCount: number | null;
+  let lastExpenseRow: { title?: string } | null;
+  let lastResourceRow: { title?: string } | null;
+  let firstRouteRow: { title?: string | null; route_day?: string | null } | null;
+  let expenseAmountRows: Awaited<ReturnType<typeof loadTripExpenseAmountRows>>;
+
   try {
-    const loaded = await loadTripSettingsRow(supabase, tripId);
-    if (!loaded.data) redirect("/dashboard");
-    tripRow = loaded.data as TripRow & { is_demo?: boolean; weather_stays?: unknown };
+    const [
+      profile,
+      participantsResult,
+      activitiesResult,
+      routesResult,
+      expensesResult,
+      resourcesResult,
+      aiConversationsResult,
+      lastExpenseResult,
+      lastResourceResult,
+      firstRouteResult,
+      tripSettingsLoaded,
+      expenseRows,
+    ] = await Promise.all([
+      getCachedProfileDemoTripId(access.userId),
+      supabase
+        .from("trip_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("trip_id", tripId)
+        .neq("status", "removed"),
+      supabase
+        .from("trip_activities")
+        .select("id, title, activity_date, activity_time, place_name, address", { count: "exact" })
+        .eq("trip_id", tripId)
+        .order("activity_date", { ascending: true })
+        .order("activity_time", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase.from("trip_routes").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
+      supabase.from("trip_expenses").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
+      supabase.from("trip_resources").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
+      supabase
+        .from("trip_ai_conversations")
+        .select("id", { count: "exact", head: true })
+        .eq("trip_id", tripId),
+      supabase
+        .from("trip_expenses")
+        .select("title")
+        .eq("trip_id", tripId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("trip_resources")
+        .select("title")
+        .eq("trip_id", tripId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("trip_routes")
+        .select("title, route_day")
+        .eq("trip_id", tripId)
+        .order("route_day", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      loadTripSettingsRow(supabase, tripId),
+      loadTripExpenseAmountRows(supabase, tripId),
+    ]);
+
+    if (!tripSettingsLoaded.data) redirect("/dashboard");
+    tripRow = tripSettingsLoaded.data as TripRow & { is_demo?: boolean; weather_stays?: unknown };
+    profileRow = profile;
+    participantsCount = participantsResult.count;
+    activitiesCount = activitiesResult.count;
+    activitiesData = (activitiesResult.data ?? []) as ActivityRow[];
+    routesCount = routesResult.count;
+    expensesCount = expensesResult.count;
+    resourcesCount = resourcesResult.count;
+    aiConversationsCount = aiConversationsResult.count;
+    lastExpenseRow = lastExpenseResult.data as { title?: string } | null;
+    lastResourceRow = lastResourceResult.data as { title?: string } | null;
+    firstRouteRow = firstRouteResult.data as {
+      title?: string | null;
+      route_day?: string | null;
+    } | null;
+    expenseAmountRows = expenseRows;
   } catch (e) {
     console.error("Error cargando viaje:", e);
     redirect("/dashboard");
@@ -243,14 +294,17 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
     : null;
 
   const weatherStays = normalizeWeatherStays((currentTrip as { weather_stays?: unknown }).weather_stays);
-  const weatherBundle = await getTripWeatherBundle({
-    destination: currentTrip.destination,
-    weatherStays,
-  });
-  const weather = weatherBundle.primary;
-  const hasPlace =
+  const hasWeatherPlace =
     weatherStays.length > 0 || Boolean((currentTrip.destination ?? "").trim());
-  const weatherHint = !hasPlace ? "no-destination" : !weather ? "unavailable" : "ok";
+  const onboardingCounts: TripOnboardingCounts = {
+    participants: participantsCount ?? 0,
+    activities: activitiesCount ?? 0,
+    routes: routesCount ?? 0,
+    expenses: expensesCount ?? 0,
+    resources: resourcesCount ?? 0,
+    aiConversations: aiConversationsCount ?? 0,
+  };
+  const showOnboarding = !workspace.isAgencyTrip && !isDemoTrip;
 
   const lastExpenseTitle =
     typeof (lastExpenseRow as { title?: string } | null)?.title === "string"
@@ -379,6 +433,15 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
   if (workspace.tripMode === "expenses") {
     return (
       <main className="w-full min-w-0 max-w-full space-y-5 md:space-y-6">
+        {showOnboarding ? (
+          <TripOnboardingSummarySlot
+            tripId={tripId}
+            tripName={currentTrip.name}
+            isPremium={isPremium}
+            tripMode={workspace.tripMode}
+            initialCounts={onboardingCounts}
+          />
+        ) : null}
         <TripBoardPageHeader
           section="Inicio"
           title={currentTrip.name}
@@ -405,6 +468,15 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
 
   return (
     <main className="w-full min-w-0 max-w-full space-y-5 md:space-y-6">
+      {showOnboarding ? (
+        <TripOnboardingSummarySlot
+          tripId={tripId}
+          tripName={currentTrip.name}
+          isPremium={isPremium}
+          tripMode={workspace.tripMode}
+          initialCounts={onboardingCounts}
+        />
+      ) : null}
       <TripBoardPageHeader
         section="Resumen"
         title="Centro de control"
@@ -417,10 +489,10 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       <TripSummaryOverview
         tripId={tripId}
         tripName={currentTrip.name}
-        weather={weather}
-        weatherByCity={weatherBundle.byCity}
-        activeWeatherCity={weatherBundle.activeCityToday}
-        weatherHint={weatherHint}
+        deferWeatherLoad
+        hasWeatherPlace={hasWeatherPlace}
+        weather={null}
+        weatherHint="loading"
         todayLabel={todayLabel}
         plansToday={plansToday}
         nextPlan={nextPlanPreview}

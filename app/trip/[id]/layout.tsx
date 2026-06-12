@@ -14,9 +14,8 @@ import TripOfflineSync from "@/components/pwa/TripOfflineSync";
 import LoggedInRoutePrefetch from "@/components/layout/LoggedInRoutePrefetch";
 import { TripWorkspaceProvider } from "@/components/trip/TripWorkspaceContext";
 import TripAgencyRouteGuard from "@/components/trip/TripAgencyRouteGuard";
-import TripOnboardingSummarySlot from "@/components/trip/onboarding/TripOnboardingSummarySlot";
 import { clientPortalPath } from "@/lib/agency";
-import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
+import { getCachedProfileDemoTripId, getCachedTripWorkspaceMeta } from "@/lib/trip-page-cache";
 import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 import { agencyBrandingStyleVars } from "@/lib/agency-brand-tokens";
 import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
@@ -44,14 +43,14 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
   const access = await getCachedTripAccess(params.id);
 
   const supabase = await createClient();
-  const [{ data: tripMeta }, { data: profileRow }, { data: participantRows }, isPremium, workspace] =
+  const [{ data: tripMeta }, profileRow, { data: participantRows }, isPremium, workspace] =
     await Promise.all([
       supabase
         .from("trips")
         .select("name, start_date, end_date, is_demo, destination, agency_id")
         .eq("id", params.id)
         .maybeSingle(),
-      supabase.from("profiles").select("demo_trip_id").eq("id", access.userId).maybeSingle(),
+      getCachedProfileDemoTripId(access.userId),
       supabase
         .from("trip_participants")
         .select("profiles(display_name)")
@@ -59,7 +58,7 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
         .neq("status", "removed")
         .limit(6),
       getCachedTripPremium(params.id, access.userId),
-      loadTripWorkspaceMeta(supabase, params.id, access.userId),
+      getCachedTripWorkspaceMeta(params.id, access.userId),
     ]);
 
   const previewCookie = (await cookies()).get(TRAVELER_PREVIEW_COOKIE)?.value;
@@ -83,7 +82,6 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
     })
     .filter((n): n is string => Boolean(n));
 
-  const showOnboarding = !displayWorkspace.isAgencyTrip && !isDemo;
   const showAssistantDock = !displayWorkspace.isAgencyTrip;
   const useAgencyBranding = shouldUseAgencyBranding(displayWorkspace);
   const agencyBrandStyle = useAgencyBranding
@@ -156,14 +154,6 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   </div>
                   {isTravelerPreview ? <TripTravelerPreviewBanner tripId={params.id} /> : null}
                   {isDemo ? <DemoTripBanner /> : null}
-                  {showOnboarding ? (
-                    <TripOnboardingSummarySlot
-                      tripId={params.id}
-                      tripName={tripName}
-                      isPremium={isPremium}
-                      tripMode={displayWorkspace.tripMode}
-                    />
-                  ) : null}
                   {!displayWorkspace.isAgencyTrip ? (
                     <TripSectionHintHost tripId={params.id} />
                   ) : null}

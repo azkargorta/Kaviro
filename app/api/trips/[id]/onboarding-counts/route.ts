@@ -12,5 +12,8 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!access.ok) return access.response;
 
   const counts = await fetchTripOnboardingCounts(access.supabase, tripId);
-  return NextResponse.json({ counts });
+  return NextResponse.json(
+    { counts },
+    { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } }
+  );
 }

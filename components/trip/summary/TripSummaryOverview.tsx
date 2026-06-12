@@ -3,7 +3,7 @@ import TripSearchCard from "@/components/trip/summary/TripSearchCard";
 
 import Link from "next/link";
 import KaviroMark from "@/components/brand/KaviroMark";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TripWeatherCityForecast, TripWeatherDay, TripWeatherResult } from "@/lib/trip-weather";
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import type { TripTabKey } from "@/lib/trip-tab-assets";
@@ -253,14 +253,19 @@ export default function TripSummaryOverview({
   currency,
   expenseMultiCurrency,
   hideWeather = false,
+  deferWeatherLoad = false,
+  hasWeatherPlace = false,
 }: {
   tripId: string;
   tripName?: string | null;
   hideWeather?: boolean;
+  /** Carga clima en cliente vía /api/trips/[id]/weather-bundle (evita Open-Meteo en SSR). */
+  deferWeatherLoad?: boolean;
+  hasWeatherPlace?: boolean;
   weather: TripWeatherResult | null;
   weatherByCity?: TripWeatherCityForecast[];
   activeWeatherCity?: string | null;
-  weatherHint: "ok" | "no-destination" | "unavailable";
+  weatherHint: "ok" | "no-destination" | "unavailable" | "loading";
   todayLabel: string;
   plansToday: Array<TripSummaryActivityPreview & { isPast: boolean }>;
   nextPlan: TripSummaryActivityPreview | null;
@@ -281,13 +286,60 @@ export default function TripSummaryOverview({
   const phase = tripPhase(tripStartDate, tripEndDate);
   const today = todayYMD();
 
+  const [clientWeather, setClientWeather] = useState<TripWeatherResult | null>(null);
+  const [clientWeatherByCity, setClientWeatherByCity] = useState<TripWeatherCityForecast[]>([]);
+  const [clientActiveCity, setClientActiveCity] = useState<string | null>(null);
+  const [clientWeatherHint, setClientWeatherHint] = useState<
+    "ok" | "no-destination" | "unavailable" | "loading"
+  >(deferWeatherLoad ? (hasWeatherPlace ? "loading" : "no-destination") : weatherHint);
+
   const [selectedWeatherCity, setSelectedWeatherCity] = useState<string | null>(
     activeWeatherCity || weatherByCity[0]?.city || null
   );
 
+  useEffect(() => {
+    if (!deferWeatherLoad || !hasWeatherPlace) return;
+
+    let cancelled = false;
+    void fetch(`/api/trips/${encodeURIComponent(tripId)}/weather-bundle`, {
+      credentials: "include",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (!data) {
+          setClientWeatherHint("unavailable");
+          return;
+        }
+        setClientWeather((data.primary as TripWeatherResult | null) ?? null);
+        setClientWeatherByCity((data.byCity as TripWeatherCityForecast[]) ?? []);
+        const active = (data.activeCityToday as string | null) ?? null;
+        setClientActiveCity(active);
+        setClientWeatherHint(
+          (data.weatherHint as "ok" | "no-destination" | "unavailable") ?? "unavailable"
+        );
+        if (active) setSelectedWeatherCity(active);
+        else if (Array.isArray(data.byCity) && data.byCity[0]?.city) {
+          setSelectedWeatherCity(data.byCity[0].city as string);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setClientWeatherHint("unavailable");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deferWeatherLoad, hasWeatherPlace, tripId]);
+
+  const effectiveWeather = deferWeatherLoad ? clientWeather : weather;
+  const effectiveWeatherByCity = deferWeatherLoad ? clientWeatherByCity : weatherByCity;
+  const effectiveActiveCity = deferWeatherLoad ? clientActiveCity : activeWeatherCity;
+  const effectiveWeatherHint = deferWeatherLoad ? clientWeatherHint : weatherHint;
+
   const displayedWeather =
-    weatherByCity.find((c) => c.city === selectedWeatherCity)?.weather ??
-    weather;
+    effectiveWeatherByCity.find((c) => c.city === selectedWeatherCity)?.weather ??
+    effectiveWeather;
 
   const todayWeatherDay = displayedWeather?.days.find((d) => d.date === today) ?? null;
   const weatherTip = weatherTripTip(todayWeatherDay ?? undefined);
@@ -551,7 +603,16 @@ export default function TripSummaryOverview({
               </div>
             </div>
 
-            {weatherHint === "no-destination" ? (
+            {effectiveWeatherHint === "loading" ? (
+              <div className="animate-pulse space-y-3" aria-busy="true" aria-label="Cargando previsión">
+                <div className="h-28 rounded-2xl bg-slate-100 dark:bg-slate-800/80" />
+                <div className="flex gap-2 overflow-hidden">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-16 w-14 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-900/80" />
+                  ))}
+                </div>
+              </div>
+            ) : effectiveWeatherHint === "no-destination" ? (
               <p className="text-sm text-slate-500 dark:text-slate-300">
                 Configura las{" "}
                 <Link href={`/trip/${tripId}/settings#clima`} className="font-semibold text-[var(--brand)] hover:underline">
@@ -559,15 +620,15 @@ export default function TripSummaryOverview({
                 </Link>{" "}
                 para ver el clima.
               </p>
-            ) : weatherHint === "unavailable" ? (
+            ) : effectiveWeatherHint === "unavailable" ? (
               <p className="text-sm text-slate-500 dark:text-slate-300">
                 No se pudo obtener la previsión. Revisa que el destino sea reconocible.
               </p>
             ) : displayedWeather && displayedWeather.days.length ? (
               <div className="space-y-4">
-                {weatherByCity.length > 1 ? (
+                {effectiveWeatherByCity.length > 1 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {weatherByCity.map((entry) => (
+                    {effectiveWeatherByCity.map((entry) => (
                       <button
                         key={entry.city}
                         type="button"
@@ -579,7 +640,7 @@ export default function TripSummaryOverview({
                         }`}
                       >
                         {entry.city}
-                        {entry.city === activeWeatherCity ? " · hoy" : ""}
+                        {entry.city === effectiveActiveCity ? " · hoy" : ""}
                       </button>
                     ))}
                   </div>
