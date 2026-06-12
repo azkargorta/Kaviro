@@ -16,9 +16,19 @@ type Props = {
   tripId: string;
   tripName: string;
   dateRangeLabel?: string | null;
+  isPremium?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
-export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }: Props) {
+export default function TripBoardBrandRail({
+  tripId,
+  tripName,
+  dateRangeLabel,
+  isPremium = true,
+  startDate = null,
+  endDate = null,
+}: Props) {
   const { header } = useTripBoardHeader();
   const safeTrim = (v: unknown) => (typeof v === "string" ? v.trim() : "");
   const section = safeTrim(header.section);
@@ -123,7 +133,12 @@ export default function TripBoardBrandRail({ tripId, tripName, dateRangeLabel }:
                 <DarkModeToggle />
               </div>
               {/* Mobile hamburger */}
-              <TripBoardMobileMenu tripId={tripId} />
+              <TripBoardMobileMenu
+                tripId={tripId}
+                isPremium={isPremium}
+                startDate={startDate}
+                endDate={endDate}
+              />
             </div>
           </div>
         </div>

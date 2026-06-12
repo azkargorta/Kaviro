@@ -1,90 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, User, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripPageHelp from "@/components/trip/common/TripPageHelp";
 import TripActivityFeedButton from "@/components/trip/common/TripActivityFeedButton";
 import SignOutButton from "@/components/auth/SignOutButton";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
-import {
-  mobileMenuSectionTitle,
-  mobileMenuRowBase,
-  mobileMenuRowIconWrap,
-  mobileMenuRowViolet,
-  mobileMenuRowVioletIcon,
-  mobileMenuRowSignOut,
-} from "@/components/ui/mobileMenuStyles";
+import TripNavLink from "@/components/trip/nav/TripNavLink";
+import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
+import { getTripNavItems } from "@/lib/kaviro-trips-trip-nav";
+import { TRIP_NAV_GROUPS, isTripNavActivePath } from "@/lib/trip-nav-groups";
+import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { iconSlotFill40 } from "@/components/ui/iconTokens";
-import { getTripTabIconSrc, tripTabDocsImageClass, tripTabIconCoralFilterDark, type TripTabKey } from "@/lib/trip-tab-assets";
-import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 
 type Props = {
   tripId: string;
   isPremium?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
-type NavIcon =
-  | { type: "emoji"; value: string }
-  | { type: "image"; src: string; alt: string; imageClassName?: string };
-
-const NAV_ITEMS: Array<{
-  key: TripTabKey;
-  label: string;
-  icon: NavIcon;
-  href: (id: string) => string;
-}> = [
-  {
-    key: "summary",
-    label: "Resumen",
-    icon: { type: "image", src: "/brand/tabs/summary.png", alt: "Resumen" },
-    href: (id) => `/trip/${id}/summary`,
-  },
-  { key: "plan", label: "Plan", icon: { type: "image", src: "/brand/tabs/plan.png", alt: "Plan" }, href: (id) => `/trip/${id}/plan` },
-  { key: "map", label: "Rutas", icon: { type: "image", src: "/brand/tabs/map.png", alt: "Rutas" }, href: (id) => `/trip/${id}/map` },
-  { key: "expenses", label: "Gastos", icon: { type: "image", src: "/brand/tabs/expenses.png", alt: "Gastos" }, href: (id) => `/trip/${id}/expenses` },
-  { key: "participants", label: "Gente", icon: { type: "image", src: "/brand/tabs/participants.png", alt: "Participantes" }, href: (id) => `/trip/${id}/participants` },
-  {
-    key: "resources",
-    label: "Docs",
-    icon: { type: "image", src: "/brand/tabs/documents.png", alt: "Docs", imageClassName: tripTabDocsImageClass },
-    href: (id) => `/trip/${id}/resources`,
-  },
-  {
-    key: "chat",
-    label: "Asistente personal",
-    icon: { type: "image", src: "/brand/tabs/ai.png", alt: "Asistente personal" },
-    href: (id) => `/trip/${id}/ai-chat`,
-  },
-];
-
-function ItemIcon({ icon }: { icon: NavIcon }) {
-  if (icon.type === "emoji") {
-    return (
-      <span className="text-[1.75rem] leading-none" aria-hidden>
-        {icon.value}
-      </span>
-    );
-  }
-  const imgClass = ["object-contain", tripTabIconCoralFilterDark, icon.imageClassName].filter(Boolean).join(" ");
-  return (
-    <span className="relative flex h-full w-full max-h-8 max-w-8 items-center justify-center overflow-hidden rounded-lg">
-      <Image src={icon.src} alt={icon.alt} width={32} height={32} sizes="32px" className={imgClass} />
-    </span>
-  );
-}
-
-export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props) {
+export default function TripBoardMobileMenu({
+  tripId,
+  isPremium = true,
+  startDate = null,
+  endDate = null,
+}: Props) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const isDark = useIsDarkMode();
+  const { isAgencyTrip, isAgencyManaged, useAgencyBranding, agencyBranding, tripMode } = useTripWorkspace();
 
-  const visibleNavItems = useMemo(() => {
-    return isPremium ? NAV_ITEMS : NAV_ITEMS.filter((x) => x.key !== "chat");
-  }, [isPremium]);
+  const visibleItems = getTripNavItems(isAgencyTrip, isAgencyManaged, tripMode).filter(
+    (item) => !item.isPremiumGated || isPremium
+  );
+
+  const isTripActiveToday = (() => {
+    if (!startDate || !endDate || isAgencyTrip) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return today >= startDate && today <= endDate;
+  })();
+
+  const isPersonalKaviro = !isAgencyTrip && !useAgencyBranding;
+  const close = () => setOpen(false);
 
   useEffect(() => {
     setMounted(true);
@@ -132,22 +94,25 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
                 type="button"
                 className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
                 aria-label="Cerrar menú"
-                onClick={() => setOpen(false)}
+                onClick={close}
               />
 
               <div
-                className="pointer-events-auto absolute right-0 top-0 h-full w-[min(92vw,420px)] overflow-y-auto border-l border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/60 shadow-2xl pb-[max(0.75rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))] dark:border-[#1E293B] dark:bg-gradient-to-b dark:from-[#0B1220] dark:via-[#0B1220] dark:to-[#0B1220]"
+                className="pointer-events-auto absolute right-0 top-0 flex h-full w-[min(92vw,420px)] flex-col overflow-y-auto border-l border-slate-200/80 bg-[#F6F7FB] shadow-2xl dark:border-[#1E293B] dark:bg-[#080C14]"
                 style={{
                   paddingTop: "max(env(safe-area-inset-top), 12px)",
+                  paddingBottom: "max(0.75rem, calc(5.5rem + env(safe-area-inset-bottom, 0px)))",
                 }}
               >
                 <div className="flex items-center justify-between gap-3 px-5">
-                  <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Menú</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    Menú
+                  </div>
                   <div className="flex items-center gap-2">
                     <DarkModeToggle />
                     <button
                       type="button"
-                      onClick={() => setOpen(false)}
+                      onClick={close}
                       className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B] ${iconSlotFill40}`}
                       aria-label="Cerrar"
                     >
@@ -156,9 +121,11 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
                   </div>
                 </div>
 
-                <div className="mt-4 px-5">
-                  <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 via-white to-violet-50/30 p-4 shadow-sm ring-1 ring-slate-900/[0.04] dark:border-[#1E293B] dark:bg-gradient-to-br dark:from-[#0F1623] dark:via-[#0F1623] dark:to-[#0F1623] dark:ring-white/5">
-                    <div className={mobileMenuSectionTitle}>Acciones rápidas</div>
+                <div className="mt-4 px-4">
+                  <div className="rounded-[20px] border border-slate-200/80 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)] dark:border-[#1E293B] dark:bg-[#0F1623]">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                      Acciones rápidas
+                    </p>
                     <div className="mt-3">
                       <TripScreenActions tripId={tripId} showLabels variant="default" menuStack />
                       <div className="mt-2 space-y-2">
@@ -169,50 +136,81 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
                   </div>
                 </div>
 
-                <div className="mt-5 px-5">
-                  <div className={mobileMenuSectionTitle}>Secciones del viaje</div>
-                  <div className="mt-3 space-y-2">
-                    {visibleNavItems.map((item) => (
-                      <Link
-                        key={item.key}
-                        href={item.href(tripId)}
-                        onClick={() => setOpen(false)}
-                        className={`${mobileMenuRowBase} justify-between`}
+                <div className="mt-4 flex-1 px-4">
+                  <div className="overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.05)] dark:border-[#1E293B] dark:bg-[#0F1623]">
+                    <div
+                      className={`border-b px-4 py-3.5 ${
+                        useAgencyBranding
+                          ? "border-white/10 bg-[var(--brand)]"
+                          : isAgencyTrip
+                            ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
+                            : "border-slate-100/90 bg-white dark:border-[#1E293B]"
+                      }`}
+                    >
+                      <p
+                        className={`truncate text-[10px] font-bold uppercase tracking-[0.22em] ${
+                          useAgencyBranding
+                            ? "text-white/90"
+                            : isAgencyTrip
+                              ? "text-slate-300"
+                              : "text-slate-500 dark:text-slate-400"
+                        }`}
                       >
-                        <span className="flex min-w-0 items-center gap-3">
-                          <span className={mobileMenuRowIconWrap}>
-                            <ItemIcon
-                              icon={
-                                item.icon.type === "image"
-                                  ? { ...item.icon, src: getTripTabIconSrc(item.key, isDark) }
-                                  : item.icon
-                              }
-                            />
-                          </span>
-                          <span className="truncate">{item.label}</span>
-                        </span>
-                        <span className="shrink-0 text-slate-400" aria-hidden>
-                          →
-                        </span>
-                      </Link>
-                    ))}
+                        {useAgencyBranding && agencyBranding
+                          ? agencyBranding.name
+                          : isAgencyTrip
+                            ? KAVIRO_TRIPS_PRODUCT_NAME
+                            : "Tu viaje"}
+                      </p>
+                    </div>
+
+                    <nav aria-label="Secciones del viaje" className="space-y-5 px-2.5 py-3">
+                      {TRIP_NAV_GROUPS.map((group) => {
+                        const groupItems = visibleItems.filter((item) => group.keys.includes(item.key));
+                        if (!groupItems.length) return null;
+                        return (
+                          <div key={group.label}>
+                            <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+                              {group.label}
+                            </p>
+                            <div className="space-y-1">
+                              {groupItems.map((item) => (
+                                <TripNavLink
+                                  key={item.key}
+                                  item={item}
+                                  tripId={tripId}
+                                  active={isTripNavActivePath(pathname, item.href(tripId), item.key)}
+                                  isAgencyTrip={isAgencyTrip}
+                                  useAgencyBranding={useAgencyBranding}
+                                  isPersonalKaviro={isPersonalKaviro}
+                                  showHoyBadge={item.key === "today" && isTripActiveToday}
+                                  onNavigate={close}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </nav>
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-slate-100 px-5 pb-6 pt-5">
-                  <div className={mobileMenuSectionTitle}>Cuenta</div>
-                  <div className="mt-3 space-y-2">
+                <div className="mt-4 border-t border-slate-200/80 px-4 pb-4 pt-4 dark:border-[#1E293B]">
+                  <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Cuenta
+                  </p>
+                  <div className="space-y-1">
                     <Link
                       href="/account"
-                      onClick={() => setOpen(false)}
-                      className={mobileMenuRowViolet}
+                      onClick={close}
+                      className="flex min-h-[52px] items-center gap-3 rounded-[14px] border border-transparent px-3 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-[#141c2b]"
                     >
-                      <span className={mobileMenuRowVioletIcon}>
-                        <User aria-hidden />
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/90 text-slate-500">
+                        <User className="h-5 w-5" strokeWidth={2} aria-hidden />
                       </span>
                       Cuenta
                     </Link>
-                    <SignOutButton showIcon className={mobileMenuRowSignOut} />
+                    <SignOutButton showIcon className="w-full rounded-[14px]" />
                   </div>
                 </div>
               </div>
@@ -223,4 +221,3 @@ export default function TripBoardMobileMenu({ tripId, isPremium = true }: Props)
     </>
   );
 }
-

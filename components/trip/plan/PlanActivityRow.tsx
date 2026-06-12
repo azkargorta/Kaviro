@@ -28,6 +28,13 @@ type Props = {
   visualState?: ActivityVisualState;
 };
 
+function statusPillVariant(state: ActivityVisualState): "past" | "current" | "upcoming" | null {
+  if (state === "past") return "past";
+  if (state === "current") return "current";
+  if (state === "upcoming") return "upcoming";
+  return null;
+}
+
 export default function PlanActivityRow({
   title,
   place,
@@ -54,6 +61,7 @@ export default function PlanActivityRow({
   const timeLabel = (time || "").trim().slice(0, 5) || "—";
   const isPast = visualState === "past";
   const isCurrent = visualState === "current";
+  const statusVariant = statusPillVariant(visualState);
 
   const shellClass =
     isDragging
@@ -84,52 +92,64 @@ export default function PlanActivityRow({
             }
           : undefined
       }
-      className={`relative rounded-xl border transition ${shellClass} ${onClick ? "cursor-pointer" : ""}`}
+      className={`rounded-xl border transition ${shellClass} ${onClick ? "cursor-pointer" : ""}`}
     >
-      {visualState !== "default" ? (
-        <span className="absolute right-2 top-2 z-[1]">
-          <TripStatusPill variant={visualState === "past" ? "past" : visualState === "current" ? "current" : "upcoming"} />
-        </span>
-      ) : null}
-      <div className={`flex items-start gap-2 p-3 ${isPast ? "opacity-80" : ""}`}>
-      {dragHandleProps ? (
-        <button
-          type="button"
-          {...dragHandleProps}
-          className="mt-0.5 inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:cursor-grabbing"
-          aria-label="Reordenar"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="h-4 w-4" aria-hidden />
-        </button>
-      ) : null}
-      {selectable ? (
-        <span
-          className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-            selected ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-slate-300 bg-white text-transparent"
-          }`}
-          aria-hidden
-        >
-          <Check className="h-3.5 w-3.5 stroke-[3]" />
-        </span>
-      ) : null}
-      <span className="mt-0.5 shrink-0 text-xl leading-none" aria-hidden>
-        {icon || meta.icon}
-      </span>
-      <div className="min-w-0 flex-1 pr-14">
-        <p
-          className={`truncate text-xs font-bold ${
-            isPast
-              ? "text-slate-400 line-through decoration-slate-400/70 dark:text-slate-500"
-              : "text-slate-900 dark:text-white"
-          }`}
-        >
-          {title}
-        </p>
-        <p className={`truncate text-[10px] ${isPast ? "text-slate-400/80" : "text-slate-400"}`}>{subtitle}</p>
+      <div className={`flex flex-col gap-2.5 p-3 sm:flex-row sm:items-start sm:gap-3 ${isPast ? "opacity-80" : ""}`}>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          {dragHandleProps ? (
+            <button
+              type="button"
+              {...dragHandleProps}
+              className="mt-0.5 inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:cursor-grabbing"
+              aria-label="Reordenar"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
+          {selectable ? (
+            <span
+              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                selected ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-slate-300 bg-white text-transparent"
+              }`}
+              aria-hidden
+            >
+              <Check className="h-3.5 w-3.5 stroke-[3]" />
+            </span>
+          ) : null}
+          <span className="mt-0.5 shrink-0 text-xl leading-none" aria-hidden>
+            {icon || meta.icon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p
+              className={`text-xs font-bold leading-snug sm:truncate ${
+                isPast
+                  ? "text-slate-400 line-through decoration-slate-400/70 dark:text-slate-500"
+                  : "text-slate-900 dark:text-white"
+              }`}
+            >
+              {title}
+            </p>
+            <p className={`mt-0.5 truncate text-[10px] ${isPast ? "text-slate-400/80" : "text-slate-400"}`}>{subtitle}</p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:ml-auto sm:justify-end">
+          <span
+            className={`inline-flex items-center rounded-lg border px-2 py-1 text-[11px] font-bold tabular-nums ${
+              isCurrent
+                ? "border-[var(--brand-border)]/60 bg-white text-[var(--brand-text)] dark:bg-[#141c2b]"
+                : isPast
+                  ? "border-slate-200/80 bg-slate-50 text-slate-400 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-500"
+                  : "border-slate-200/80 bg-slate-50 text-slate-700 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-200"
+            }`}
+          >
+            {timeLabel}
+          </span>
+          {statusVariant ? <TripStatusPill variant={statusVariant} /> : null}
+        </div>
       </div>
-      <span className="shrink-0 rounded-md bg-[var(--brand)] px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">{timeLabel}</span>
-      </div>
+
       {showReactions && tripId && activityId ? (
         <div
           className="border-t border-slate-100 px-3 pb-3 pt-2 dark:border-[#1E293B]"

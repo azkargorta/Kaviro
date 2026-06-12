@@ -176,7 +176,12 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
               </div>
             </div>
           </div>
-          <MobileBottomNav tripId={params.id} isPremium={isPremium} />
+          <MobileBottomNav
+            tripId={params.id}
+            isPremium={isPremium}
+            startDate={tripMeta?.start_date ?? null}
+            endDate={tripMeta?.end_date ?? null}
+          />
           {showAssistantDock ? <TripPageAssistantDock tripId={params.id} isPremium={isPremium} /> : null}
           <CommandPalette tripId={params.id} />
         </TripDemoProvider>
