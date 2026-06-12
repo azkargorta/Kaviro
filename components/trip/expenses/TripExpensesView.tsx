@@ -1212,19 +1212,30 @@ export default function TripExpensesView({
 
       {canManageExpenses && !shouldShowForm && !editingExpense && mounted
         ? createPortal(
-            <button
-              type="button"
-              onClick={() => {
-                setIsAddOpen(true);
-                setIsAnalyzeOpen(false);
-                setEditingExpense(null);
-                setDetectedData(null);
-              }}
-              className="btn-press fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)] md:hidden"
-              aria-label="Añadir gasto"
-            >
-              <Plus className="h-7 w-7" aria-hidden />
-            </button>,
+            <div className="fixed inset-x-0 bottom-[calc(max(env(safe-area-inset-bottom),8px)+72px)] z-30 flex gap-2 border-t border-slate-200/90 bg-white/95 px-3 py-2 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-sm md:hidden dark:border-[#1E293B] dark:bg-[#0F1623]/95">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddOpen(true);
+                  setIsAnalyzeOpen(false);
+                  setEditingExpense(null);
+                  setDetectedData(null);
+                }}
+                className="btn-press inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-3 text-sm font-bold text-white hover:bg-[var(--brand-hover)]"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Añadir gasto
+              </button>
+              {expenses.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => openMobilePanel("balances")}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-100"
+                >
+                  Balances
+                </button>
+              ) : null}
+            </div>,
             document.body
           )
         : null}

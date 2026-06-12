@@ -49,7 +49,7 @@ function StatPill({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/90 bg-white/80 px-2.5 py-2 shadow-sm dark:border-[#334155] dark:bg-[#141c2b]/90">
+    <div className="min-w-0 flex-1 rounded-xl border border-white/90 bg-white/80 px-2 py-1.5 shadow-sm dark:border-[#334155] dark:bg-[#141c2b]/90 sm:flex-none sm:px-2.5 sm:py-2">
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
         {icon}
         {label}
@@ -86,13 +86,13 @@ export default function DashboardContinueTrip({
     >
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)]">
         {/* Columna izquierda — identidad del viaje */}
-        <div className="flex min-w-0 items-start gap-3.5 p-4 sm:p-5">
+        <div className="flex min-w-0 items-start gap-3 p-3 sm:gap-3.5 sm:p-5">
           {destInitial ? (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-lg font-extrabold text-[var(--brand)] shadow-sm ring-1 ring-[var(--brand-border)] dark:bg-[#141c2b]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-base font-extrabold text-[var(--brand)] shadow-sm ring-1 ring-[var(--brand-border)] dark:bg-[#141c2b] sm:h-12 sm:w-12 sm:rounded-2xl sm:text-lg">
               {destInitial}
             </div>
           ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-[var(--brand-border)] dark:bg-[#141c2b]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-lg shadow-sm ring-1 ring-[var(--brand-border)] dark:bg-[#141c2b] sm:h-12 sm:w-12 sm:rounded-2xl sm:text-xl">
               ✈️
             </div>
           )}
@@ -147,9 +147,9 @@ export default function DashboardContinueTrip({
         </div>
 
         {/* Columna derecha — resumen + próxima actividad + CTA */}
-        <div className="flex flex-col gap-3 border-t border-[var(--brand-border)]/20 bg-white/40 p-4 dark:border-[#334155] dark:bg-[#080C14]/40 sm:p-5 lg:border-l lg:border-t-0">
+        <div className="flex flex-col gap-2.5 border-t border-[var(--brand-border)]/20 bg-white/40 p-3 dark:border-[#334155] dark:bg-[#080C14]/40 sm:gap-3 sm:p-5 lg:border-l lg:border-t-0">
           {hasSnapshot ? (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex gap-2 sm:grid sm:grid-cols-3">
               <StatPill
                 icon={<Users className="h-3 w-3 text-[var(--brand)]" aria-hidden />}
                 label="Grupo"
@@ -182,17 +182,11 @@ export default function DashboardContinueTrip({
                 {nextActivity.dateLabel ? ` · ${nextActivity.dateLabel}` : null}
               </p>
             </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-200/90 bg-white/60 px-3 py-4 text-center dark:border-[#334155] dark:bg-[#141c2b]/50">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Sin actividades próximas en el plan
-              </p>
-            </div>
-          )}
+          ) : null}
 
           <Link
             href={`/trip/${trip.id}/summary`}
-            className="btn-press mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(248,113,113,0.28)] transition hover:bg-[var(--brand-hover)]"
+            className="btn-press mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(248,113,113,0.28)] transition hover:bg-[var(--brand-hover)] sm:px-5 sm:py-3"
           >
             Continuar viaje
             <ArrowRight className="h-4 w-4" aria-hidden />

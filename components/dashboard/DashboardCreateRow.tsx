@@ -74,33 +74,34 @@ export default function DashboardCreateRow({ disabled = false }: Props) {
         <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
           Acciones principales
         </h2>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-0.5 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
           Empieza un viaje, planifica con IA o liquida gastos en grupo.
         </p>
       </div>
       <div
-        className={`grid gap-3 ${showExpenses ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+        className={`grid gap-2 sm:gap-3 ${showExpenses ? "grid-cols-3" : "grid-cols-2"}`}
         role="group"
         aria-label="Acciones principales"
       >
         {actions.map((action) => {
-          const shell = `${VARIANT_SHELL[action.variant]} min-h-[108px] active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50`;
+          const shell = `${VARIANT_SHELL[action.variant]} min-h-[76px] p-3 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50 sm:min-h-[108px] sm:p-4`;
 
           const inner = (
             <>
               {action.variant === "ai" ? (
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-[var(--brand)]/10"
+                  className="pointer-events-none absolute -right-6 -top-6 hidden h-20 w-20 rounded-full bg-[var(--brand)]/10 sm:block"
                 />
               ) : null}
+              <div className="relative flex items-center gap-2 sm:block">
               <span
-                className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition ${VARIANT_ICON[action.variant]}`}
+                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition sm:h-10 sm:w-10 ${VARIANT_ICON[action.variant]}`}
               >
                 {action.icon}
               </span>
               <p
-                className={`relative mt-3 text-sm font-extrabold tracking-tight ${
+                className={`relative min-w-0 text-xs font-extrabold leading-snug tracking-tight sm:mt-3 sm:text-sm ${
                   action.variant === "ai"
                     ? "text-[var(--brand-text)]"
                     : action.variant === "expenses"
@@ -110,8 +111,9 @@ export default function DashboardCreateRow({ disabled = false }: Props) {
               >
                 {action.title}
               </p>
-              <p className="relative mt-0.5 text-xs text-slate-500 dark:text-slate-400">{action.subtitle}</p>
-              <span className="relative mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 opacity-0 transition group-hover:opacity-100 group-hover:text-[var(--brand)]">
+              </div>
+              <p className="relative mt-0.5 hidden text-xs text-slate-500 sm:block dark:text-slate-400">{action.subtitle}</p>
+              <span className="relative mt-1 hidden items-center gap-1 text-[11px] font-semibold text-slate-400 opacity-0 transition group-hover:opacity-100 group-hover:text-[var(--brand)] sm:mt-2 sm:inline-flex">
                 Empezar
                 <Plus className="h-3 w-3" aria-hidden />
               </span>

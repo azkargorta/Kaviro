@@ -149,11 +149,11 @@ export default function ResourceList({
   }
 
   return (
-    <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+    <div className="min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+      <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Documentos y reservas adjuntas</h3>
-          <p className="mt-1 text-sm text-slate-500">Imágenes y PDFs subidos al viaje.</p>
+          <h3 className="text-base font-semibold text-slate-900 sm:text-lg">Documentos adjuntos</h3>
+          <p className="mt-0.5 hidden text-sm text-slate-500 sm:block">Imágenes y PDFs subidos al viaje.</p>
         </div>
 
         {canBulk && resources.length > 0 ? (
@@ -181,13 +181,14 @@ export default function ResourceList({
       </div>
 
       {resources.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-5 text-sm text-slate-600 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/40 dark:text-slate-300">
-          <div className="font-semibold text-slate-800 dark:text-slate-100">Todavía no hay documentos subidos</div>
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center text-sm text-slate-600 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/40 dark:text-slate-300 sm:px-5 sm:py-5 sm:text-left">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg shadow-sm sm:mx-0">📎</div>
+          <div className="font-bold text-slate-800 dark:text-slate-100">Sin documentos todavía</div>
           <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Sube billetes, reservas o PDFs para tenerlos a mano durante el viaje.
+            Guarda billetes, reservas o PDFs para tenerlos a mano en el viaje.
           </div>
           {onAdd ? (
-            <button type="button" onClick={onAdd} className={`${btnPrimary} mt-3 px-4 py-2 text-sm`}>
+            <button type="button" onClick={onAdd} className={`${btnPrimary} mt-3 min-h-11 w-full px-4 py-2.5 text-sm sm:w-auto`}>
               Adjuntar documento
             </button>
           ) : null}

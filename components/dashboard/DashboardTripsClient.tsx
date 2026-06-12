@@ -131,7 +131,7 @@ function TripListRow({
 
   return (
     <div
-      className={`group grid min-h-[64px] grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 ${DASHBOARD_CARD} ${DASHBOARD_CARD_HOVER} px-3.5 py-3 lg:grid-cols-[40px_minmax(0,1fr)_minmax(130px,1fr)_auto_92px] lg:gap-x-4 lg:py-3.5 ${listRowAccent(badge)} ${locked ? "opacity-80" : "cursor-pointer"}`}
+      className={`group grid min-h-[56px] grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-1 sm:min-h-[64px] sm:grid-cols-[auto_1fr_auto] sm:gap-x-3 ${DASHBOARD_CARD} ${DASHBOARD_CARD_HOVER} px-3 py-2.5 sm:px-3.5 sm:py-3 lg:grid-cols-[40px_minmax(0,1fr)_minmax(130px,1fr)_auto_92px] lg:gap-x-4 lg:py-3.5 ${listRowAccent(badge)} ${locked ? "opacity-80" : "cursor-pointer"}`}
       onClick={() => {
         if (locked) return;
         router.push(
@@ -214,7 +214,7 @@ function TripListRow({
           );
         }}
         disabled={locked}
-        className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+        className={`hidden shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 sm:inline-flex ${
           isActive && !locked
             ? "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]"
             : "border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600"
@@ -525,7 +525,7 @@ export default function DashboardTripsClient({
 
           {/* Tabs + toggle vista */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className={DASHBOARD_FILTER_SHELL} role="tablist" aria-label="Filtrar viajes">
+            <div className={`${DASHBOARD_FILTER_SHELL} max-w-full overflow-x-auto`} role="tablist" aria-label="Filtrar viajes">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
@@ -601,7 +601,7 @@ export default function DashboardTripsClient({
             </button>
           </div>
         ) : showSections ? (
-          <div className="space-y-10">
+          <div className="space-y-6 lg:space-y-10">
             <SectionBlock
               title="En curso"
               subtitle="Viajes que están ocurriendo ahora"

@@ -122,7 +122,7 @@ export default function PlanActivityRow({
           </span>
           <div className="min-w-0 flex-1">
             <p
-              className={`text-xs font-bold leading-snug sm:truncate ${
+              className={`line-clamp-2 text-xs font-bold leading-snug sm:line-clamp-1 sm:truncate ${
                 isPast
                   ? "text-slate-400 line-through decoration-slate-400/70 dark:text-slate-500"
                   : "text-slate-900 dark:text-white"

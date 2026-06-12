@@ -442,7 +442,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
             Pendiente de configurar
           </p>
-          <ul className="mt-2 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+          <ul className="mt-2 space-y-1.5 text-xs text-slate-600 dark:text-slate-400 [&>li:nth-child(n+3)]:hidden md:[&>li:nth-child(n+3)]:list-item">
             {alerts.slice(0, 4).map((a) => (
               <li key={a} className="flex gap-2 leading-snug">
                 <span className="text-[var(--brand)]" aria-hidden>

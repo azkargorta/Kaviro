@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useIsDemoTrip } from "@/components/trip/TripDemoContext";
 import type { DetectedDocumentData } from "@/lib/document-analyzer";
 import {
@@ -29,7 +30,7 @@ import { supabase } from "@/lib/supabase";
 import TripModuleIntro from "@/components/trip/ui/TripModuleIntro";
 import TripSectionHeader from "@/components/trip/ui/TripSectionHeader";
 import { TRIP_PANEL } from "@/components/trip/ui/trip-ui-classes";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Plus } from "lucide-react";
 
 function templateFromDetected(data: DetectedDocumentData): ReservationTemplateType {
   if (data.documentType === "hotel_reservation") return "lodging";
@@ -75,6 +76,7 @@ export default function TripResourcesView({
   const [templateType, setTemplateType] = useState<ReservationTemplateType | null>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showAnalyzerForm, setShowAnalyzerForm] = useState(false);
+  const [portalMounted, setPortalMounted] = useState(false);
   const isDemoTrip = useIsDemoTrip();
   const [showLists, setShowLists] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -108,6 +110,10 @@ export default function TripResourcesView({
     if (isDemoTrip) setShowLists(true);
   }, [isDemoTrip]);
 
+  useEffect(() => {
+    setPortalMounted(true);
+  }, []);
+
   const editingMode = useMemo(() => Boolean(editingReservation), [editingReservation]);
   const showLodgingForm = editingMode || templateType === "lodging";
   const showTransportForm = !editingMode && templateType === "transport";
@@ -131,11 +137,12 @@ export default function TripResourcesView({
   }
 
   return (
-    <div className="min-w-0 max-w-full space-y-6">
+    <div className="min-w-0 max-w-full space-y-4 sm:space-y-6">
       <TripModuleIntro
         title="Biblioteca del viaje"
         description="Billetes, reservas, PDFs e imágenes en un solo lugar. Sube documentos o analízalos con IA para rellenar reservas automáticamente."
         icon={<FolderOpen className="h-5 w-5" aria-hidden />}
+        className="hidden sm:block"
       />
       {!canManageResources ? <TripReadOnlyBanner moduleLabel="documentos y reservas" /> : null}
       {error ? (
@@ -477,6 +484,23 @@ export default function TripResourcesView({
             : {})}
         />
       </div>
+
+      {portalMounted && canManageResources
+        ? createPortal(
+            <button
+              type="button"
+              onClick={() => {
+                setShowUploadForm(true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="btn-press fixed bottom-[calc(max(env(safe-area-inset-bottom),8px)+84px)] right-[max(1rem,env(safe-area-inset-right))] z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg transition hover:bg-[var(--brand-hover)] md:hidden"
+              aria-label="Adjuntar documento"
+            >
+              <Plus className="h-7 w-7" aria-hidden />
+            </button>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

@@ -107,8 +107,8 @@ export default function ExpenseBalancePanel({
   const displayCurrency = safeCurrency(balanceCurrency);
   const isMobile = useIsMobile();
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [balancesOpen, setBalancesOpen] = useState(false);
-  const [settlementsOpen, setSettlementsOpen] = useState(false);
+  const [balancesOpen, setBalancesOpen] = useState(isMobile);
+  const [settlementsOpen, setSettlementsOpen] = useState(isMobile);
   const balancesRef = useRef<HTMLDivElement>(null);
   const settlementsRef = useRef<HTMLDivElement>(null);
 

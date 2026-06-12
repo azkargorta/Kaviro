@@ -325,10 +325,10 @@ export default function TripSummaryOverview({
   const expenseItemsCount = expensesCount ?? 0;
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-3 md:gap-6">
 
-      {/* ── Resumen rápido ── */}
-      <Reveal variant="fade" as="section" className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
+      {/* ── Resumen rápido (escritorio; en móvil las tiles del centro de control bastan) ── */}
+      <Reveal variant="fade" as="section" className="hidden grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid lg:grid-cols-6">
         <TripStatCard
           icon={<CalendarDays className="h-4 w-4" aria-hidden />}
           label="Días"
@@ -387,7 +387,7 @@ export default function TripSummaryOverview({
         data-tour="summary-countdown"
         className="overflow-hidden rounded-2xl border border-[var(--brand-border)]/70 bg-white shadow-[0_4px_20px_rgba(248,113,113,0.08)] ring-1 ring-[var(--brand-border)]/40 dark:border-[var(--brand-border)]/50 dark:bg-[#0F1623]"
       >
-        <div className="border-b border-[var(--brand-border)]/30 bg-gradient-to-br from-[var(--brand-light)]/80 via-white to-white px-4 py-4 md:px-5 md:py-5 dark:from-[#1a1212]/50 dark:via-[#0F1623] dark:to-[#0F1623]">
+        <div className="border-b border-[var(--brand-border)]/30 bg-gradient-to-br from-[var(--brand-light)]/80 via-white to-white px-3 py-3 md:px-5 md:py-5 dark:from-[#1a1212]/50 dark:via-[#0F1623] dark:to-[#0F1623]">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,260px)] lg:items-start lg:gap-5">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -411,11 +411,11 @@ export default function TripSummaryOverview({
                   </Link>
                 </div>
               </div>
-              <h2 className="mt-2 text-lg font-extrabold capitalize tracking-tight text-slate-900 dark:text-white md:text-xl">
+              <h2 className="mt-1.5 text-base font-extrabold capitalize tracking-tight text-slate-900 dark:text-white md:mt-2 md:text-xl">
                 {todayLabel}
               </h2>
               {tripDestination ? (
-                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300 md:mt-1">
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--brand)]" aria-hidden />
                   {tripDestination}
                 </p>
@@ -480,8 +480,8 @@ export default function TripSummaryOverview({
       </Reveal>
 
       {/* ── Secciones del viaje ── */}
-      <section className="min-w-0 space-y-3">
-        <Reveal variant="fade">
+      <section className="min-w-0 space-y-2 md:space-y-3">
+        <Reveal variant="fade" className="hidden md:block">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               Centro de control
@@ -492,12 +492,12 @@ export default function TripSummaryOverview({
           </div>
         </Reveal>
 
-        <div data-tour="summary-stats" className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+        <div data-tour="summary-stats" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
           {tabs.map((tab, tabIdx) => {
             const Icon = tab.iconKey ? TRIP_SIDEBAR_ICONS[tab.iconKey] : null;
             return (
               <Reveal key={tab.href} variant="scale" delay={(tabIdx % 4) as RevealDelay} className="h-full">
-                <Link href={tab.href} className={`${TRIP_TILE_CARD} p-4 sm:p-5`}>
+                <Link href={tab.href} className={`${TRIP_TILE_CARD} p-3 sm:p-5`}>
                   <div className="flex items-start gap-3">
                     <div className={TILE_ICON_WRAP}>
                       {Icon ? <Icon className="h-5 w-5" strokeWidth={2} aria-hidden /> : null}
@@ -525,8 +525,8 @@ export default function TripSummaryOverview({
       </section>
 
       <div
-        className={`grid gap-4 md:gap-5 ${
-          hideWeather ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-3 lg:items-stretch"
+        className={`flex flex-col-reverse gap-3 md:gap-5 ${
+          hideWeather ? "" : "lg:grid lg:grid-cols-3 lg:items-stretch"
         }`}
       >
         {!hideWeather ? (
@@ -629,7 +629,37 @@ export default function TripSummaryOverview({
                   })()
                 ) : null}
 
-                <div>
+                <details className="group lg:hidden">
+                  <summary className="cursor-pointer text-xs font-bold text-[var(--brand)] hover:underline">
+                    Ver previsión de próximos días
+                  </summary>
+                  <div className="mt-2 overflow-x-auto pb-1">
+                    <div className="flex w-max gap-2">
+                      {displayedWeather.days.map((day) => {
+                        const vis = wmoWeatherVisual(day.code);
+                        const isToday = day.date === today;
+                        const prob = day.precipProb;
+                        return (
+                          <div
+                            key={`m-${day.date}`}
+                            className={`w-[64px] shrink-0 rounded-xl border px-1.5 py-2 text-center ${
+                              isToday
+                                ? "border-[var(--brand-border)] bg-[var(--brand-light)]/60"
+                                : "border-slate-200/90 bg-white dark:border-[#334155] dark:bg-[#080C14]"
+                            }`}
+                          >
+                            <p className="text-[9px] font-bold uppercase text-slate-400">{isToday ? "Hoy" : formatShortWeekday(day.date)}</p>
+                            <p className="mt-1 text-lg">{vis.emoji}</p>
+                            <p className="text-[11px] font-bold tabular-nums">{day.tempMax != null ? `${Math.round(day.tempMax)}°` : "—"}</p>
+                            {prob != null && prob > 20 ? <p className="text-[9px] text-sky-600">{prob}%</p> : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </details>
+
+                <div className="hidden lg:block">
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                     Próximos días
                   </p>
@@ -684,7 +714,7 @@ export default function TripSummaryOverview({
                   </div>
                 </div>
 
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">Open-Meteo · 14 días · orientativo</p>
+                <p className="hidden text-[10px] text-slate-400 lg:block dark:text-slate-500">Open-Meteo · 14 días · orientativo</p>
               </div>
             ) : (
               <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>

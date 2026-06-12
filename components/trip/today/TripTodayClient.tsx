@@ -130,11 +130,11 @@ export default function TripTodayClient({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-900 text-white md:min-h-0 md:gap-5 md:bg-transparent md:text-[var(--text-primary)]">
+    <div className="flex min-h-0 flex-col bg-slate-900 text-white md:gap-5 md:bg-transparent md:text-[var(--text-primary)]">
       {/* Header */}
       <Reveal
         variant="fade"
-        className="bg-gradient-to-b from-slate-900 to-slate-800 px-5 pb-4 pt-6 pt-safe-top md:card-soft md:from-transparent md:to-transparent md:bg-[var(--surface-card)] md:px-6 md:py-5 md:pt-5"
+        className="bg-gradient-to-b from-slate-900 to-slate-800 px-4 pb-3 pt-4 pt-safe-top md:card-soft md:from-transparent md:to-transparent md:bg-[var(--surface-card)] md:px-6 md:py-5 md:pt-5"
       >
         <div className="mb-1 flex items-center justify-between">
           <Link
@@ -150,7 +150,7 @@ export default function TripTodayClient({
             {currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
-        <h1 className="text-2xl font-bold capitalize tracking-tight text-white md:text-[var(--text-primary)]">
+        <h1 className="text-xl font-bold capitalize tracking-tight text-white md:text-2xl md:text-[var(--text-primary)]">
           {formatDate(today)}
         </h1>
         {destination ? (
@@ -310,9 +310,10 @@ export default function TripTodayClient({
               canEdit ? (
                 <Link
                   href={`/trip/${tripId}/plan`}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-hover)]"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--brand-hover)] max-md:shadow-md"
                 >
-                  Añadir al plan <ChevronRight className="h-4 w-4" />
+                  Añadir al plan
+                  <ChevronRight className="h-4 w-4" aria-hidden />
                 </Link>
               ) : undefined
             }
