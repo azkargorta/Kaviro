@@ -14,14 +14,13 @@ import TripOfflineSync from "@/components/pwa/TripOfflineSync";
 import LoggedInRoutePrefetch from "@/components/layout/LoggedInRoutePrefetch";
 import { TripWorkspaceProvider } from "@/components/trip/TripWorkspaceContext";
 import TripAgencyRouteGuard from "@/components/trip/TripAgencyRouteGuard";
-import TripOnboardingChecklistGate from "@/components/trip/onboarding/TripOnboardingChecklistGate";
+import TripOnboardingSummarySlot from "@/components/trip/onboarding/TripOnboardingSummarySlot";
 import { clientPortalPath } from "@/lib/agency";
 import { loadTripWorkspaceMeta } from "@/lib/load-trip-workspace";
 import { isTravelerPreviewActive, TRAVELER_PREVIEW_COOKIE } from "@/lib/trip-traveler-preview";
 import { agencyBrandingStyleVars } from "@/lib/agency-brand-tokens";
 import { shouldUseAgencyBranding } from "@/lib/trip-agency-branding";
 import TripTravelerPreviewBanner from "@/components/trip/TripTravelerPreviewBanner";
-import TripWelcomeBanner from "@/components/trip/TripWelcomeBanner";
 import TripSectionHintHost from "@/components/trip/TripSectionHintHost";
 import TripOpenedTracker from "@/components/analytics/TripOpenedTracker";
 
@@ -158,15 +157,12 @@ export default async function TripLayout({ children, params }: TripLayoutProps) 
                   {isTravelerPreview ? <TripTravelerPreviewBanner tripId={params.id} /> : null}
                   {isDemo ? <DemoTripBanner /> : null}
                   {showOnboarding ? (
-                    <TripOnboardingChecklistGate
+                    <TripOnboardingSummarySlot
                       tripId={params.id}
                       tripName={tripName}
                       isPremium={isPremium}
                       tripMode={displayWorkspace.tripMode}
                     />
-                  ) : null}
-                  {!displayWorkspace.isAgencyTrip ? (
-                    <TripWelcomeBanner tripId={params.id} tripMode={displayWorkspace.tripMode} />
                   ) : null}
                   {!displayWorkspace.isAgencyTrip ? (
                     <TripSectionHintHost tripId={params.id} />

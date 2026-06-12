@@ -11,13 +11,21 @@ type Props = {
   tripName: string;
   isPremium: boolean;
   tripMode?: "travel" | "expenses";
+  /** En Resumen el checklist es visible también en móvil sin abrir ayuda. */
+  summaryPage?: boolean;
 };
 
 /**
  * Carga el checklist en el cliente (no bloquea el layout del servidor).
  * Si el usuario ya lo cerró, no hace ninguna petición.
  */
-export default function TripOnboardingChecklistGate({ tripId, tripName, isPremium, tripMode = "travel" }: Props) {
+export default function TripOnboardingChecklistGate({
+  tripId,
+  tripName,
+  isPremium,
+  tripMode = "travel",
+  summaryPage = false,
+}: Props) {
   const isMobile = useIsMobile();
   const [counts, setCounts] = useState<TripOnboardingCounts | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -64,7 +72,7 @@ export default function TripOnboardingChecklistGate({ tripId, tripName, isPremiu
   }, [tripId]);
 
   if (!counts) return null;
-  if (isMobile && !helpOpen) return null;
+  if (isMobile && !helpOpen && !summaryPage) return null;
 
   return (
     <TripOnboardingChecklist

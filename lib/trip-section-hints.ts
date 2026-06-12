@@ -4,41 +4,42 @@ export type TripSectionHintDef = {
   message: string;
 };
 
+/** Ayuda contextual por pestaña (se muestra bajo demanda, no en Resumen). */
 export const TRIP_SECTION_HINTS: TripSectionHintDef[] = [
   {
     suffix: "/expenses",
     key: "expenses",
-    message: "Añade tickets con el botón +. Kaviro calcula balances y quién debe a quién.",
-  },
-  {
-    suffix: "/plan",
-    key: "plan",
-    message: "Aquí va el itinerario día a día. Puedes importar un PDF con la IA (Premium).",
+    message: "Añade gastos con el botón +. Kaviro reparte importes y calcula quién debe a quién.",
   },
   {
     suffix: "/map",
     key: "map",
-    message: "Rutas y puntos del viaje en el mapa. Útil durante el desplazamiento.",
+    message: "Visualiza paradas del plan y trayectos del viaje. Útil para orientarte en ruta.",
   },
   {
     suffix: "/participants",
     key: "participants",
-    message: "Invita por enlace de WhatsApp o busca usuarios que ya tengan cuenta en Kaviro.",
+    message: "Invita por enlace, asigna roles y gestiona quién forma parte del viaje.",
   },
   {
     suffix: "/resources",
     key: "resources",
-    message: "Billetes, reservas y documentos compartidos del grupo.",
+    message: "Guarda billetes, reservas y archivos del grupo para tenerlos siempre a mano.",
   },
   {
     suffix: "/ai-chat",
     key: "ai",
-    message: "Asistente con contexto del viaje: organizar días, ideas y cambios al plan.",
+    message: "Pide itinerarios, ideas, cambios al plan o respuestas con el contexto de este viaje.",
   },
 ];
 
 export function getTripSectionHint(pathname: string): TripSectionHintDef | null {
   return TRIP_SECTION_HINTS.find((h) => pathname.endsWith(h.suffix)) ?? null;
+}
+
+export function isTripSummaryPath(pathname: string, tripId: string): boolean {
+  const base = `/trip/${tripId}`;
+  return pathname === base || pathname === `${base}/summary`;
 }
 
 export const KAVIRO_TRIP_HELP_TOGGLE_EVENT = "kaviro:trip-help-toggle";

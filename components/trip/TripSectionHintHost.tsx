@@ -6,6 +6,7 @@ import TripSectionHint from "@/components/trip/TripSectionHint";
 import {
   dispatchTripHelpToggle,
   getTripSectionHint,
+  isTripSummaryPath,
   KAVIRO_TRIP_HELP_TOGGLE_EVENT,
 } from "@/lib/trip-section-hints";
 
@@ -13,6 +14,7 @@ export default function TripSectionHintHost({ tripId }: { tripId: string }) {
   const pathname = usePathname() || "";
   const match = getTripSectionHint(pathname);
   const [open, setOpen] = useState(false);
+  const onSummary = isTripSummaryPath(pathname, tripId);
 
   useEffect(() => {
     setOpen(false);
@@ -28,7 +30,7 @@ export default function TripSectionHintHost({ tripId }: { tripId: string }) {
     return () => window.removeEventListener(KAVIRO_TRIP_HELP_TOGGLE_EVENT, onToggle);
   }, []);
 
-  if (!match) return null;
+  if (!match || onSummary) return null;
 
   return (
     <TripSectionHint
