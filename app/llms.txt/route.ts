@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 const LLMS_TXT = `# Kaviro
 
 > Kaviro es una web app para organizar viajes en grupo, itinerarios, gastos compartidos, documentos, rutas y planificación con IA desde un único lugar.
@@ -123,7 +121,7 @@ export async function GET() {
   return new Response(LLMS_TXT, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=300, s-maxage=300",
+      "Cache-Control": "public, max-age=0, must-revalidate",
     },
   });
 }

@@ -44,9 +44,30 @@ function travelerPreviewMiddleware(request: NextRequest): NextResponse | null {
   return null;
 }
 
-/** Evita getUser() en Supabase antes de login/signup (doble llamada y más latencia). */
+/** Rutas públicas de marketing/SEO: no requieren refresh de sesión en middleware. */
+const PUBLIC_MARKETING_PATHS = new Set([
+  "/",
+  "/pricing",
+  "/help",
+  "/empresa",
+  "/organizador-viajes",
+  "/control-gastos-viaje",
+  "/itinerario-viaje",
+  "/planificador-viajes-ia",
+  "/que-es-kaviro",
+  "/kaviro-info",
+  "/privacy",
+  "/terms",
+]);
+
+/**
+ * Evita getUser() en Supabase cuando la ruta no lo necesita en middleware.
+ * Login/signup API: evita doble llamada. Marketing: la personalización (si existe)
+ * sigue en el Server Component de la página (p. ej. /, /pricing, /empresa).
+ */
 function skipsSessionRefresh(pathname: string): boolean {
-  return pathname === "/api/auth/login" || pathname === "/api/auth/signup";
+  if (pathname === "/api/auth/login" || pathname === "/api/auth/signup") return true;
+  return PUBLIC_MARKETING_PATHS.has(pathname);
 }
 
 export async function middleware(request: NextRequest) {
@@ -154,6 +175,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|sw.js|offline.html|google[a-z0-9]+\\.html).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|sw.js|offline.html|google[a-z0-9]+\\.html|sitemap\\.xml|robots\\.txt|llms\\.txt|brand/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$).*)",
   ],
 };
