@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getTripTabIconSrc, tripTabDocsImageClass, type TripTabKey } from "@/lib/trip-tab-assets";
-import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 import { useTripWorkspace } from "@/components/trip/TripWorkspaceContext";
 import { getTripNavItems, type TripNavItem } from "@/lib/kaviro-trips-trip-nav";
 import { KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
+import { TRIP_SIDEBAR_ICONS } from "@/lib/trip-sidebar-icons";
+import type { TripTabKey } from "@/lib/trip-tab-assets";
 
 const NAV_GROUPS: { label: string; keys: TripTabKey[] }[] = [
-  { label: "Viaje", keys: ["summary", "plan", "today", "map"] },
-  { label: "Organización", keys: ["expenses", "resources", "participants"] },
+  { label: "Viaje", keys: ["summary", "plan", "map", "today"] },
+  { label: "Organización", keys: ["expenses", "participants", "resources"] },
   {
     label: "Más",
     keys: ["chat", "recap", "announcements", "messages", "payments", "settings"],
@@ -38,7 +37,6 @@ function isActivePath(pathname: string, href: string, key: string) {
 
 export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDate }: Props) {
   const pathname = usePathname();
-  const isDark = useIsDarkMode();
   const { isAgencyTrip, isAgencyManaged, useAgencyBranding, agencyBranding, tripMode } = useTripWorkspace();
 
   const visibleItems = getTripNavItems(isAgencyTrip, isAgencyManaged, tripMode).filter(
@@ -83,6 +81,8 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
     };
   }, [syncDock, pathname, visibleItems.length, isPremium, isAgencyTrip, useAgencyBranding]);
 
+  const isPersonalKaviro = !isAgencyTrip && !useAgencyBranding;
+
   return (
     <div
       ref={anchorRef}
@@ -91,7 +91,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
     >
       <aside
         ref={panelRef}
-        className="space-y-2 overscroll-contain md:overflow-y-auto"
+        className="space-y-2.5 overscroll-contain md:overflow-y-auto"
         style={
           dock
             ? {
@@ -106,28 +106,30 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
         }
       >
         <div
-          className={`${
-            useAgencyBranding || !isAgencyTrip
-              ? "overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.07)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
-              : "overflow-visible rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
-          }`}
+          className={
+            isPersonalKaviro
+              ? "overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.05)] dark:border-[#1E293B] dark:bg-[#0F1623] dark:shadow-[0_2px_16px_rgba(0,0,0,0.28)]"
+              : useAgencyBranding
+                ? "overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.05)] dark:border-[#1E293B] dark:bg-[#0F1623]"
+                : "overflow-visible rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
+          }
         >
           <div
-            className={`border-b px-4 py-3 ${
+            className={`border-b px-4 py-3.5 ${
               useAgencyBranding
                 ? "border-white/10 bg-[var(--brand)]"
                 : isAgencyTrip
                   ? "border-slate-200 bg-[#0f2744] dark:border-slate-700"
-                  : "border-slate-100 bg-slate-50/80 dark:border-[#1E293B] dark:bg-[#141c2b]/60"
+                  : "border-slate-100/90 bg-white dark:border-[#1E293B] dark:bg-[#0F1623]"
             }`}
           >
             <p
-              className={`truncate text-[10px] font-bold uppercase leading-normal tracking-[0.2em] ${
+              className={`truncate text-[10px] font-bold uppercase leading-normal tracking-[0.22em] ${
                 useAgencyBranding
                   ? "text-white/90"
                   : isAgencyTrip
                     ? "text-slate-300"
-                    : "text-slate-600 dark:text-slate-300"
+                    : "text-slate-500 dark:text-slate-400"
               }`}
             >
               {useAgencyBranding && agencyBranding
@@ -142,7 +144,7 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
             aria-label="Navegación del viaje"
             data-tour="sidebar-nav"
             data-trip-sidebar-nav
-            className="space-y-4 bg-white p-2.5 dark:bg-[#0F1623]"
+            className="space-y-5 bg-white px-2.5 py-3 dark:bg-[#0F1623]"
           >
             {NAV_GROUPS.map((group) => {
               const groupItems = visibleItems.filter((item) => group.keys.includes(item.key));
@@ -150,32 +152,26 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
               return (
                 <div key={group.label}>
                   <p
-                    className={`mb-1.5 flex items-center gap-2 px-2 text-[9px] font-extrabold uppercase tracking-[0.18em] ${
+                    className={`mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.22em] ${
                       useAgencyBranding
                         ? "text-white/60"
                         : isAgencyTrip
                           ? "text-slate-400"
-                          : "text-slate-500 dark:text-slate-400"
+                          : "text-slate-400 dark:text-slate-500"
                     }`}
                   >
-                    <span
-                      className={`h-px w-3 shrink-0 ${
-                        useAgencyBranding || isAgencyTrip ? "bg-slate-400" : "bg-[var(--brand)]/60"
-                      }`}
-                      aria-hidden
-                    />
                     {group.label}
                   </p>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {groupItems.map((item) => (
                       <SidebarLink
                         key={item.key}
                         item={item}
                         tripId={tripId}
                         active={isActivePath(pathname, item.href(tripId), item.key)}
-                        isDark={isDark}
                         isAgencyTrip={isAgencyTrip}
                         useAgencyBranding={useAgencyBranding}
+                        isPersonalKaviro={isPersonalKaviro}
                         showHoyBadge={item.key === "today" && isTripActiveToday}
                       />
                     ))}
@@ -189,14 +185,14 @@ export default function DesktopTripSidebar({ tripId, isPremium, startDate, endDa
         {!isPremium && !isAgencyTrip ? (
           <Link
             href="/pricing"
-            className="group flex items-center gap-2.5 rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] px-3.5 py-3 transition hover:border-[var(--brand)] hover:shadow-sm"
+            className="group flex items-center gap-2.5 rounded-[20px] border border-[var(--brand-border)]/70 bg-[var(--brand-light)]/60 px-3.5 py-3 transition hover:-translate-y-px hover:border-[var(--brand-border)] hover:shadow-[0_2px_10px_rgba(248,113,113,0.1)]"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] shadow-sm">
-              <span className="text-sm">✦</span>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--brand-border)]/50 bg-white text-[var(--brand)] shadow-sm">
+              <span className="text-sm font-bold">✦</span>
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-[var(--brand-text)] truncate">Activar Premium</p>
-              <p className="text-[10px] text-[var(--brand)] truncate">IA + funciones extra</p>
+              <p className="truncate text-[11px] font-bold text-[var(--brand-text)]">Activar Premium</p>
+              <p className="truncate text-[10px] text-[var(--brand)]/90">IA + funciones extra</p>
             </div>
           </Link>
         ) : null}
@@ -209,21 +205,24 @@ function SidebarLink({
   item,
   tripId,
   active,
-  isDark,
   isAgencyTrip,
   useAgencyBranding,
+  isPersonalKaviro,
   showHoyBadge,
 }: {
   item: TripNavItem;
   tripId: string;
   active: boolean;
-  isDark: boolean;
   isAgencyTrip: boolean;
   useAgencyBranding: boolean;
+  isPersonalKaviro: boolean;
   showHoyBadge: boolean;
 }) {
   const href = item.href(tripId);
-  const isAI = item.key === "chat";
+  const Icon = TRIP_SIDEBAR_ICONS[item.key];
+
+  const useKaviroPremium = isPersonalKaviro;
+  const useAgencyAccent = useAgencyBranding || (isAgencyTrip && !useAgencyBranding);
 
   return (
     <Link
@@ -231,56 +230,54 @@ function SidebarLink({
       prefetch
       title={item.label}
       className={`
-        group relative flex min-h-[46px] items-center gap-2.5 rounded-xl px-2.5 py-2
-        transition-all duration-150
+        group relative flex min-h-[58px] items-center gap-3 rounded-[14px] border px-3 py-2.5
+        transition-all duration-200
         ${
           active
-            ? useAgencyBranding || isAI
-              ? "bg-[var(--brand)] text-white shadow-sm"
-              : isAgencyTrip
-                ? "bg-[#1e3a5f] text-white shadow-sm"
-                : "border border-[var(--brand-border)] border-l-[3px] border-l-[var(--brand)] bg-[var(--brand-light)] text-slate-900 shadow-[0_2px_10px_rgba(248,113,113,0.12)] dark:bg-[#1a2438] dark:text-white"
-            : "text-slate-700 hover:border-slate-200/80 hover:bg-slate-50 hover:shadow-sm dark:text-slate-200 dark:hover:border-[#334155] dark:hover:bg-[#141c2b]"
+            ? useKaviroPremium
+              ? "border-[var(--brand-border)]/70 bg-gradient-to-br from-[#FFF1F1] to-white text-slate-900 shadow-[0_2px_12px_rgba(248,113,113,0.1)] dark:from-[#1a1212]/80 dark:to-[#0F1623] dark:text-white"
+              : useAgencyAccent
+                ? "border-transparent bg-[var(--brand)] text-white shadow-sm"
+                : "border-transparent bg-[#1e3a5f] text-white shadow-sm"
+            : useKaviroPremium
+              ? "border-transparent text-slate-800 hover:-translate-y-px hover:border-slate-200/80 hover:bg-slate-50/90 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:text-slate-100 dark:hover:border-[#334155] dark:hover:bg-[#141c2b]/80"
+              : "border-transparent text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-[#141c2b]"
         }
       `}
     >
+      {active && useKaviroPremium ? (
+        <span
+          className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full bg-[var(--brand)]"
+          aria-hidden
+        />
+      ) : null}
+
       <span
         className={`
-          relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg
+          relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border
           ${
             active
-              ? useAgencyBranding || isAI || isAgencyTrip
-                ? "bg-white/15 ring-1 ring-white/20"
-                : "bg-white ring-1 ring-[var(--brand-border)] dark:bg-[#0F1623] dark:ring-[var(--brand-border)]"
-              : "bg-slate-100 ring-1 ring-slate-200/80 dark:bg-slate-800 dark:ring-slate-600"
+              ? useKaviroPremium
+                ? "border-[var(--brand-border)]/50 bg-white text-[var(--brand)] dark:bg-[#141c2b]"
+                : "border-white/20 bg-white/15 text-white"
+              : useKaviroPremium
+                ? "border-slate-200/70 bg-slate-50/90 text-slate-500 group-hover:border-slate-200 group-hover:text-[var(--brand)] dark:border-[#334155] dark:bg-[#141c2b]/60 dark:text-slate-400 dark:group-hover:text-[var(--brand)]"
+                : "border-slate-200/70 bg-slate-50/90 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
           }
         `}
         aria-hidden
       >
-        <Image
-          src={getTripTabIconSrc(item.key, isDark)}
-          alt=""
-          width={28}
-          height={28}
-          sizes="28px"
-          className={`h-7 w-7 object-contain ${item.key === "resources" ? tripTabDocsImageClass : ""} ${
-            active && (useAgencyBranding || isAI || isAgencyTrip)
-              ? "brightness-[2] saturate-0"
-              : isAgencyTrip
-                ? "opacity-80"
-                : ""
-          }`}
-        />
+        {Icon ? <Icon className="h-5 w-5" strokeWidth={2} aria-hidden /> : null}
       </span>
 
       <div className="min-w-0 flex-1">
         <p
-          className={`text-[13px] font-semibold leading-snug truncate ${
+          className={`truncate text-[13px] leading-snug ${
             active
-              ? useAgencyBranding || isAI || isAgencyTrip
-                ? "text-white"
-                : "text-slate-900 dark:text-white"
-              : "text-slate-900 dark:text-slate-100"
+              ? useKaviroPremium
+                ? "font-bold text-slate-900 dark:text-white"
+                : "font-semibold text-white"
+              : "font-semibold text-slate-900 dark:text-slate-100"
           }`}
         >
           {item.label}
@@ -289,10 +286,12 @@ function SidebarLink({
           <p
             className={`mt-0.5 truncate text-[10px] font-medium leading-snug ${
               active
-                ? useAgencyBranding || isAI || isAgencyTrip
-                  ? "text-white/80"
-                  : "text-slate-500 dark:text-slate-400"
-                : "text-slate-500"
+                ? useKaviroPremium
+                  ? "text-slate-400 dark:text-slate-500"
+                  : useAgencyAccent || isAgencyTrip
+                    ? "text-white/75"
+                    : "text-slate-500"
+                : "text-slate-400 dark:text-slate-500"
             }`}
           >
             {item.sublabel}
@@ -301,7 +300,7 @@ function SidebarLink({
       </div>
 
       {showHoyBadge && !active ? (
-        <span className="shrink-0 rounded-full bg-[var(--brand-light)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--brand-text)]">
+        <span className="shrink-0 rounded-md border border-[var(--brand-border)]/55 bg-[var(--brand-light)]/75 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-[var(--brand-text)]">
           HOY
         </span>
       ) : null}
