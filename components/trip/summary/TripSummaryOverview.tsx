@@ -4,7 +4,7 @@ import TripSearchCard from "@/components/trip/summary/TripSearchCard";
 import Link from "next/link";
 import KaviroMark from "@/components/brand/KaviroMark";
 import { useState } from "react";
-import type { TripWeatherCityForecast, TripWeatherResult } from "@/lib/trip-weather";
+import type { TripWeatherCityForecast, TripWeatherDay, TripWeatherResult } from "@/lib/trip-weather";
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
 import type { TripTabKey } from "@/lib/trip-tab-assets";
 import { TRIP_SIDEBAR_ICONS } from "@/lib/trip-sidebar-icons";
@@ -12,6 +12,9 @@ import {
   ArrowRight,
   CalendarDays,
   Clock,
+  CloudRain,
+  CloudSun,
+  Droplets,
   MapPin,
   Share2,
   Users,
@@ -52,6 +55,30 @@ function formatShortWeekday(dateStr: string) {
   const d = new Date(`${dateStr}T12:00:00`);
   if (Number.isNaN(d.getTime())) return dateStr;
   return new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short" }).format(d);
+}
+
+function weatherTripTip(day: TripWeatherDay | undefined): string | null {
+  if (!day) return null;
+  if (day.precipProb != null && day.precipProb >= 55) {
+    return "Alta probabilidad de lluvia: lleva paraguas o ten un plan B en interior.";
+  }
+  if (day.precipProb != null && day.precipProb >= 30) {
+    return "Puede llover hoy: conviene ir preparado.";
+  }
+  if (day.tempMax != null && day.tempMax >= 32) {
+    return "Día caluroso: hidrátate y busca sombra en las horas centrales.";
+  }
+  if (day.tempMin != null && day.tempMin <= 5) {
+    return "Temperaturas bajas: capas y abrigo para moverte cómodo.";
+  }
+  const vis = day.code != null ? wmoWeatherVisual(day.code) : null;
+  if (vis?.label === "Tormenta") {
+    return "Posibles tormentas: revisa el plan al aire libre y ten alternativa.";
+  }
+  if (vis?.label === "Nieve" || vis?.label === "Chubascos nieve") {
+    return "Condiciones invernales: calzado adecuado y más margen en desplazamientos.";
+  }
+  return null;
 }
 
 function buildMapsUrl(a: TripSummaryActivityPreview) {
@@ -222,6 +249,7 @@ export default function TripSummaryOverview({
   participantsCount,
   budgetTarget,
   totalSpent,
+  expensesCount,
   currency,
   expenseMultiCurrency,
   hideWeather = false,
@@ -245,6 +273,7 @@ export default function TripSummaryOverview({
   participantsCount?: number;
   budgetTarget?: number | null;
   totalSpent?: number;
+  expensesCount?: number;
   currency?: string;
   expenseMultiCurrency?: boolean;
 }) {
@@ -259,6 +288,9 @@ export default function TripSummaryOverview({
   const displayedWeather =
     weatherByCity.find((c) => c.city === selectedWeatherCity)?.weather ??
     weather;
+
+  const todayWeatherDay = displayedWeather?.days.find((d) => d.date === today) ?? null;
+  const weatherTip = weatherTripTip(todayWeatherDay ?? undefined);
 
   // Countdown / progress data
   const daysUntilStart = tripStartDate && phase === "before"
@@ -290,6 +322,7 @@ export default function TripSummaryOverview({
   const nextHighlightId = plansToday.find((p) => !p.isPast)?.id ?? null;
   const expensesCountLabel = expensesTab?.metric ?? "0 gastos";
   const participantsN = participantsCount ?? 0;
+  const expenseItemsCount = expensesCount ?? 0;
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
@@ -493,182 +526,182 @@ export default function TripSummaryOverview({
 
       <div
         className={`grid gap-4 md:gap-5 ${
-          hideWeather ? "" : "lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
+          hideWeather ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-3 lg:items-stretch"
         }`}
       >
-        <div className="flex min-w-0 flex-col gap-4 md:gap-5">
-        {budgetTarget != null && budgetTarget > 0 ? (
-          <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
-            <TripBudgetSummaryCard
-              tripId={tripId}
-              budgetTarget={budgetTarget}
-              totalSpent={totalSpent ?? 0}
-              currency={currency || "EUR"}
-              multiCurrency={expenseMultiCurrency}
-            />
-          </Reveal>
-        ) : (
-          <Reveal variant="slide" delay={1} as="div" data-tour="summary-budget">
-            <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-6 dark:border-[#1E293B] dark:bg-[#0F1623]">
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-amber-800 dark:text-[var(--accent)]">
-                Presupuesto del viaje
-              </p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Aún no has definido un presupuesto objetivo. Configúralo en Ajustes para ver la barra de progreso aquí y en Gastos.
-              </p>
-              <Link
-                href={`/trip/${tripId}/settings#presupuesto`}
-                className="mt-3 inline-flex min-h-9 items-center gap-1 text-xs font-bold text-[var(--brand)] hover:underline md:mt-4 md:min-h-10 md:rounded-xl md:bg-[var(--brand)] md:px-4 md:py-2 md:text-white md:no-underline md:hover:bg-[var(--brand-hover)]"
-              >
-                <span className="md:hidden">Definir presupuesto →</span>
-                <span className="hidden md:inline">Definir presupuesto en Ajustes</span>
-              </Link>
-            </section>
-          </Reveal>
-        )}
-        </div>
-
         {!hideWeather ? (
-        <Reveal
-          variant="slide"
-          delay={budgetTarget != null && budgetTarget > 0 ? 2 : 1}
-          as="section"
-          data-tour="summary-weather"
-          className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-6 dark:border-[#1E293B] dark:bg-[#0F1623]"
-        >
-          <div className="flex items-start justify-between gap-2 mb-4">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700 dark:text-[var(--accent)]">Clima en el destino</p>
-              <p className="mt-0.5 text-lg font-extrabold text-slate-900 dark:text-slate-50">Previsión</p>
-            </div>
-            <span className="text-2xl">🌤️</span>
-          </div>
-
-          {weatherHint === "no-destination" ? (
-            <p className="text-sm text-slate-500 dark:text-slate-300">
-              Configura las{" "}
-              <Link href={`/trip/${tripId}/settings#clima`} className="font-semibold text-sky-700 underline dark:text-sky-300">
-                ciudades y fechas en Ajustes
-              </Link>{" "}
-              para ver el clima.
-            </p>
-          ) : weatherHint === "unavailable" ? (
-            <p className="text-sm text-slate-500 dark:text-slate-300">No se pudo obtener la previsión. Revisa que el destino sea reconocible.</p>
-          ) : displayedWeather && displayedWeather.days.length ? (
-            <div className="space-y-3">
-              {weatherByCity.length > 1 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {weatherByCity.map((entry) => (
-                    <button
-                      key={entry.city}
-                      type="button"
-                      onClick={() => setSelectedWeatherCity(entry.city)}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                        selectedWeatherCity === entry.city
-                          ? "border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/50 dark:text-sky-100"
-                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300"
-                      }`}
-                    >
-                      {entry.city}
-                      {entry.city === activeWeatherCity ? " · hoy" : ""}
-                    </button>
-                  ))}
+          <Reveal
+            variant="slide"
+            delay={1}
+            as="section"
+            data-tour="summary-weather"
+            className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm md:p-5 lg:col-span-2 dark:border-[#1E293B] dark:bg-[#0F1623]"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-sky-100 dark:bg-[#141c2b] dark:text-sky-300 dark:ring-sky-900/40">
+                  <CloudSun className="h-5 w-5" aria-hidden />
                 </div>
-              ) : null}
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{displayedWeather.locationLabel}</p>
-
-              {/* Today highlight */}
-              {(() => {
-                const todayW = displayedWeather.days.find((d) => d.date === today);
-                const vis = todayW ? wmoWeatherVisual(todayW.code) : null;
-                if (!todayW || !vis) return null;
-                return (
-                  <div
-                    className={`flex items-center gap-4 rounded-2xl bg-white border border-slate-200 px-4 py-3 shadow-sm
-                    dark:bg-[var(--surface-page)]/55 dark:border-[color:var(--brand-border)] dark:shadow-[0_10px_26px_rgba(0,0,0,0.35)]`}
-                  >
-                    <span className="text-4xl">{vis.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wide dark:text-slate-300">Hoy</p>
-                      <p className="text-2xl font-extrabold text-slate-900 tabular-nums leading-tight dark:text-slate-50">
-                        {todayW.tempMax != null ? `${Math.round(todayW.tempMax)}°` : "—"}
-                        <span className="text-base font-semibold text-slate-400 ml-1 dark:text-slate-400">
-                          / {todayW.tempMin != null ? `${Math.round(todayW.tempMin)}°` : "—"}
-                        </span>
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-300">{vis.label}</p>
-                    </div>
-                    {/* Today rain */}
-                    {(todayW as any).precipProb != null && (
-                      <div className="text-right shrink-0">
-                        <p className="text-lg font-extrabold text-sky-600 tabular-nums dark:text-[var(--accent)]">{(todayW as any).precipProb}%</p>
-                        <p className="text-[10px] text-slate-400 leading-none mt-0.5 dark:text-slate-400">lluvia</p>
-                        {(todayW as any).precipMm != null && (todayW as any).precipMm > 0 && (
-                          <p className="text-[10px] font-semibold text-sky-500 dark:text-[var(--brand-text)]">{(todayW as any).precipMm} mm</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* All days — horizontal scroll with precipitation */}
-              <div className="overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollSnapType: "x mandatory" }}>
-                <div className="flex gap-2" style={{ width: "max-content" }}>
-                  {displayedWeather.days.map((day) => {
-                    const vis = wmoWeatherVisual(day.code);
-                    const isToday = day.date === today;
-                    const prob = (day as any).precipProb as number | null;
-                    const mm = (day as any).precipMm as number | null;
-                    const hasRain = prob != null && prob > 20;
-                    return (
-                      <div
-                        key={day.date}
-                        style={{ scrollSnapAlign: "start" }}
-                        className={`w-[52px] shrink-0 rounded-xl border px-1.5 py-2 text-center shadow-sm transition-all max-md:py-2 md:w-[84px] md:rounded-2xl md:px-2.5 md:py-3 ${
-                          isToday
-                            ? "border-[#F87171]/40 bg-[#FEF2F2] ring-1 ring-[#F87171]/25 dark:border-[color:var(--brand-border)] dark:bg-[var(--surface-page)]/55 dark:ring-[color:var(--brand-light)]"
-                            : "border-slate-200 bg-white dark:border-[color:var(--border-default)] dark:bg-[var(--surface-card)]"
-                        }`}
-                      >
-                        <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-[var(--brand)] dark:text-[var(--accent)]" : "text-slate-400 dark:text-slate-400"}`}>
-                          {isToday ? "HOY" : formatShortWeekday(day.date)}
-                        </p>
-                        <p className="mt-1 text-lg leading-none md:mt-1.5 md:text-2xl">{vis.emoji}</p>
-                        <p className="mt-1 text-[11px] font-extrabold text-slate-900 tabular-nums leading-tight dark:text-slate-50 md:mt-2 md:text-xs">
-                          {day.tempMax != null ? `${Math.round(day.tempMax)}°` : "—"}
-                        </p>
-                        <p className="hidden text-[10px] text-slate-400 tabular-nums dark:text-slate-400 md:block">
-                          {day.tempMin != null ? `${Math.round(day.tempMin)}°` : "—"}
-                        </p>
-                        {/* Precipitation — solo escritorio */}
-                        <div className={`mt-2 hidden rounded-lg px-1.5 py-1 md:block ${hasRain ? "bg-sky-50 dark:bg-[color:var(--border-default)]/50" : "bg-transparent"}`}>
-                          {prob != null ? (
-                            <>
-                              <p className={`text-[11px] font-extrabold tabular-nums ${hasRain ? "text-sky-600 dark:text-[var(--accent)]" : "text-slate-300 dark:text-slate-500"}`}>
-                                💧{prob}%
-                              </p>
-                              {mm != null && mm > 0 && (
-                                <p className="text-[9px] text-sky-400 tabular-nums dark:text-[var(--brand-text)]">{mm}mm</p>
-                              )}
-                            </>
-                          ) : (
-                            <p className="text-[10px] text-slate-200 dark:text-slate-600">—</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    Clima en el destino
+                  </p>
+                  <p className="mt-0.5 text-lg font-extrabold text-slate-900 dark:text-slate-50">Previsión del viaje</p>
                 </div>
               </div>
-
-              <p className="text-[10px] text-slate-400 dark:text-slate-500">Open-Meteo · 14 días · orientativo</p>
             </div>
-          ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>
-          )}
-        </Reveal>
+
+            {weatherHint === "no-destination" ? (
+              <p className="text-sm text-slate-500 dark:text-slate-300">
+                Configura las{" "}
+                <Link href={`/trip/${tripId}/settings#clima`} className="font-semibold text-[var(--brand)] hover:underline">
+                  ciudades y fechas en Ajustes
+                </Link>{" "}
+                para ver el clima.
+              </p>
+            ) : weatherHint === "unavailable" ? (
+              <p className="text-sm text-slate-500 dark:text-slate-300">
+                No se pudo obtener la previsión. Revisa que el destino sea reconocible.
+              </p>
+            ) : displayedWeather && displayedWeather.days.length ? (
+              <div className="space-y-4">
+                {weatherByCity.length > 1 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {weatherByCity.map((entry) => (
+                      <button
+                        key={entry.city}
+                        type="button"
+                        onClick={() => setSelectedWeatherCity(entry.city)}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                          selectedWeatherCity === entry.city
+                            ? "border-[var(--brand-border)] bg-[var(--brand-light)] text-[var(--brand-text)]"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#080C14] dark:text-slate-300"
+                        }`}
+                      >
+                        {entry.city}
+                        {entry.city === activeWeatherCity ? " · hoy" : ""}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{displayedWeather.locationLabel}</p>
+
+                {todayWeatherDay ? (
+                  (() => {
+                    const vis = wmoWeatherVisual(todayWeatherDay.code);
+                    const prob = todayWeatherDay.precipProb;
+                    const mm = todayWeatherDay.precipMm;
+                    return (
+                      <div className="rounded-2xl border border-[var(--brand-border)]/50 bg-gradient-to-br from-[var(--brand-light)]/40 via-white to-sky-50/30 p-4 dark:from-[#1a1212]/40 dark:via-[#0F1623] dark:to-[#0F1623]">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                          <span className="text-5xl leading-none sm:shrink-0">{vis.emoji}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-text)]">Ahora · hoy</p>
+                            <p className="mt-1 text-3xl font-extrabold tabular-nums leading-none text-slate-900 dark:text-white">
+                              {todayWeatherDay.tempMax != null ? `${Math.round(todayWeatherDay.tempMax)}°` : "—"}
+                              <span className="ml-1.5 text-lg font-semibold text-slate-400">
+                                / {todayWeatherDay.tempMin != null ? `${Math.round(todayWeatherDay.tempMin)}°` : "—"}
+                              </span>
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">{vis.label}</p>
+                          </div>
+                          {prob != null ? (
+                            <div className="flex shrink-0 items-center gap-3 rounded-xl border border-sky-100 bg-white/80 px-3 py-2.5 dark:border-sky-900/40 dark:bg-[#141c2b]/80">
+                              <CloudRain className="h-5 w-5 text-sky-500 dark:text-sky-300" aria-hidden />
+                              <div>
+                                <p className="text-lg font-extrabold tabular-nums text-sky-700 dark:text-sky-200">{prob}%</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Lluvia</p>
+                                {mm != null && mm > 0 ? (
+                                  <p className="text-[10px] font-bold tabular-nums text-sky-500">{mm} mm</p>
+                                ) : null}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                        {weatherTip ? (
+                          <p className="mt-3 rounded-lg border border-slate-200/80 bg-white/70 px-3 py-2 text-xs leading-snug text-slate-600 dark:border-[#334155] dark:bg-[#080C14]/50 dark:text-slate-300">
+                            {weatherTip}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                ) : null}
+
+                <div>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    Próximos días
+                  </p>
+                  <div className="overflow-x-auto pb-1 lg:overflow-visible">
+                    <div className="flex w-max gap-2 lg:grid lg:w-full lg:grid-cols-7 lg:gap-2">
+                      {displayedWeather.days.map((day) => {
+                        const vis = wmoWeatherVisual(day.code);
+                        const isToday = day.date === today;
+                        const prob = day.precipProb;
+                        const mm = day.precipMm;
+                        const hasRain = prob != null && prob > 20;
+                        return (
+                          <div
+                            key={day.date}
+                            className={`w-[72px] shrink-0 rounded-xl border px-2 py-2.5 text-center shadow-sm lg:w-auto ${
+                              isToday
+                                ? "border-[var(--brand-border)] bg-[var(--brand-light)]/60 ring-1 ring-[var(--brand-border)]/40"
+                                : "border-slate-200/90 bg-white dark:border-[#334155] dark:bg-[#080C14]"
+                            }`}
+                          >
+                            <p
+                              className={`text-[10px] font-bold uppercase tracking-wide ${
+                                isToday ? "text-[var(--brand)]" : "text-slate-400"
+                              }`}
+                            >
+                              {isToday ? "Hoy" : formatShortWeekday(day.date)}
+                            </p>
+                            <p className="mt-1.5 text-xl leading-none">{vis.emoji}</p>
+                            <p className="mt-1.5 text-xs font-extrabold tabular-nums text-slate-900 dark:text-slate-50">
+                              {day.tempMax != null ? `${Math.round(day.tempMax)}°` : "—"}
+                            </p>
+                            <p className="text-[10px] tabular-nums text-slate-400">
+                              {day.tempMin != null ? `${Math.round(day.tempMin)}°` : "—"}
+                            </p>
+                            {prob != null ? (
+                              <div
+                                className={`mt-1.5 flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-[10px] font-bold tabular-nums ${
+                                  hasRain ? "bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300" : "text-slate-300"
+                                }`}
+                              >
+                                <Droplets className="h-3 w-3" aria-hidden />
+                                {prob}%
+                              </div>
+                            ) : null}
+                            {mm != null && mm > 0 ? (
+                              <p className="mt-0.5 text-[9px] font-semibold tabular-nums text-sky-500">{mm} mm</p>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">Open-Meteo · 14 días · orientativo</p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-300">Sin datos de previsión.</p>
+            )}
+          </Reveal>
         ) : null}
+
+        <Reveal variant="slide" delay={hideWeather ? 1 : 2} as="div" data-tour="summary-budget" className="min-w-0 lg:col-span-1">
+          <TripBudgetSummaryCard
+            tripId={tripId}
+            budgetTarget={budgetTarget}
+            totalSpent={totalSpent ?? 0}
+            expensesCount={expenseItemsCount}
+            currency={currency || "EUR"}
+            multiCurrency={expenseMultiCurrency}
+          />
+        </Reveal>
       </div>
 
       <details className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">

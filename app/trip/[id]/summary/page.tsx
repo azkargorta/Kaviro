@@ -432,6 +432,7 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
         participantsCount={participantsCount ?? 1}
         budgetTarget={budgetTarget}
         totalSpent={totalSpentInBase}
+        expensesCount={expensesCount ?? 0}
         currency={baseCurrency}
         expenseMultiCurrency={expenseMultiCurrency}
       />
