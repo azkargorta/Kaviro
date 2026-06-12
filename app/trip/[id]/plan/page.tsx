@@ -12,6 +12,11 @@ import {
 } from "@/lib/activity-invite-scope";
 import { loadActivityInviteesForTrip } from "@/lib/activity-invitees-api";
 import type { PlanTripParticipant } from "@/lib/plan-trip-participants";
+import {
+  resolvePlanDefaultSelectedDate,
+  resolvePlanItineraryDays,
+  isPlanDateKey,
+} from "@/lib/plan-create-defaults";
 
 export default async function TripPlanPage({
   params,
@@ -44,7 +49,7 @@ export default async function TripPlanPage({
       : Array.isArray(rawDate)
         ? String(rawDate[0] || "").trim()
         : "";
-  const initialSelectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
+  const explicitDate = isPlanDateKey(dateParam) ? dateParam : null;
 
   const [{ data: tripRow }, { data: profileRow }, { data: activityRows }, { data: participantRows }] = await Promise.all([
     supabase.from("trips").select("id, name, destination, description, start_date, end_date").eq("id", params.id).maybeSingle(),
@@ -102,6 +107,27 @@ export default async function TripPlanPage({
     activities: visibleActivities,
     actorName: currentDisplayName,
   };
+
+  const activityDays = [
+    ...new Set(
+      visibleActivities
+        .map((a) => a.activity_date)
+        .filter((d): d is string => typeof d === "string" && Boolean(d))
+    ),
+  ].sort();
+  const tripStart = (tripRow as { start_date?: string | null } | null)?.start_date ?? null;
+  const tripEnd = (tripRow as { end_date?: string | null } | null)?.end_date ?? null;
+  const itineraryDays = resolvePlanItineraryDays({
+    tripStartDate: tripStart,
+    tripEndDate: tripEnd,
+    activityDays,
+  });
+  const initialSelectedDate = resolvePlanDefaultSelectedDate({
+    explicitDate,
+    tripStartDate: tripStart,
+    tripEndDate: tripEnd,
+    itineraryDays,
+  });
 
   return (
     <main className="overflow-x-hidden space-y-8">

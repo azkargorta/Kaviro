@@ -6,15 +6,25 @@ export type TripForActivePick = {
   end_date: string | null;
 };
 
+/** Viaje en curso en una fecha (start <= día <= end, u otras variantes abiertas). */
+export function isTripActiveOnDate(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+  day: string
+): boolean {
+  const start = startDate?.slice(0, 10) || null;
+  const end = endDate?.slice(0, 10) || null;
+  if (start && end && start <= day && day <= end) return true;
+  if (start && !end && start <= day) return true;
+  if (!start && end && day <= end) return true;
+  return false;
+}
+
 /** Viaje en curso hoy (start <= hoy <= end). */
 export function pickActiveTripToday(trips: TripForActivePick[]): TripForActivePick | null {
   const today = new Date().toISOString().slice(0, 10);
   for (const trip of trips) {
-    const start = trip.start_date;
-    const end = trip.end_date;
-    if (start && end && start <= today && today <= end) return trip;
-    if (start && !end && start <= today) return trip;
-    if (!start && end && today <= end) return trip;
+    if (isTripActiveOnDate(trip.start_date, trip.end_date, today)) return trip;
   }
   return null;
 }

@@ -59,7 +59,11 @@ import {
 import TripReadOnlyBanner from "@/components/trip/common/TripReadOnlyBanner";
 import type { TripActivitiesInitial } from "@/hooks/useTripActivities";
 import type { PlanTripParticipant } from "@/lib/plan-trip-participants";
-import { resolveCreatePlanDate } from "@/lib/plan-create-defaults";
+import {
+  resolveCreatePlanDate,
+  resolvePlanDefaultSelectedDate,
+  resolvePlanItineraryDays,
+} from "@/lib/plan-create-defaults";
 import {
   KAVIRO_TRIP_PLAN_REFRESH_EVENT,
   type TripPlanRefreshDetail,
@@ -499,6 +503,16 @@ export default function TripPlanView({
     [filtered]
   );
 
+  const itineraryDays = useMemo(
+    () =>
+      resolvePlanItineraryDays({
+        tripStartDate: trip?.start_date ?? null,
+        tripEndDate: trip?.end_date ?? null,
+        activityDays: allDaysWithActivity,
+      }),
+    [trip?.start_date, trip?.end_date, allDaysWithActivity]
+  );
+
   const activityCountByDate = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const a of filtered) {
@@ -536,10 +550,17 @@ export default function TripPlanView({
 
   useEffect(() => {
     if (viewMode !== "list" && viewMode !== "calendar") return;
-    if (allDaysWithActivity.length === 0) return;
-    if (selectedDate && allDaysWithActivity.includes(selectedDate)) return;
-    if (!selectedDate) setSelectedDate(allDaysWithActivity[0]!);
-  }, [viewMode, allDaysWithActivity, selectedDate]);
+    if (itineraryDays.length === 0) return;
+    if (selectedDate && itineraryDays.includes(selectedDate)) return;
+    setSelectedDate(
+      resolvePlanDefaultSelectedDate({
+        explicitDate: selectedDate,
+        tripStartDate: trip?.start_date ?? null,
+        tripEndDate: trip?.end_date ?? null,
+        itineraryDays,
+      })
+    );
+  }, [viewMode, itineraryDays, selectedDate, trip?.start_date, trip?.end_date]);
 
   const isEditing = Boolean(editingActivity?.id);
   const showForm = isFormOpen || isEditing;
@@ -1584,7 +1605,7 @@ export default function TripPlanView({
           destination={trip?.destination}
           tripName={trip?.name || "Viaje"}
           participants={participants}
-          days={allDaysWithActivity}
+          days={itineraryDays}
           activityCountByDate={activityCountByDate}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
