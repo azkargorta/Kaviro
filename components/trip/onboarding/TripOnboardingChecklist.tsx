@@ -69,9 +69,9 @@ export default function TripOnboardingChecklist({
     }
     try {
       const collapsed = window.localStorage.getItem(tripOnboardingCollapsedKey(tripId)) === "1";
-      setExpanded(collapsed ? false : !isMobile);
+      setExpanded(!collapsed && !isMobile);
     } catch {
-      setExpanded(!isMobile);
+      setExpanded(false);
     }
   }, [tripId, syncVisibility, isMobile, startExpanded]);
 
@@ -142,11 +142,11 @@ export default function TripOnboardingChecklist({
 
   return (
     <section
-      className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] shadow-sm"
+      className="overflow-hidden rounded-xl border border-[var(--brand-border)]/70 bg-[var(--brand-light)]/50 shadow-sm"
       aria-label="Checklist del viaje"
       data-tour="trip-onboarding-checklist"
     >
-      <div className="flex flex-col gap-3 border-b border-[var(--brand-border)]/60 bg-white/60 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center dark:bg-[#0F1623]/80">
+      <div className="flex flex-col gap-2 border-b border-[var(--brand-border)]/40 bg-white/70 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center dark:bg-[#0F1623]/80">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand)]">
             {tripMode === "expenses" ? "Configura tu grupo de gastos" : "Configura tu viaje"}
@@ -158,7 +158,7 @@ export default function TripOnboardingChecklist({
         {nextStep ? (
           <Link
             href={nextStep.href}
-            className="inline-flex min-h-[40px] w-full shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] sm:w-auto"
+            className="inline-flex min-h-[36px] w-full shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] px-3 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)] sm:w-auto"
           >
             Siguiente: {nextStep.title}
           </Link>
@@ -167,11 +167,11 @@ export default function TripOnboardingChecklist({
           <button
             type="button"
             onClick={toggleExpanded}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--brand-border)] text-[var(--brand)] transition hover:bg-white/80 dark:hover:bg-[#1E293B]"
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-xl border border-[var(--brand-border)]/70 px-2.5 text-xs font-semibold text-[var(--brand-text)] transition hover:bg-white/80 dark:hover:bg-[#1E293B]"
             aria-expanded={expanded}
-            aria-label={expanded ? "Ocultar pasos" : "Mostrar pasos"}
           >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {expanded ? "Ocultar pasos" : "Ver pasos"}
+            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </button>
           <button
             type="button"
@@ -192,7 +192,7 @@ export default function TripOnboardingChecklist({
       </div>
 
       {expanded ? (
-        <div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-1.5 p-3">
           {steps.map((step) => {
             const complete = isOnboardingStepDone(step.id, counts);
             const active = pathname === step.href || pathname.startsWith(`${step.href}/`);
@@ -202,7 +202,7 @@ export default function TripOnboardingChecklist({
               <Link
                 key={step.id}
                 href={step.href}
-                className={`flex items-start gap-3 rounded-xl border p-3 transition hover:shadow-md ${
+                className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition hover:shadow-sm ${
                   complete
                     ? "border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-900/40 dark:bg-emerald-950/30"
                     : active

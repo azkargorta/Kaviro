@@ -60,14 +60,14 @@ export default function TripWelcomeBanner({ tripId, tripMode = "travel" }: { tri
       : "Eres nuevo aquí — empieza por el Plan o invita a tu grupo en Gente.";
 
   return (
-    <div className="mb-2 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 md:mb-4 md:gap-3 md:rounded-2xl md:px-4 md:py-3 dark:border-sky-900/50 dark:bg-sky-950/40">
-      <p className="flex-1 text-xs font-semibold leading-snug text-sky-950 md:text-sm dark:text-sky-100">
+    <div className="mb-2 flex items-start gap-2 rounded-lg border border-slate-200/80 bg-white/90 px-3 py-2 shadow-sm dark:border-[#334155] dark:bg-[#0F1623]/80">
+      <p className="flex-1 text-[11px] font-medium leading-snug text-slate-600 dark:text-slate-300">
         {message}{" "}
-        <Link href={planHref} className="font-bold text-[#0B5CFF] underline" onClick={dismiss}>
+        <Link href={planHref} className="font-semibold text-[var(--brand)] hover:underline" onClick={dismiss}>
           Ir →
         </Link>
       </p>
-      <button type="button" onClick={dismiss} className="shrink-0 rounded-lg p-1 text-sky-700 hover:bg-sky-100" aria-label="Cerrar">
+      <button type="button" onClick={dismiss} className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1E293B]" aria-label="Cerrar">
         <X className="h-4 w-4" />
       </button>
     </div>

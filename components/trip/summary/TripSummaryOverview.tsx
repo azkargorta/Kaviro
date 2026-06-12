@@ -1,14 +1,13 @@
 "use client";
 import TripSearchCard from "@/components/trip/summary/TripSearchCard";
 
-import Image from "next/image";
 import Link from "next/link";
 import KaviroMark from "@/components/brand/KaviroMark";
 import { useState } from "react";
 import type { TripWeatherCityForecast, TripWeatherResult } from "@/lib/trip-weather";
 import { wmoWeatherVisual } from "@/lib/weatherPresentation";
-import { getTripTabIconSrc, type TripTabKey } from "@/lib/trip-tab-assets";
-import { useIsDarkMode } from "@/hooks/useIsDarkMode";
+import type { TripTabKey } from "@/lib/trip-tab-assets";
+import { TRIP_SIDEBAR_ICONS } from "@/lib/trip-sidebar-icons";
 import {
   ArrowRight,
   CalendarDays,
@@ -23,12 +22,7 @@ import {
 import Reveal from "@/components/ui/Reveal";
 import type { RevealDelay } from "@/components/ui/Reveal";
 import TripBudgetSummaryCard from "@/components/trip/summary/TripBudgetSummaryCard";
-import {
-  TripStatCard,
-  TripActivityCard,
-  TripProgressBar,
-  TRIP_TILE_CARD,
-} from "@/components/trip/ui";
+import { TripStatCard, TripProgressBar, TRIP_TILE_CARD, TripStatusPill } from "@/components/trip/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,14 +54,6 @@ function formatShortWeekday(dateStr: string) {
   return new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short" }).format(d);
 }
 
-function formatActivityWhen(a: TripSummaryActivityPreview) {
-  const datePart = a.activity_date
-    ? new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short" }).format(new Date(`${a.activity_date}T12:00:00`))
-    : "Sin fecha";
-  const timePart = a.activity_time && /^\d{2}:\d{2}/.test(a.activity_time) ? ` · ${a.activity_time.slice(0, 5)}` : "";
-  return `${datePart}${timePart}`;
-}
-
 function buildMapsUrl(a: TripSummaryActivityPreview) {
   const q = a.place_name || a.address;
   if (!q) return null;
@@ -93,38 +79,125 @@ function daysBetween(a: string, b: string) {
 }
 
 const TILE_ICON_WRAP =
-  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-light)] ring-1 ring-[var(--brand-border)]";
-const coralPngFilterDark =
-  "dark:[filter:brightness(0)_saturate(100%)_invert(73%)_sepia(22%)_saturate(6228%)_hue-rotate(324deg)_brightness(102%)_contrast(98%)]";
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/90 text-[var(--brand)] ring-1 ring-slate-200/50 dark:border-[#334155] dark:bg-[#141c2b]";
+
+function activityTimeLabel(time: string | null | undefined) {
+  return (time || "").trim().slice(0, 5) || "—";
+}
 
 function TodayActivityRow({
   activity,
+  isHighlight = false,
 }: {
   activity: TripSummaryActivityPreview & { isPast: boolean };
+  isHighlight?: boolean;
 }) {
+  const isPast = activity.isPast;
+  const isCurrent = isHighlight && !isPast;
+  const shellClass = isCurrent
+    ? "border-[var(--brand-border)] bg-white shadow-[0_4px_14px_rgba(248,113,113,0.12)] ring-1 ring-[var(--brand-border)]/40 dark:bg-[#141c2b]"
+    : isPast
+      ? "border border-dashed border-slate-200/90 bg-slate-100/70 opacity-75 dark:border-[#334155] dark:bg-[#0a0e14]/40"
+      : "border-slate-200/90 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#080C14]";
+
   return (
-    <li>
-      <TripActivityCard state={activity.isPast ? "past" : "upcoming"}>
-        <p
-          className={`pr-16 text-sm font-bold ${
-            activity.isPast
-              ? "font-medium text-slate-400 line-through decoration-slate-400/80 dark:text-slate-500"
-              : "text-slate-900 dark:text-white"
-          }`}
-        >
-          {activity.title}
-        </p>
-        <p className={`mt-1 text-xs ${activity.isPast ? "text-slate-400 dark:text-slate-500" : "font-semibold text-slate-600 dark:text-slate-300"}`}>
-          {formatActivityWhen(activity)}
-        </p>
-        {(activity.place_name || activity.address) ? (
-          <p className={`mt-0.5 flex items-center gap-1 text-xs ${activity.isPast ? "text-slate-400/80" : "text-slate-500 dark:text-slate-400"}`}>
-            {!activity.isPast ? <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden /> : null}
-            {activity.place_name || activity.address}
+    <li className={`rounded-xl transition ${shellClass}`}>
+      <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:gap-3">
+        <div className="min-w-0 flex-1">
+          <p
+            className={`text-sm font-bold leading-snug sm:truncate ${
+              isPast
+                ? "font-medium text-slate-400 line-through decoration-slate-400/70 dark:text-slate-500"
+                : isCurrent
+                  ? "text-slate-900 dark:text-white"
+                  : "text-slate-800 dark:text-slate-100"
+            }`}
+          >
+            {activity.title}
           </p>
-        ) : null}
-      </TripActivityCard>
+          {(activity.place_name || activity.address) ? (
+            <p
+              className={`mt-1 flex items-center gap-1 text-xs ${
+                isPast ? "text-slate-400/80" : "text-slate-500 dark:text-slate-400"
+              }`}
+            >
+              {!isPast ? <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden /> : null}
+              <span className="truncate">{activity.place_name || activity.address}</span>
+            </p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:ml-auto sm:justify-end">
+          <span
+            className={`inline-flex items-center rounded-lg border px-2 py-1 text-[11px] font-bold tabular-nums ${
+              isCurrent
+                ? "border-[var(--brand-border)]/60 bg-white text-[var(--brand-text)] dark:bg-[#141c2b]"
+                : isPast
+                  ? "border-slate-200/80 bg-slate-50 text-slate-400"
+                  : "border-slate-200/80 bg-slate-50 text-slate-700 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-200"
+            }`}
+          >
+            {activityTimeLabel(activity.activity_time)}
+          </span>
+          {isCurrent ? <TripStatusPill variant="current" /> : isPast ? <TripStatusPill variant="past" /> : null}
+        </div>
+      </div>
     </li>
+  );
+}
+
+function NextActivityMiniCard({
+  activity,
+  planHref,
+}: {
+  activity: TripSummaryActivityPreview;
+  planHref: string;
+}) {
+  const mapsUrl = buildMapsUrl(activity);
+
+  return (
+    <div className="rounded-xl border border-[var(--brand-border)]/60 bg-white/90 p-3.5 shadow-sm dark:border-[var(--brand-border)]/40 dark:bg-[#141c2b]/80">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--brand-text)]">Próxima actividad</p>
+      <p className="mt-2 line-clamp-2 text-sm font-extrabold leading-snug text-slate-900 dark:text-white">
+        {activity.title}
+      </p>
+      <p className="mt-1.5 text-xs font-bold tabular-nums text-slate-600 dark:text-slate-300">
+        {activityTimeLabel(activity.activity_time)}
+        {activity.activity_date ? (
+          <span className="font-medium text-slate-400">
+            {" "}
+            ·{" "}
+            {new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(
+              new Date(`${activity.activity_date}T12:00:00`)
+            )}
+          </span>
+        ) : null}
+      </p>
+      {(activity.place_name || activity.address) ? (
+        <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+          <MapPin className="h-3 w-3 shrink-0 text-[var(--brand)]" aria-hidden />
+          <span className="truncate">{activity.place_name || activity.address}</span>
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {mapsUrl ? (
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-8 items-center rounded-lg border border-slate-200/90 bg-white px-2.5 text-[10px] font-bold text-slate-700 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
+          >
+            Cómo llegar
+          </a>
+        ) : null}
+        <Link
+          href={planHref}
+          className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-[var(--brand)] px-2.5 text-[10px] font-bold text-white hover:bg-[var(--brand-hover)]"
+        >
+          Ver itinerario
+          <ArrowRight className="h-3 w-3" aria-hidden />
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -175,7 +248,6 @@ export default function TripSummaryOverview({
   currency?: string;
   expenseMultiCurrency?: boolean;
 }) {
-  const isDark = useIsDarkMode();
   const planHref = `/trip/${tripId}/plan`;
   const phase = tripPhase(tripStartDate, tripEndDate);
   const today = todayYMD();
@@ -213,6 +285,12 @@ export default function TripSummaryOverview({
           ? "Viaje completado"
           : "Planificando";
 
+  const todayDoneCount = plansToday.filter((p) => p.isPast).length;
+  const todayTotalCount = plansToday.length;
+  const nextHighlightId = plansToday.find((p) => !p.isPast)?.id ?? null;
+  const expensesCountLabel = expensesTab?.metric ?? "0 gastos";
+  const participantsN = participantsCount ?? 0;
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
 
@@ -222,37 +300,49 @@ export default function TripSummaryOverview({
           icon={<CalendarDays className="h-4 w-4" aria-hidden />}
           label="Días"
           value={totalDays !== null ? `${totalDays} días` : "Sin fechas"}
+          subtitle={phase === "during" && daysLeft !== null ? `${daysLeft} días restantes` : undefined}
           href={planHref}
           highlight={phase === "during"}
         />
         <TripStatCard
           icon={<Users className="h-4 w-4" aria-hidden />}
           label="Participantes"
-          value={`${participantsCount ?? 0}`}
+          value={participantsN === 1 ? "1 viajero" : `${participantsN} viajeros`}
+          subtitle={participantsN <= 1 ? "Invita al grupo" : "En el mismo viaje"}
           href={`/trip/${tripId}/participants`}
         />
         <TripStatCard
           icon={<Wallet className="h-4 w-4" aria-hidden />}
           label="Gastos"
-          value={expensesTab?.metric ?? "0 gastos"}
+          value={expensesCountLabel}
+          subtitle={expensesCountLabel.startsWith("0") ? "Registra el primer gasto" : expensesTab?.hint ?? undefined}
           href={expensesTab?.href}
         />
         <TripStatCard
           icon={<FileText className="h-4 w-4" aria-hidden />}
           label="Documentos"
           value={resourcesTab?.metric ?? "0 ítems"}
+          subtitle={(resourcesTab?.metric ?? "0").startsWith("0") ? "Sube billetes o reservas" : resourcesTab?.hint ?? undefined}
           href={resourcesTab?.href}
         />
         <TripStatCard
           icon={<Route className="h-4 w-4" aria-hidden />}
           label="Rutas"
           value={routesTab?.metric ?? "0 rutas"}
+          subtitle={(routesTab?.metric ?? "0").startsWith("0") ? "Crea trayectos en el mapa" : routesTab?.hint ?? undefined}
           href={routesTab?.href}
         />
         <TripStatCard
           icon={<Clock className="h-4 w-4" aria-hidden />}
           label="Estado"
           value={phaseLabel}
+          subtitle={
+            phase === "during" && todayTotalCount > 0
+              ? `${todayDoneCount} de ${todayTotalCount} hoy`
+              : phase === "before" && daysUntilStart !== null
+                ? `Empieza en ${daysUntilStart} días`
+                : undefined
+          }
           highlight={phase === "during"}
         />
       </Reveal>
@@ -262,135 +352,99 @@ export default function TripSummaryOverview({
         variant="fade"
         as="section"
         data-tour="summary-countdown"
-        className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white shadow-[0_8px_30px_rgba(248,113,113,0.1)] ring-1 ring-[var(--brand-border)]/50 dark:from-[#1a2438] dark:via-[#0F1623] dark:to-[#0F1623] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+        className="overflow-hidden rounded-2xl border border-[var(--brand-border)]/70 bg-white shadow-[0_4px_20px_rgba(248,113,113,0.08)] ring-1 ring-[var(--brand-border)]/40 dark:border-[var(--brand-border)]/50 dark:bg-[#0F1623]"
       >
-        <div className="border-b border-[var(--brand-border)]/40 bg-[var(--brand-light)]/40 px-4 py-5 md:px-6 md:py-6 dark:border-[var(--brand-border)]/30 dark:bg-[var(--brand-light)]/10">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="border-b border-[var(--brand-border)]/30 bg-gradient-to-br from-[var(--brand-light)]/80 via-white to-white px-4 py-4 md:px-5 md:py-5 dark:from-[#1a1212]/50 dark:via-[#0F1623] dark:to-[#0F1623]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,260px)] lg:items-start lg:gap-5">
             <div className="min-w-0">
-              <span className="inline-flex items-center gap-2 rounded-full bg-[var(--brand)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-sm">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-white/90" aria-hidden />
-                Hoy
-              </span>
-              <h2 className="mt-3 text-xl font-extrabold capitalize tracking-tight text-slate-900 dark:text-white md:text-2xl">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand-border)]/60 bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-text)] dark:bg-[#141c2b]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" aria-hidden />
+                  Hoy
+                </span>
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <Link
+                    href={todayHref}
+                    className="inline-flex min-h-8 items-center rounded-lg border border-slate-200/90 bg-white px-3 text-[10px] font-bold text-slate-700 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-200"
+                  >
+                    Modo día
+                  </Link>
+                  <Link
+                    href={planHref}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-[var(--brand)] px-3 text-[10px] font-bold text-white hover:bg-[var(--brand-hover)]"
+                  >
+                    Itinerario
+                    <ArrowRight className="h-3 w-3" aria-hidden />
+                  </Link>
+                </div>
+              </div>
+              <h2 className="mt-2 text-lg font-extrabold capitalize tracking-tight text-slate-900 dark:text-white md:text-xl">
                 {todayLabel}
               </h2>
               {tripDestination ? (
-                <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
-                  <MapPin className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
+                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--brand)]" aria-hidden />
                   {tripDestination}
                 </p>
               ) : null}
+              {phase === "during" && tripStartDate && tripEndDate ? (
+                <div className="mt-3 max-w-md">
+                  <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
+                </div>
+              ) : null}
             </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <Link
-                href={todayHref}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200/90 bg-white px-4 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-100"
-              >
-                Modo día
-              </Link>
-              <Link
-                href={planHref}
-                className="btn-press inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-5 text-xs font-bold text-white shadow-md shadow-[var(--brand)]/20 transition hover:bg-[var(--brand-hover)]"
-              >
-                Ver itinerario
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </div>
-          </div>
 
-          {phase === "during" && tripStartDate && tripEndDate ? (
-            <div className="mt-5 max-w-lg">
-              <TripProgressBar startDate={tripStartDate} endDate={tripEndDate} />
-            </div>
-          ) : null}
+            {nextPlan ? (
+              <div className="lg:pt-1">
+                <NextActivityMiniCard activity={nextPlan} planHref={planHref} />
+              </div>
+            ) : (activitiesCount ?? 0) > 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200/90 bg-slate-50/80 px-3 py-3 text-xs text-slate-500 dark:border-[#334155] dark:bg-[#080C14]/50 dark:text-slate-400">
+                Sin actividades futuras con fecha. Revisa el plan.
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <div className="px-4 py-5 md:px-6 md:py-6">
+        <div className="px-4 py-4 md:px-5">
           {(activitiesCount ?? 0) === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300/80 bg-white/80 px-4 py-4 dark:border-[#334155] dark:bg-[#080C14]/40">
+            <div className="rounded-xl border border-dashed border-slate-300/80 bg-slate-50/60 px-4 py-3.5 dark:border-[#334155] dark:bg-[#080C14]/40">
               <p className="text-sm font-bold text-slate-900 dark:text-white">Sin actividades todavía</p>
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                Crea tu primer plan o pide ayuda al asistente IA para montar el itinerario.
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Crea tu primer plan o pide ayuda al asistente IA.
               </p>
               <Link
                 href={planHref}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--brand-hover)]"
+                className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-[var(--brand)] px-3 py-1.5 text-xs font-bold text-white hover:bg-[var(--brand-hover)]"
               >
                 Ir al plan
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                <ArrowRight className="h-3 w-3" aria-hidden />
               </Link>
             </div>
           ) : plansToday.length > 0 ? (
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                 Plan de hoy
+                {todayTotalCount > 0 ? (
+                  <span className="ml-2 font-semibold normal-case tracking-normal text-slate-400">
+                    {todayDoneCount} de {todayTotalCount} hechas
+                  </span>
+                ) : null}
               </p>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2">
                 {plansToday.map((a) => (
-                  <TodayActivityRow key={a.id} activity={a} />
+                  <TodayActivityRow key={a.id} activity={a} isHighlight={a.id === nextHighlightId} />
                 ))}
               </ul>
             </div>
           ) : (
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
               No hay actividades programadas para hoy.
+              {nextPlan ? " La próxima está arriba." : null}
             </p>
           )}
         </div>
       </Reveal>
-
-      {/* ── Próxima actividad — bloque destacado ── */}
-      {nextPlan ? (
-        <Reveal
-          variant="fade"
-          as="section"
-          className="overflow-hidden rounded-2xl border-2 border-[var(--brand-border)] bg-gradient-to-r from-[var(--brand-light)] via-white to-white p-5 shadow-[0_6px_24px_rgba(248,113,113,0.12)] md:p-6 dark:from-[#1a2438] dark:via-[#0F1623] dark:to-[#0F1623]"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--brand-text)]">
-                Próxima actividad
-              </p>
-              <p className="mt-2 text-xl font-extrabold leading-snug tracking-tight text-slate-900 dark:text-white md:text-2xl">
-                {nextPlan.title}
-              </p>
-              <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                {formatActivityWhen(nextPlan)}
-              </p>
-              {(nextPlan.place_name || nextPlan.address) ? (
-                <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
-                  <MapPin className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden />
-                  {nextPlan.place_name || nextPlan.address}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              {buildMapsUrl(nextPlan) ? (
-                <a
-                  href={buildMapsUrl(nextPlan)!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-[#334155] dark:bg-[#141c2b] dark:text-slate-100"
-                >
-                  <MapPin className="h-3.5 w-3.5 text-[var(--brand)]" aria-hidden />
-                  Cómo llegar
-                </a>
-              ) : null}
-              <Link
-                href={planHref}
-                className="btn-press inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--brand-hover)]"
-              >
-                Abrir en plan
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </div>
-          </div>
-        </Reveal>
-      ) : (activitiesCount ?? 0) > 0 ? (
-        <p className="rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-sm font-medium text-slate-600 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-300">
-          No hay actividades futuras con fecha. Revisa el plan.
-        </p>
-      ) : null}
 
       {/* ── Secciones del viaje ── */}
       <section className="min-w-0 space-y-3">
@@ -407,34 +461,27 @@ export default function TripSummaryOverview({
 
         <div data-tour="summary-stats" className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
           {tabs.map((tab, tabIdx) => {
-            const iconSrc = tab.iconKey ? getTripTabIconSrc(tab.iconKey, isDark) : tab.iconSrc || "";
+            const Icon = tab.iconKey ? TRIP_SIDEBAR_ICONS[tab.iconKey] : null;
             return (
               <Reveal key={tab.href} variant="scale" delay={(tabIdx % 4) as RevealDelay} className="h-full">
-                <Link href={tab.href} className={`${TRIP_TILE_CARD} sm:p-5`}>
+                <Link href={tab.href} className={`${TRIP_TILE_CARD} p-4 sm:p-5`}>
                   <div className="flex items-start gap-3">
                     <div className={TILE_ICON_WRAP}>
-                      <Image
-                        src={iconSrc}
-                        alt=""
-                        width={24}
-                        height={24}
-                        className={`h-5 w-5 object-contain ${isDark ? coralPngFilterDark : ""}`}
-                      />
+                      {Icon ? <Icon className="h-5 w-5" strokeWidth={2} aria-hidden /> : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-extrabold text-slate-900 dark:text-white">{tab.label}</p>
                         <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:text-[var(--brand)]" aria-hidden />
                       </div>
-                      <span className="mt-1 inline-flex rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--brand-text)]">
-                        {tab.metric}
-                      </span>
-                      <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                        {tab.subtitle}
-                      </p>
+                      <p className="mt-1 text-xs font-bold text-[var(--brand-text)]">{tab.metric}</p>
                       {tab.hint ? (
-                        <p className="mt-2 line-clamp-2 text-[11px] text-slate-400 dark:text-slate-500">{tab.hint}</p>
-                      ) : null}
+                        <p className="mt-1.5 line-clamp-2 text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
+                          {tab.hint}
+                        </p>
+                      ) : (
+                        <p className="mt-1.5 line-clamp-2 text-[11px] text-slate-400 dark:text-slate-500">{tab.subtitle}</p>
+                      )}
                     </div>
                   </div>
                 </Link>

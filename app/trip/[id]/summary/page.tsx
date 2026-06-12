@@ -437,27 +437,22 @@ export default async function TripSummaryPage({ params }: TripPageProps) {
       />
 
       {alerts.length ? (
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
-          <div className="text-sm font-extrabold text-slate-900 dark:text-white">Siguientes pasos</div>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-            {alerts.slice(0, 5).map((a) => (
-              <li key={a} className="flex gap-2">
+        <section className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3.5 dark:border-[#1E293B] dark:bg-[#0a0e14]/50">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+            Pendiente de configurar
+          </p>
+          <ul className="mt-2 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+            {alerts.slice(0, 4).map((a) => (
+              <li key={a} className="flex gap-2 leading-snug">
                 <span className="text-[var(--brand)]" aria-hidden>
-                  •
+                  ·
                 </span>
                 <span>{a}</span>
               </li>
             ))}
           </ul>
         </section>
-      ) : (
-        <section className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-light)] p-5">
-          <div className="text-sm font-extrabold text-slate-900 dark:text-white">Todo listo</div>
-          <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-            El viaje tiene contenido en las distintas áreas. Sigue desde las tarjetas de arriba o el menú lateral.
-          </div>
-        </section>
-      )}
+      ) : null}
     </main>
   );
 }
