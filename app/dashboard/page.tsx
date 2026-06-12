@@ -381,7 +381,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         favoriteTrips={favoriteTrips}
         lockedTripIds={Array.from(lockedTripIds)}
         announcementUnreadByTripId={announcementUnreadByTripId}
-        heroTripId={hasTrips ? heroTrip?.id ?? null : null}
         recentTrips={recentTrips}
       />
 

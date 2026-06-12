@@ -350,7 +350,6 @@ export default function DashboardTripsClient({
   favoriteTrips,
   lockedTripIds,
   announcementUnreadByTripId = {},
-  heroTripId = null,
   recentTrips = [],
 }: {
   current: Trip[];
@@ -362,7 +361,6 @@ export default function DashboardTripsClient({
   favoriteTrips: FavoriteTrip[];
   lockedTripIds: string[];
   announcementUnreadByTripId?: Record<string, number>;
-  heroTripId?: string | null;
   recentTrips?: Pick<Trip, "id" | "name" | "destination">[];
 }) {
   const [query, setQuery] = useState("");
@@ -412,29 +410,17 @@ export default function DashboardTripsClient({
 
   const favoriteIds = useMemo(() => new Set(favoriteTrips.map((t) => t.id)), [favoriteTrips]);
 
-  // excluir el viaje ya mostrado en el Hero cuando se muestra en secciones
-  const excludeHero = useCallback(
-    (list: TripWithMeta[]) =>
-      heroTripId && filter === "all" && !query.trim()
-        ? list.filter((t) => t.id !== heroTripId)
-        : list,
-    [heroTripId, filter, query]
-  );
-
   const pool: TripWithMeta[] = useMemo(() => {
     if (filter === "expenses") return expenseWithMeta;
     if (filter === "favorites") return allWithMeta.filter((t) => favoriteIds.has(t.id));
     if (filter === "current")
-      return excludeHero(travelWithMeta.filter((t) => current.some((c) => c.id === t.id)));
+      return travelWithMeta.filter((t) => current.some((c) => c.id === t.id));
     if (filter === "upcoming")
-      return excludeHero(
-        travelWithMeta.filter(
-          (t) => future.some((f) => f.id === t.id) || unscheduled.some((u) => u.id === t.id)
-        )
+      return travelWithMeta.filter(
+        (t) => future.some((f) => f.id === t.id) || unscheduled.some((u) => u.id === t.id)
       );
-    if (filter === "past")
-      return excludeHero(travelWithMeta.filter((t) => past.some((p) => p.id === t.id)));
-    return excludeHero(travelWithMeta);
+    if (filter === "past") return travelWithMeta.filter((t) => past.some((p) => p.id === t.id));
+    return travelWithMeta;
   }, [
     filter,
     allWithMeta,
@@ -445,25 +431,24 @@ export default function DashboardTripsClient({
     unscheduled,
     past,
     current,
-    excludeHero,
   ]);
 
   const results = pool.filter(matchesQuery);
   const isSearching = query.trim() !== "";
 
   // secciones individuales (solo en vista "all" sin búsqueda)
-  const sectionCurrent = excludeHero(
-    current.map((t) => ({ ...t, badge: "En curso", accent: ACCENT_CURRENT }))
-  ).filter(matchesQuery);
-  const sectionFuture = excludeHero(
-    future.map((t) => ({ ...t, badge: "Próximo", accent: ACCENT_FUTURE }))
-  ).filter(matchesQuery);
-  const sectionUnsched = excludeHero(
-    unscheduled.map((t) => ({ ...t, badge: "Pendiente", accent: ACCENT_UNSCHED }))
-  ).filter(matchesQuery);
-  const sectionPast = excludeHero(
-    past.map((t) => ({ ...t, badge: "Finalizado", accent: ACCENT_PAST }))
-  ).filter(matchesQuery);
+  const sectionCurrent = current
+    .map((t) => ({ ...t, badge: "En curso", accent: ACCENT_CURRENT }))
+    .filter(matchesQuery);
+  const sectionFuture = future
+    .map((t) => ({ ...t, badge: "Próximo", accent: ACCENT_FUTURE }))
+    .filter(matchesQuery);
+  const sectionUnsched = unscheduled
+    .map((t) => ({ ...t, badge: "Pendiente", accent: ACCENT_UNSCHED }))
+    .filter(matchesQuery);
+  const sectionPast = past
+    .map((t) => ({ ...t, badge: "Finalizado", accent: ACCENT_PAST }))
+    .filter(matchesQuery);
   const sectionExpenses = expenseGroups
     .map((t) => ({
       ...t,
@@ -623,6 +608,8 @@ export default function DashboardTripsClient({
               trips={sectionCurrent}
               lockedTripIds={lockedTripIds}
               viewMode={viewMode}
+              collapsible
+              defaultOpen
             />
             <SectionBlock
               title="Próximamente"
@@ -630,6 +617,8 @@ export default function DashboardTripsClient({
               trips={[...sectionFuture, ...sectionUnsched]}
               lockedTripIds={lockedTripIds}
               viewMode={viewMode}
+              collapsible
+              defaultOpen
             />
             <SectionBlock
               title="Pasados"
@@ -637,7 +626,7 @@ export default function DashboardTripsClient({
               trips={sectionPast}
               lockedTripIds={lockedTripIds}
               viewMode={viewMode}
-              collapsible={sectionPast.length > 4}
+              collapsible
               defaultOpen={sectionPast.length <= 4}
             />
             {showExpenseGroupsSection && sectionExpenses.length > 0 ? (
@@ -647,6 +636,8 @@ export default function DashboardTripsClient({
                 trips={sectionExpenses}
                 lockedTripIds={lockedTripIds}
                 viewMode={viewMode}
+                collapsible
+                defaultOpen
               />
             ) : null}
           </div>
