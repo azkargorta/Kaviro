@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: auth.spec.ts >> Auth (sin sesión) >> login muestra formulario
-- Location: e2e\auth.spec.ts:10:7
+- Name: public-pages.spec.ts >> Páginas públicas >> pricing enlaza a registro
+- Location: e2e\public-pages.spec.ts:21:7
 
 # Error details
 

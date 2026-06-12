@@ -3,7 +3,9 @@ import { test, expect } from "@playwright/test";
 test.describe("Páginas públicas", () => {
   test("landing: hero y CTA sin login", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1, name: /El viaje perfecto/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Organiza tu viaje en grupo/i })
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: /Crear mi viaje gratis|Empezar gratis/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Precios" }).first()).toBeVisible();
   });
