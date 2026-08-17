@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
     const { executedMessage: actionResult, parsedAction: action } = await handleAIAction(tripId, aiAction, question, effectiveMode);
 
-    const tripSummary = await buildTripSummaryForAi(tripId);
+    const tripSummary = await buildTripSummaryForAi(tripId, { userQuestion: question });
     const actionHintLine = actionPromptHint(aiAction);
 
     const optimizerHint =

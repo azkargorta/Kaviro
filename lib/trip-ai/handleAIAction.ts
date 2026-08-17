@@ -57,6 +57,9 @@ export function actionPromptHint(aiAction: AIActionId): string {
     case "generate_trip":
       return [
         "Objetivo: proponer itinerario por días con JSON ejecutable según las instrucciones del modo planificación.",
+        "Si el viaje YA tiene actividades en el contexto, NO sustituyas todo el plan con KAVIRO_ITINERARY salvo que el usuario pida explícitamente reemplazar o empezar de cero.",
+        "Con plan existente: usa KAVIRO_DIFF o KAVIRO_DAYPLAN por el día concreto; pregunta antes de añadir si hay huecos horarios y el usuario no lo pidió.",
+        "No dupliques la misma visita el mismo día; sí puedes repetir el mismo lugar en días distintos (ej. cataratas varios días, ver vs subir a un monumento).",
         "Si el destino puede ser varios países, aclara primero con el usuario; en JSON usa siempre place_name/address con país inequívoco.",
         "Si el usuario acaba de crear el viaje desde el dashboard con «Cuéntame tu viaje», el plan base ya puede existir: prioriza ajustes y refinamiento sin repetir todo el calendario salvo que lo pida.",
       ].join(" ");

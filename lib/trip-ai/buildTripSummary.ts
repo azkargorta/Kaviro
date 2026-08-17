@@ -1,4 +1,8 @@
 import { createServerSupabase } from "@/lib/trip-ai/serverSupabase";
+import {
+  buildTripDayPlanningHintsBlock,
+  type TripActivityForDayHints,
+} from "@/lib/trip-ai/tripDayPlanningHints";
 
 type SafeRow = Record<string, unknown>;
 
@@ -39,7 +43,10 @@ function routeLine(row: SafeRow) {
  * Resumen compacto del viaje para prompts del asistente personal (~300–800 tokens).
  * No sustituye la lectura completa en otras herramientas; evita enviar listados enormes.
  */
-export async function buildTripSummaryForAi(tripId: string): Promise<string> {
+export async function buildTripSummaryForAi(
+  tripId: string,
+  opts?: { userQuestion?: string }
+): Promise<string> {
   const supabase = createServerSupabase();
 
   const tripRes = await supabase.from("trips").select("name, destination, start_date, end_date, base_currency").eq("id", tripId).maybeSingle();
@@ -86,5 +93,18 @@ export async function buildTripSummaryForAi(tripId: string): Promise<string> {
       : "";
 
   const out = [head, "", "Actividades (muestra):", actSample, "", "Rutas (muestra):", routeSample, tail].join("\n");
-  return out.length > MAX_LEN ? `${out.slice(0, MAX_LEN)}\n…` : out;
+  const trimmed = out.length > MAX_LEN ? `${out.slice(0, MAX_LEN)}\n…` : out;
+
+  const userQuestion = typeof opts?.userQuestion === "string" ? opts.userQuestion.trim() : "";
+  if (!userQuestion) return trimmed;
+
+  const dayHints = buildTripDayPlanningHintsBlock({
+    activities: activities as TripActivityForDayHints[],
+    tripStartDate: typeof trip?.start_date === "string" ? trip.start_date : null,
+    tripEndDate: typeof trip?.end_date === "string" ? trip.end_date : null,
+    userQuestion,
+  });
+
+  const combined = `${trimmed}\n\n${dayHints}`;
+  return combined.length > MAX_LEN + 1200 ? `${combined.slice(0, MAX_LEN + 1200)}\n…` : combined;
 }
