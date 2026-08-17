@@ -192,8 +192,8 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
             </p>
           </>
         ) : null}
-        <div className="flex gap-2">
-          <input
+        <div className="flex items-end gap-2">
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -203,18 +203,19 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
               }
             }}
             disabled={loading || generating}
+            rows={2}
             placeholder={
               ready
                 ? "¿Quieres cambiar algo de la ficha antes de generar?"
                 : "Ej. Salta y Jujuy en coche, llego el 6 a las 20:00…"
             }
-            className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-slate-500 disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623]"
+            className="max-h-36 min-h-[2.75rem] min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-slate-500 disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623]"
           />
           <button
             type="button"
             disabled={loading || generating || !input.trim()}
             onClick={() => void send()}
-            className="btn-primary shrink-0 px-3.5 py-2.5 disabled:opacity-40"
+            className="btn-primary mb-0.5 shrink-0 px-3.5 py-2.5 disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
           </button>

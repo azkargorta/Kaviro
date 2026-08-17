@@ -22,6 +22,7 @@ import {
 } from "@/lib/trip-ai/plannerBrief";
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
 import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
+import { chatWantsNewSleepPlan, extraStopsFromChat, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
 import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
   Loader2, Wand2, Plus, X, Globe, AlertTriangle, GripVertical, Info,
@@ -645,6 +646,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [generatingDraft, setGeneratingDraft] = useState(false);
+  const lastDestinationsRef = useRef<string[]>([]);
 
   const totalDays = useMemo(() => totalDaysBetween(startDate, endDate), [startDate, endDate]);
   const inferredCurrency = useMemo(() => inferCurrencyFromDestinations(places.map((x) => x.trim()).filter(Boolean)), [places]);
@@ -785,7 +787,14 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     setError(null);
     setGeneratingDraft(true);
     setStep("generating");
-    const dests = (opts?.destinations ?? effectiveDestinations).filter(Boolean);
+    const dests = uniquePlaces(
+      opts?.destinations,
+      effectiveDestinations,
+      lastDestinationsRef.current,
+      draft?.destinations,
+      (draft?.days || []).map((d) => d.base)
+    );
+    if (dests.length) lastDestinationsRef.current = dests;
     const sd = opts?.start ?? startDate;
     const ed = opts?.end ?? endDate;
     const notes = opts?.notes ?? (freeText.trim() || undefined);
@@ -879,6 +888,14 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     }
     setInterviewBrief(brief);
     setPlaces(dests);
+    setSubDestinations((prev) => {
+      const next = { ...prev };
+      for (const d of dests) {
+        if (!next[d]?.length) next[d] = [d];
+      }
+      return next;
+    });
+    lastDestinationsRef.current = dests;
     setStartDate(dates.startDate);
     setEndDate(dates.endDate);
     const notes = buildPlannerFreeText(brief);
@@ -912,11 +929,21 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     setChatLoading(true);
     const pdfWin = window.open("about:blank", "kaviro_planner_pdf");
     try {
-      const stays =
-        confirmedStays.length > 0
+      const extra = extraStopsFromChat(msg);
+      const dests = uniquePlaces(
+        lastDestinationsRef.current,
+        effectiveDestinations,
+        draft.destinations,
+        (draft.days || []).map((d) => d.base),
+        extra
+      );
+      const rebuildStays = chatWantsNewSleepPlan(msg);
+      const stays = rebuildStays
+        ? []
+        : confirmedStays.length > 0
           ? confirmedStays
           : (draft.stays || []).map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason }));
-      const ok = await generateDraft(stays, { rules: nextRules, fromChat: true });
+      const ok = await generateDraft(stays, { destinations: dests, rules: nextRules, fromChat: true });
       if (ok) {
         if (pdfWin && !pdfWin.closed) {
           pdfWin.location.replace("/trips/new/planner/propuesta");
@@ -1320,7 +1347,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
                 {chatMessages.map((m, idx) => (
                   <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                     {m.role === "assistant" && <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5 mr-2"><Sparkles className="w-3 h-3 text-violet-500" /></div>}
-                    <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-slate-900 text-white" : "bg-slate-50 border border-slate-100 text-slate-800"}`}>{m.text}</div>
+                    <div className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-slate-900 text-white" : "bg-slate-50 border border-slate-100 text-slate-800"}`}>{m.text}</div>
                   </div>
                 ))}
                 {chatLoading && (
@@ -1335,9 +1362,22 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
                 {CHAT_SUGGESTIONS.slice(0, 4).map((s) => <button key={s} type="button" disabled={chatLoading} onClick={() => sendChat(s)} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">{s}</button>)}
               </div>
               <div className="px-4 pb-4 pt-2 border-t border-slate-100">
-                <div className="flex gap-2">
-                  <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendChat(); } }} disabled={chatLoading} placeholder="Ej. Añade una visita a un mercado local…" className="flex-1 min-w-0 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-slate-500 bg-white disabled:opacity-50" />
-                  <button type="button" disabled={chatLoading || !chatInput.trim()} onClick={() => sendChat()} className="btn-primary shrink-0 px-3.5 py-2.5 disabled:opacity-40"><Send className="w-4 h-4" /></button>
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        void sendChat();
+                      }
+                    }}
+                    disabled={chatLoading}
+                    rows={2}
+                    placeholder="Ej. Añade una visita a un mercado local…"
+                    className="max-h-36 min-h-[2.75rem] flex-1 min-w-0 resize-none overflow-y-auto rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-slate-500 disabled:opacity-50"
+                  />
+                  <button type="button" disabled={chatLoading || !chatInput.trim()} onClick={() => sendChat()} className="btn-primary mb-0.5 shrink-0 px-3.5 py-2.5 disabled:opacity-40"><Send className="w-4 h-4" /></button>
                 </div>
               </div>
             </div>
