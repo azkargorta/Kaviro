@@ -21,6 +21,7 @@ import {
   type PlannerBrief,
 } from "@/lib/trip-ai/plannerBrief";
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
+import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
 import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
   Loader2, Wand2, Plus, X, Globe, AlertTriangle, GripVertical, Info,
@@ -672,8 +673,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       isoOk(startDate) &&
       isoOk(endDate) &&
       endDate >= startDate &&
+      !plannerDaysTooLong(totalDays) &&
       allBroadDestinationsHaveCities(places.map((p) => p.trim()).filter(Boolean), subDestinations),
-    [effectiveDestinations, startDate, endDate, places, subDestinations]
+    [effectiveDestinations, startDate, endDate, totalDays, places, subDestinations]
   );
 
   useEffect(() => { if (!isoOk(startDate)) return; if (!endDate || endDate < startDate) setEndDate(startDate); }, [startDate]); // eslint-disable-line
@@ -800,9 +802,11 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       if (!res.ok) {
         throw new Error(
           data?.error ||
-            (res.status === 502
-              ? "No se generaron actividades. Comprueba la IA en el servidor o prueba con un destino con más puntos turísticos."
-              : `Error del servidor (${res.status}).`)
+            (res.status === 504 || res.status === 408
+              ? "La generación ha tardado demasiado. Pulsa de nuevo «Generar propuesta»; suele ir a la primera al reintentar."
+              : res.status === 502
+                ? "No se generaron actividades. Comprueba la IA en el servidor o prueba con un destino con más puntos turísticos."
+                : `Error del servidor (${res.status}).`)
         );
       }
       const draftData = data as ApiDraft;
@@ -854,6 +858,10 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     }
     if (!dates) {
       toast.error("Faltan fechas", "Indica fechas o duración del viaje.");
+      return;
+    }
+    if (plannerDaysTooLong(totalDaysBetween(dates.startDate, dates.endDate))) {
+      toast.error("Demasiados días", PLANNER_MAX_DAYS_MESSAGE);
       return;
     }
     setInterviewBrief(brief);
@@ -1186,7 +1194,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           </button>
           {!canGenerate && (
             <p className="-mt-3 text-center text-xs text-slate-500">
-              {missingBroadCities.length > 0
+              {plannerDaysTooLong(totalDays)
+                ? PLANNER_MAX_DAYS_MESSAGE
+                : missingBroadCities.length > 0
                 ? `Elige al menos una ciudad o pueblo en ${missingBroadCities.map(broadDestinationLabel).join(", ")}.`
                 : "Necesitas al menos un destino concreto y las fechas para continuar."}
             </p>

@@ -19,6 +19,10 @@
       "maxDuration": 300,
       "memory": 1024
     },
+    "app/api/trips/ai-planner/generate/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
     "app/api/trip-ai/execute-plan/route.ts": {
       "maxDuration": 300,
       "memory": 1024

@@ -286,9 +286,10 @@ export async function fillSparseDaysInBlock(
   notes: string,
   excursionPool: NearbyPoi[],
   minItems = 3,
-  opts?: { allowNearby?: boolean; inCityPool?: NearbyPoi[] }
+  opts?: { allowNearby?: boolean; inCityPool?: NearbyPoi[]; allowLlmNearby?: boolean }
 ): Promise<PlannerDay[]> {
   const allowNearby = opts?.allowNearby !== false;
+  const allowLlmNearby = opts?.allowLlmNearby !== false;
   const inCityPool = opts?.inCityPool ?? [];
   const usedTitles: string[] = [];
   for (const d of days) {
@@ -330,7 +331,7 @@ export async function fillSparseDaysInBlock(
         usedTitles.push(poi.name);
       }
 
-      if (added.length < need) {
+      if (added.length < need && allowLlmNearby) {
         if (!nearbyCache) {
           nearbyCache = await suggestNearbyDayTrips(baseCity, usedTitles, notes, 10);
         }
