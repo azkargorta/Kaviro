@@ -285,7 +285,7 @@ REGLAS:
 3. "k": exactamente uno de: ${kinds}
 4. "lt"/"lg": coordenadas GPS reales del lugar. Nunca 0.
 5. "h": horario realista. Mínimo 1.5h entre actividades.
-6. 3-5 items por día. Distribuidos: mañana, tarde, noche.
+6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN: si las preferencias indican día de llegada o de salida, respeta ese horario (0-2 visitas; nada antes de aterrizar ni que impida llegar al aeropuerto/estación).
 7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real: "Mercado de San Telmo", "Bodega Zuccardi", "Cata en Catena".
 ${iconicRule}
 9. Respeta TODO lo que indicó el viajero.`.trim();
@@ -788,9 +788,17 @@ export async function POST(req: Request) {
     // ── 2. Load POI pools (for distribution weights + suggestion chips) ───────
     const stopResults = await Promise.all(stops.map((stop) => loadPoisForStop(stop, anchor, regionHints, totalDays)));
     const poisByStop: Record<string, Record<Category, Poi[]>> = {};
+    const emptyPools = (): Record<Category, Poi[]> => ({
+      culture: [], nature: [], viewpoint: [], neighborhood: [],
+      market: [], excursion: [], gastro_experience: [], shopping: [], night: [],
+    });
     for (let i = 0; i < stops.length; i++) {
       const result = stopResults[i]!;
-      if (!result.pools) return NextResponse.json({ error: result.err }, { status: 400 });
+      if (!result.pools) {
+        logger.warn(`[ai-planner] POIs insuficientes para "${stops[i]!.label}": ${result.err}`);
+        poisByStop[stops[i]!.label] = emptyPools();
+        continue;
+      }
       poisByStop[stops[i]!.label] = result.pools;
     }
 

@@ -27,12 +27,34 @@
 
 ---
 
+## Tema 4 — Autocreador conversacional (cerrado)
+
+**Decisión:** el planificador Premium arranca con chat «Cuéntame tu viaje». Extrae una ficha, pregunta solo lo que falta, genera propuesta **antes** de crear el viaje, PDF descargable, y se puede iterar.
+
+### Ficha (qué falta)
+
+1. Destino
+2. Bases de noche si es región o varios sitios (no hardcodear pueblos)
+3. Fechas o duración
+4. Llegada (o «no lo sé»)
+5. Salida (o «no lo sé»)
+6. Transporte si hay más de una base
+
+### PDF
+
+`/trips/new/planner/propuesta` — imprimir / guardar como PDF. Regenerar itinerario vía chat = nuevo PDF.
+
+### Formulario clásico
+
+Sigue disponible («Prefiero el formulario clásico»).
+
+---
+
 ## Temas pendientes
 
 - Tema 2: confirmación add vs replace en execute-plan
 - Tema 3: límites del diff
-- Tema 4: autocreador wizard
-- Tema 5: onboarding chat
+- Tema 5: onboarding chat (viaje ya creado vacío)
 - Tema 6: modo búsqueda
 - Tema 7: import PDF
 - Tema 8: límites de gasto (`docs/ai-spending-limits-future.md`)

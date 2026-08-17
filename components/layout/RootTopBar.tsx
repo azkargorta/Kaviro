@@ -68,7 +68,8 @@ export default function RootTopBar() {
   const showOnPath =
     !isAgencyShell &&
     LOGGED_IN_SHELL_PREFIXES.some((prefix) => pathname?.startsWith(prefix)) &&
-    !pathname?.startsWith("/trip/");
+    !pathname?.startsWith("/trip/") &&
+    !pathname?.startsWith("/trips/new/planner/propuesta");
 
   const isDashboardHome = pathname === "/dashboard";
 

@@ -13,8 +13,15 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import PlanActivityCard from "@/components/trip/plan/PlanActivityCard";
+import TripAiPlannerInterview from "@/components/trip-planner/TripAiPlannerInterview";
 import {
-  ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
+  buildPlannerFreeText,
+  plannerDestinationsForGenerate,
+  resolvePlannerBriefDates,
+  type PlannerBrief,
+} from "@/lib/trip-ai/plannerBrief";
+import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
+import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
   Loader2, Wand2, Plus, X, Globe, AlertTriangle, GripVertical, Info,
 } from "lucide-react";
@@ -613,12 +620,13 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
   const toast = useToast();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const [step, setStep] = useState<"templates" | "form" | "planning" | "review" | "generating" | "preview">("templates");
+  const [step, setStep] = useState<"interview" | "templates" | "form" | "planning" | "review" | "generating" | "preview">("interview");
   const [places, setPlaces] = useState<string[]>([""]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [freeText, setFreeText] = useState("");
   const [tripStyle, setTripStyle] = useState<string | null>(null);
+  const [interviewBrief, setInterviewBrief] = useState<PlannerBrief | null>(null);
   const [nearbyExcursions, setNearbyExcursions] = useState<"yes" | "maybe" | "no">("maybe");
   const [mixStylesWhenTime, setMixStylesWhenTime] = useState(true);
   const [suggestRestaurants, setSuggestRestaurants] = useState(false);
@@ -711,20 +719,78 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     } catch (e) { const msg = e instanceof Error ? e.message : "No se pudo calcular el plan."; setError(msg); setStep("form"); toast.error("Error", msg); }
   }
 
-  async function generateDraft(stays: StayRow[], opts?: { regenerateBadOnly?: boolean }) {
+  function persistProposalSnapshot(
+    draftData: ApiDraft,
+    destLabel: string,
+    sd: string,
+    ed: string,
+    brief: PlannerBrief | null = interviewBrief
+  ) {
+    const title = (tripName.trim() || `${destLabel} (${sd} → ${ed})`).trim();
+    savePlannerProposalSnapshot(
+      snapshotFromPlannerDraft({
+        title,
+        destination: destLabel,
+        startDate: sd,
+        endDate: ed,
+        brief,
+        days: draftData.days.map((d) => ({
+          day: d.day,
+          date: d.date,
+          base: d.base,
+          items: (d.items || []).map((it) => ({
+            title: it.title,
+            activity_time: it.activity_time,
+            place_name: it.place_name,
+            description: it.description,
+            activity_kind: it.activity_kind,
+          })),
+        })),
+      })
+    );
+  }
+
+  function openProposalPdf() {
+    if (!draft) return;
+    persistProposalSnapshot(draft, destinationLabel, startDate, endDate);
+    window.open("/trips/new/planner/propuesta", "_blank", "noopener,noreferrer");
+  }
+
+  async function generateDraft(
+    stays: StayRow[],
+    opts?: {
+      regenerateBadOnly?: boolean;
+      destinations?: string[];
+      start?: string;
+      end?: string;
+      notes?: string;
+      nearbyExcursions?: "yes" | "maybe" | "no";
+      fromInterview?: boolean;
+      openPdf?: boolean;
+      brief?: PlannerBrief | null;
+    }
+  ): Promise<boolean> {
     setError(null);
     setGeneratingDraft(true);
     setStep("generating");
+    const dests = (opts?.destinations ?? effectiveDestinations).filter(Boolean);
+    const sd = opts?.start ?? startDate;
+    const ed = opts?.end ?? endDate;
+    const notes = opts?.notes ?? (freeText.trim() || undefined);
+    const destLabel = dests.join(" · ") || destinationLabel;
     try {
       const res = await fetch("/api/trips/ai-planner/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          destinations: effectiveDestinations,
-          start_date: startDate,
-          end_date: endDate,
-          stays,
-          freeText: freeText.trim() || undefined,
-          plannerPreferences,
+          destinations: dests,
+          start_date: sd,
+          end_date: ed,
+          ...(stays.length ? { stays } : {}),
+          freeText: notes,
+          plannerPreferences: {
+            ...plannerPreferences,
+            ...(opts?.nearbyExcursions ? { nearbyExcursions: opts.nearbyExcursions } : {}),
+          },
           days: draft?.days || undefined,
           regenerateBadOnly: Boolean(opts?.regenerateBadOnly),
           rules: activeRules,
@@ -753,32 +819,97 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       setConfirmedStays(stays);
       setExpandedDays(new Set([1]));
       setStep("preview");
+      persistProposalSnapshot(draftData, destLabel, sd, ed, opts?.brief ?? interviewBrief);
       trackEvent(ANALYTICS_EVENTS.AI_PLANNER_COMPLETED, {
         total_days: draftData.totalDays,
         activity_count: activityCount,
-        destinations: effectiveDestinations.length,
+        destinations: dests.length,
       });
       if (!chatMessages.length) {
         setChatMessages([
-          { role: "assistant", text: `He generado un itinerario de ${draftData.totalDays} días con lugares reales. ¿Quieres ajustar algo?` },
+          { role: "assistant", text: `He generado un itinerario de ${draftData.totalDays} días. Descarga el PDF, pídeme cambios (te generaré otra propuesta y otro PDF) o crea el viaje.` },
         ]);
       }
+      if (opts?.openPdf) {
+        window.open("/trips/new/planner/propuesta", "_blank", "noopener,noreferrer");
+      }
+      return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "No se pudo generar el itinerario.";
       setError(msg);
-      setStep(draft ? "preview" : "review");
+      setStep(draft ? "preview" : opts?.fromInterview ? "interview" : planProposal ? "review" : "form");
       toast.error("Error al generar", msg);
+      return false;
     } finally {
       setGeneratingDraft(false);
     }
   }
 
+  async function generateFromBrief(brief: PlannerBrief) {
+    const dests = plannerDestinationsForGenerate(brief);
+    const dates = resolvePlannerBriefDates(brief);
+    if (!dests.length) {
+      toast.error("Faltan destinos", "Indica al menos una ciudad o pueblo donde dormir.");
+      return;
+    }
+    if (!dates) {
+      toast.error("Faltan fechas", "Indica fechas o duración del viaje.");
+      return;
+    }
+    setInterviewBrief(brief);
+    setPlaces(dests);
+    setStartDate(dates.startDate);
+    setEndDate(dates.endDate);
+    const notes = buildPlannerFreeText(brief);
+    setFreeText(notes);
+    if (brief.transport === "driving" || brief.nearbyExcursions === "yes") setNearbyExcursions("yes");
+    if (brief.suggestedTripName) setTripName(brief.suggestedTripName);
+    trackEvent(ANALYTICS_EVENTS.AI_PLANNER_STARTED, {
+      destinations: dests.length,
+      total_days: totalDaysBetween(dates.startDate, dates.endDate),
+      source: "interview",
+    });
+    await generateDraft([], {
+      destinations: dests,
+      start: dates.startDate,
+      end: dates.endDate,
+      notes,
+      nearbyExcursions:
+        brief.transport === "driving" || brief.nearbyExcursions === "yes" ? "yes" : brief.nearbyExcursions || undefined,
+      fromInterview: true,
+      brief,
+    });
+  }
+
   async function sendChat(text?: string) {
-    const msg = (text ?? chatInput).trim(); if (!msg || !draft) return;
-    setChatInput(""); setChatMessages((prev) => [...prev, { role: "user", text: msg }]);
-    setActiveRules((prev) => [...prev, msg].slice(-12)); setChatLoading(true);
-    setChatMessages((prev) => [...prev, { role: "assistant", text: "Entendido, actualizo el itinerario con eso en mente…" }]);
-    try { await generateDraft(confirmedStays, { regenerateBadOnly: false }); } finally { setChatLoading(false); }
+    const msg = (text ?? chatInput).trim();
+    if (!msg || !draft) return;
+    setChatInput("");
+    setChatMessages((prev) => [...prev, { role: "user", text: msg }]);
+    setActiveRules((prev) => [...prev, msg].slice(-12));
+    setChatLoading(true);
+    const pdfWin = window.open("about:blank", "kaviro_planner_pdf");
+    try {
+      const ok = await generateDraft(confirmedStays, { regenerateBadOnly: false });
+      if (ok) {
+        if (pdfWin && !pdfWin.closed) {
+          pdfWin.location.replace("/trips/new/planner/propuesta");
+        } else {
+          window.open("/trips/new/planner/propuesta", "kaviro_planner_pdf");
+        }
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "Itinerario actualizado. Se abre el PDF nuevo; si el navegador lo bloquea, pulsa «Descargar PDF». Puedes pedir más cambios o crear el viaje.",
+          },
+        ]);
+      } else if (pdfWin && !pdfWin.closed) {
+        pdfWin.close();
+      }
+    } finally {
+      setChatLoading(false);
+    }
   }
 
   async function createTripFromDraft() {
@@ -857,10 +988,18 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       <div>
         <div className="flex items-center gap-2 mb-1"><Sparkles className="w-5 h-5 text-violet-500" /><span className="text-xs font-bold uppercase tracking-widest text-violet-600">Premium · IA</span></div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Planificador inteligente</h1>
-        <p className="mt-1.5 text-sm font-medium text-slate-500 max-w-md">La IA propone el reparto de días, tú lo ajustas, y luego genera un itinerario real con lugares concretos.</p>
+        <p className="mt-1.5 text-sm font-medium text-slate-500 max-w-md">Cuéntale tu viaje a la IA. Te pide solo lo que falta, te propone un itinerario y un PDF, y tú decides si creas el viaje.</p>
       </div>
 
       {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 flex items-start gap-2"><span className="mt-0.5">⚠️</span><span>{error}</span></div>}
+
+      {step === "interview" && (
+        <TripAiPlannerInterview
+          generating={generatingDraft}
+          onClassic={() => setStep("templates")}
+          onGenerate={(brief) => void generateFromBrief(brief)}
+        />
+      )}
 
       {/* FORM */}
       {step === "templates" && (
@@ -888,6 +1027,13 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
             className="w-full rounded-xl border border-slate-200 dark:border-[#334155] bg-white dark:bg-[#0F1623] px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] transition"
           >
             Crear desde cero →
+          </button>
+          <button
+            type="button"
+            onClick={() => setStep("interview")}
+            className="w-full text-center text-xs font-semibold text-slate-400 hover:text-slate-600"
+          >
+            ← Volver al chat guiado
           </button>
         </div>
       )}
@@ -1077,8 +1223,11 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
               <div className="h-8 w-px bg-slate-200 hidden sm:block" />
               <div><p className="text-xs font-bold uppercase tracking-widest text-slate-400">Actividades</p><p className="text-sm font-extrabold text-slate-900">{draft.days.reduce((a, d) => a + d.items.length, 0)} planes</p></div>
             </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setStep("review")} className="btn-secondary flex items-center gap-1.5 text-sm py-2.5 px-4"><RotateCcw className="w-3.5 h-3.5" />Cambiar reparto</button>
+            <div className="flex flex-wrap gap-2">
+              {planProposal ? (
+                <button type="button" onClick={() => setStep("review")} className="btn-secondary flex items-center gap-1.5 text-sm py-2.5 px-4"><RotateCcw className="w-3.5 h-3.5" />Cambiar reparto</button>
+              ) : null}
+              <button type="button" onClick={openProposalPdf} className="btn-secondary flex items-center gap-1.5 text-sm py-2.5 px-4"><FileText className="w-3.5 h-3.5" />Descargar PDF</button>
               <button type="button" disabled={saving} onClick={createTripFromDraft} className="btn-primary flex items-center gap-2 text-sm py-2.5 px-5 disabled:opacity-50">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}Crear viaje</button>
             </div>
           </div>
@@ -1125,7 +1274,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
             <div className="card-soft flex flex-col sticky top-4 max-h-[calc(100vh-6rem)] overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100">
                 <div className="flex items-center gap-2"><MessageCircle className="w-4 h-4 text-violet-500" /><span className="text-sm font-extrabold text-slate-900">Refinar con IA</span></div>
-                <p className="mt-0.5 text-xs font-medium text-slate-400">Pide cualquier cambio — regenera el itinerario al instante.</p>
+                <p className="mt-0.5 text-xs font-medium text-slate-400">Pide un cambio: regenera el itinerario y abre un PDF nuevo. El viaje aún no se crea.</p>
               </div>
               {activeRules.length > 0 && (
                 <div className="px-4 pt-3 flex flex-wrap gap-1.5">
@@ -1160,8 +1309,11 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           </div>
 
           <div className="card-soft p-5 flex flex-wrap items-center justify-between gap-4">
-            <div><p className="text-sm font-extrabold text-slate-900">¿Te gusta el itinerario?</p><p className="text-xs font-medium text-slate-500">Crea el viaje y podrás seguir editando desde el panel de plan.</p></div>
-            <button type="button" disabled={saving} onClick={createTripFromDraft} className="btn-primary flex items-center gap-2 py-3 px-6 disabled:opacity-50">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}Crear viaje</button>
+            <div><p className="text-sm font-extrabold text-slate-900">¿Te gusta el itinerario?</p><p className="text-xs font-medium text-slate-500">Descarga el PDF ahora. Si pides cambios en el chat, te generamos otra propuesta y otro PDF. Crear el viaje es el último paso.</p></div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={openProposalPdf} className="btn-secondary flex items-center gap-2 py-3 px-5"><FileText className="w-4 h-4" />Descargar PDF</button>
+              <button type="button" disabled={saving} onClick={createTripFromDraft} className="btn-primary flex items-center gap-2 py-3 px-6 disabled:opacity-50">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}Crear viaje</button>
+            </div>
           </div>
 
           {/* ── DEBUG PANEL — solo visible para admins ─────────────────────── */}
