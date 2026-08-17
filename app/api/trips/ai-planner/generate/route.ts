@@ -29,6 +29,7 @@ import {
   type PlannerPreferences,
 } from "@/lib/trip-ai/plannerPreferences";
 import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
+import { planStaysToMinimizeDriving } from "@/lib/trip-ai/plannerStayRoute";
 import {
   PLANNER_CHUNK_CONCURRENCY,
   PLANNER_MAX_DAYS_MESSAGE,
@@ -220,6 +221,21 @@ function normalizeKind(raw: string): string {
 // t = title, d = tip (short description ≤10 words), h = time (HH:MM), k = kind, lt = lat, lg = lng
 // address and activity_type are NOT requested — generated locally by the parser
 
+function itemIsCloserToOtherBase(
+  lat: number,
+  lng: number,
+  cityCenter: LatLng | null,
+  otherStops: Array<{ label: string; center: LatLng }>
+): boolean {
+  if (!cityCenter || !otherStops.length) return false;
+  const here = haversineKm({ lat, lng }, cityCenter);
+  for (const other of otherStops) {
+    const there = haversineKm({ lat, lng }, other.center);
+    if (there + 30 < here && here > 50) return true;
+  }
+  return false;
+}
+
 function buildCityItineraryPrompt(
   city: string,
   days: Array<{ dayNum: number; date: string }>,
@@ -231,6 +247,7 @@ function buildCityItineraryPrompt(
     totalDaysInBlock?: number;
     nearbyExcursionHints?: string[];
     plannerPrefs?: PlannerPreferences;
+    otherBases?: string[];
   }
 ): string {
   const profile = notes.trim()
@@ -271,11 +288,15 @@ function buildCityItineraryPrompt(
     dayIdx === 1
       ? `8. Día 1 en ${city}: prioriza lo más icónico e imprescindible.`
       : `8. Día ${dayIdx}/${totalInBlock}: lugares DISTINTOS a los ya programados; barrios, museos o rutas que no hayas usado.`;
+  const otherBases = (opts?.otherBases || []).filter((b) => b.trim() && b.trim().toLowerCase() !== city.trim().toLowerCase());
+  const otherBasesRule = otherBases.length
+    ? `10. Este bloque es SOLO ${city} en las fechas indicadas. PROHIBIDO lugares de: ${otherBases.join(", ")}.`
+    : "";
 
   // Valid kinds listed once — Gemini copies them verbatim (saves tokens vs re-explaining)
   const kinds = "culture|nature|viewpoint|neighborhood|market|excursion|gastro_experience|shopping|night";
 
-  return `Guía local experto de ${city}. Plan para: ${dateList}.
+  return `Guía local experto de ${city}. Plan SOLO para ${city} en: ${dateList}.
 ${profile}
 ${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}${restaurantBlock}
 
@@ -291,7 +312,8 @@ REGLAS:
 6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN: si las preferencias indican día de llegada o de salida, respeta ese horario (0-2 visitas; nada antes de aterrizar ni que impida llegar al aeropuerto/estación).
 7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real: "Mercado de San Telmo", "Bodega Zuccardi", "Cata en Catena".
 ${iconicRule}
-9. Respeta TODO lo que indicó el viajero.`.trim();
+9. Respeta TODO lo que indicó el viajero.
+${otherBasesRule}`.trim();
 }
 
 function poisToNearbyPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
@@ -342,7 +364,12 @@ async function generateCityItinerary(
   excursionPool: NearbyPoi[] = [],
   inCityPool: NearbyPoi[] = [],
   gastroPool: NearbyPoi[] = [],
-  plannerPrefs: PlannerPreferences = parsePlannerPreferences(null)
+  plannerPrefs: PlannerPreferences = parsePlannerPreferences(null),
+  geo?: {
+    otherBases?: string[];
+    cityCenter?: LatLng | null;
+    otherStops?: Array<{ label: string; center: LatLng }>;
+  }
 ): Promise<{ days: PlannerDayWithMeta[]; prompt: string; rawOutput: string } | null> {
   if (!forceRegen) {
     const cached = itinCacheGet(city, nights, notes, plannerPrefs);
@@ -385,6 +412,9 @@ async function generateCityItinerary(
         const v = it.lg ?? it.longitude;
         return typeof v === "number" && Math.abs(v) <= 180 && v !== 0 ? v : null;
       })();
+      if (lat != null && lng != null && itemIsCloserToOtherBase(lat, lng, geo?.cityCenter ?? null, geo?.otherStops || [])) {
+        continue;
+      }
       out.push({
         title,
         description: tip,
@@ -420,6 +450,7 @@ async function generateCityItinerary(
       totalDaysInBlock: nights,
       nearbyExcursionHints: firstDayNum > 1 ? nearbyHints : undefined,
       plannerPrefs,
+      otherBases: geo?.otherBases,
     });
     let raw = "";
     try {
@@ -755,7 +786,20 @@ export async function POST(req: Request) {
       }
       stays = parsedStays;
     } else {
-      stays = distributeNightsSmart(stops, poisByStop, totalDays, mergedNotes);
+      const startHint =
+        cleanString(body?.arrivalPlace || body?.arrival_place || "") ||
+        (mergedNotes.match(/llegada[^.]{0,120}/i)?.[0] ?? "");
+      const endHint =
+        cleanString(body?.departurePlace || body?.departure_place || "") ||
+        (mergedNotes.match(/salida[^.]{0,120}/i)?.[0] ?? "");
+      const routed = planStaysToMinimizeDriving(
+        stops.map((s) => ({ label: s.label, center: s.center })),
+        totalDays,
+        { startHint, endHint }
+      );
+      stays = routed.length
+        ? routed
+        : distributeNightsSmart(stops, poisByStop, totalDays, mergedNotes);
     }
 
     // ── 5. planOnly: return proposal without itinerary ────────────────────────
@@ -804,6 +848,14 @@ export async function POST(req: Request) {
         const excursionPool = poisToNearbyPool(stopPools);
         const inCityPool = poisToInCityPool(stopPools);
         const gastroPool = poisToGastroPool(stopPools);
+        const cityStop = stops.find((s) => s.label.toLowerCase() === block.city.toLowerCase()) || stops.find((s) => {
+          const a = s.label.toLowerCase();
+          const b = block.city.toLowerCase();
+          return a.startsWith(b) || b.startsWith(a);
+        });
+        const otherStops = stops
+          .filter((s) => s.label.toLowerCase() !== (cityStop?.label || block.city).toLowerCase())
+          .map((s) => ({ label: s.label, center: s.center }));
         return generateCityItinerary(
           block.city,
           block.nights,
@@ -814,7 +866,12 @@ export async function POST(req: Request) {
           excursionPool,
           inCityPool,
           gastroPool,
-          plannerPrefs
+          plannerPrefs,
+          {
+            otherBases: stays.map((s) => s.stop).filter((stop) => stop.toLowerCase() !== block.city.toLowerCase()),
+            cityCenter: cityStop?.center ?? null,
+            otherStops,
+          }
         );
       })
     );

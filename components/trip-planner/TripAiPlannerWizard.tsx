@@ -22,7 +22,7 @@ import {
 } from "@/lib/trip-ai/plannerBrief";
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
 import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
-import { chatWantsNewSleepPlan, extraStopsFromChat, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
+import { chatWantsNewSleepPlan, extraStopsFromChat, parseSleepAssignmentsFromChat, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
 import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
   Loader2, Wand2, Plus, X, Globe, AlertTriangle, GripVertical, Info,
@@ -809,6 +809,8 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           end_date: ed,
           ...(stays.length ? { stays } : {}),
           freeText: notes,
+          arrivalPlace: opts?.brief?.arrival.place || interviewBrief?.arrival.place || undefined,
+          departurePlace: opts?.brief?.departure.place || interviewBrief?.departure.place || undefined,
           plannerPreferences: {
             ...plannerPreferences,
             ...(opts?.nearbyExcursions ? { nearbyExcursions: opts.nearbyExcursions } : {}),
@@ -937,13 +939,22 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         (draft.days || []).map((d) => d.base),
         extra
       );
+      const parsedSleep = parseSleepAssignmentsFromChat(msg, {
+        startDate: draft.startDate || startDate,
+        endDate: draft.endDate || endDate,
+        knownPlaces: dests,
+        hubPlace: interviewBrief?.arrival.place || interviewBrief?.departure.place || null,
+      });
+      const destsWithSleep = uniquePlaces(dests, parsedSleep?.places);
       const rebuildStays = chatWantsNewSleepPlan(msg);
-      const stays = rebuildStays
-        ? []
-        : confirmedStays.length > 0
-          ? confirmedStays
-          : (draft.stays || []).map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason }));
-      const ok = await generateDraft(stays, { destinations: dests, rules: nextRules, fromChat: true });
+      const stays = parsedSleep?.stays.length
+        ? parsedSleep.stays
+        : rebuildStays
+          ? []
+          : confirmedStays.length > 0
+            ? confirmedStays
+            : (draft.stays || []).map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason }));
+      const ok = await generateDraft(stays, { destinations: destsWithSleep, rules: nextRules, fromChat: true });
       if (ok) {
         if (pdfWin && !pdfWin.closed) {
           pdfWin.location.replace("/trips/new/planner/propuesta");

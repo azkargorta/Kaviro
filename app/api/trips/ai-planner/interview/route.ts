@@ -65,13 +65,13 @@ Reglas:
 - destinationKind "city" solo si es UNA ciudad o pueblo concreto donde se puede dormir (Lisboa, Roma, Cádiz).
 - "region" si es provincia, comunidad, país, isla o zona amplia.
 - "multi" si nombra dos o más sitios (ej. "X e Y").
-- sleepBases: ciudades/pueblos donde DORMIR, no la provincia. Si nombra dos provincias, NO las uses como sleepBases salvo que deje claro que duerme en esas ciudades.
+- sleepBases: ciudades/pueblos donde DORMIR, no la provincia. El ORDEN en que las nombra el usuario NO es una ruta: es un conjunto. Si nombra dos provincias, NO las uses como sleepBases salvo que deje claro que duerme en esas ciudades.
 - proposedSleepBases: si destinationKind es region o multi y aún no hay sleepBases, propone 3-5 pueblos/ciudades turísticas REALES de esa zona. Si ya hay bases, [].
 - Fechas: en un relato en español, "6 de diciembre" y "11/12" en el mismo contexto suelen ser el mismo mes. time en 24h.
 - transport driving si dice coche, alquiler, auto, carretera.
 - nearbyExcursions "yes" si quiere pueblos o alrededores.
 - arrivalSkipped/departureSkipped true solo si el usuario dice que no sabe hora/lugar.
-- assistantReply: 2-5 frases en español. Resume lo entendido. NO hagas la siguiente pregunta (la app la añade). Si propones bases, menciónalas.
+- assistantReply: 2-5 frases en español. Resume lo entendido. Si acepta varias bases, deja claro que el orden de noches lo calculará el plan (llegada/salida y menos km), no el orden en que las ha dicho. NO hagas la siguiente pregunta (la app la añade). Si propones bases, menciónalas.
 - No inventes reservas. Si hay homónimos de ciudad, pregunta el país en assistantReply.
 
 Ficha actual:

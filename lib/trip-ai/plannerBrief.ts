@@ -226,7 +226,7 @@ export function getPlannerMissingField(brief: PlannerBrief): PlannerMissingField
 export const PLANNER_MISSING_QUESTIONS: Record<PlannerMissingField, string> = {
   destination: "¿A qué destino o destinos vais? Con el nombre de la ciudad, región o país basta.",
   sleepBases:
-    "Eso suena a región o a varios sitios. ¿En qué ciudad o pueblo queréis dormir? Podéis decir varias bases (una por zona) o pedirme que te proponga opciones.",
+    "¿En qué ciudades o pueblos os encaja dormir? Da igual el orden: yo monto la ruta para no hacer trayectos de más, anclada a vuestra llegada y salida. Si prefieres, dime «propónmelo tú».",
   dates: "¿Qué fechas tenéis, o cuántos días dura el viaje?",
   arrival: "¿Dónde y a qué hora llegáis el primer día? (aeropuerto, estación…). Si aún no lo sabes, dímelo y lo dejamos abierto.",
   departure: "¿De dónde y a qué hora salís el último día? Si no lo tienes claro, dímelo y lo dejamos abierto.",
@@ -254,6 +254,11 @@ export function buildPlannerFreeText(brief: PlannerBrief): string {
             ? "familia"
             : "grupo de amigos";
     parts.push(`Compañía: ${label}.`);
+  }
+  if (brief.sleepBases.length) {
+    parts.push(
+      `Bases de noche (conjunto, NO un orden de ruta): ${brief.sleepBases.join(", ")}. Ordena las noches para minimizar kilómetros extra, anclando llegada y salida; si dos bases quedan en direcciones opuestas desde el hub, vuelve al hub entre medias en vez de cruzar el mapa.`
+    );
   }
   if (brief.transport === "driving") {
     parts.push("Transporte: coche de alquiler. Prioriza pueblos y lugares de alrededor accesibles por carretera.");
