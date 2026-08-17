@@ -42,18 +42,61 @@ function normWord(s: string): string {
     .toLowerCase();
 }
 
-/** Ciudades mencionadas tras «en …» en un mensaje de chat. */
+const PLACE_SKIP = new Set(
+  [
+    ...STOPWORDS,
+    "dia",
+    "dias",
+    "en",
+    "y",
+    "de",
+    "con",
+    "para",
+    "por",
+    "del",
+    "al",
+    "que",
+    "orden",
+    "dormir",
+    "duermo",
+    "noche",
+    "noches",
+    "base",
+    "bases",
+    "este",
+  ].map((s) => normWord(s))
+);
+
+function isSkippablePlace(raw: string): boolean {
+  const n = normWord(raw);
+  if (!n || PLACE_SKIP.has(n)) return true;
+  const first = n.split(/\s+/)[0] || "";
+  return PLACE_SKIP.has(first);
+}
+
+/** Ciudades mencionadas tras «en …» o pegadas a un día («7cafayate»). */
 export function extraStopsFromChat(message: string): string[] {
   const out: string[] = [];
-  const re = /\ben\s+([a-záéíóúüñ]{3,}(?:\s+[a-záéíóúüñ]{3,})?)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(message))) {
+  const enRe = /\ben\s+([a-záéíóúüñ]{3,}(?:\s+[a-záéíóúüñ]{3,})?)/gi;
+  for (const m of message.matchAll(enRe)) {
     const raw = (m[1] || "").trim();
-    if (!raw || STOPWORDS.has(normWord(raw))) continue;
-    if (/^(el|la|los|las|un|una)\b/i.test(raw)) continue;
+    if (!raw || isSkippablePlace(raw)) continue;
     out.push(titleCasePlace(raw));
   }
-  return [...new Set(out)];
+  const gluedRe = /(\d{1,2})([a-záéíóúüñ]{4,})/gi;
+  for (const m of message.matchAll(gluedRe)) {
+    const raw = (m[2] || "").trim();
+    if (!raw || isSkippablePlace(raw)) continue;
+    out.push(titleCasePlace(raw));
+  }
+  const dayPlaceRe =
+    /(?:d[ií]as?\s*)?\d{1,2}(?:\s*(?:y|e|,|\/)\s*\d{1,2})*\s+(?!en\b)([a-záéíóúüñ]{3,})/gi;
+  for (const m of message.matchAll(dayPlaceRe)) {
+    const raw = (m[1] || "").trim();
+    if (!raw || isSkippablePlace(raw)) continue;
+    out.push(titleCasePlace(raw));
+  }
+  return uniquePlaces(out);
 }
 
 export function chatWantsNewSleepPlan(message: string): boolean {
@@ -79,9 +122,9 @@ export function uniquePlaces(...lists: Array<string[] | undefined>): string[] {
 export type SleepStayRow = { stop: string; nights: number; reason: string };
 export type ParsedSleepPlan = { stays: SleepStayRow[]; places: string[] };
 
-function matchKnownPlace(raw: string, known: string[]): string {
+function matchKnownPlace(raw: string, known: string[], requireKnown = false): string | null {
   const n = normWord(raw);
-  if (!n) return titleCasePlace(raw);
+  if (!n) return requireKnown ? null : titleCasePlace(raw);
   let best: string | null = null;
   let bestScore = 0;
   for (const k of known) {
@@ -96,7 +139,9 @@ function matchKnownPlace(raw: string, known: string[]): string {
       best = k;
     }
   }
-  return bestScore >= 50 && best ? best : titleCasePlace(raw);
+  if (bestScore >= 50 && best) return best;
+  if (requireKnown) return null;
+  return titleCasePlace(raw);
 }
 
 /** «el 6» en un viaje 6–11 dic = 6 dic (día 1), no el día 6 del itinerario. */
@@ -143,7 +188,25 @@ function compactStayBlocks(dayBases: string[]): SleepStayRow[] {
 }
 
 const SLEEP_GROUP_RE =
-  /(?:(?:el|los|la|las)\s+)?(?:d[ií]as?\s+)?(\d{1,2}(?:\s*(?:y|e|,|\/)\s*(?:el|los|la|las)?\s*\d{1,2})*)\s+en\s+([a-záéíóúüñ]{3,}(?:\s+[a-záéíóúüñ]{3,})?)/gi;
+  /(?:(?:el|los|la|las)\s+)?(?:d[ií]as?\s*)?(\d{1,2}(?:\s*(?:y|e|,|\/)\s*(?:el|los|la|las)?\s*\d{1,2})*)(\s+en\s+|\s*)([a-záéíóúüñ]{3,}(?:\s+(?!d[ií]as?\b)[a-záéíóúüñ]{3,})?)/gi;
+
+function applySleepHit(
+  assigned: Array<string | null>,
+  numsRaw: string,
+  place: string,
+  startDate: string,
+  endDate: string
+): number {
+  let hits = 0;
+  const nums = numsRaw.match(/\d{1,2}/g) || [];
+  for (const raw of nums) {
+    const day = resolveChatDayNumber(Number(raw), startDate, endDate);
+    if (!day) continue;
+    assigned[day - 1] = place;
+    hits += 1;
+  }
+  return hits;
+}
 
 /**
  * Plan de noches con fechas explícitas («el 6 y 10 en Salta, el 7 en Cafayate»).
@@ -167,16 +230,22 @@ export function parseSleepAssignmentsFromChat(
   const groupRe = new RegExp(SLEEP_GROUP_RE.source, "gi");
   for (const m of message.matchAll(groupRe)) {
     const numsRaw = m[1] || "";
+    const sep = m[2] || "";
+    const placeRaw = (m[3] || "").trim();
+    if (!placeRaw || isSkippablePlace(placeRaw)) continue;
+    const hasEn = /\ben\b/i.test(sep);
+    const place = matchKnownPlace(placeRaw, known, !hasEn && known.length > 0);
+    if (!place || isSkippablePlace(place)) continue;
+    hits += applySleepHit(assigned, numsRaw, place, opts.startDate, opts.endDate);
+  }
+
+  const gluedRe = /(\d{1,2})([a-záéíóúüñ]{4,})/gi;
+  for (const m of message.matchAll(gluedRe)) {
     const placeRaw = (m[2] || "").trim();
-    if (!placeRaw || STOPWORDS.has(normWord(placeRaw))) continue;
-    const place = matchKnownPlace(placeRaw, known);
-    const nums = numsRaw.match(/\d{1,2}/g) || [];
-    for (const raw of nums) {
-      const day = resolveChatDayNumber(Number(raw), opts.startDate, opts.endDate);
-      if (!day) continue;
-      assigned[day - 1] = place;
-      hits += 1;
-    }
+    if (!placeRaw || isSkippablePlace(placeRaw)) continue;
+    const place = matchKnownPlace(placeRaw, known, known.length > 0);
+    if (!place || isSkippablePlace(place)) continue;
+    hits += applySleepHit(assigned, m[1] || "", place, opts.startDate, opts.endDate);
   }
   if (hits < 1) return null;
 

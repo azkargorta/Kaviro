@@ -68,4 +68,17 @@ describe("parseSleepAssignmentsFromChat", () => {
       parseSleepAssignmentsFromChat("quiero dormir en cafayate y tilcara", trip)
     ).toBeNull();
   });
+
+  it("entiende frases pegadas y sin 'en' (7cafayate, dia 8 y 9 tilcara)", () => {
+    const msg =
+      "quiero este orden de dormir dia 6 y 10 en salta, dia 7cafayate dia 8 y 9 tilcara";
+    expect(extraStopsFromChat(msg)).toEqual(expect.arrayContaining(["Salta", "Cafayate", "Tilcara"]));
+    const parsed = parseSleepAssignmentsFromChat(msg, trip);
+    expect(parsed?.stays.map((s) => ({ stop: s.stop, nights: s.nights }))).toEqual([
+      { stop: "Salta", nights: 1 },
+      { stop: "Cafayate", nights: 1 },
+      { stop: "Tilcara", nights: 2 },
+      { stop: "Salta", nights: 2 },
+    ]);
+  });
 });
