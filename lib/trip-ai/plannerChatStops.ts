@@ -64,14 +64,128 @@ const PLACE_SKIP = new Set(
     "base",
     "bases",
     "este",
+    "solamente",
+    "solo",
+    "sólo",
+    "quiero",
+    "querria",
+    "quisiera",
+    "gustaria",
+    "gustaría",
+    "me",
+    "te",
+    "se",
+    "nos",
+    "has",
+    "he",
+    "ha",
+    "han",
+    "hemos",
+    "puesto",
+    "pongas",
+    "poner",
+    "pon",
+    "ponga",
+    "traslado",
+    "ver",
+    "visitar",
+    "visita",
+    "excursion",
+    "excursión",
+    "excursiones",
+    "algo",
+    "nada",
+    "alguna",
+    "algun",
+    "algún",
+    "hasta",
+    "cuando",
+    "vaya",
+    "voy",
+    "vamos",
+    "ir",
+    "camino",
+    "historia",
+    "arte",
+    "parada",
+    "paradas",
+    "tambien",
+    "también",
+    "pero",
+    "porque",
+    "como",
+    "hay",
+    "puedo",
+    "puedes",
+    "puede",
+    "cambia",
+    "cambiar",
+    "anade",
+    "añade",
+    "agrega",
+    "pone",
+    "harias",
+    "haria",
+    "podrias",
+    "muy",
+    "mas",
+    "más",
+    "menos",
+    "local",
+    "vida",
+    "museos",
+    "mercado",
+    "gustaria",
+    "no",
+    "si",
+    "sí",
+    "ya",
+    "ahi",
+    "allí",
+    "alla",
+    "allá",
+    "aqui",
+    "aquí",
+    "donde",
+    "dónde",
+    "cual",
+    "cuál",
+    "todo",
+    "toda",
+    "todos",
+    "todas",
+    "otro",
+    "otra",
+    "otros",
+    "otras",
+    "mismo",
+    "misma",
+    "hacer",
+    "hace",
+    "haces",
+    "haga",
+    "hagan",
+    "tener",
+    "tiene",
+    "tengo",
+    "falta",
+    "faltan",
+    "alguno",
+    "ningun",
+    "ningún",
+    "ninguna",
   ].map((s) => normWord(s))
 );
 
-function isSkippablePlace(raw: string): boolean {
+export function isSkippablePlace(raw: string): boolean {
   const n = normWord(raw);
   if (!n || PLACE_SKIP.has(n)) return true;
   const first = n.split(/\s+/)[0] || "";
   return PLACE_SKIP.has(first);
+}
+
+export function plausiblePlaces(...lists: Array<string[] | undefined>): string[] {
+  return uniquePlaces(...lists).filter((p) => !isSkippablePlace(p));
 }
 
 /** Ciudades mencionadas tras «en …» o pegadas a un día («7cafayate»). */
@@ -89,18 +203,18 @@ export function extraStopsFromChat(message: string): string[] {
     if (!raw || isSkippablePlace(raw)) continue;
     out.push(titleCasePlace(raw));
   }
-  const dayPlaceRe =
-    /(?:d[ií]as?\s*)?\d{1,2}(?:\s*(?:y|e|,|\/)\s*\d{1,2})*\s+(?!en\b)([a-záéíóúüñ]{3,})/gi;
-  for (const m of message.matchAll(dayPlaceRe)) {
-    const raw = (m[1] || "").trim();
-    if (!raw || isSkippablePlace(raw)) continue;
-    out.push(titleCasePlace(raw));
-  }
-  return uniquePlaces(out);
+  return plausiblePlaces(out);
 }
 
 export function chatWantsNewSleepPlan(message: string): boolean {
   return /\b(dormir|duermo|duermen|noches?|aloj|quedarme|quedamos|bases?)\b/i.test(message);
+}
+
+export function shouldApplyParsedSleepPlan(message: string, parsed: ParsedSleepPlan | null | undefined): boolean {
+  if (!parsed?.stays.length) return false;
+  if (parsed.places.some((p) => isSkippablePlace(p))) return false;
+  if (chatWantsNewSleepPlan(message)) return true;
+  return parsed.places.length >= 2;
 }
 
 export function uniquePlaces(...lists: Array<string[] | undefined>): string[] {
@@ -230,11 +344,9 @@ export function parseSleepAssignmentsFromChat(
   const groupRe = new RegExp(SLEEP_GROUP_RE.source, "gi");
   for (const m of message.matchAll(groupRe)) {
     const numsRaw = m[1] || "";
-    const sep = m[2] || "";
     const placeRaw = (m[3] || "").trim();
     if (!placeRaw || isSkippablePlace(placeRaw)) continue;
-    const hasEn = /\ben\b/i.test(sep);
-    const place = matchKnownPlace(placeRaw, known, !hasEn && known.length > 0);
+    const place = matchKnownPlace(placeRaw, known, true);
     if (!place || isSkippablePlace(place)) continue;
     hits += applySleepHit(assigned, numsRaw, place, opts.startDate, opts.endDate);
   }

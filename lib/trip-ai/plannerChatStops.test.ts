@@ -4,6 +4,7 @@ import {
   extraStopsFromChat,
   parseSleepAssignmentsFromChat,
   resolveChatDayNumber,
+  shouldApplyParsedSleepPlan,
   uniquePlaces,
 } from "@/lib/trip-ai/plannerChatStops";
 
@@ -72,7 +73,7 @@ describe("parseSleepAssignmentsFromChat", () => {
   it("entiende frases pegadas y sin 'en' (7cafayate, dia 8 y 9 tilcara)", () => {
     const msg =
       "quiero este orden de dormir dia 6 y 10 en salta, dia 7cafayate dia 8 y 9 tilcara";
-    expect(extraStopsFromChat(msg)).toEqual(expect.arrayContaining(["Salta", "Cafayate", "Tilcara"]));
+    expect(extraStopsFromChat(msg)).toEqual(expect.arrayContaining(["Salta", "Cafayate"]));
     const parsed = parseSleepAssignmentsFromChat(msg, trip);
     expect(parsed?.stays.map((s) => ({ stop: s.stop, nights: s.nights }))).toEqual([
       { stop: "Salta", nights: 1 },
@@ -80,5 +81,16 @@ describe("parseSleepAssignmentsFromChat", () => {
       { stop: "Tilcara", nights: 2 },
       { stop: "Salta", nights: 2 },
     ]);
+  });
+
+  it("no convierte 'solamente' ni 'quiero' en destinos", () => {
+    const msg =
+      "el dia 3 solamente me has puesto el traslado y me gustaria ver algo por el camino o en tilcara y el dia 10 no me has puesto nada para ver en tilcara y quiero me pongas alguna excursion y el dia 11 quiero visitar salta hasta que vaya al aeropuerto";
+    expect(extraStopsFromChat(msg)).toEqual(["Tilcara"]);
+    expect(extraStopsFromChat(msg)).not.toEqual(expect.arrayContaining(["Solamente", "Quiero"]));
+    const parsed = parseSleepAssignmentsFromChat(msg, trip);
+    expect(parsed).toBeNull();
+    expect(shouldApplyParsedSleepPlan(msg, parsed)).toBe(false);
+    expect(chatWantsNewSleepPlan(msg)).toBe(false);
   });
 });

@@ -30,6 +30,7 @@ import {
 } from "@/lib/trip-ai/plannerPreferences";
 import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
 import { planStaysToMinimizeDriving } from "@/lib/trip-ai/plannerStayRoute";
+import { isSkippablePlace } from "@/lib/trip-ai/plannerChatStops";
 import {
   PLANNER_CHUNK_CONCURRENCY,
   PLANNER_MAX_DAYS_MESSAGE,
@@ -712,7 +713,10 @@ export async function POST(req: Request) {
       : Array.isArray(body?.places)
         ? body.places
         : [];
-    const destinations = destinationsRaw.map((x: unknown) => cleanString(x)).filter(Boolean).slice(0, 10);
+    const destinations = destinationsRaw
+      .map((x: unknown) => cleanString(x))
+      .filter((x) => x && !isSkippablePlace(x))
+      .slice(0, 10);
     const startDate = cleanString(body?.start_date || body?.startDate);
     const endDate = cleanString(body?.end_date || body?.endDate);
     const freeText = cleanString(body?.freeText || "");
@@ -771,19 +775,21 @@ export async function POST(req: Request) {
 
     // ── 4. Stay distribution ──────────────────────────────────────────────────
     let stays: Array<{ stop: string; nights: number; reason?: string }>;
+    const parsedStays: Array<{ stop: string; nights: number; reason?: string }> = [];
     if (staysInput?.length) {
-      const parsedStays: Array<{ stop: string; nights: number; reason?: string }> = [];
       for (const x of staysInput) {
         const row = x && typeof x === "object" ? (x as Record<string, unknown>) : null;
         if (!row) continue;
         const stop = cleanString(row.stop);
-        if (!stop) continue;
+        if (!stop || isSkippablePlace(stop)) continue;
         parsedStays.push({
           stop,
           nights: clamp(Number(row.nights) || 1, 1, 60),
           reason: typeof row.reason === "string" ? row.reason : undefined,
         });
       }
+    }
+    if (parsedStays.length) {
       stays = parsedStays;
     } else {
       const startHint =

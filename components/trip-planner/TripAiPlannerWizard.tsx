@@ -22,7 +22,7 @@ import {
 } from "@/lib/trip-ai/plannerBrief";
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
 import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
-import { chatWantsNewSleepPlan, extraStopsFromChat, parseSleepAssignmentsFromChat, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
+import { chatWantsNewSleepPlan, extraStopsFromChat, isSkippablePlace, parseSleepAssignmentsFromChat, plausiblePlaces, shouldApplyParsedSleepPlan, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
 import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
   Loader2, Wand2, Plus, X, Globe, AlertTriangle, GripVertical, Info,
@@ -787,12 +787,14 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     setError(null);
     setGeneratingDraft(true);
     setStep("generating");
-    const dests = uniquePlaces(
-      opts?.destinations,
-      effectiveDestinations,
-      lastDestinationsRef.current,
-      draft?.destinations,
-      (draft?.days || []).map((d) => d.base)
+    const dests = plausiblePlaces(
+      uniquePlaces(
+        opts?.destinations,
+        effectiveDestinations,
+        lastDestinationsRef.current,
+        draft?.destinations,
+        (draft?.days || []).map((d) => d.base)
+      )
     );
     if (dests.length) lastDestinationsRef.current = dests;
     const sd = opts?.start ?? startDate;
@@ -932,28 +934,34 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     const pdfWin = window.open("about:blank", "kaviro_planner_pdf");
     try {
       const extra = extraStopsFromChat(msg);
-      const dests = uniquePlaces(
-        lastDestinationsRef.current,
-        effectiveDestinations,
-        draft.destinations,
-        (draft.days || []).map((d) => d.base),
-        extra
+      const destsKnown = plausiblePlaces(
+        uniquePlaces(
+          lastDestinationsRef.current,
+          effectiveDestinations,
+          draft.destinations,
+          (draft.days || []).map((d) => d.base)
+        )
       );
+      const dests = uniquePlaces(destsKnown, extra);
       const parsedSleep = parseSleepAssignmentsFromChat(msg, {
         startDate: draft.startDate || startDate,
         endDate: draft.endDate || endDate,
         knownPlaces: dests,
         hubPlace: interviewBrief?.arrival.place || interviewBrief?.departure.place || null,
       });
-      const destsWithSleep = uniquePlaces(dests, parsedSleep?.places);
+      const destsWithSleep = plausiblePlaces(uniquePlaces(dests, parsedSleep?.places));
       const rebuildStays = chatWantsNewSleepPlan(msg);
-      const stays = parsedSleep?.stays.length
-        ? parsedSleep.stays
-        : rebuildStays
+      const prevRaw =
+        confirmedStays.length > 0
+          ? confirmedStays
+          : (draft.stays || []).map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason }));
+      const prevStays = prevRaw.filter((s) => !isSkippablePlace(s.stop));
+      const staysPoisoned = prevRaw.some((s) => isSkippablePlace(s.stop));
+      const stays = shouldApplyParsedSleepPlan(msg, parsedSleep)
+        ? parsedSleep!.stays
+        : rebuildStays || staysPoisoned
           ? []
-          : confirmedStays.length > 0
-            ? confirmedStays
-            : (draft.stays || []).map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason }));
+          : prevStays;
       const ok = await generateDraft(stays, { destinations: destsWithSleep, rules: nextRules, fromChat: true });
       if (ok) {
         if (pdfWin && !pdfWin.closed) {
