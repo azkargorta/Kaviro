@@ -727,9 +727,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     sd: string,
     ed: string,
     brief: PlannerBrief | null = interviewBrief
-  ) {
+  ): boolean {
     const title = (tripName.trim() || `${destLabel} (${sd} → ${ed})`).trim();
-    savePlannerProposalSnapshot(
+    return savePlannerProposalSnapshot(
       snapshotFromPlannerDraft({
         title,
         destination: destLabel,
@@ -754,8 +754,16 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
 
   function openProposalPdf() {
     if (!draft) return;
-    persistProposalSnapshot(draft, destinationLabel, startDate, endDate);
-    window.open("/trips/new/planner/propuesta", "_blank", "noopener,noreferrer");
+    const ok = persistProposalSnapshot(draft, destinationLabel, startDate, endDate);
+    if (!ok) {
+      toast.error("No se pudo preparar el PDF", "El navegador bloqueó el almacenamiento local. Prueba en una ventana normal (no privada).");
+      return;
+    }
+    const w = window.open("/trips/new/planner/propuesta", "kaviro_planner_pdf");
+    if (!w) {
+      toast.error("Ventana bloqueada", "Permite ventanas emergentes o usa el enlace de propuesta en esta pestaña.");
+      window.location.assign("/trips/new/planner/propuesta");
+    }
   }
 
   async function generateDraft(
@@ -770,6 +778,8 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       fromInterview?: boolean;
       openPdf?: boolean;
       brief?: PlannerBrief | null;
+      rules?: string[];
+      fromChat?: boolean;
     }
   ): Promise<boolean> {
     setError(null);
@@ -780,6 +790,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     const ed = opts?.end ?? endDate;
     const notes = opts?.notes ?? (freeText.trim() || undefined);
     const destLabel = dests.join(" · ") || destinationLabel;
+    const rules = opts?.rules ?? activeRules;
     try {
       const res = await fetch("/api/trips/ai-planner/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -793,9 +804,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
             ...plannerPreferences,
             ...(opts?.nearbyExcursions ? { nearbyExcursions: opts.nearbyExcursions } : {}),
           },
-          days: draft?.days || undefined,
+          days: opts?.fromChat ? undefined : draft?.days || undefined,
           regenerateBadOnly: Boolean(opts?.regenerateBadOnly),
-          rules: activeRules,
+          rules,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -803,7 +814,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         throw new Error(
           data?.error ||
             (res.status === 504 || res.status === 408
-              ? "La generación ha tardado demasiado. Pulsa de nuevo «Generar propuesta»; suele ir a la primera al reintentar."
+              ? opts?.fromChat
+                ? "Ha tardado demasiado en aplicar el cambio. El itinerario anterior se mantiene; prueba de nuevo."
+                : "La generación ha tardado demasiado. Pulsa de nuevo «Generar propuesta»; suele ir a la primera al reintentar."
               : res.status === 502
                 ? "No se generaron actividades. Comprueba la IA en el servidor o prueba con un destino con más puntos turísticos."
                 : `Error del servidor (${res.status}).`)
@@ -820,7 +833,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         );
       }
       setDraft(draftData);
-      setConfirmedStays(stays);
+      setConfirmedStays(stays.length ? stays : draftData.stays || []);
       setExpandedDays(new Set([1]));
       setStep("preview");
       persistProposalSnapshot(draftData, destLabel, sd, ed, opts?.brief ?? interviewBrief);
@@ -835,14 +848,14 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         ]);
       }
       if (opts?.openPdf) {
-        window.open("/trips/new/planner/propuesta", "_blank", "noopener,noreferrer");
+        window.open("/trips/new/planner/propuesta", "kaviro_planner_pdf");
       }
       return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "No se pudo generar el itinerario.";
       setError(msg);
       setStep(draft ? "preview" : opts?.fromInterview ? "interview" : planProposal ? "review" : "form");
-      toast.error("Error al generar", msg);
+      toast.error(opts?.fromChat ? "No se pudo aplicar el cambio" : "Error al generar", msg);
       return false;
     } finally {
       setGeneratingDraft(false);
@@ -891,14 +904,19 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
 
   async function sendChat(text?: string) {
     const msg = (text ?? chatInput).trim();
-    if (!msg || !draft) return;
+    if (!msg || !draft || chatLoading || generatingDraft) return;
     setChatInput("");
     setChatMessages((prev) => [...prev, { role: "user", text: msg }]);
-    setActiveRules((prev) => [...prev, msg].slice(-12));
+    const nextRules = [...activeRules, msg].slice(-12);
+    setActiveRules(nextRules);
     setChatLoading(true);
     const pdfWin = window.open("about:blank", "kaviro_planner_pdf");
     try {
-      const ok = await generateDraft(confirmedStays, { regenerateBadOnly: false });
+      const stays =
+        confirmedStays.length > 0
+          ? confirmedStays
+          : (draft.stays || []).map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason }));
+      const ok = await generateDraft(stays, { rules: nextRules, fromChat: true });
       if (ok) {
         if (pdfWin && !pdfWin.closed) {
           pdfWin.location.replace("/trips/new/planner/propuesta");
@@ -912,8 +930,15 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
             text: "Itinerario actualizado. Se abre el PDF nuevo; si el navegador lo bloquea, pulsa «Descargar PDF». Puedes pedir más cambios o crear el viaje.",
           },
         ]);
-      } else if (pdfWin && !pdfWin.closed) {
-        pdfWin.close();
+      } else {
+        if (pdfWin && !pdfWin.closed) pdfWin.close();
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "No he podido aplicar ese cambio y he dejado el itinerario anterior. Prueba de nuevo con una frase más corta, o pulsa «Descargar PDF» del plan actual.",
+          },
+        ]);
       }
     } finally {
       setChatLoading(false);

@@ -1,23 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import PrintOnLoad from "@/app/share/[token]/pdf/PrintOnLoad";
 import PlannerProposalPrint from "@/components/trip-planner/PlannerProposalPrint";
 import { loadPlannerProposalSnapshot, type PlannerProposalSnapshot } from "@/lib/trip-ai/plannerProposalStorage";
 
 export default function PlannerProposalPdfPage() {
-  const [snapshot, setSnapshot] = useState<PlannerProposalSnapshot | null>(() =>
-    typeof window === "undefined" ? null : loadPlannerProposalSnapshot()
-  );
+  const [snapshot, setSnapshot] = useState<PlannerProposalSnapshot | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setSnapshot(loadPlannerProposalSnapshot());
+    const read = () => loadPlannerProposalSnapshot();
+    let found = read();
+    if (found) {
+      setSnapshot(found);
+      setReady(true);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      found = read();
+      setSnapshot(found);
+      setReady(true);
+    }, 80);
+    return () => window.clearTimeout(t);
   }, []);
+
+  if (!ready) {
+    return <main className="p-8 text-sm text-slate-500">Preparando la propuesta…</main>;
+  }
 
   if (!snapshot) {
     return (
       <main className="p-8 text-sm text-slate-600">
-        No hay una propuesta para imprimir. Vuelve al planificador, genera el itinerario y pulsa «Descargar PDF».
+        <p>No hay una propuesta para imprimir.</p>
+        <p className="mt-2">
+          <Link href="/trips/new/planner" className="font-semibold text-[var(--brand)] underline">
+            Volver al planificador
+          </Link>{" "}
+          y pulsa otra vez «Descargar PDF» (tiene que estar generado el itinerario).
+        </p>
       </main>
     );
   }

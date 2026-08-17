@@ -23,20 +23,64 @@ export type PlannerProposalSnapshot = {
   generatedAt: string;
 };
 
-export function savePlannerProposalSnapshot(snapshot: PlannerProposalSnapshot): void {
-  sessionStorage.setItem(PLANNER_PROPOSAL_STORAGE_KEY, JSON.stringify(snapshot));
+function storageOk(store: Storage | undefined): store is Storage {
+  return Boolean(store && typeof store.getItem === "function");
 }
 
-export function loadPlannerProposalSnapshot(): PlannerProposalSnapshot | null {
+function parseSnapshot(raw: string | null): PlannerProposalSnapshot | null {
+  if (!raw) return null;
   try {
-    const raw = sessionStorage.getItem(PLANNER_PROPOSAL_STORAGE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as PlannerProposalSnapshot;
-    if (!parsed || !Array.isArray(parsed.days)) return null;
+    if (!parsed || !Array.isArray(parsed.days) || parsed.days.length === 0) return null;
     return parsed;
   } catch {
     return null;
   }
+}
+
+/** localStorage: la pestaña del PDF no comparte sessionStorage con el planificador. */
+export function savePlannerProposalSnapshot(snapshot: PlannerProposalSnapshot): boolean {
+  if (typeof window === "undefined") return false;
+  const raw = JSON.stringify(snapshot);
+  let ok = false;
+  try {
+    if (storageOk(window.localStorage)) {
+      window.localStorage.setItem(PLANNER_PROPOSAL_STORAGE_KEY, raw);
+      ok = true;
+    }
+  } catch {
+    /* quota / modo privado */
+  }
+  try {
+    if (storageOk(window.sessionStorage)) {
+      window.sessionStorage.setItem(PLANNER_PROPOSAL_STORAGE_KEY, raw);
+      ok = true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return ok;
+}
+
+export function loadPlannerProposalSnapshot(): PlannerProposalSnapshot | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const fromLocal = storageOk(window.localStorage)
+      ? parseSnapshot(window.localStorage.getItem(PLANNER_PROPOSAL_STORAGE_KEY))
+      : null;
+    if (fromLocal) return fromLocal;
+  } catch {
+    /* ignore */
+  }
+  try {
+    const fromSession = storageOk(window.sessionStorage)
+      ? parseSnapshot(window.sessionStorage.getItem(PLANNER_PROPOSAL_STORAGE_KEY))
+      : null;
+    if (fromSession) return fromSession;
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 export function snapshotFromPlannerDraft(params: {

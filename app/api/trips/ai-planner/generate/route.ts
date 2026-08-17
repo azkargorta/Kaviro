@@ -88,7 +88,7 @@ function emptyCategoryPools(): Record<Category, Poi[]> {
 const ITIN_CACHE = new Map<string, { days: PlannerDayWithMeta[]; expiresAt: number }>();
 
 function itinKey(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
-  return `v4:${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 50)}:${prefs.nearbyExcursions}:${prefs.suggestRestaurants}:${prefs.restaurantBudget}`;
+  return `v5:${city.toLowerCase().slice(0, 40)}:${nights}:${notes.toLowerCase().slice(0, 280)}:${prefs.nearbyExcursions}:${prefs.suggestRestaurants}:${prefs.restaurantBudget}`;
 }
 function itinCacheGet(city: string, nights: number, notes: string, prefs: PlannerPreferences) {
   const key = itinKey(city, nights, notes, prefs);
@@ -125,7 +125,9 @@ function mergeNotes(freeText: string, rulesRaw: unknown): string {
   const rules = Array.isArray(rulesRaw)
     ? rulesRaw.map((x) => cleanString(x)).filter(Boolean)
     : [];
-  return [cleanString(freeText), ...rules].filter(Boolean).join(" | ");
+  const base = cleanString(freeText);
+  if (!rules.length) return base;
+  return `CAMBIOS OBLIGATORIOS del viajero (prioridad máxima, aplícalos en el itinerario): ${rules.join(" | ")}.${base ? ` Contexto original: ${base}` : ""}`;
 }
 
 // ─── Haversine ────────────────────────────────────────────────────────────────
@@ -232,7 +234,7 @@ function buildCityItineraryPrompt(
   }
 ): string {
   const profile = notes.trim()
-    ? `Preferencias del viajero: "${notes}"`
+    ? `Preferencias e instrucciones del viajero (OBLIGATORIAS): "${notes}"`
     : "";
 
   const transitNote = prevCity && days[0]?.dayNum === 1
