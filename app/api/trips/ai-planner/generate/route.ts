@@ -958,8 +958,9 @@ export async function POST(req: Request) {
       logger.error("[ai-planner] architect failed:", e);
     }
 
-    if (architecture?.stays?.length) {
-      stays = architecture.stays.filter((s) => cleanString(s.stop) && Number(s.nights) > 0);
+    const architectStays = (architecture?.stays || []).filter((s) => cleanString(s.stop) && Number(s.nights) > 0);
+    if (architectStays.length) {
+      stays = architectStays;
     } else if (parsedStays.length) {
       stays = parsedStays;
     } else {
