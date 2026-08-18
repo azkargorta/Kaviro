@@ -13,6 +13,7 @@ import {
   buildFallbackDaysFromPool,
   buildInCityItem,
   countRealItems,
+  dedupeDaysAcrossTrip,
   dedupeDaysInCityBlock,
   fillSparseDaysInBlock,
   mergePlannerDaysWithFallback,
@@ -20,6 +21,14 @@ import {
   type PlannerDay,
   type PlannerDayItem,
 } from "@/lib/trip-ai/itineraryDedup";
+import { shouldKeepPoiOnTransferDay, minSightsForDriveKm } from "@/lib/trip-ai/plannerTransferSights";
+import {
+  clipItemsToDayWindow,
+  itemFitsWindow,
+  parseClockFromNotes,
+  slotsAfter,
+  windowForTripDay,
+} from "@/lib/trip-ai/plannerDayWindows";
 import {
   allowsNearbyExcursions,
   buildNearbyExcursionPromptLine,
@@ -32,7 +41,6 @@ import {
 import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
 import { planStaysToMinimizeDriving } from "@/lib/trip-ai/plannerStayRoute";
 import { isSkippablePlace } from "@/lib/trip-ai/plannerChatStops";
-import { shouldKeepPoiOnTransferDay, minSightsForDriveKm } from "@/lib/trip-ai/plannerTransferSights";
 import {
   PLANNER_CHUNK_CONCURRENCY,
   PLANNER_MAX_DAYS_MESSAGE,
@@ -120,6 +128,11 @@ function dayCountBetween(start: string, end: string) {
   const a = new Date(`${start}T12:00:00Z`).getTime(), b = new Date(`${end}T12:00:00Z`).getTime();
   if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return 1;
   return Math.max(1, Math.round((b - a) / (86400 * 1000)) + 1);
+}
+function minutesToRuleClock(total: number) {
+  const h = Math.max(0, Math.min(23, Math.floor(total / 60)));
+  const min = Math.max(0, Math.min(59, total % 60));
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 function sumPools(p: Record<Category, Poi[]>) { return ALL_CATEGORIES.reduce((n, k) => n + (p[k]?.length || 0), 0); }
 
@@ -248,9 +261,12 @@ function buildCityItineraryPrompt(
     usedPlaces?: string[];
     dayIndexInBlock?: number;
     totalDaysInBlock?: number;
+    totalTripDays?: number;
     nearbyExcursionHints?: string[];
     plannerPrefs?: PlannerPreferences;
     otherBases?: string[];
+    arrivalTime?: string | null;
+    departureTime?: string | null;
   }
 ): string {
   const profile = notes.trim()
@@ -286,6 +302,20 @@ function buildCityItineraryPrompt(
           : "";
   const styleMixBlock = prefs ? buildStyleMixPromptLine(prefs) : "";
   const restaurantBlock = prefs ? buildRestaurantPromptLine(prefs) : "";
+  const dayWindow = windowForTripDay({
+    dayIndex: dayIdx,
+    totalDays: opts?.totalTripDays ?? totalInBlock,
+    arrivalTime: opts?.arrivalTime,
+    departureTime: opts?.departureTime,
+  });
+  const arrivalRule =
+    dayIdx === 1 && opts?.arrivalTime
+      ? `\nLlegada el primer día a las ${opts.arrivalTime}. PROHIBIDO programar visitas antes de ${minutesToRuleClock(dayWindow.earliestMin)}. Si la llegada es a partir de las 18:00, deja 0-1 visita turística real como máximo.`
+      : "";
+  const departureRule =
+    dayIdx === totalInBlock && opts?.departureTime
+      ? `\nSalida el último día a las ${opts.departureTime}. PROHIBIDO programar actividades después de ${minutesToRuleClock(dayWindow.latestMin)} y deja margen realista para ir al aeropuerto o estación.`
+      : "";
 
   const iconicRule =
     dayIdx === 1
@@ -306,7 +336,7 @@ function buildCityItineraryPrompt(
 
   return `Guía local experto de ${city}. Plan para ${prevCity && days[0]?.dayNum === 1 ? `el traslado ${prevCity} → ${city} y ${city}` : city} en: ${dateList}.
 ${profile}
-${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}${restaurantBlock}
+${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}${restaurantBlock}${arrivalRule}${departureRule}
 
 JSON COMPACTO — SOLO esto, sin markdown ni texto extra:
 {"days":[{"day":1,"date":"${firstDate}","items":[{"t":"Nombre real","d":"Tip en max 8 palabras","h":"09:30","k":"culture","lt":-34.0000,"lg":-58.0000}]}]}
@@ -317,7 +347,7 @@ REGLAS:
 3. "k": exactamente uno de: ${kinds}
 4. "lt"/"lg": coordenadas GPS reales del lugar. Nunca 0.
 5. "h": horario realista. Mínimo 1.5h entre actividades.
-6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN llegada/salida: respeta el horario del vuelo (nada antes de aterrizar ni que impida el aeropuerto). EXCEPCIÓN traslado entre ciudades: mínimo 2 visitas reales además del trayecto.
+6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN llegada/salida: respeta el horario del vuelo o tren (nada antes de aterrizar/llegar ni que impida ir al aeropuerto/estación). Si el primer día se llega tarde, ese día puede tener 0-1 visitas. EXCEPCIÓN traslado entre ciudades: mínimo 2 visitas reales además del trayecto.
 7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real: "Mercado de San Telmo", "Bodega Zuccardi", "Cata en Catena".
 ${iconicRule}
 9. Respeta TODO lo que indicó el viajero.
@@ -376,6 +406,7 @@ function fillDayFromPools(
   fallbackCenter?: LatLng | null
 ): PlannerDayItem[] {
   const out = [...items];
+  if (minReal <= 0) return out;
   const onThisDay = new Set(
     out
       .filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport")
@@ -383,10 +414,11 @@ function fillDayFromPools(
       .filter(Boolean)
   );
 
-  const addPoi = (poi: NearbyPoi, skip: Set<string>) => {
+  const addPoi = (poi: NearbyPoi) => {
     const k = String(poi.name || "").trim().toLowerCase();
-    if (!k || skip.has(k) || onThisDay.has(k)) return false;
+    if (!k || used.has(k) || onThisDay.has(k)) return false;
     const real = out.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
+    if (!times.length) return false;
     const time = times[Math.min(real, times.length - 1)]!;
     out.push(buildInCityItem(poi, city, date, time));
     onThisDay.add(k);
@@ -397,34 +429,7 @@ function fillDayFromPools(
   let real = out.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
   for (const poi of pools) {
     if (real >= minReal) break;
-    if (addPoi(poi, used)) real += 1;
-  }
-  if (real < minReal) {
-    for (const poi of pools) {
-      if (real >= minReal) break;
-      if (addPoi(poi, onThisDay)) real += 1;
-    }
-  }
-  while (real < minReal) {
-    const label =
-      real === 0
-        ? `Casco y plaza de ${city}`
-        : real === 1
-          ? `Mirador o paseo en ${city}`
-          : `Barrio y vida local en ${city}`;
-    const k = label.toLowerCase();
-    if (onThisDay.has(k)) break;
-    const time = times[Math.min(real, times.length - 1)]!;
-    out.push(
-      buildInCityItem(
-        { name: label, lat: fallbackCenter?.lat ?? 0, lng: fallbackCenter?.lng ?? 0 },
-        city,
-        date,
-        time
-      )
-    );
-    onThisDay.add(k);
-    real += 1;
+    if (addPoi(poi)) real += 1;
   }
   return out;
 }
@@ -445,6 +450,11 @@ async function generateCityItinerary(
     cityCenter?: LatLng | null;
     prevCenter?: LatLng | null;
     otherStops?: Array<{ label: string; center: LatLng }>;
+    tripStartDate?: string;
+    tripEndDate?: string;
+    totalDays?: number;
+    arrivalTime?: string | null;
+    departureTime?: string | null;
   }
 ): Promise<{ days: PlannerDayWithMeta[]; prompt: string; rawOutput: string } | null> {
   if (!forceRegen) {
@@ -534,9 +544,12 @@ async function generateCityItinerary(
       usedPlaces: priorUsed,
       dayIndexInBlock: firstDayNum,
       totalDaysInBlock: nights,
+      totalTripDays: geo?.totalDays,
       nearbyExcursionHints: firstDayNum > 1 ? nearbyHints : undefined,
       plannerPrefs,
       otherBases: geo?.otherBases,
+      arrivalTime: geo?.arrivalTime ?? null,
+      departureTime: geo?.departureTime ?? null,
     });
     let raw = "";
     try {
@@ -581,6 +594,17 @@ async function generateCityItinerary(
   }
 
   let allDays = chunkResults.flatMap((r) => r?.days ?? []);
+  if (geo?.totalDays) {
+    allDays = allDays.map((d) => {
+      const w = windowForTripDay({
+        dayIndex: d.day,
+        totalDays: geo.totalDays || nights,
+        arrivalTime: geo.arrivalTime ?? null,
+        departureTime: geo.departureTime ?? null,
+      });
+      return { ...d, items: clipItemsToDayWindow(d.items || [], w) };
+    });
+  }
   const allPrompts = chunkResults.map((r, i) => `--- Chunk ${i + 1} ---\n${r?.prompt ?? ""}`).join("\n\n");
   const allRaw = chunkResults.map((r, i) => `--- Chunk ${i + 1} ---\n${r?.rawOutput ?? ""}`).join("\n\n");
 
@@ -611,6 +635,26 @@ async function generateCityItinerary(
       allowNearby,
       inCityPool,
       allowLlmNearby: false,
+      minItemsForDate: (date) => {
+        const dayIndex = dayCountBetween(geo?.tripStartDate || startDateIso, date);
+        const w = windowForTripDay({
+          dayIndex,
+          totalDays: geo?.totalDays ?? nights,
+          arrivalTime: geo?.arrivalTime ?? null,
+          departureTime: geo?.departureTime ?? null,
+        });
+        return w.minSights;
+      },
+      timesForDate: (date) => {
+        const dayIndex = dayCountBetween(geo?.tripStartDate || startDateIso, date);
+        const w = windowForTripDay({
+          dayIndex,
+          totalDays: geo?.totalDays ?? nights,
+          arrivalTime: geo?.arrivalTime ?? null,
+          departureTime: geo?.departureTime ?? null,
+        });
+        return slotsAfter(w.earliestMin, FILL_TIMES).filter((time) => itemFitsWindow(time, w));
+      },
     });
   } catch (e) {
     logger.error(`[ai-planner] fillSparse failed for "${city}":`, e);
@@ -805,6 +849,10 @@ export async function POST(req: Request) {
     const startDate = cleanString(body?.start_date || body?.startDate);
     const endDate = cleanString(body?.end_date || body?.endDate);
     const freeText = cleanString(body?.freeText || "");
+    const arrivalTime =
+      cleanString(body?.arrivalTime || body?.arrival_time) || parseClockFromNotes(freeText, "llegada") || null;
+    const departureTime =
+      cleanString(body?.departureTime || body?.departure_time) || parseClockFromNotes(freeText, "salida") || null;
 
     // Merge initial preferences + all chat messages into a single context string
     // This is what feeds Gemini — every chat message the user sends enriches the plan
@@ -972,6 +1020,11 @@ export async function POST(req: Request) {
             cityCenter: cityStop?.center ?? null,
             prevCenter: prevStop?.center ?? null,
             otherStops,
+            tripStartDate: startDate,
+            tripEndDate: endDate,
+            totalDays,
+            arrivalTime,
+            departureTime,
           }
         );
       })
@@ -1036,7 +1089,8 @@ export async function POST(req: Request) {
         const globalDayNum = block.startDayNum + di;
         const dayDate = addDaysIso(startDate, globalDayNum - 1);
         const isTransfer = di === 0 && Boolean(block.prevCity);
-        const minSights = isTransfer ? minSightsForDriveKm(driveKm) : 3;
+        const dayWindow = windowForTripDay({ dayIndex: globalDayNum, totalDays, arrivalTime, departureTime });
+        const minSights = isTransfer ? Math.min(minSightsForDriveKm(driveKm), dayWindow.maxSights) : dayWindow.minSights;
 
         const gemDay = generatedDays?.[di];
         const hasContent = gemDay && Array.isArray(gemDay.items) && gemDay.items.length > 0;
@@ -1080,16 +1134,20 @@ export async function POST(req: Request) {
         } else if (items.length) {
           items = sortItemsByProximity(items);
         }
+        items = clipItemsToDayWindow(items, dayWindow);
 
         const fillPool = isTransfer ? [...prevPool, ...cityPool] : cityPool;
+        const fillTimes = slotsAfter(dayWindow.earliestMin, isTransfer ? TRANSFER_FILL_TIMES : FILL_TIMES).filter((time) =>
+          itemFitsWindow(time, dayWindow)
+        );
         items = fillDayFromPools(
           items,
           dayDate,
           block.city,
           fillPool,
           usedTitles,
-          isTransfer ? minSights : 3,
-          isTransfer ? TRANSFER_FILL_TIMES : FILL_TIMES,
+          minSights,
+          fillTimes,
           cityStop?.center ?? null
         );
 
@@ -1108,8 +1166,10 @@ export async function POST(req: Request) {
       }
     }
 
-    while (daysOut.length < totalDays) {
-      daysOut.push({ day: daysOut.length + 1, date: addDaysIso(startDate, daysOut.length), base: stays[stays.length - 1]?.stop || stops[0]!.label, items: [] });
+    const dedupedDaysOut = dedupeDaysAcrossTrip(daysOut, { notes: mergedNotes });
+
+    while (dedupedDaysOut.length < totalDays) {
+      dedupedDaysOut.push({ day: dedupedDaysOut.length + 1, date: addDaysIso(startDate, dedupedDaysOut.length), base: stays[stays.length - 1]?.stop || stops[0]!.label, items: [] });
     }
 
     // ── 9. Suggestion chips ───────────────────────────────────────────────────
@@ -1126,7 +1186,7 @@ export async function POST(req: Request) {
       ];
     }
 
-    const activityCount = daysOut.reduce(
+    const activityCount = dedupedDaysOut.reduce(
       (n, d) =>
         n + (d.items || []).filter((it: { activity_kind?: string }) => String(it.activity_kind || "").toLowerCase() !== "transport").length,
       0
@@ -1144,7 +1204,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true, totalDays, startDate, endDate, destinations,
       stops: stops.map((s) => ({ key: s.label, label: s.resolvedLabel, center: s.center })),
-      stays, baseCityByDay: baseByDay, suggestions, days: daysOut, viability,
+      stays, baseCityByDay: baseByDay, suggestions, days: dedupedDaysOut, viability,
       _debug: {
         mergedNotes,
         blocks: _debugBlocks,

@@ -113,6 +113,11 @@ export function dedupeDaysInCityBlock(days: PlannerDay[], opts: DedupeOptions): 
   });
 }
 
+/** Misma regla, pero entre todas las bases del viaje (p. ej. Salta día 1 y Salta día 6). */
+export function dedupeDaysAcrossTrip(days: PlannerDay[], opts: DedupeOptions): PlannerDay[] {
+  return dedupeDaysInCityBlock(days, opts);
+}
+
 export type NearbyPoi = { name: string; lat: number; lng: number };
 
 function parseNearbyList(raw: string): NearbyPoi[] {
@@ -286,7 +291,13 @@ export async function fillSparseDaysInBlock(
   notes: string,
   excursionPool: NearbyPoi[],
   minItems = 3,
-  opts?: { allowNearby?: boolean; inCityPool?: NearbyPoi[]; allowLlmNearby?: boolean }
+  opts?: {
+    allowNearby?: boolean;
+    inCityPool?: NearbyPoi[];
+    allowLlmNearby?: boolean;
+    minItemsForDate?: (date: string) => number;
+    timesForDate?: (date: string) => string[];
+  }
 ): Promise<PlannerDay[]> {
   const allowNearby = opts?.allowNearby !== false;
   const allowLlmNearby = opts?.allowLlmNearby !== false;
@@ -306,19 +317,25 @@ export async function fillSparseDaysInBlock(
   for (const day of days) {
     const items = [...(day.items || [])];
     const realCount = items.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
-    if (realCount >= minItems) {
+    const dayMin = opts?.minItemsForDate?.(day.date) ?? minItems;
+    if (dayMin <= 0 || realCount >= dayMin) {
       out.push(day);
       continue;
     }
 
-    const need = minItems - realCount;
+    const need = dayMin - realCount;
     const added: PlannerDayItem[] = [];
+    const times = (opts?.timesForDate?.(day.date) || DEFAULT_TIMES).filter(Boolean);
+    if (!times.length) {
+      out.push(day);
+      continue;
+    }
+    const pickTime = () => times[(items.length + added.length) % times.length]!;
 
     for (const poi of inCityPool) {
       if (added.length >= need) break;
       if (usedTitles.some((t) => activitiesLikelySame(t, poi.name))) continue;
-      const time = DEFAULT_TIMES[(items.length + added.length) % DEFAULT_TIMES.length]!;
-      added.push(buildInCityItem(poi, baseCity, day.date, time));
+      added.push(buildInCityItem(poi, baseCity, day.date, pickTime()));
       usedTitles.push(poi.name);
     }
 
@@ -326,8 +343,7 @@ export async function fillSparseDaysInBlock(
       for (const poi of excursionPool) {
         if (added.length >= need) break;
         if (usedTitles.some((t) => activitiesLikelySame(t, poi.name))) continue;
-        const time = DEFAULT_TIMES[(items.length + added.length) % DEFAULT_TIMES.length]!;
-        added.push(buildExcursionItem(poi, baseCity, day.date, time));
+        added.push(buildExcursionItem(poi, baseCity, day.date, pickTime()));
         usedTitles.push(poi.name);
       }
 
@@ -338,8 +354,7 @@ export async function fillSparseDaysInBlock(
         for (const poi of nearbyCache) {
           if (added.length >= need) break;
           if (usedTitles.some((t) => activitiesLikelySame(t, poi.name))) continue;
-          const time = DEFAULT_TIMES[(items.length + added.length) % DEFAULT_TIMES.length]!;
-          added.push(buildExcursionItem(poi, baseCity, day.date, time));
+          added.push(buildExcursionItem(poi, baseCity, day.date, pickTime()));
           usedTitles.push(poi.name);
         }
       }

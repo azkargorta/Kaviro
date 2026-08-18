@@ -835,7 +835,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           ...(stays.length ? { stays } : {}),
           freeText: notes,
           arrivalPlace: opts?.brief?.arrival.place || interviewBrief?.arrival.place || undefined,
+          arrivalTime: opts?.brief?.arrival.time || interviewBrief?.arrival.time || undefined,
           departurePlace: opts?.brief?.departure.place || interviewBrief?.departure.place || undefined,
+          departureTime: opts?.brief?.departure.time || interviewBrief?.departure.time || undefined,
           plannerPreferences: {
             ...plannerPreferences,
             ...(opts?.nearbyExcursions ? { nearbyExcursions: opts.nearbyExcursions } : {}),
