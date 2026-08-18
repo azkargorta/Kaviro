@@ -22,7 +22,16 @@ import {
 } from "@/lib/trip-ai/plannerBrief";
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
 import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
-import { chatWantsNewSleepPlan, extraStopsFromChat, isSkippablePlace, parseSleepAssignmentsFromChat, plausiblePlaces, shouldApplyParsedSleepPlan, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
+import {
+  chatWantsNewSleepPlan,
+  extraStopsFromChat,
+  isSkippablePlace,
+  parseSleepAssignmentsFromChat,
+  plausiblePlaces,
+  resolveChatDayNumber,
+  shouldApplyParsedSleepPlan,
+  uniquePlaces,
+} from "@/lib/trip-ai/plannerChatStops";
 import { classifyPlannerChatIntent, plannerChatIntentToRule } from "@/lib/trip-ai/plannerChatIntent";
 import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
@@ -50,6 +59,9 @@ type PlanProposal = { totalDays: number; startDate: string; endDate: string; des
 function isoOk(s: string) { return /^\d{4}-\d{2}-\d{2}$/.test(s); }
 function totalDaysBetween(start: string, end: string) { if (!isoOk(start) || !isoOk(end)) return 1; const a = new Date(`${start}T12:00:00Z`).getTime(), b = new Date(`${end}T12:00:00Z`).getTime(); return Math.max(1, Math.round((b - a) / (86400 * 1000)) + 1); }
 function stableId(day: number, idx: number) { return `draft-${day}-${idx}`; }
+function uniqueNums(nums: Array<number | null | undefined>): number[] {
+  return Array.from(new Set(nums.filter((n): n is number => typeof n === "number" && Number.isInteger(n) && n >= 1)));
+}
 
 function inferCurrencyFromDestinations(destinations: string[]): CurrencyCode {
   const blob = destinations.join(" · ").toLowerCase();
@@ -805,6 +817,8 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       brief?: PlannerBrief | null;
       rules?: string[];
       fromChat?: boolean;
+      targetDayNums?: number[];
+      preserveExistingDays?: boolean;
     }
   ): Promise<boolean> {
     setError(null);
@@ -842,7 +856,8 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
             ...plannerPreferences,
             ...(opts?.nearbyExcursions ? { nearbyExcursions: opts.nearbyExcursions } : {}),
           },
-          days: opts?.fromChat ? undefined : draft?.days || undefined,
+          days: opts?.preserveExistingDays ? draft?.days || undefined : opts?.fromChat ? undefined : draft?.days || undefined,
+          targetDayNums: opts?.targetDayNums?.length ? opts.targetDayNums : undefined,
           regenerateBadOnly: Boolean(opts?.regenerateBadOnly),
           rules,
         }),
@@ -993,7 +1008,22 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         : rebuildStays || staysPoisoned
           ? []
           : prevStays;
-      const ok = await generateDraft(stays, { destinations: destsWithSleep, rules: nextRules, fromChat: true });
+      const resolvedTargetDays = uniqueNums(
+        intent.dayNums.map((n) => resolveChatDayNumber(n, draft.startDate || startDate, draft.endDate || endDate))
+      );
+      const canScopeByDays =
+        !rebuildStays &&
+        !staysPoisoned &&
+        intent.kind !== "sleep" &&
+        intent.kind !== "remove_place" &&
+        resolvedTargetDays.length > 0;
+      const ok = await generateDraft(stays, {
+        destinations: destsWithSleep,
+        rules: nextRules,
+        fromChat: true,
+        targetDayNums: canScopeByDays ? resolvedTargetDays : undefined,
+        preserveExistingDays: canScopeByDays,
+      });
       if (ok) {
         if (pdfWin && !pdfWin.closed) {
           pdfWin.location.replace("/trips/new/planner/propuesta");
@@ -1004,7 +1034,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           ...prev,
           {
             role: "assistant",
-            text: "Itinerario actualizado. Se abre el PDF nuevo; si el navegador lo bloquea, pulsa «Descargar PDF». Puedes pedir más cambios o crear el viaje.",
+            text: canScopeByDays
+              ? `He aplicado el cambio en los días ${resolvedTargetDays.join(", ")} sin rehacer el resto del viaje. Se abre el PDF nuevo; si el navegador lo bloquea, pulsa «Descargar PDF».`
+              : "Itinerario actualizado. Se abre el PDF nuevo; si el navegador lo bloquea, pulsa «Descargar PDF». Puedes pedir más cambios o crear el viaje.",
           },
         ]);
       } else {
