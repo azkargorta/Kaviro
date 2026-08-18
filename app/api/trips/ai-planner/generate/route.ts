@@ -10,6 +10,9 @@ import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
 import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import {
+  architectureFromStays,
+  coerceTripArchitecture,
+  formatTripArchitectureForChat,
   planTripArchitecture,
   type ArchitectDay,
   type TripArchitecture,
@@ -1101,27 +1104,28 @@ export async function POST(req: Request) {
     const stops = stopGeo.map((s) => ({ label: s.label, center: s.geo ? ({ lat: s.geo.lat, lng: s.geo.lng } as LatLng) : null, resolvedLabel: s.geo?.label || s.label })).filter((s) => Boolean(s.center)) as Array<{ label: string; resolvedLabel: string; center: LatLng }>;
     if (!stops.length) return NextResponse.json({ error: "No se pudieron geocodificar los destinos." }, { status: 400 });
 
-    // ── 2. Load POI pools (for distribution weights + suggestion chips) ───────
-    const stopResults = await Promise.all(stops.map((stop) => loadPoisForStop(stop, anchor, regionHints, totalDays)));
-    const poisByStop: Record<string, Record<Category, Poi[]>> = {};
+    // ── 2. Load POI pools (skip on planOnly: el esqueleto no necesita OSM) ───
     const emptyPools = (): Record<Category, Poi[]> => ({
       culture: [], nature: [], viewpoint: [], neighborhood: [],
       market: [], excursion: [], gastro_experience: [], shopping: [], night: [],
     });
-    for (let i = 0; i < stops.length; i++) {
-      const result = stopResults[i]!;
-      if (!result.pools) {
-        logger.warn(`[ai-planner] POIs insuficientes para "${stops[i]!.label}": ${result.err}`);
-        poisByStop[stops[i]!.label] = emptyPools();
-        continue;
+    const poisByStop: Record<string, Record<Category, Poi[]>> = {};
+    let viability: ReturnType<typeof checkViability> = null;
+    if (!planOnly) {
+      const stopResults = await Promise.all(stops.map((stop) => loadPoisForStop(stop, anchor, regionHints, totalDays)));
+      for (let i = 0; i < stops.length; i++) {
+        const result = stopResults[i]!;
+        if (!result.pools) {
+          logger.warn(`[ai-planner] POIs insuficientes para "${stops[i]!.label}": ${result.err}`);
+          poisByStop[stops[i]!.label] = emptyPools();
+          continue;
+        }
+        poisByStop[stops[i]!.label] = result.pools;
       }
-      poisByStop[stops[i]!.label] = result.pools;
+      viability = checkViability(stops, totalDays, poisByStop);
     }
 
-    // ── 3. Viability check ────────────────────────────────────────────────────
-    const viability = checkViability(stops, totalDays, poisByStop);
-
-    // ── 4. Travel Architect ───────────────────────────────────────────────────
+    // ── 3. Travel Architect (respeta un esqueleto ya confirmado por el usuario) ─
     let stays: Array<{ stop: string; nights: number; reason?: string }>;
     const parsedStays: Array<{ stop: string; nights: number; reason?: string }> = [];
     if (staysInput?.length) {
@@ -1137,21 +1141,24 @@ export async function POST(req: Request) {
         });
       }
     }
-    let architecture: TripArchitecture | null = null;
-    try {
-      architecture = await planTripArchitecture({
-        brief,
-        notes: mergedNotes,
-        stops: stops.map((s) => ({ label: s.label, center: s.center })),
-        totalDays,
-        startDate,
-        endDate,
-        arrivalTime,
-        departureTime,
-        forcedStays: parsedStays.length ? parsedStays : undefined,
-      });
-    } catch (e) {
-      logger.error("[ai-planner] architect failed:", e);
+    let architecture: TripArchitecture | null = coerceTripArchitecture(body?.architecture, { totalDays, startDate });
+    const architectureConfirmed = Boolean(architecture);
+    if (!architecture) {
+      try {
+        architecture = await planTripArchitecture({
+          brief,
+          notes: mergedNotes,
+          stops: stops.map((s) => ({ label: s.label, center: s.center })),
+          totalDays,
+          startDate,
+          endDate,
+          arrivalTime,
+          departureTime,
+          forcedStays: parsedStays.length ? parsedStays : undefined,
+        });
+      } catch (e) {
+        logger.error("[ai-planner] architect failed:", e);
+      }
     }
 
     const architectStays = (architecture?.stays || []).filter((s) => cleanString(s.stop) && Number(s.nights) > 0);
@@ -1177,16 +1184,38 @@ export async function POST(req: Request) {
         ? routed
         : distributeNightsSmart(stops, poisByStop, totalDays, mergedNotes);
     }
-    stays = repairStaysAvoidingLongHops(
-      stays.map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason || "" })),
-      stops.map((s) => ({ label: s.label, center: s.center })),
+    if (!architectureConfirmed) {
+      stays = repairStaysAvoidingLongHops(
+        stays.map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason || "" })),
+        stops.map((s) => ({ label: s.label, center: s.center })),
+        totalDays,
+        brief?.arrival.place || cleanString(body?.arrivalPlace || body?.arrival_place || "") || stops[0]?.label
+      );
+    }
+    architecture = architectureFromStays({
+      stays,
+      startDate,
       totalDays,
-      brief?.arrival.place || cleanString(body?.arrivalPlace || body?.arrival_place || "") || stops[0]?.label
-    );
+      arrivalTime,
+      departureTime,
+      previous: architecture,
+    });
 
-    // ── 5. planOnly: return proposal without itinerary ────────────────────────
+    // ── 4. planOnly: esqueleto del viaje, sin itinerario detallado ─────────────
     if (planOnly) {
-      return NextResponse.json({ ok: true, planOnly: true, totalDays, startDate, endDate, destinations, stops: stops.map((s) => ({ key: s.label, label: s.resolvedLabel, center: s.center })), stays, viability });
+      return NextResponse.json({
+        ok: true,
+        planOnly: true,
+        totalDays,
+        startDate,
+        endDate,
+        destinations,
+        stops: stops.map((s) => ({ key: s.label, label: s.resolvedLabel, center: s.center })),
+        stays,
+        viability,
+        architecture,
+        skeletonText: formatTripArchitectureForChat(architecture),
+      });
     }
 
     // ── 6. City-per-day map ───────────────────────────────────────────────────

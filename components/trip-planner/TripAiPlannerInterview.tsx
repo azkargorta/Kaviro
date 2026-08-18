@@ -22,11 +22,21 @@ type InterviewResponse = {
 
 type Props = {
   onGenerate: (brief: PlannerBrief) => void;
+  onProposeSkeleton: (brief: PlannerBrief) => void;
   onClassic: () => void;
   generating?: boolean;
+  proposing?: boolean;
+  skeletonText?: string | null;
 };
 
-export default function TripAiPlannerInterview({ onGenerate, onClassic, generating = false }: Props) {
+export default function TripAiPlannerInterview({
+  onGenerate,
+  onProposeSkeleton,
+  onClassic,
+  generating = false,
+  proposing = false,
+  skeletonText = null,
+}: Props) {
   const [brief, setBrief] = useState<PlannerBrief>(emptyPlannerBrief);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -61,11 +71,13 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, generating, proposing, skeletonText]);
+
+  const busy = loading || generating || proposing;
 
   async function send(text?: string) {
     const msg = (text ?? input).trim();
-    if (!msg || loading || generating) return;
+    if (!msg || busy) return;
     setInput("");
     setError(null);
     setMessages((prev) => [...prev, { role: "user", text: msg }]);
@@ -78,11 +90,14 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
       });
       const data = (await res.json()) as InterviewResponse;
       if (!res.ok) throw new Error(data.error || "No se pudo continuar.");
+      const nextBrief = data.brief || brief;
       if (data.brief) setBrief(data.brief);
-      setReady(Boolean(data.readyToPropose));
+      const nextReady = Boolean(data.readyToPropose);
+      setReady(nextReady);
       setBases(data.proposedSleepBases || []);
       setQuickReplies(data.quickReplies || []);
       setMessages((prev) => [...prev, { role: "assistant", text: data.assistantReply || "De acuerdo." }]);
+      if (nextReady && skeletonText) onProposeSkeleton(nextBrief);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al hablar con el asistente.");
     } finally {
@@ -100,8 +115,8 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
           <span className="text-sm font-extrabold text-slate-900 dark:text-white">Cuéntame tu viaje</span>
         </div>
         <p className="mt-0.5 text-xs font-medium text-slate-500">
-          Primero la logística y luego tres preguntas cortas (compañía, estilo y ritmo). Si ya lo cuentas todo en un
-          mensaje, no te lo vuelvo a pedir.
+          Primero la logística y el estilo. Luego te enseño el esqueleto del viaje (noches, traslados y anclas) y, si
+          encaja, relleno el día a día.
         </p>
       </div>
 
@@ -134,13 +149,17 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
             </div>
           </div>
         ))}
-        {(loading || generating) && (
+        {(loading || generating || proposing) && (
           <div className="flex justify-start">
             <div className="mr-2 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-100">
               <Loader2 className="h-3 w-3 animate-spin text-violet-500" />
             </div>
             <p className="text-xs font-semibold text-slate-400">
-              {generating ? "Generando la propuesta…" : "Pensando…"}
+              {generating
+                ? "Rellenando el itinerario detallado…"
+                : proposing
+                  ? "Organizando el mapa del viaje…"
+                  : "Pensando…"}
             </p>
           </div>
         )}
@@ -202,29 +221,55 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
           <>
             {summary.length ? (
               <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2.5 text-xs text-slate-700 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-slate-200">
-                <p className="mb-1 font-extrabold text-slate-900 dark:text-white">Esto es lo que voy a usar para diseñar el viaje</p>
+                <p className="mb-1 font-extrabold text-slate-900 dark:text-white">Ficha del viaje</p>
                 {summary.map((line) => (
                   <p key={line} className="leading-relaxed">
                     {line}
                   </p>
                 ))}
-                <p className="mt-1 text-[11px] font-medium text-slate-500">
-                  Puedes corregir cualquier dato en el chat antes de generar. Si falta estilo o ritmo, el plan queda más
-                  genérico.
-                </p>
               </div>
             ) : null}
-            <button
-              type="button"
-              disabled={generating}
-              onClick={() => onGenerate(brief)}
-              className="btn-primary mb-3 flex w-full items-center justify-center gap-2 py-3 text-sm disabled:opacity-50"
-            >
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Generar propuesta de itinerario
-            </button>
+            {skeletonText ? (
+              <div className="mb-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200">
+                <p className="mb-1.5 font-extrabold text-slate-900 dark:text-white">Esqueleto del viaje</p>
+                <pre className="whitespace-pre-wrap font-sans text-[12px] leading-relaxed">{skeletonText}</pre>
+              </div>
+            ) : null}
+            {skeletonText ? (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onGenerate(brief)}
+                  className="btn-primary mb-2 flex w-full items-center justify-center gap-2 py-3 text-sm disabled:opacity-50"
+                >
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Generar itinerario detallado
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onProposeSkeleton(brief)}
+                  className="mb-3 w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-700 disabled:opacity-40"
+                >
+                  Rehacer esqueleto
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onProposeSkeleton(brief)}
+                className="btn-primary mb-3 flex w-full items-center justify-center gap-2 py-3 text-sm disabled:opacity-50"
+              >
+                {proposing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Organizar el viaje
+              </button>
+            )}
             <p className="mb-3 text-center text-xs text-slate-500">
-              Luego podrás descargar un PDF y decidir si creas el viaje o lo retocas en el chat.
+              {skeletonText
+                ? "Si quieres otra noche, otra base o otro eje de un día, dímelo en el chat. Si te encaja, relleno horarios y visitas."
+                : "Primero el mapa del viaje (dónde duermes y qué día hace cada cosa). El detalle viene después."}
             </p>
           </>
         ) : null}
@@ -238,18 +283,20 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
                 void send();
               }
             }}
-            disabled={loading || generating}
+            disabled={busy}
             rows={2}
             placeholder={
-              ready
-                ? "¿Quieres cambiar algo de la ficha antes de generar?"
-                : "Ej. Salta y Jujuy en coche, llego el 6 a las 20:00…"
+              skeletonText
+                ? "Ej. Quiero una noche más en Cafayate, o el Hornocal el último día…"
+                : ready
+                  ? "¿Quieres cambiar algo de la ficha antes de organizar el viaje?"
+                  : "Ej. Salta y Jujuy en coche, llego el 6 a las 20:00…"
             }
             className="max-h-36 min-h-[2.75rem] min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-slate-500 disabled:opacity-50 dark:border-[#334155] dark:bg-[#0F1623]"
           />
           <button
             type="button"
-            disabled={loading || generating || !input.trim()}
+            disabled={busy || !input.trim()}
             onClick={() => void send()}
             className="btn-primary mb-0.5 shrink-0 px-3.5 py-2.5 disabled:opacity-40"
           >

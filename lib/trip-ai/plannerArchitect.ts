@@ -102,6 +102,102 @@ function fallbackArchitecture(params: {
   return { days, stays: compactStaysFromDays(days), reasoning: "fallback" };
 }
 
+/** Reconstruye el esqueleto tras reparar noches, copiando anclas del arquitecto cuando la base coincide. */
+export function architectureFromStays(params: {
+  stays: Array<{ stop: string; nights: number; reason?: string }>;
+  startDate: string;
+  totalDays: number;
+  arrivalTime?: string | null;
+  departureTime?: string | null;
+  previous?: TripArchitecture | null;
+}): TripArchitecture {
+  const baseByDay: string[] = [];
+  for (const s of params.stays) {
+    for (let i = 0; i < s.nights; i++) baseByDay.push(s.stop);
+  }
+  const fallbackBase = baseByDay[baseByDay.length - 1] || params.previous?.days[0]?.base || "Destino";
+  while (baseByDay.length < params.totalDays) baseByDay.push(fallbackBase);
+  baseByDay.splice(params.totalDays);
+  const fallback = fallbackArchitecture({
+    baseByDay,
+    startDate: params.startDate,
+    totalDays: params.totalDays,
+    arrivalTime: params.arrivalTime,
+    departureTime: params.departureTime,
+  });
+  const stays: ArchitectStay[] = params.stays.map((s) => ({
+    stop: s.stop,
+    nights: s.nights,
+    reason: s.reason,
+  }));
+  if (!params.previous?.days.length) return { ...fallback, stays: stays.length ? stays : fallback.stays };
+
+  const prevByDay = new Map(params.previous.days.map((d) => [d.dayNum, d]));
+  return {
+    reasoning: params.previous.reasoning,
+    stays: stays.length ? stays : fallback.stays,
+    days: fallback.days.map((d) => {
+      const prev = prevByDay.get(d.dayNum);
+      if (!prev) return d;
+      const sameBase = prev.base.toLowerCase() === d.base.toLowerCase();
+      return {
+        ...d,
+        dayType: sameBase || prev.dayType === "rest" ? prev.dayType : d.dayType,
+        summary: prev.summary || d.summary,
+        mainActivities: sameBase ? prev.mainActivities : prev.mainActivities.slice(0, 1),
+        availableHours: prev.availableHours || d.availableHours,
+        notes: prev.notes ?? d.notes,
+      };
+    }),
+  };
+}
+
+export function coerceTripArchitecture(
+  raw: unknown,
+  params: { totalDays: number; startDate: string }
+): TripArchitecture | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Record<string, unknown>;
+  const rawDays = Array.isArray(data.days) ? data.days : [];
+  if (rawDays.length !== params.totalDays) return null;
+  const baseByDay = rawDays.map((row) => {
+    const d = row && typeof row === "object" ? (row as Record<string, unknown>) : null;
+    return clean(d?.base);
+  });
+  if (baseByDay.some((b) => !b)) return null;
+  const fallback = fallbackArchitecture({
+    baseByDay,
+    startDate: params.startDate,
+    totalDays: params.totalDays,
+  });
+  return parseTripArchitecture(raw, fallback);
+}
+
+const DAY_TYPE_LABEL: Record<ArchitectDayType, string> = {
+  arrival: "Llegada",
+  departure: "Salida",
+  full: "Día completo",
+  transfer_scenic: "Traslado con paradas",
+  transfer_practical: "Traslado",
+  rest: "Descanso",
+};
+
+/** Texto tipo ChatGPT: primero el mapa del viaje, luego los detalles. */
+export function formatTripArchitectureForChat(arch: TripArchitecture): string {
+  const lines: string[] = ["Así organizaría el viaje:", ""];
+  if (arch.reasoning && arch.reasoning !== "fallback") lines.push(arch.reasoning, "");
+  for (const d of arch.days) {
+    const type = DAY_TYPE_LABEL[d.dayType] || d.dayType;
+    const transfer = d.transferFrom && d.transferTo ? ` · ${d.transferFrom} → ${d.transferTo}` : "";
+    lines.push(`Día ${d.dayNum} · ${d.date} · ${type} · duermes en ${d.base}${transfer}`);
+    if (d.summary) lines.push(`  ${d.summary}`);
+    if (d.mainActivities.length) lines.push(`  Ancla: ${d.mainActivities.join(" · ")}`);
+    lines.push("");
+  }
+  lines.push("Si quieres cambiar noches, bases o el eje de un día, dímelo ahora. Si te encaja, genero el itinerario detallado.");
+  return lines.join("\n").trim();
+}
+
 export function buildArchitectPrompt(params: {
   brief: PlannerBrief | null;
   notes: string;

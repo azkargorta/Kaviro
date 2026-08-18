@@ -665,6 +665,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
   const [freeText, setFreeText] = useState("");
   const [tripStyle, setTripStyle] = useState<string | null>(null);
   const [interviewBrief, setInterviewBrief] = useState<PlannerBrief | null>(null);
+  const [interviewArchitecture, setInterviewArchitecture] = useState<TripArchitecture | null>(null);
+  const [interviewSkeletonText, setInterviewSkeletonText] = useState<string | null>(null);
+  const [proposingSkeleton, setProposingSkeleton] = useState(false);
   const [nearbyExcursions, setNearbyExcursions] = useState<"yes" | "maybe" | "no">("maybe");
   const [mixStylesWhenTime, setMixStylesWhenTime] = useState(true);
   const [suggestRestaurants, setSuggestRestaurants] = useState(false);
@@ -820,6 +823,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       fromChat?: boolean;
       targetDayNums?: number[];
       preserveExistingDays?: boolean;
+      architecture?: TripArchitecture | null;
     }
   ): Promise<boolean> {
     setError(null);
@@ -850,7 +854,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           ...(stays.length ? { stays } : {}),
           freeText: notes,
           brief: opts?.brief ?? interviewBrief ?? undefined,
-          architecture: draft?.architecture || undefined,
+          architecture: opts?.architecture || interviewArchitecture || draft?.architecture || undefined,
           arrivalPlace: opts?.brief?.arrival.place || interviewBrief?.arrival.place || undefined,
           arrivalTime: opts?.brief?.arrival.time || interviewBrief?.arrival.time || undefined,
           departurePlace: opts?.brief?.departure.place || interviewBrief?.departure.place || undefined,
@@ -918,20 +922,20 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     }
   }
 
-  async function generateFromBrief(brief: PlannerBrief) {
+  function applyBriefToPlanner(brief: PlannerBrief): { dests: string[]; dates: { startDate: string; endDate: string }; notes: string } | null {
     const dests = plannerDestinationsForGenerate(brief);
     const dates = resolvePlannerBriefDates(brief);
     if (!dests.length) {
       toast.error("Faltan destinos", "Indica al menos una ciudad o pueblo donde dormir.");
-      return;
+      return null;
     }
     if (!dates) {
       toast.error("Faltan fechas", "Indica fechas o duración del viaje.");
-      return;
+      return null;
     }
     if (plannerDaysTooLong(totalDaysBetween(dates.startDate, dates.endDate))) {
       toast.error("Demasiados días", PLANNER_MAX_DAYS_MESSAGE);
-      return;
+      return null;
     }
     setInterviewBrief(brief);
     setPlaces(dests);
@@ -949,20 +953,79 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     setFreeText(notes);
     if (brief.transport === "driving" || brief.nearbyExcursions === "yes") setNearbyExcursions("yes");
     if (brief.suggestedTripName) setTripName(brief.suggestedTripName);
+    return { dests, dates, notes };
+  }
+
+  async function proposeSkeletonFromBrief(brief: PlannerBrief) {
+    const applied = applyBriefToPlanner(brief);
+    if (!applied) return;
+    setError(null);
+    setProposingSkeleton(true);
     trackEvent(ANALYTICS_EVENTS.AI_PLANNER_STARTED, {
-      destinations: dests.length,
-      total_days: totalDaysBetween(dates.startDate, dates.endDate),
+      destinations: applied.dests.length,
+      total_days: totalDaysBetween(applied.dates.startDate, applied.dates.endDate),
+      source: "interview_skeleton",
+    });
+    try {
+      const res = await fetch("/api/trips/ai-planner/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destinations: applied.dests,
+          start_date: applied.dates.startDate,
+          end_date: applied.dates.endDate,
+          freeText: applied.notes,
+          brief,
+          arrivalPlace: brief.arrival.place || undefined,
+          arrivalTime: brief.arrival.time || undefined,
+          departurePlace: brief.departure.place || undefined,
+          departureTime: brief.departure.time || undefined,
+          plannerPreferences: {
+            ...plannerPreferences,
+            nearbyExcursions:
+              brief.transport === "driving" || brief.nearbyExcursions === "yes" ? "yes" : brief.nearbyExcursions || undefined,
+          },
+          planOnly: true,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "No se pudo organizar el viaje.");
+      const architecture = (data?.architecture || null) as TripArchitecture | null;
+      const skeletonText = typeof data?.skeletonText === "string" ? data.skeletonText : null;
+      if (!architecture?.days?.length || !skeletonText) {
+        throw new Error("No se pudo construir el esqueleto del viaje. Prueba de nuevo.");
+      }
+      setInterviewArchitecture(architecture);
+      setInterviewSkeletonText(skeletonText);
+      if (Array.isArray(data?.stays)) setConfirmedStays(data.stays);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "No se pudo organizar el viaje.";
+      setError(msg);
+      toast.error("Error al organizar el viaje", msg);
+    } finally {
+      setProposingSkeleton(false);
+    }
+  }
+
+  async function generateFromBrief(brief: PlannerBrief, architecture?: TripArchitecture | null) {
+    const applied = applyBriefToPlanner(brief);
+    if (!applied) return;
+    const arch = architecture ?? interviewArchitecture;
+    trackEvent(ANALYTICS_EVENTS.AI_PLANNER_STARTED, {
+      destinations: applied.dests.length,
+      total_days: totalDaysBetween(applied.dates.startDate, applied.dates.endDate),
       source: "interview",
     });
-    await generateDraft([], {
-      destinations: dests,
-      start: dates.startDate,
-      end: dates.endDate,
-      notes,
+    await generateDraft(arch?.stays || [], {
+      destinations: applied.dests,
+      start: applied.dates.startDate,
+      end: applied.dates.endDate,
+      notes: applied.notes,
       nearbyExcursions:
         brief.transport === "driving" || brief.nearbyExcursions === "yes" ? "yes" : brief.nearbyExcursions || undefined,
       fromInterview: true,
       brief,
+      architecture: arch,
     });
   }
 
@@ -1133,7 +1196,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       <div>
         <div className="flex items-center gap-2 mb-1"><Sparkles className="w-5 h-5 text-violet-500" /><span className="text-xs font-bold uppercase tracking-widest text-violet-600">Premium · IA</span></div>
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Planificador inteligente</h1>
-        <p className="mt-1.5 text-sm font-medium text-slate-500 max-w-md">Cuéntale tu viaje a la IA. Te pide solo lo que falta, te propone un itinerario y un PDF, y tú decides si creas el viaje.</p>
+        <p className="mt-1.5 text-sm font-medium text-slate-500 max-w-md">Cuéntale tu viaje a la IA. Primero organiza el esqueleto (noches y anclas) y luego rellena el día a día. Tú decides si creas el viaje.</p>
       </div>
 
       {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 flex items-start gap-2"><span className="mt-0.5">⚠️</span><span>{error}</span></div>}
@@ -1141,8 +1204,11 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
       {step === "interview" && (
         <TripAiPlannerInterview
           generating={generatingDraft}
+          proposing={proposingSkeleton}
+          skeletonText={interviewSkeletonText}
           onClassic={() => setStep("templates")}
-          onGenerate={(brief) => void generateFromBrief(brief)}
+          onProposeSkeleton={(brief) => void proposeSkeletonFromBrief(brief)}
+          onGenerate={(brief) => void generateFromBrief(brief, interviewArchitecture)}
         />
       )}
 
