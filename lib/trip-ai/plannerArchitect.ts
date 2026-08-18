@@ -157,13 +157,14 @@ REGLAS OBLIGATORIAS:
 5. Si dos bases están a 4.5 h o más, NO las encadenes en un solo día ni duermas en una y al día siguiente en la otra sin pasar por el hub de llegada/salida. Inserta una noche en el hub o parte el cruce.
 6. En un día de traslado, mainActivities solo pueden ser paradas SOBRE la ruta (o a la llegada). Nunca una visita que esté en dirección contraria.
 7. No repitas la misma ancla en dos días (quebrada, garganta, anfiteatro, pueblo, bodega).
-8. ${wantsNature ? "El viajero pidió NATURALEZA: cada zona debe tener 1 excursión principal de paisaje con nombre propio real (cerros de colores, salinas, quebradas, miradores de altura, parques). No sustituyas eso por museos, plazas o iglesias." : "Prioriza experiencias propias del lugar, no relleno genérico."}
+8. ${wantsNature ? "El viajero pidió NATURALEZA: cada zona debe tener 1 excursión principal de paisaje con nombre propio real (las que harían famosa esa región: parques, salinas, quebradas, glaciares, acantilados, islas, dunas, selva). No sustituyas eso por museos, plazas o iglesias." : "Prioriza las experiencias por las que merece la pena ir a esa zona, no relleno genérico."}
 9. ${wantsWine && driving ? "Vino/bodegas: máximo 1 cata por día y 2 en todo el viaje (hay un conductor)." : wantsWine ? "Vino/bodegas: máximo 2 visitas en todo el viaje." : "No satures el viaje de bodegas."}
 10. Ritmo ${params.brief?.pace || "balanced"}: deja 2 h entre anclas para comer, aparcar y retrasos. No encadenes 4 pueblos en un día.
-11. Si hay valle/bodegas y alta montaña, ve primero al valle y deja la altura para después.
-12. Respeta estas bases deseadas del usuario como conjunto: ${sleepBases || "sin especificar"}.
-13. Si se te pasa un reparto de noches forzado, respétalo exactamente salvo que viole la regla de 4.5 h: ${forcedStaysText}.
-14. availableHours = horas reales de turismo, restando el coche.
+11. Si hay valle/costa suave y alta montaña o etapas duras, empieza por lo más suave.
+12. mainActivities OBLIGATORIAS: 1 o 2 nombres propios reales por día (no "explorar el centro").
+13. Respeta estas bases deseadas del usuario como conjunto: ${sleepBases || "sin especificar"}.
+14. Si se te pasa un reparto de noches forzado, respétalo exactamente salvo que viole la regla de 4.5 h: ${forcedStaysText}.
+15. availableHours = horas reales de turismo, restando el coche.
 
 Distancias estimadas en coche:
 ${legs || "- sin pares"}

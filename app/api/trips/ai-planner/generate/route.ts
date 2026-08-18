@@ -14,6 +14,7 @@ import {
   type ArchitectDay,
   type TripArchitecture,
 } from "@/lib/trip-ai/plannerArchitect";
+import { generateWholeTripItinerary } from "@/lib/trip-ai/plannerWholeTrip";
 import {
   buildFallbackDaysFromPool,
   buildInCityItem,
@@ -1222,9 +1223,32 @@ export async function POST(req: Request) {
 
     // Regenerar si el usuario escribió notas o mandó reglas por chat (no solo prefs por defecto del formulario).
     const forceRegen = Boolean(userNotes.trim());
+    const canWholeTrip = !Array.isArray(targetDayNums) || targetDayNums.length === 0;
 
-    // Generate all city blocks in parallel
-    const blockResults = await Promise.all(
+    let wholeTripDays: PlannerDay[] | null = null;
+    if (canWholeTrip && architecture?.days?.length) {
+      try {
+        const generated = await generateWholeTripItinerary({
+          brief,
+          notes: mergedNotes,
+          stops: stops.map((s) => ({ label: s.label, center: s.center })),
+          architecture,
+          totalDays,
+          startDate,
+          endDate,
+          arrivalTime,
+          departureTime,
+        });
+        if (generated.some((d) => (d.items || []).length > 0)) wholeTripDays = generated;
+      } catch (e) {
+        logger.error("[ai-planner] whole-trip itinerary failed:", e);
+      }
+    }
+
+    // Generate city blocks only if the whole-trip pass produced nothing.
+    const blockResults = wholeTripDays
+      ? blocks.map(() => ({ days: [] as PlannerDayWithMeta[], prompt: "(whole-trip itinerary)", rawOutput: "" }))
+      : await Promise.all(
       blocks.map((block) => {
         // If targetDayNums restricts which days to regen, skip blocks not affected
         if (Array.isArray(targetDayNums) && targetDayNums.length > 0) {
@@ -1359,7 +1383,7 @@ export async function POST(req: Request) {
                     : dayWindow.minSights;
         const minSights = isTransfer ? minSightsForDriveHours(driveHours) : architectMinSights;
 
-        const gemDay = generatedDays?.[di];
+        const gemDay = wholeTripDays?.find((d) => d.day === globalDayNum) ?? generatedDays?.[di];
         const hasContent = gemDay && Array.isArray(gemDay.items) && gemDay.items.length > 0;
 
         let items: PlannerDayItem[] = [];
