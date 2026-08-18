@@ -36,14 +36,25 @@ function userSkippedOpenField(text: string, field: PlannerMissingField | null): 
 }
 
 function buildExtractPrompt(todayIso: string, brief: PlannerBrief, userText: string): string {
-  return `Eres un extractor de datos para el planificador de viajes Kaviro.
+  return `Eres el Travel Interviewer de Kaviro. Recoges datos estructurados para que OTRO motor diseñe el viaje.
 Hoy es ${todayIso} (usa este año si el usuario dice día/mes sin año).
+NO inventes el itinerario, NO listes días ni actividades, NO propongas un planning completo.
+
+Para cada mensaje:
+1. Extrae información nueva.
+2. Actualiza la ficha.
+3. Detecta contradicciones.
+4. Pregunta como máximo UNA cosa principal (la app añade la pregunta; tú resume).
+5. No preguntes lo que ya está en la ficha.
+6. Acepta "no lo sé", "tú decide" y respuestas flexibles.
+
 Devuelve SOLO un objeto JSON (sin markdown) con este esquema. Usa null o [] si no consta:
 
 {
   "destination": string|null,
   "destinationKind": "city"|"region"|"multi"|null,
   "sleepBases": string[],
+  "origin": string|null,
   "startDate": "YYYY-MM-DD"|null,
   "endDate": "YYYY-MM-DD"|null,
   "durationDays": number|null,
@@ -52,8 +63,14 @@ Devuelve SOLO un objeto JSON (sin markdown) con este esquema. Usa null o [] si n
   "transport": "driving"|"transit"|"walking"|"mixed"|null,
   "nearbyExcursions": "yes"|"maybe"|"no"|null,
   "travelersType": "solo"|"couple"|"friends"|"family"|null,
+  "travelerCount": number|null,
+  "pace": "relaxed"|"balanced"|"intense"|null,
+  "budgetBand": "low"|"medium"|"comfortable"|"premium"|null,
+  "stayChangePref": "few"|"medium"|"many"|null,
   "interests": string[],
   "constraints": string[],
+  "avoid": string[],
+  "mustDo": string[],
   "suggestedTripName": string|null,
   "arrivalSkipped": boolean,
   "departureSkipped": boolean,
@@ -61,18 +78,22 @@ Devuelve SOLO un objeto JSON (sin markdown) con este esquema. Usa null o [] si n
   "assistantReply": string
 }
 
-Reglas:
+Reglas de extracción:
 - destinationKind "city" solo si es UNA ciudad o pueblo concreto donde se puede dormir (Lisboa, Roma, Cádiz).
 - "region" si es provincia, comunidad, país, isla o zona amplia.
 - "multi" si nombra dos o más sitios (ej. "X e Y").
-- sleepBases: ciudades/pueblos donde DORMIR, no la provincia. El ORDEN en que las nombra el usuario NO es una ruta: es un conjunto. Si nombra dos provincias, NO las uses como sleepBases salvo que deje claro que duerme en esas ciudades.
+- sleepBases: ciudades/pueblos donde DORMIR, no la provincia. El ORDEN en que las nombra el usuario NO es una ruta: es un conjunto.
 - proposedSleepBases: si destinationKind es region o multi y aún no hay sleepBases, propone 3-5 pueblos/ciudades turísticas REALES de esa zona. Si ya hay bases, [].
+- stayChangePref: few = pocas bases; many = más lugares; medium = equilibrio.
+- avoid: lo que NO quiere (museos, senderismo, conducir…). "No quiero" = no incluir, no prioridad baja.
+- mustDo: imprescindibles.
 - Fechas: en un relato en español, "6 de diciembre" y "11/12" en el mismo contexto suelen ser el mismo mes. time en 24h.
 - transport driving si dice coche, alquiler, auto, carretera.
 - nearbyExcursions "yes" si quiere pueblos o alrededores.
 - arrivalSkipped/departureSkipped true solo si el usuario dice que no sabe hora/lugar.
 - assistantReply: 2-5 frases en español. Resume lo entendido. Si acepta varias bases, deja claro que el orden de noches lo calculará el plan (llegada/salida y menos km), no el orden en que las ha dicho. NO hagas la siguiente pregunta (la app la añade). Si propones bases, menciónalas.
-- No inventes reservas. Si hay homónimos de ciudad, pregunta el país en assistantReply.
+- No inventes reservas, horarios de apertura ni precios. Separa hechos de decisiones.
+- Si hay homónimos de ciudad, pregunta el país en assistantReply.
 
 Ficha actual:
 ${JSON.stringify(brief)}

@@ -23,6 +23,7 @@ import {
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
 import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
 import { chatWantsNewSleepPlan, extraStopsFromChat, isSkippablePlace, parseSleepAssignmentsFromChat, plausiblePlaces, shouldApplyParsedSleepPlan, uniquePlaces } from "@/lib/trip-ai/plannerChatStops";
+import { classifyPlannerChatIntent, plannerChatIntentToRule } from "@/lib/trip-ai/plannerChatIntent";
 import { FileText, ArrowRight, Sparkles, Calendar, MapPin, MessageCircle,
   RotateCcw, ChevronDown, ChevronUp, Send, CheckCircle2,
   Loader2, Wand2, Plus, X, Globe, AlertTriangle, GripVertical, Info,
@@ -950,7 +951,9 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
     if (!msg || !draft || chatLoading || generatingDraft) return;
     setChatInput("");
     setChatMessages((prev) => [...prev, { role: "user", text: msg }]);
-    const nextRules = [...activeRules, msg].slice(-12);
+    const intent = classifyPlannerChatIntent(msg);
+    const rule = plannerChatIntentToRule(intent, msg);
+    const nextRules = [...activeRules, rule].slice(-12);
     setActiveRules(nextRules);
     setChatLoading(true);
     const pdfWin = window.open("about:blank", "kaviro_planner_pdf");
@@ -964,7 +967,11 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           (draft.days || []).map((d) => d.base)
         )
       );
-      const dests = uniquePlaces(destsKnown, extra);
+      let dests = uniquePlaces(destsKnown, extra);
+      if (intent.kind === "remove_place" && intent.place) {
+        const drop = intent.place.trim().toLowerCase();
+        dests = dests.filter((d) => d.trim().toLowerCase() !== drop && !d.trim().toLowerCase().includes(drop));
+      }
       const parsedSleep = parseSleepAssignmentsFromChat(msg, {
         startDate: draft.startDate || startDate,
         endDate: draft.endDate || endDate,
@@ -972,7 +979,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
         hubPlace: interviewBrief?.arrival.place || interviewBrief?.departure.place || null,
       });
       const destsWithSleep = plausiblePlaces(uniquePlaces(dests, parsedSleep?.places));
-      const rebuildStays = chatWantsNewSleepPlan(msg);
+      const rebuildStays = chatWantsNewSleepPlan(msg) || intent.kind === "remove_place";
       const prevRaw =
         confirmedStays.length > 0
           ? confirmedStays

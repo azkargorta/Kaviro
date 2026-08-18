@@ -29,9 +29,11 @@
 
 ## Tema 4 — Autocreador conversacional (cerrado)
 
-**Decisión:** el planificador Premium arranca con chat «Cuéntame tu viaje». Extrae una ficha, pregunta solo lo que falta, genera propuesta **antes** de crear el viaje, PDF descargable, y se puede iterar.
+**Decisión:** el planificador Premium arranca con chat «Cuéntame tu viaje». Extrae una ficha estructurada, pregunta solo lo que falta, genera propuesta **antes** de crear el viaje, PDF descargable, y se puede iterar.
 
-### Ficha (qué falta)
+**Principio:** el viaje son **datos**, no un bloque de texto. El LLM de entrevista **no** diseña el itinerario. El motor de ruta / noches / actividades es código + prompts acotados.
+
+### Ficha (qué falta para READY_TO_PLAN)
 
 1. Destino
 2. Bases de noche si es región o varios sitios (no hardcodear pueblos)
@@ -40,6 +42,19 @@
 5. Salida (o «no lo sé»)
 6. Transporte si hay más de una base
 
+Campos opcionales (si el usuario los dice): origen, ritmo, presupuesto, evitar, imprescindibles, pocos/muchos cambios de base.
+
+### Arquitectura (alineada con `estructura_chatbot_creador_de_viajes`)
+
+| Módulo | En Kaviro |
+|---|---|
+| Travel Interviewer | `interview/route.ts` + `plannerBrief.ts` |
+| TripState | `PlannerBrief` (ficha) + draft de generate |
+| Route / noches | `plannerStayRoute.ts` (código, no un prompt único) |
+| Actividades | `generate/route.ts` por bloque de ciudad + relleno de traslados |
+| Validator | relleno de días vacíos, no inventar destinos desde el chat (`plannerChatStops`, `plannerChatIntent`) |
+| Modificación | «Refinar con IA» clasifica intención (`plannerChatIntent`) y regenera con raíles; no es un chat libre sin estado |
+
 ### PDF
 
 `/trips/new/planner/propuesta` — imprimir / guardar como PDF. Regenerar itinerario vía chat = nuevo PDF.
@@ -47,6 +62,14 @@
 ### Formulario clásico
 
 Sigue disponible («Prefiero el formulario clásico»).
+
+### Fuera de este tema (más adelante)
+
+- Versionado v1/v2 del viaje
+- Duraciones door-to-door y fatiga por día
+- Intereses dinámicos por destino (Islandia: termas, auroras…)
+- Diff quirúrgico sin regenerar todo el itinerario
+
 
 ---
 

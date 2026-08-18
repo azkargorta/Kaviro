@@ -13,10 +13,15 @@ export type PlannerLeg = {
 
 export type PlannerTransport = "driving" | "transit" | "walking" | "mixed";
 
+export type PlannerPace = "relaxed" | "balanced" | "intense";
+export type PlannerBudgetBand = "low" | "medium" | "comfortable" | "premium";
+export type PlannerStayChangePref = "few" | "medium" | "many";
+
 export type PlannerBrief = {
   destination: string | null;
   destinationKind: PlannerDestinationKind | null;
   sleepBases: string[];
+  origin: string | null;
   startDate: string | null;
   endDate: string | null;
   durationDays: number | null;
@@ -25,8 +30,14 @@ export type PlannerBrief = {
   transport: PlannerTransport | null;
   nearbyExcursions: "yes" | "maybe" | "no" | null;
   travelersType: "solo" | "couple" | "friends" | "family" | null;
+  travelerCount: number | null;
+  pace: PlannerPace | null;
+  budgetBand: PlannerBudgetBand | null;
+  stayChangePref: PlannerStayChangePref | null;
   interests: string[];
   constraints: string[];
+  avoid: string[];
+  mustDo: string[];
   suggestedTripName: string | null;
   arrivalSkipped: boolean;
   departureSkipped: boolean;
@@ -47,6 +58,7 @@ export function emptyPlannerBrief(): PlannerBrief {
     destination: null,
     destinationKind: null,
     sleepBases: [],
+    origin: null,
     startDate: null,
     endDate: null,
     durationDays: null,
@@ -55,8 +67,14 @@ export function emptyPlannerBrief(): PlannerBrief {
     transport: null,
     nearbyExcursions: null,
     travelersType: null,
+    travelerCount: null,
+    pace: null,
+    budgetBand: null,
+    stayChangePref: null,
     interests: [],
     constraints: [],
+    avoid: [],
+    mustDo: [],
     suggestedTripName: null,
     arrivalSkipped: false,
     departureSkipped: false,
@@ -119,6 +137,25 @@ export function normalizePlannerBrief(raw: unknown): PlannerBrief {
       ? travelersRaw
       : null;
 
+  const paceRaw = str(o.pace);
+  const pace: PlannerPace | null =
+    paceRaw === "relaxed" || paceRaw === "balanced" || paceRaw === "intense" ? paceRaw : null;
+
+  const budgetRaw = str(o.budgetBand);
+  const budgetBand: PlannerBudgetBand | null =
+    budgetRaw === "low" || budgetRaw === "medium" || budgetRaw === "comfortable" || budgetRaw === "premium"
+      ? budgetRaw
+      : null;
+
+  const stayRaw = str(o.stayChangePref);
+  const stayChangePref: PlannerStayChangePref | null =
+    stayRaw === "few" || stayRaw === "medium" || stayRaw === "many" ? stayRaw : null;
+
+  const travelerCount =
+    typeof o.travelerCount === "number" && Number.isFinite(o.travelerCount)
+      ? Math.max(1, Math.min(40, Math.round(o.travelerCount)))
+      : null;
+
   const arrivalIn = o.arrival && typeof o.arrival === "object" ? (o.arrival as Record<string, unknown>) : {};
   const departureIn =
     o.departure && typeof o.departure === "object" ? (o.departure as Record<string, unknown>) : {};
@@ -132,6 +169,7 @@ export function normalizePlannerBrief(raw: unknown): PlannerBrief {
     destination: str(o.destination),
     destinationKind,
     sleepBases: strList(o.sleepBases),
+    origin: str(o.origin),
     startDate: isoDate(o.startDate),
     endDate: isoDate(o.endDate),
     durationDays: duration,
@@ -148,8 +186,14 @@ export function normalizePlannerBrief(raw: unknown): PlannerBrief {
     transport,
     nearbyExcursions,
     travelersType,
+    travelerCount,
+    pace,
+    budgetBand,
+    stayChangePref,
     interests: strList(o.interests),
     constraints: strList(o.constraints),
+    avoid: strList(o.avoid),
+    mustDo: strList(o.mustDo),
     suggestedTripName: str(o.suggestedTripName),
     arrivalSkipped: o.arrivalSkipped === true,
     departureSkipped: o.departureSkipped === true,
@@ -174,6 +218,7 @@ export function mergePlannerBrief(prev: PlannerBrief, patch: PlannerBrief): Plan
     destination: patch.destination ?? prev.destination,
     destinationKind: patch.destinationKind ?? prev.destinationKind,
     sleepBases: sleepBases.slice(0, 8),
+    origin: patch.origin ?? prev.origin,
     startDate: patch.startDate ?? prev.startDate,
     endDate: patch.endDate ?? prev.endDate,
     durationDays: patch.durationDays ?? prev.durationDays,
@@ -182,8 +227,14 @@ export function mergePlannerBrief(prev: PlannerBrief, patch: PlannerBrief): Plan
     transport: patch.transport ?? prev.transport,
     nearbyExcursions: patch.nearbyExcursions ?? prev.nearbyExcursions,
     travelersType: patch.travelersType ?? prev.travelersType,
+    travelerCount: patch.travelerCount ?? prev.travelerCount,
+    pace: patch.pace ?? prev.pace,
+    budgetBand: patch.budgetBand ?? prev.budgetBand,
+    stayChangePref: patch.stayChangePref ?? prev.stayChangePref,
     interests: [...new Set([...prev.interests, ...patch.interests])].slice(0, 12),
     constraints: [...new Set([...prev.constraints, ...patch.constraints])].slice(0, 12),
+    avoid: [...new Set([...prev.avoid, ...patch.avoid])].slice(0, 12),
+    mustDo: [...new Set([...prev.mustDo, ...patch.mustDo])].slice(0, 12),
     suggestedTripName: patch.suggestedTripName ?? prev.suggestedTripName,
     arrivalSkipped: prev.arrivalSkipped || patch.arrivalSkipped,
     departureSkipped: prev.departureSkipped || patch.departureSkipped,
@@ -244,6 +295,13 @@ export function buildPlannerFreeText(brief: PlannerBrief): string {
   const parts: string[] = [];
   if (brief.interests.length) parts.push(`Intereses: ${brief.interests.join(", ")}.`);
   if (brief.constraints.length) parts.push(`Restricciones: ${brief.constraints.join(", ")}.`);
+  if (brief.avoid.length) parts.push(`NO incluir: ${brief.avoid.join(", ")}.`);
+  if (brief.mustDo.length) parts.push(`Imprescindible: ${brief.mustDo.join(", ")}.`);
+  if (brief.pace === "relaxed") parts.push("Ritmo relajado: no llenar el día al 100%.");
+  if (brief.pace === "intense") parts.push("Ritmo intenso: aprovechar el día, con margen para comer y traslados.");
+  if (brief.stayChangePref === "few") parts.push("Prefiere pocas bases y menos cambios de hotel.");
+  if (brief.stayChangePref === "many") parts.push("Acepta más cambios de base para ver más sitios.");
+  if (brief.origin) parts.push(`Sale desde ${brief.origin}.`);
   if (brief.travelersType) {
     const label =
       brief.travelersType === "solo"
@@ -257,7 +315,7 @@ export function buildPlannerFreeText(brief: PlannerBrief): string {
   }
   if (brief.sleepBases.length) {
     parts.push(
-      `Bases de noche (conjunto, NO un orden de ruta): ${brief.sleepBases.join(", ")}. Ordena las noches para minimizar kilómetros extra, anclando llegada y salida; si dos bases quedan en direcciones opuestas desde el hub, vuelve al hub entre medias en vez de cruzar el mapa.`
+      `Bases de noche (conjunto, NO un orden de ruta): ${brief.sleepBases.join(", ")}. Ordena las noches para minimizar kilómetros, anclando llegada y salida. No gastes un día entero en un traslado de 2–4 h: ese día lleva paradas en origen, ruta o destino. No insertes una noche puente en el hub entre radios opuestos si con eso dejas bases en 1 noche.`
     );
   }
   if (brief.transport === "driving") {
@@ -307,6 +365,7 @@ export function resolvePlannerBriefDates(brief: PlannerBrief): { startDate: stri
 
 export function plannerBriefSummaryLines(brief: PlannerBrief): string[] {
   const lines: string[] = [];
+  if (brief.origin) lines.push(`Origen: ${brief.origin}`);
   if (brief.destination) lines.push(`Destino: ${brief.destination}`);
   if (brief.sleepBases.length) lines.push(`Dónde dormir: ${brief.sleepBases.join(" · ")}`);
   if (brief.startDate && brief.endDate) lines.push(`Fechas: ${brief.startDate} → ${brief.endDate}`);
@@ -333,5 +392,12 @@ export function plannerBriefSummaryLines(brief: PlannerBrief): string[] {
     lines.push(`Movilidad: ${t}`);
   }
   if (brief.interests.length) lines.push(`Estilo: ${brief.interests.join(", ")}`);
+  if (brief.avoid.length) lines.push(`Evitar: ${brief.avoid.join(", ")}`);
+  if (brief.mustDo.length) lines.push(`Imprescindible: ${brief.mustDo.join(", ")}`);
+  if (brief.pace) {
+    lines.push(
+      `Ritmo: ${brief.pace === "relaxed" ? "relajado" : brief.pace === "intense" ? "intenso" : "equilibrado"}`
+    );
+  }
   return lines;
 }

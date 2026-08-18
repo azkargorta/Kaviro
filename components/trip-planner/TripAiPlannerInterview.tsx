@@ -178,6 +178,19 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
       <div className="border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
         {ready ? (
           <>
+            {summary.length ? (
+              <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2.5 text-xs text-slate-700 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-slate-200">
+                <p className="mb-1 font-extrabold text-slate-900 dark:text-white">Esto es lo que voy a usar para diseñar el viaje</p>
+                {summary.map((line) => (
+                  <p key={line} className="leading-relaxed">
+                    {line}
+                  </p>
+                ))}
+                <p className="mt-1 text-[11px] font-medium text-slate-500">
+                  Puedes corregir cualquier dato en el chat antes de generar.
+                </p>
+              </div>
+            ) : null}
             <button
               type="button"
               disabled={generating}
