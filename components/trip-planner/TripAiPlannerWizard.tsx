@@ -75,9 +75,31 @@ const CATEGORY_KINDS = [
 ];
 
 function dayIntroPhrase(day: DraftDay): string {
-  const kc: Record<string, number> = {}; for (const it of day.items) { const k = it.activity_kind || "visit"; kc[k] = (kc[k] || 0) + 1; }
-  const dominant = Object.entries(kc).sort((a, b) => b[1] - a[1])[0]?.[0], city = day.base, n = day.items.length;
-  const phrases: Record<string, string> = { culture: `Un día cargado de historia y arte en ${city}. ${n} parada${n !== 1 ? "s" : ""}.`, nature: `Jornada al aire libre cerca de ${city}. Espacios naturales que valen el madrugón.`, viewpoint: `Los mejores miradores de ${city} en un solo día.`, gastro_experience: `${city} tiene una escena gastronómica increíble — este día está pensado para saborearla.`, market: `Mercados, sabores locales y el pulso del día a día de ${city}.`, excursion: `Excursión desde ${city}. Un día fuera de la ciudad.`, neighborhood: `Explora los barrios con más carácter de ${city}.`, night: `La tarde-noche en ${city} tiene su propio ritmo. ${n} plan${n !== 1 ? "es" : ""}.`, transport: `Día de traslado.` };
+  const real = day.items.filter((it) => it.activity_kind !== "transport");
+  const hasTransfer = day.items.some((it) => it.activity_kind === "transport");
+  const n = real.length;
+  const city = day.base;
+  if (hasTransfer && n > 0) {
+    return `Traslado a ${city} con ${n} parada${n !== 1 ? "s" : ""} en origen, ruta o destino.`;
+  }
+  const kc: Record<string, number> = {};
+  for (const it of real) {
+    const k = it.activity_kind || "visit";
+    kc[k] = (kc[k] || 0) + 1;
+  }
+  const dominant = Object.entries(kc).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const phrases: Record<string, string> = {
+    culture: `Un día cargado de historia y arte en ${city}. ${n} parada${n !== 1 ? "s" : ""}.`,
+    nature: `Jornada al aire libre cerca de ${city}. Espacios naturales que valen el madrugón.`,
+    viewpoint: `Los mejores miradores de ${city} en un solo día.`,
+    gastro_experience: `${city} tiene una escena gastronómica increíble — este día está pensado para saborearla.`,
+    market: `Mercados, sabores locales y el pulso del día a día de ${city}.`,
+    excursion: `Excursión desde ${city}. Un día fuera de la ciudad.`,
+    neighborhood: `Explora los barrios con más carácter de ${city}.`,
+    night: `La tarde-noche en ${city} tiene su propio ritmo. ${n} plan${n !== 1 ? "es" : ""}.`,
+    transport: `Día de traslado.`,
+  };
+  if (hasTransfer && n === 0) return phrases.transport!;
   return phrases[dominant ?? "culture"] ?? `${n} plan${n !== 1 ? "es" : ""} en ${city}.`;
 }
 

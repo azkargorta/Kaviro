@@ -127,13 +127,9 @@ export function buildStayRoute(
 
     if (othersAreOppositeSpokes(hub, others)) {
       const ranked = [...others].sort((a, b) => haversineKm(hub.center, a.center) - haversineKm(hub.center, b.center));
-      const seq: GeoStop[] = [hub];
-      for (let i = 0; i < ranked.length; i++) {
-        seq.push(ranked[i]!);
-        if (i < ranked.length - 1) seq.push(hub);
-      }
-      seq.push(hub);
-      return collapseConsecutive(seq);
+      // Una noche puente en el hub entre radios opuestos gasta un día entero
+      // en un traslado de 2–4 h. El cruce se hace en un solo día, con paradas.
+      return collapseConsecutive([hub, ...ranked, hub]);
     }
 
     return collapseConsecutive([hub, ...nearestNeighbor(others, hub.center), hub]);

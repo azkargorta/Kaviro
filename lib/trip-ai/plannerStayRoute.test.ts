@@ -22,21 +22,7 @@ describe("plannerStayRoute", () => {
     expect(route.some((s) => s.label === "Tilcara")).toBe(true);
   });
 
-  it("no hace Salta→Cafayate→Tilcara en línea: Cafayate y Tilcara están en sentidos opuestos", () => {
-    const route = buildStayRoute([SALTA, CAFAYATE, TILCARA], {
-      startHint: "Salta",
-      endHint: "Salta",
-    });
-    const labels = route.map((s) => s.label);
-    const caf = labels.indexOf("Cafayate");
-    const til = labels.indexOf("Tilcara");
-    expect(caf).toBeGreaterThan(0);
-    expect(til).toBeGreaterThan(0);
-    const between = labels.slice(Math.min(caf, til) + 1, Math.max(caf, til));
-    expect(between).toContain("Salta");
-  });
-
-  it("reparte 6 días empezando y acabando en el hub", () => {
+  it("reparte 6 días en hub → radios → hub, sin noche puente de 1 día", () => {
     const stays = planStaysToMinimizeDriving([SALTA, CAFAYATE, TILCARA], 6, {
       startHint: "Aeropuerto de Salta",
       endHint: "aeropuerto de salta",
@@ -46,6 +32,10 @@ describe("plannerStayRoute", () => {
     expect(stays.reduce((n, s) => n + s.nights, 0)).toBe(6);
     expect(stays.some((s) => s.stop === "Cafayate")).toBe(true);
     expect(stays.some((s) => s.stop === "Tilcara")).toBe(true);
+    const middleHubNights = stays.filter((s, i) => s.stop === "Salta" && i > 0 && i < stays.length - 1);
+    expect(middleHubNights).toEqual([]);
+    expect(stays.find((s) => s.stop === "Cafayate")?.nights).toBeGreaterThanOrEqual(2);
+    expect(stays.find((s) => s.stop === "Tilcara")?.nights).toBeGreaterThanOrEqual(2);
   });
 
   it("ruta lineal A→B→C si salida es C", () => {

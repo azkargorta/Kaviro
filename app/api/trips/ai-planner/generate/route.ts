@@ -11,6 +11,7 @@ import { askGemini } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import {
   buildFallbackDaysFromPool,
+  buildInCityItem,
   countRealItems,
   dedupeDaysInCityBlock,
   fillSparseDaysInBlock,
@@ -31,6 +32,7 @@ import {
 import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
 import { planStaysToMinimizeDriving } from "@/lib/trip-ai/plannerStayRoute";
 import { isSkippablePlace } from "@/lib/trip-ai/plannerChatStops";
+import { shouldKeepPoiOnTransferDay, minSightsForDriveKm } from "@/lib/trip-ai/plannerTransferSights";
 import {
   PLANNER_CHUNK_CONCURRENCY,
   PLANNER_MAX_DAYS_MESSAGE,
@@ -256,7 +258,7 @@ function buildCityItineraryPrompt(
     : "";
 
   const transitNote = prevCity && days[0]?.dayNum === 1
-    ? `El viajero llega hoy desde ${prevCity}. Incluye solo 2-3 actividades.`
+    ? `Día de traslado desde ${prevCity} hasta ${city}. OBLIGATORIO: 2-3 visitas reales (paradas en la ruta ${prevCity} → ${city} o a la llegada a ${city}). PROHIBIDO dejar el día solo con el traslado.`
     : "";
 
   const dateList = days.map((d) => `${d.dayNum}:${d.date}`).join(" ");
@@ -289,15 +291,20 @@ function buildCityItineraryPrompt(
     dayIdx === 1
       ? `8. Día 1 en ${city}: prioriza lo más icónico e imprescindible.`
       : `8. Día ${dayIdx}/${totalInBlock}: lugares DISTINTOS a los ya programados; barrios, museos o rutas que no hayas usado.`;
-  const otherBases = (opts?.otherBases || []).filter((b) => b.trim() && b.trim().toLowerCase() !== city.trim().toLowerCase());
+  const otherBases = (opts?.otherBases || []).filter((b) => {
+    const n = b.trim().toLowerCase();
+    return n && n !== city.trim().toLowerCase() && n !== (prevCity || "").trim().toLowerCase();
+  });
   const otherBasesRule = otherBases.length
-    ? `10. Este bloque es SOLO ${city} en las fechas indicadas. PROHIBIDO lugares de: ${otherBases.join(", ")}.`
+    ? prevCity && days[0]?.dayNum === 1
+      ? `10. Prioriza la ruta ${prevCity} → ${city} y ${city}. PROHIBIDO lugares de: ${otherBases.join(", ")}.`
+      : `10. Este bloque es SOLO ${city} en las fechas indicadas. PROHIBIDO lugares de: ${otherBases.join(", ")}.`
     : "";
 
   // Valid kinds listed once — Gemini copies them verbatim (saves tokens vs re-explaining)
   const kinds = "culture|nature|viewpoint|neighborhood|market|excursion|gastro_experience|shopping|night";
 
-  return `Guía local experto de ${city}. Plan SOLO para ${city} en: ${dateList}.
+  return `Guía local experto de ${city}. Plan para ${prevCity && days[0]?.dayNum === 1 ? `el traslado ${prevCity} → ${city} y ${city}` : city} en: ${dateList}.
 ${profile}
 ${transitNote}${usedBlock}${multiDayNote}${excursionBlock}${styleMixBlock}${restaurantBlock}
 
@@ -310,7 +317,7 @@ REGLAS:
 3. "k": exactamente uno de: ${kinds}
 4. "lt"/"lg": coordenadas GPS reales del lugar. Nunca 0.
 5. "h": horario realista. Mínimo 1.5h entre actividades.
-6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN: si las preferencias indican día de llegada o de salida, respeta ese horario (0-2 visitas; nada antes de aterrizar ni que impida llegar al aeropuerto/estación).
+6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN llegada/salida: respeta el horario del vuelo (nada antes de aterrizar ni que impida el aeropuerto). EXCEPCIÓN traslado entre ciudades: mínimo 2 visitas reales además del trayecto.
 7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real: "Mercado de San Telmo", "Bodega Zuccardi", "Cata en Catena".
 ${iconicRule}
 9. Respeta TODO lo que indicó el viajero.
@@ -355,6 +362,73 @@ function poisToInCityPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi
   return dedupeByName(raw).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
 }
 
+const FILL_TIMES = ["10:00", "13:00", "16:30", "18:30"];
+const TRANSFER_FILL_TIMES = ["11:30", "15:30", "18:00"];
+
+function fillDayFromPools(
+  items: PlannerDayItem[],
+  date: string,
+  city: string,
+  pools: NearbyPoi[],
+  used: Set<string>,
+  minReal: number,
+  times: string[] = FILL_TIMES,
+  fallbackCenter?: LatLng | null
+): PlannerDayItem[] {
+  const out = [...items];
+  const onThisDay = new Set(
+    out
+      .filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport")
+      .map((it) => String(it.title || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const addPoi = (poi: NearbyPoi, skip: Set<string>) => {
+    const k = String(poi.name || "").trim().toLowerCase();
+    if (!k || skip.has(k) || onThisDay.has(k)) return false;
+    const real = out.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
+    const time = times[Math.min(real, times.length - 1)]!;
+    out.push(buildInCityItem(poi, city, date, time));
+    onThisDay.add(k);
+    used.add(k);
+    return true;
+  };
+
+  let real = out.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
+  for (const poi of pools) {
+    if (real >= minReal) break;
+    if (addPoi(poi, used)) real += 1;
+  }
+  if (real < minReal) {
+    for (const poi of pools) {
+      if (real >= minReal) break;
+      if (addPoi(poi, onThisDay)) real += 1;
+    }
+  }
+  while (real < minReal) {
+    const label =
+      real === 0
+        ? `Casco y plaza de ${city}`
+        : real === 1
+          ? `Mirador o paseo en ${city}`
+          : `Barrio y vida local en ${city}`;
+    const k = label.toLowerCase();
+    if (onThisDay.has(k)) break;
+    const time = times[Math.min(real, times.length - 1)]!;
+    out.push(
+      buildInCityItem(
+        { name: label, lat: fallbackCenter?.lat ?? 0, lng: fallbackCenter?.lng ?? 0 },
+        city,
+        date,
+        time
+      )
+    );
+    onThisDay.add(k);
+    real += 1;
+  }
+  return out;
+}
+
 async function generateCityItinerary(
   city: string,
   nights: number,
@@ -369,6 +443,7 @@ async function generateCityItinerary(
   geo?: {
     otherBases?: string[];
     cityCenter?: LatLng | null;
+    prevCenter?: LatLng | null;
     otherStops?: Array<{ label: string; center: LatLng }>;
   }
 ): Promise<{ days: PlannerDayWithMeta[]; prompt: string; rawOutput: string } | null> {
@@ -413,8 +488,18 @@ async function generateCityItinerary(
         const v = it.lg ?? it.longitude;
         return typeof v === "number" && Math.abs(v) <= 180 && v !== 0 ? v : null;
       })();
-      if (lat != null && lng != null && itemIsCloserToOtherBase(lat, lng, geo?.cityCenter ?? null, geo?.otherStops || [])) {
-        continue;
+      if (lat != null && lng != null) {
+        const isTransferDay = Boolean(prevCity && date === startDateIso);
+        const keep = isTransferDay
+          ? shouldKeepPoiOnTransferDay(
+              { lat, lng },
+              geo?.cityCenter ?? null,
+              geo?.prevCenter ?? null,
+              geo?.otherStops || [],
+              prevCity
+            )
+          : !itemIsCloserToOtherBase(lat, lng, geo?.cityCenter ?? null, geo?.otherStops || []);
+        if (!keep) continue;
       }
       out.push({
         title,
@@ -859,6 +944,9 @@ export async function POST(req: Request) {
           const b = block.city.toLowerCase();
           return a.startsWith(b) || b.startsWith(a);
         });
+        const prevStop = block.prevCity
+          ? stops.find((s) => s.label.toLowerCase() === block.prevCity!.toLowerCase())
+          : null;
         const otherStops = stops
           .filter((s) => s.label.toLowerCase() !== (cityStop?.label || block.city).toLowerCase())
           .map((s) => ({ label: s.label, center: s.center }));
@@ -874,8 +962,15 @@ export async function POST(req: Request) {
           gastroPool,
           plannerPrefs,
           {
-            otherBases: stays.map((s) => s.stop).filter((stop) => stop.toLowerCase() !== block.city.toLowerCase()),
+            otherBases: stays
+              .map((s) => s.stop)
+              .filter(
+                (stop) =>
+                  stop.toLowerCase() !== block.city.toLowerCase() &&
+                  stop.toLowerCase() !== (block.prevCity || "").toLowerCase()
+              ),
             cityCenter: cityStop?.center ?? null,
+            prevCenter: prevStop?.center ?? null,
             otherStops,
           }
         );
@@ -913,55 +1008,103 @@ export async function POST(req: Request) {
 
     // ── 8. Merge blocks into flat days array ──────────────────────────────────
     const daysOut: PlannerDay[] = [];
+    const usedTitles = new Set<string>();
 
     for (let bi = 0; bi < blocks.length; bi++) {
       const block = blocks[bi]!;
       const generatedDays = blockResultsFinal[bi];
+      const cityPool = [
+        ...poisToInCityPool(resolveStopPools(poisByStop, block.city)),
+        ...poisToNearbyPool(resolveStopPools(poisByStop, block.city)),
+      ];
+      const prevPool = block.prevCity
+        ? [
+            ...poisToNearbyPool(resolveStopPools(poisByStop, block.prevCity)),
+            ...poisToInCityPool(resolveStopPools(poisByStop, block.prevCity)),
+          ]
+        : [];
+
+      const cityStop = stops.find((s) => s.label.toLowerCase() === block.city.toLowerCase());
+      const prevStop = block.prevCity
+        ? stops.find((s) => s.label.toLowerCase() === block.prevCity!.toLowerCase())
+        : null;
+      const driveKm =
+        cityStop && prevStop ? haversineKm(prevStop.center, cityStop.center) : 180;
+      const driveHours = Math.max(1, Math.round(driveKm / 70));
 
       for (let di = 0; di < block.nights; di++) {
         const globalDayNum = block.startDayNum + di;
         const dayDate = addDaysIso(startDate, globalDayNum - 1);
+        const isTransfer = di === 0 && Boolean(block.prevCity);
+        const minSights = isTransfer ? minSightsForDriveKm(driveKm) : 3;
 
         const gemDay = generatedDays?.[di];
         const hasContent = gemDay && Array.isArray(gemDay.items) && gemDay.items.length > 0;
 
+        let items: PlannerDayItem[] = [];
         if (hasContent) {
-          let items: PlannerDayItem[] = (gemDay.items || []).map((it) => ({ ...it, activity_date: dayDate }));
-          if (di === 0 && block.prevCity) {
-            const transitItem: PlannerDayItem = {
-              title: `Traslado ${block.prevCity} → ${block.city}`,
-              description: "Traslado entre ciudades. Ajusta el medio de transporte según tu viaje.",
-              activity_date: dayDate, activity_time: "08:30",
-              place_name: `${block.prevCity} → ${block.city}`,
-              address: `${block.prevCity} → ${block.city}`,
-              latitude: null, longitude: null,
-              activity_kind: "transport", activity_type: "general", source: "ai_planner",
-            };
-            // Transit is always first; sort only the non-transit items after it
-            const nonTransit = sortItemsByProximity(items);
-            items = [transitItem, ...nonTransit.slice(0, 3)];
-          } else {
-            // Sort all items by geographic proximity (nearest-neighbor greedy)
-            items = sortItemsByProximity(items);
-          }
-          const stopPools = resolveStopPools(poisByStop, block.city);
-          items = consolidateRestaurantsForDay(items, {
-            prefs: plannerPrefs,
-            city: block.city,
-            date: dayDate,
-            gastroPool: poisToGastroPool(stopPools),
-          });
-          daysOut.push({ day: globalDayNum, date: dayDate, base: block.city, items });
+          items = (gemDay.items || []).map((it) => ({ ...it, activity_date: dayDate }));
         } else if (existingDaysMap.has(globalDayNum)) {
           const existing = existingDaysMap.get(globalDayNum)!;
-          daysOut.push({ ...existing, day: globalDayNum, date: dayDate });
-        } else {
-          const items: PlannerDayItem[] = [];
-          if (di === 0 && block.prevCity) {
-            items.push({ title: `Traslado ${block.prevCity} → ${block.city}`, description: "Traslado entre ciudades.", activity_date: dayDate, activity_time: "08:30", place_name: `${block.prevCity} → ${block.city}`, address: `${block.prevCity} → ${block.city}`, latitude: null, longitude: null, activity_kind: "transport", activity_type: "general", source: "ai_planner" });
-          }
-          daysOut.push({ day: globalDayNum, date: dayDate, base: block.city, items });
+          items = Array.isArray(existing.items) ? existing.items.map((it) => ({ ...it, activity_date: dayDate })) : [];
         }
+
+        if (isTransfer) {
+          const alreadyHasTransit = items.some((it) => String(it.activity_kind || "").toLowerCase() === "transport");
+          if (!alreadyHasTransit) {
+            items = [
+              {
+                title: `Traslado ${block.prevCity} → ${block.city}`,
+                description:
+                  driveHours <= 4
+                    ? `Unas ${driveHours} h de trayecto: cabe ver origen, paradas en ruta y destino a la llegada.`
+                    : `Traslado de unas ${driveHours} h. Incluye paradas y algo a la llegada.`,
+                activity_date: dayDate,
+                activity_time: "08:30",
+                place_name: `${block.prevCity} → ${block.city}`,
+                address: `${block.prevCity} → ${block.city}`,
+                latitude: null,
+                longitude: null,
+                activity_kind: "transport",
+                activity_type: "general",
+                source: "ai_planner",
+              },
+              ...items,
+            ];
+          }
+          const transit = items.filter((it) => String(it.activity_kind || "").toLowerCase() === "transport");
+          const nonTransit = sortItemsByProximity(
+            items.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport")
+          );
+          items = [...transit.slice(0, 1), ...nonTransit.slice(0, 4)];
+        } else if (items.length) {
+          items = sortItemsByProximity(items);
+        }
+
+        const fillPool = isTransfer ? [...prevPool, ...cityPool] : cityPool;
+        items = fillDayFromPools(
+          items,
+          dayDate,
+          block.city,
+          fillPool,
+          usedTitles,
+          isTransfer ? minSights : 3,
+          isTransfer ? TRANSFER_FILL_TIMES : FILL_TIMES,
+          cityStop?.center ?? null
+        );
+
+        const stopPools = resolveStopPools(poisByStop, block.city);
+        items = consolidateRestaurantsForDay(items, {
+          prefs: plannerPrefs,
+          city: block.city,
+          date: dayDate,
+          gastroPool: poisToGastroPool(stopPools),
+        });
+        for (const it of items) {
+          const t = String(it.title || "").trim().toLowerCase();
+          if (t && String(it.activity_kind || "").toLowerCase() !== "transport") usedTitles.add(t);
+        }
+        daysOut.push({ day: globalDayNum, date: dayDate, base: block.city, items });
       }
     }
 
