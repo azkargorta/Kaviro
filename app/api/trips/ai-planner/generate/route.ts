@@ -26,7 +26,7 @@ import {
   type PlannerDay,
   type PlannerDayItem,
 } from "@/lib/trip-ai/itineraryDedup";
-import { shouldKeepPoiOnTransferDay, minSightsForDriveKm } from "@/lib/trip-ai/plannerTransferSights";
+import { shouldKeepPoiOnTransferDay, minSightsForDriveHours, scheduleAlongTransfer } from "@/lib/trip-ai/plannerTransferSights";
 import {
   clipItemsToDayWindow,
   itemFitsWindow,
@@ -44,7 +44,7 @@ import {
   type PlannerPreferences,
 } from "@/lib/trip-ai/plannerPreferences";
 import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
-import { planStaysToMinimizeDriving } from "@/lib/trip-ai/plannerStayRoute";
+import { planStaysToMinimizeDriving, repairStaysAvoidingLongHops, roundedDriveHours } from "@/lib/trip-ai/plannerStayRoute";
 import { isSkippablePlace } from "@/lib/trip-ai/plannerChatStops";
 import { normalizePlannerBrief } from "@/lib/trip-ai/plannerBrief";
 import {
@@ -331,7 +331,7 @@ function buildCityItineraryPrompt(
     : "";
 
   const transitNote = prevCity && days[0]?.dayNum === 1
-    ? `Día de traslado desde ${prevCity} hasta ${city}. OBLIGATORIO: 2-3 visitas reales (paradas en la ruta ${prevCity} → ${city} o a la llegada a ${city}). PROHIBIDO dejar el día solo con el traslado.`
+    ? `Día de traslado desde ${prevCity} hasta ${city}. Las visitas SOLO pueden ser paradas SOBRE la ruta ${prevCity} → ${city} o a la llegada. PROHIBIDO programar a las 09:30 un sitio del destino si el coche tarda más de 2 h. No llenes el día como si ya estuvieras en ${city}.`
     : "";
 
   const dateList = days.map((d) => `${d.dayNum}:${d.date}`).join(" ");
@@ -413,11 +413,11 @@ REGLAS:
 2. "d": máximo 8 palabras. Tip práctico concreto.
 3. "k": exactamente uno de: ${kinds}
 4. "lt"/"lg": coordenadas GPS reales del lugar. Nunca 0.
-5. "h": horario realista. Mínimo 1.5h entre actividades.
-6. 3-5 items por día. Distribuidos: mañana, tarde, noche. EXCEPCIÓN llegada/salida: respeta el horario del vuelo o tren (nada antes de aterrizar/llegar ni que impida ir al aeropuerto/estación). Si el primer día se llega tarde, ese día puede tener 0-1 visitas. EXCEPCIÓN traslado entre ciudades: mínimo 2 visitas reales además del trayecto.
-7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real: "Mercado de San Telmo", "Bodega Zuccardi", "Cata en Catena".
+5. "h": horario realista. Mínimo 2h entre anclas. Deja 13:00-14:30 libre para comer. No encadenes visitas sin margen de aparcamiento.
+6. 2-4 items por día completo. EXCEPCIÓN llegada/salida: respeta el horario del vuelo o tren. EXCEPCIÓN traslado: 1-2 paradas en ruta como máximo si el coche supera las 4 h; nunca un día lleno en destino.
+7. PROHIBIDO en "t": Almuerzo, Cena, Comida, Desayuno, Lunch, Dinner — solos o combinados. Gastronomía solo con nombre propio real. Máximo 1 bodega por día.
 ${iconicRule}
-9. Respeta TODO lo que indicó el viajero.
+9. Respeta TODO lo que indicó el viajero. Si pidió naturaleza, la ancla del día es una EXCURSIÓN de paisaje con nombre propio, no un museo o plaza municipal.
 ${otherBasesRule}`.trim();
 }
 
@@ -483,6 +483,66 @@ function arrivalRestItem(city: string, date: string, arrivalTime: string | null)
   };
 }
 
+function seedFromArchitecture(
+  architectureDay: ArchitectDay | null,
+  city: string,
+  date: string,
+  times: string[],
+  center: LatLng | null
+): PlannerDayItem[] {
+  if (!architectureDay?.mainActivities?.length) return [];
+  return architectureDay.mainActivities.slice(0, 3).map((name, i) => {
+    const winery = /bodega|vino|cata|winery/i.test(name);
+    return {
+      title: name,
+      description: architectureDay.summary || `Eje del día en ${city}.`,
+      activity_date: date,
+      activity_time: times[i] || FILL_TIMES[i] || "10:00",
+      place_name: name,
+      address: `${name}, ${city}`,
+      latitude: center?.lat ?? null,
+      longitude: center?.lng ?? null,
+      activity_kind: winery ? "gastro_experience" : "excursion",
+      activity_type: "visit",
+      source: "ai_planner_architect",
+    };
+  });
+}
+
+function isWineryItem(it: PlannerDayItem): boolean {
+  const t = `${it.title || ""} ${it.place_name || ""} ${it.activity_kind || ""}`.toLowerCase();
+  return /bodega|winery|cata de vino|vi[ñn]edo/.test(t) || String(it.activity_kind || "") === "gastro_experience" && /vino|bodega|cata/.test(t);
+}
+
+function capWineries(days: PlannerDay[], maxTotal: number): PlannerDay[] {
+  let kept = 0;
+  return days.map((day) => ({
+    ...day,
+    items: (day.items || []).filter((it) => {
+      if (!isWineryItem(it)) return true;
+      if (kept >= maxTotal) return false;
+      kept += 1;
+      return true;
+    }),
+  }));
+}
+
+function airportBufferItem(city: string, date: string, departureTime: string): PlannerDayItem {
+  return {
+    title: `Margen al aeropuerto (${departureTime})`,
+    description: `Salir con tiempo para devolver el coche, repostar y facturar. Vuelo o tren a las ${departureTime}.`,
+    activity_date: date,
+    activity_time: departureTime,
+    place_name: city,
+    address: city,
+    latitude: null,
+    longitude: null,
+    activity_kind: "transport",
+    activity_type: "general",
+    source: "ai_planner",
+  };
+}
+
 function poisToGastroPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
   if (!pools) return [];
   return dedupeByName(pools.gastro_experience || []).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
@@ -501,8 +561,8 @@ function poisToInCityPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi
   return dedupeByName(raw).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
 }
 
-const FILL_TIMES = ["10:00", "13:00", "16:30", "18:30"];
-const TRANSFER_FILL_TIMES = ["11:30", "15:30", "18:00"];
+const FILL_TIMES = ["10:00", "12:00", "15:30", "17:30"];
+const TRANSFER_FILL_TIMES = ["11:00", "15:30", "17:30"];
 
 function fillDayFromPools(
   items: PlannerDayItem[],
@@ -1101,9 +1161,11 @@ export async function POST(req: Request) {
     } else {
       const startHint =
         cleanString(body?.arrivalPlace || body?.arrival_place || "") ||
+        brief?.arrival.place ||
         (mergedNotes.match(/llegada[^.]{0,120}/i)?.[0] ?? "");
       const endHint =
         cleanString(body?.departurePlace || body?.departure_place || "") ||
+        brief?.departure.place ||
         (mergedNotes.match(/salida[^.]{0,120}/i)?.[0] ?? "");
       const routed = planStaysToMinimizeDriving(
         stops.map((s) => ({ label: s.label, center: s.center })),
@@ -1114,6 +1176,12 @@ export async function POST(req: Request) {
         ? routed
         : distributeNightsSmart(stops, poisByStop, totalDays, mergedNotes);
     }
+    stays = repairStaysAvoidingLongHops(
+      stays.map((s) => ({ stop: s.stop, nights: s.nights, reason: s.reason || "" })),
+      stops.map((s) => ({ label: s.label, center: s.center })),
+      totalDays,
+      brief?.arrival.place || cleanString(body?.arrivalPlace || body?.arrival_place || "") || stops[0]?.label
+    );
 
     // ── 5. planOnly: return proposal without itinerary ────────────────────────
     if (planOnly) {
@@ -1264,7 +1332,8 @@ export async function POST(req: Request) {
         : null;
       const driveKm =
         cityStop && prevStop ? haversineKm(prevStop.center, cityStop.center) : 180;
-      const driveHours = Math.max(1, Math.round(driveKm / 70));
+      const driveHours =
+        cityStop && prevStop ? roundedDriveHours(prevStop.center, cityStop.center) : Math.max(1, Math.round(driveKm / 55));
 
       for (let di = 0; di < block.nights; di++) {
         const globalDayNum = block.startDayNum + di;
@@ -1288,7 +1357,7 @@ export async function POST(req: Request) {
                         ? 2
                         : 1
                     : dayWindow.minSights;
-        const minSights = isTransfer ? Math.min(minSightsForDriveKm(driveKm), Math.max(architectMinSights, 1)) : architectMinSights;
+        const minSights = isTransfer ? minSightsForDriveHours(driveHours) : architectMinSights;
 
         const gemDay = generatedDays?.[di];
         const hasContent = gemDay && Array.isArray(gemDay.items) && gemDay.items.length > 0;
@@ -1300,6 +1369,25 @@ export async function POST(req: Request) {
           const existing = existingDaysMap.get(globalDayNum)!;
           items = Array.isArray(existing.items) ? existing.items.map((it) => ({ ...it, activity_date: dayDate })) : [];
         }
+        const seeded = seedFromArchitecture(architectureDay, block.city, dayDate, FILL_TIMES, cityStop?.center ?? null);
+        if (seeded.length) {
+          const seen = new Set(items.map((it) => String(it.title || "").toLowerCase()));
+          items = [...seeded.filter((it) => !seen.has(String(it.title || "").toLowerCase())), ...items];
+        }
+        if (isTransfer && prevStop && cityStop) {
+          items = items.filter((it) => {
+            const kind = String(it.activity_kind || "").toLowerCase();
+            if (kind === "transport" || kind === "rest") return true;
+            if (typeof it.latitude !== "number" || typeof it.longitude !== "number") return true;
+            return shouldKeepPoiOnTransferDay(
+              { lat: it.latitude, lng: it.longitude },
+              cityStop.center,
+              prevStop.center,
+              stops.map((s) => ({ label: s.label, center: s.center })),
+              block.prevCity
+            );
+          });
+        }
 
         if (isTransfer) {
           const alreadyHasTransit = items.some((it) => String(it.activity_kind || "").toLowerCase() === "transport");
@@ -1308,9 +1396,9 @@ export async function POST(req: Request) {
               {
                 title: `Traslado ${block.prevCity} → ${block.city}`,
                 description:
-                  driveHours <= 4
-                    ? `Unas ${driveHours} h de trayecto: cabe ver origen, paradas en ruta y destino a la llegada.`
-                    : `Traslado de unas ${driveHours} h. Incluye paradas y algo a la llegada.`,
+                  driveHours <= 3
+                    ? `Unas ${driveHours} h de trayecto: cabe una parada en ruta y algo a la llegada.`
+                    : `Traslado de unas ${driveHours} h. No es un día completo en destino: solo paradas sobre la ruta.`,
                 activity_date: dayDate,
                 activity_time: "08:30",
                 place_name: `${block.prevCity} → ${block.city}`,
@@ -1324,11 +1412,6 @@ export async function POST(req: Request) {
               ...items,
             ];
           }
-          const transit = items.filter((it) => String(it.activity_kind || "").toLowerCase() === "transport");
-          const nonTransit = sortItemsByProximity(
-            items.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport")
-          );
-          items = [...transit.slice(0, 1), ...nonTransit.slice(0, 4)];
         } else if (items.length) {
           items = sortItemsByProximity(items);
         }
@@ -1350,6 +1433,16 @@ export async function POST(req: Request) {
           fillTimes,
           cityStop?.center ?? null
         );
+        if (isTransfer) {
+          items = scheduleAlongTransfer(
+            items,
+            prevStop?.center ?? null,
+            cityStop?.center ?? null,
+            driveHours,
+            "08:30",
+            dayWindow.latestMin
+          );
+        }
         if (
           (architectureDay?.dayType === "arrival" || (globalDayNum === 1 && dayWindow.maxSights === 0)) &&
           !items.some((it) => String(it.activity_kind || "").toLowerCase() === "rest")
@@ -1387,6 +1480,8 @@ export async function POST(req: Request) {
         ? stops.find((s) => s.label.toLowerCase() === prevBase.toLowerCase()) || null
         : null;
       const driveKm = cityStop && prevStop ? haversineKm(prevStop.center, cityStop.center) : 180;
+      const driveHours =
+        cityStop && prevStop ? roundedDriveHours(prevStop.center, cityStop.center) : Math.max(1, Math.round(driveKm / 55));
       const dayWindow = windowForTripDay({ dayIndex: day.day, totalDays, arrivalTime, departureTime });
       const architectMinSights =
         architectureDay?.dayType === "arrival"
@@ -1404,7 +1499,7 @@ export async function POST(req: Request) {
                       ? 2
                       : 1
                   : dayWindow.minSights;
-      const minSights = isTransfer ? Math.min(minSightsForDriveKm(driveKm), Math.max(architectMinSights, 1)) : architectMinSights;
+      const minSights = isTransfer ? minSightsForDriveHours(driveHours) : architectMinSights;
       const fillPool = isTransfer || architectureDay?.dayType === "transfer_scenic" || architectureDay?.dayType === "transfer_practical"
         ? [
             ...poisToNearbyPool(resolveStopPools(poisByStop, prevBase || "")),
@@ -1430,6 +1525,16 @@ export async function POST(req: Request) {
         fillTimes,
         cityStop?.center ?? null
       );
+      if (isTransfer) {
+        items = scheduleAlongTransfer(
+          items,
+          prevStop?.center ?? null,
+          cityStop?.center ?? null,
+          driveHours,
+          "08:30",
+          dayWindow.latestMin
+        );
+      }
       if (
         (architectureDay?.dayType === "arrival" || (day.day === 1 && dayWindow.maxSights === 0)) &&
         !items.some((it) => String(it.activity_kind || "").toLowerCase() === "rest")
@@ -1473,6 +1578,18 @@ export async function POST(req: Request) {
           cityStop?.center ?? null
         ),
       };
+    }
+
+    const driving = brief?.transport === "driving" || /\bcoche\b/i.test(mergedNotes);
+    const wineLimited = capWineries(repairedDaysOut, driving ? 2 : 4);
+    repairedDaysOut.splice(0, repairedDaysOut.length, ...wineLimited);
+    const lastDay = repairedDaysOut[repairedDaysOut.length - 1];
+    if (lastDay && departureTime) {
+      const w = windowForTripDay({ dayIndex: lastDay.day, totalDays, arrivalTime, departureTime });
+      lastDay.items = clipItemsToDayWindow(lastDay.items || [], w);
+      if (!(lastDay.items || []).some((it) => /margen al aeropuerto|devolver el coche/i.test(String(it.title || "")))) {
+        lastDay.items = [...(lastDay.items || []), airportBufferItem(lastDay.base || "", lastDay.date, departureTime)];
+      }
     }
 
     const activityCount = repairedDaysOut.reduce(

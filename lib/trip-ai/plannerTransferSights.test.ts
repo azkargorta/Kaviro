@@ -3,6 +3,7 @@ import {
   minSightsForDriveKm,
   notesWantSightsOnTransferDays,
   pointIsAlongRoute,
+  scheduleAlongTransfer,
   shouldKeepPoiOnTransferDay,
 } from "@/lib/trip-ai/plannerTransferSights";
 
@@ -12,9 +13,9 @@ const TILCARA = { lat: -23.5767, lng: -65.3934 };
 const ANFITEATRO = { lat: -25.85, lng: -65.88 };
 
 describe("plannerTransferSights", () => {
-  it("un traslado de ~3 h pide 3 visitas, no un día vacío", () => {
-    expect(minSightsForDriveKm(180)).toBe(3);
-    expect(minSightsForDriveKm(350)).toBe(2);
+  it("un traslado de 3-4 h pide 2 visitas en ruta, no un día lleno en destino", () => {
+    expect(minSightsForDriveKm(150)).toBe(2);
+    expect(minSightsForDriveKm(350)).toBe(1);
     expect(minSightsForDriveKm(600)).toBe(1);
   });
 
@@ -31,6 +32,23 @@ describe("plannerTransferSights", () => {
     expect(
       shouldKeepPoiOnTransferDay(ANFITEATRO, SALTA, CAFAYATE, [{ label: "Tilcara", center: TILCARA }], "Cafayate")
     ).toBe(true);
+  });
+
+  it("en un cruce de 7 h solo deja 1 parada en ruta, no un día lleno en destino", () => {
+    const scheduled = scheduleAlongTransfer(
+      [
+        { activity_kind: "transport", title: "Traslado", activity_time: "08:30" },
+        { activity_kind: "nature", title: "Garganta del Diablo", latitude: -25.85, longitude: -65.88, activity_time: "09:30" },
+        { activity_kind: "culture", title: "Pucará de Tilcara", latitude: -23.58, longitude: -65.39, activity_time: "17:30" },
+        { activity_kind: "culture", title: "Purmamarca", latitude: -23.75, longitude: -65.48, activity_time: "16:00" },
+      ],
+      CAFAYATE,
+      TILCARA,
+      7
+    );
+    const sights = scheduled.filter((it) => it.activity_kind !== "transport");
+    expect(sights.length).toBe(1);
+    expect(sights[0]?.title).toMatch(/Garganta|Parada en ruta/i);
   });
 
   it("no cuela Tilcara en un traslado Cafayate → Salta", () => {

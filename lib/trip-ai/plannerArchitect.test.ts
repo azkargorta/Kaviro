@@ -33,6 +33,8 @@ describe("plannerArchitect", () => {
     expect(prompt).toMatch(/20:00/);
     expect(prompt).toMatch(/Salta \(1 noches\), Tilcara \(2 noches\)/);
     expect(prompt).toMatch(/Travel Architect/i);
+    expect(prompt).toMatch(/Cafayate/);
+    expect(prompt).toMatch(/4\.5 h/);
   });
 
   it("parsea el JSON del arquitecto y cae al fallback si faltan días", () => {

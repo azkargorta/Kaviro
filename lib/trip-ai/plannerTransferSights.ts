@@ -2,9 +2,90 @@ import { haversineKm, type LatLng } from "@/lib/trip-ai/plannerStayRoute";
 
 export function minSightsForDriveKm(km: number): number {
   if (!Number.isFinite(km) || km <= 0) return 3;
-  if (km <= 250) return 3;
-  if (km <= 420) return 2;
+  const hours = (km * 1.3) / 55;
+  return minSightsForDriveHours(hours);
+}
+
+export function minSightsForDriveHours(hours: number): number {
+  if (!Number.isFinite(hours) || hours <= 2.5) return 3;
+  if (hours <= 4) return 2;
+  if (hours <= 5.5) return 1;
   return 1;
+}
+
+function clockToMin(t: string | null | undefined): number {
+  const s = String(t || "").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return 8 * 60 + 30;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function minToClock(total: number): string {
+  const n = Math.max(0, Math.min(23 * 60 + 59, Math.round(total)));
+  const h = Math.floor(n / 60);
+  const min = n % 60;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function skipLunch(min: number): number {
+  if (min >= 13 * 60 && min < 14 * 60 + 30) return 14 * 60 + 30;
+  return min;
+}
+
+export type TransferSchedulable = {
+  activity_time?: string | null;
+  activity_kind?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  title?: string;
+  description?: string | null;
+};
+
+/** Ordena paradas a lo largo del trayecto y les pone horas coherentes con el coche. */
+export function scheduleAlongTransfer<T extends TransferSchedulable>(
+  items: T[],
+  from: LatLng | null,
+  to: LatLng | null,
+  driveHours: number,
+  startClock = "08:30",
+  latestMin = 18 * 60
+): T[] {
+  const transport = items.filter((it) => String(it.activity_kind || "").toLowerCase() === "transport");
+  const rest = items.filter((it) => String(it.activity_kind || "").toLowerCase() === "rest");
+  const sights = items.filter((it) => {
+    const k = String(it.activity_kind || "").toLowerCase();
+    return k !== "transport" && k !== "rest";
+  });
+  const maxSights = driveHours >= 5.5 ? 1 : driveHours >= 4 ? 2 : 3;
+  const sorted = [...sights].sort((a, b) => {
+    if (!from) return 0;
+    const da =
+      typeof a.latitude === "number" && typeof a.longitude === "number"
+        ? haversineKm(from, { lat: a.latitude, lng: a.longitude })
+        : 999;
+    const db =
+      typeof b.latitude === "number" && typeof b.longitude === "number"
+        ? haversineKm(from, { lat: b.latitude, lng: b.longitude })
+        : 999;
+    return da - db;
+  });
+  const kept = sorted.slice(0, maxSights);
+  let cursor = skipLunch(clockToMin(startClock) + Math.min(90, Math.round(driveHours * 20)));
+  const timed = kept.map((it) => {
+    cursor = skipLunch(cursor);
+    const activity_time = minToClock(cursor);
+    cursor = skipLunch(cursor + 120);
+    const onRoute = from && to && typeof it.latitude === "number" && typeof it.longitude === "number"
+      ? pointIsAlongRoute({ lat: it.latitude, lng: it.longitude }, from, to)
+      : true;
+    const title = String(it.title || "");
+    const prefixed =
+      onRoute && title && !/^parada en ruta/i.test(title) && from && to
+        ? `Parada en ruta: ${title}`
+        : title;
+    return { ...it, activity_time, title: prefixed || it.title };
+  }).filter((it) => clockToMin(it.activity_time) <= latestMin);
+  return [...transport, ...timed, ...rest];
 }
 
 export function notesWantSightsOnTransferDays(notes: string): boolean {

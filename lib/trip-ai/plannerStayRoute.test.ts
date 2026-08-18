@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   allocateNightsOnRoute,
   buildStayRoute,
+  estimatedDriveHours,
   matchStopByHint,
   planStaysToMinimizeDriving,
+  repairStaysAvoidingLongHops,
+  roundedDriveHours,
 } from "@/lib/trip-ai/plannerStayRoute";
 
 const SALTA = { label: "Salta", center: { lat: -24.7859, lng: -65.4117 } };
@@ -22,7 +25,7 @@ describe("plannerStayRoute", () => {
     expect(route.some((s) => s.label === "Tilcara")).toBe(true);
   });
 
-  it("reparte 6 días en hub → radios → hub, sin noche puente de 1 día", () => {
+  it("no encadena Cafayate y Tilcara: el cruce directo supera las 4.5 h", () => {
     const stays = planStaysToMinimizeDriving([SALTA, CAFAYATE, TILCARA], 6, {
       startHint: "Aeropuerto de Salta",
       endHint: "aeropuerto de salta",
@@ -32,10 +35,11 @@ describe("plannerStayRoute", () => {
     expect(stays.reduce((n, s) => n + s.nights, 0)).toBe(6);
     expect(stays.some((s) => s.stop === "Cafayate")).toBe(true);
     expect(stays.some((s) => s.stop === "Tilcara")).toBe(true);
-    const middleHubNights = stays.filter((s, i) => s.stop === "Salta" && i > 0 && i < stays.length - 1);
-    expect(middleHubNights).toEqual([]);
-    expect(stays.find((s) => s.stop === "Cafayate")?.nights).toBeGreaterThanOrEqual(2);
-    expect(stays.find((s) => s.stop === "Tilcara")?.nights).toBeGreaterThanOrEqual(2);
+    for (let i = 1; i < stays.length; i++) {
+      const pair = [stays[i - 1]!.stop, stays[i]!.stop].sort().join("|");
+      expect(pair).not.toBe("Cafayate|Tilcara");
+    }
+    expect(stays.filter((s) => s.stop === "Salta").length).toBeGreaterThanOrEqual(2);
   });
 
   it("ruta lineal A→B→C si salida es C", () => {
@@ -54,5 +58,29 @@ describe("plannerStayRoute", () => {
     expect(allocateNightsOnRoute([SALTA], 5)).toEqual([
       { stop: "Salta", nights: 5, reason: "5 días para explorar a fondo" },
     ]);
+  });
+
+  it("estima Salta-Cafayate ~4 h y Cafayate-Tilcara mucho más", () => {
+    expect(roundedDriveHours(SALTA.center, CAFAYATE.center)).toBeGreaterThanOrEqual(3);
+    expect(roundedDriveHours(SALTA.center, CAFAYATE.center)).toBeLessThanOrEqual(5);
+    expect(estimatedDriveHours(CAFAYATE.center, TILCARA.center)).toBeGreaterThanOrEqual(5);
+  });
+
+  it("repara un salto Cafayate → Tilcara insertando Salta", () => {
+    const repaired = repairStaysAvoidingLongHops(
+      [
+        { stop: "Salta", nights: 1, reason: "" },
+        { stop: "Cafayate", nights: 2, reason: "" },
+        { stop: "Tilcara", nights: 3, reason: "" },
+      ],
+      [SALTA, CAFAYATE, TILCARA],
+      6,
+      "Aeropuerto de Salta"
+    );
+    for (let i = 1; i < repaired.length; i++) {
+      const pair = [repaired[i - 1]!.stop, repaired[i]!.stop].sort().join("|");
+      expect(pair).not.toBe("Cafayate|Tilcara");
+    }
+    expect(repaired.reduce((n, s) => n + s.nights, 0)).toBe(6);
   });
 });

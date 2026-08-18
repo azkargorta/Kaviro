@@ -27,6 +27,16 @@ export function haversineKm(a: LatLng, b: LatLng): number {
   );
 }
 
+/** Horas de coche realistas: haversine se queda corto en carreteras de montaña. */
+export function estimatedDriveHours(from: LatLng, to: LatLng): number {
+  const km = haversineKm(from, to) * 1.3;
+  return Math.max(0.5, km / 55);
+}
+
+export function roundedDriveHours(from: LatLng, to: LatLng): number {
+  return Math.max(1, Math.round(estimatedDriveHours(from, to)));
+}
+
 function bearingDeg(from: LatLng, to: LatLng): number {
   const dLng = ((to.lng - from.lng) * Math.PI) / 180;
   const lat1 = (from.lat * Math.PI) / 180;
@@ -126,10 +136,17 @@ export function buildStayRoute(
     if (others.length === 1) return collapseConsecutive([hub, others[0]!, hub]);
 
     if (othersAreOppositeSpokes(hub, others)) {
-      const ranked = [...others].sort((a, b) => haversineKm(hub.center, a.center) - haversineKm(hub.center, b.center));
-      // Una noche puente en el hub entre radios opuestos gasta un día entero
-      // en un traslado de 2–4 h. El cruce se hace en un solo día, con paradas.
-      return collapseConsecutive([hub, ...ranked, hub]);
+      const ranked = nearestNeighbor(others, hub.center);
+      const seq: GeoStop[] = [hub];
+      for (let i = 0; i < ranked.length; i++) {
+        seq.push(ranked[i]!);
+        const next = ranked[i + 1];
+        if (next && estimatedDriveHours(ranked[i]!.center, next.center) >= 4.5) {
+          seq.push(hub);
+        }
+      }
+      seq.push(hub);
+      return collapseConsecutive(seq);
     }
 
     return collapseConsecutive([hub, ...nearestNeighbor(others, hub.center), hub]);
@@ -213,4 +230,57 @@ export function planStaysToMinimizeDriving(
 ): StayBlock[] {
   const route = buildStayRoute(stops, opts);
   return allocateNightsOnRoute(route, totalDays);
+}
+
+function stopCenter(stops: GeoStop[], label: string): LatLng | null {
+  return matchStopByHint(stops, label)?.center || stops.find((s) => norm(s.label) === norm(label))?.center || null;
+}
+
+/** Si dos bases consecutivas piden más de 4.5 h de coche, inserta el hub de llegada/salida. */
+export function repairStaysAvoidingLongHops(
+  stays: StayBlock[],
+  stops: GeoStop[],
+  totalDays: number,
+  hubHint?: string | null
+): StayBlock[] {
+  if (stays.length < 2 || stops.length < 2) return stays;
+  const hub = matchStopByHint(stops, hubHint) || stops[0]!;
+  const out: StayBlock[] = [];
+  for (let i = 0; i < stays.length; i++) {
+    const cur = { ...stays[i]! };
+    const prev = out[out.length - 1];
+    if (prev && norm(prev.stop) === norm(cur.stop)) {
+      prev.nights += cur.nights;
+    } else {
+      out.push(cur);
+    }
+    const next = stays[i + 1];
+    if (!next) continue;
+    if (norm(cur.stop) === norm(hub.label) || norm(next.stop) === norm(hub.label)) continue;
+    const a = stopCenter(stops, cur.stop);
+    const b = stopCenter(stops, next.stop);
+    if (!a || !b || estimatedDriveHours(a, b) < 4.5) continue;
+    const last = out[out.length - 1]!;
+    if (norm(last.stop) === norm(hub.label)) continue;
+    if (last.nights > 1) last.nights -= 1;
+    else if (next.nights > 1) next.nights -= 1;
+    out.push({
+      stop: hub.label,
+      nights: 1,
+      reason: "Noche puente: el cruce directo superaría las 4.5 h de coche",
+    });
+  }
+  let sum = out.reduce((n, s) => n + s.nights, 0);
+  while (sum > totalDays) {
+    const idx = [...out.keys()].reverse().find((i) => out[i]!.nights > 1);
+    if (idx == null) break;
+    out[idx]!.nights -= 1;
+    sum -= 1;
+  }
+  while (sum < totalDays && out.length) {
+    const spoke = out.find((s) => norm(s.stop) !== norm(hub.label)) || out[out.length - 1]!;
+    spoke.nights += 1;
+    sum += 1;
+  }
+  return out.filter((s) => s.nights > 0);
 }

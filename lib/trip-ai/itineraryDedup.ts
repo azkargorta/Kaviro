@@ -26,7 +26,14 @@ export function activitiesLikelySame(a: string, b: string): boolean {
   if (!ka || !kb) return false;
   if (ka === kb) return true;
   if (ka.length >= 6 && kb.length >= 6 && (ka.includes(kb) || kb.includes(ka))) return true;
-  return false;
+  const parts = (s: string) =>
+    s
+      .split(/[\/|,]| y | e /i)
+      .map((x) => x.trim())
+      .filter((x) => x.length >= 5);
+  const pa = parts(ka);
+  const pb = parts(kb);
+  return pa.some((x) => pb.some((y) => x === y || (x.length >= 6 && y.length >= 6 && (x.includes(y) || y.includes(x)))));
 }
 
 /** Lugares que suelen necesitar más de un día (parques temáticos, parques nacionales grandes, etc.). */

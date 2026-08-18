@@ -2,6 +2,7 @@ import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import type { PlannerBrief } from "@/lib/trip-ai/plannerBrief";
 import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
+import { planStaysToMinimizeDriving, roundedDriveHours } from "@/lib/trip-ai/plannerStayRoute";
 
 export type ArchitectDayType =
   | "arrival"
@@ -117,6 +118,17 @@ export function buildArchitectPrompt(params: {
     ? params.forcedStays!.map((s) => `${s.stop} (${s.nights} noches)`).join(", ")
     : "ninguno";
   const sleepBases = params.brief?.sleepBases?.length ? params.brief.sleepBases.join(", ") : stopLabels.join(", ");
+  const legs = params.stops
+    .flatMap((a, i) => params.stops.slice(i + 1).map((b) => {
+      const h = roundedDriveHours(a.center, b.center);
+      return `- ${a.label} ↔ ${b.label}: unas ${h} h de coche (no uses 1-2 h si la cifra es mayor)`;
+    }))
+    .join("\n");
+  const wantsNature = (params.brief?.interests || []).some((x) => /natur|trek|excurs|paisaj|quebrada|salina|cerro|monta/i.test(x))
+    || /natur|trek|excurs/i.test(params.notes);
+  const wantsWine = (params.brief?.interests || []).some((x) => /vino|bodega|gastro/i.test(x))
+    || /vino|bodega/i.test(params.notes);
+  const driving = params.brief?.transport === "driving" || /coche|alquiler|carretera/i.test(params.notes);
   return `Eres el Travel Architect de Kaviro. Piensa el viaje COMPLETO antes de rellenar actividades.
 
 Devuelve SOLO JSON válido con este esquema:
@@ -140,14 +152,21 @@ Devuelve SOLO JSON válido con este esquema:
 REGLAS OBLIGATORIAS:
 1. Razonas el viaje entero, no días sueltos.
 2. Si la llegada es a las ${params.arrivalTime || "?"}, el primer día es de llegada y no debe tener un día turístico completo.
-3. Si la salida es a las ${params.departureTime || "?"}, el último día debe dejar margen real para volver.
-4. Un traslado panorámico de 2–4 h por carretera puede ser la actividad principal del día.
-5. No dejes días vacíos: incluso un traslado debe tener un resumen coherente y 1-3 anclas reales.
-6. Respeta estas bases deseadas del usuario como conjunto: ${sleepBases || "sin especificar"}.
-7. Si se te pasa un reparto de noches forzado, respétalo exactamente: ${forcedStaysText}.
-8. Optimiza la ruta para minimizar km anclando llegada y salida.
-9. Usa arrival, departure, transfer_scenic, transfer_practical, full o rest según corresponda.
-10. availableHours debe reflejar horas reales disponibles para turismo.
+3. Si la salida es a las ${params.departureTime || "?"}, el último día debe dejar margen real para volver al aeropuerto/estación (devolución de coche, combustible, 3 h de colchón antes del vuelo). No programes una excursión lejana ese día.
+4. Un traslado usa las horas de coche REALES de la lista de distancias. PROHIBIDO escribir "1 h" o "2 h" si la estimación es mayor.
+5. Si dos bases están a 4.5 h o más, NO las encadenes en un solo día ni duermas en una y al día siguiente en la otra sin pasar por el hub de llegada/salida. Inserta una noche en el hub o parte el cruce.
+6. En un día de traslado, mainActivities solo pueden ser paradas SOBRE la ruta (o a la llegada). Nunca una visita que esté en dirección contraria.
+7. No repitas la misma ancla en dos días (quebrada, garganta, anfiteatro, pueblo, bodega).
+8. ${wantsNature ? "El viajero pidió NATURALEZA: cada zona debe tener 1 excursión principal de paisaje con nombre propio real (cerros de colores, salinas, quebradas, miradores de altura, parques). No sustituyas eso por museos, plazas o iglesias." : "Prioriza experiencias propias del lugar, no relleno genérico."}
+9. ${wantsWine && driving ? "Vino/bodegas: máximo 1 cata por día y 2 en todo el viaje (hay un conductor)." : wantsWine ? "Vino/bodegas: máximo 2 visitas en todo el viaje." : "No satures el viaje de bodegas."}
+10. Ritmo ${params.brief?.pace || "balanced"}: deja 2 h entre anclas para comer, aparcar y retrasos. No encadenes 4 pueblos en un día.
+11. Si hay valle/bodegas y alta montaña, ve primero al valle y deja la altura para después.
+12. Respeta estas bases deseadas del usuario como conjunto: ${sleepBases || "sin especificar"}.
+13. Si se te pasa un reparto de noches forzado, respétalo exactamente salvo que viole la regla de 4.5 h: ${forcedStaysText}.
+14. availableHours = horas reales de turismo, restando el coche.
+
+Distancias estimadas en coche:
+${legs || "- sin pares"}
 
 Contexto del viaje:
 - Fechas: ${params.startDate} → ${params.endDate} (${params.totalDays} días)
@@ -213,6 +232,15 @@ export async function planTripArchitecture(params: {
   const baseByDay: string[] = [];
   for (const s of params.forcedStays || []) {
     for (let i = 0; i < s.nights; i++) baseByDay.push(s.stop);
+  }
+  if (!baseByDay.length && params.stops.length) {
+    const routed = planStaysToMinimizeDriving(params.stops, params.totalDays, {
+      startHint: params.brief?.arrival.place || params.brief?.destination,
+      endHint: params.brief?.departure.place || params.brief?.arrival.place,
+    });
+    for (const s of routed) {
+      for (let i = 0; i < s.nights; i++) baseByDay.push(s.stop);
+    }
   }
   if (!baseByDay.length) {
     const labels = params.stops.map((s) => s.label).filter(Boolean);

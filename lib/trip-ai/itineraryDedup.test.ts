@@ -10,6 +10,7 @@ describe("itineraryDedup", () => {
   it("detecta títulos equivalentes", () => {
     expect(activitiesLikelySame("Teatro Colón", "Visita Teatro Colón")).toBe(true);
     expect(activitiesLikelySame("Museo del Prado", "Parque del Retiro")).toBe(false);
+    expect(activitiesLikelySame("Garganta del Diablo", "Garganta del Diablo/Anfiteatro")).toBe(true);
   });
 
   it("elimina repetidos entre días salvo excepción multi-día", () => {
