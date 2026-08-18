@@ -3,6 +3,7 @@ import {
   allocateNightsOnRoute,
   buildStayRoute,
   estimatedDriveHours,
+  matchKnownStopLabel,
   matchStopByHint,
   planStaysToMinimizeDriving,
   repairStaysAvoidingLongHops,
@@ -52,6 +53,15 @@ describe("plannerStayRoute", () => {
 
   it("matchStopByHint encuentra Salta en el aeropuerto", () => {
     expect(matchStopByHint([SALTA, CAFAYATE], "Aeropuerto de Salta")?.label).toBe("Salta");
+  });
+
+  it("no confunde Cafayate, Salta con la ciudad de Salta", () => {
+    const labels = ["Salta", "Cafayate", "Tilcara"];
+    expect(matchKnownStopLabel("Cafayate, Salta", labels)).toBe("Cafayate");
+    expect(matchKnownStopLabel("Cafayate, Provincia de Salta", labels)).toBe("Cafayate");
+    expect(matchKnownStopLabel("Tilcara, Jujuy", labels)).toBe("Tilcara");
+    expect(matchKnownStopLabel("Aeropuerto de Salta", labels)).toBe("Salta");
+    expect(matchKnownStopLabel("Salta", labels)).toBe("Salta");
   });
 
   it("un solo destino usa todos los días ahí", () => {

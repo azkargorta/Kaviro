@@ -2,7 +2,7 @@ import { askTripAIWithUsage } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
 import type { PlannerBrief } from "@/lib/trip-ai/plannerBrief";
 import { addDaysIso } from "@/lib/trip-ai/tripCreationDates";
-import { planStaysToMinimizeDriving, roundedDriveHours } from "@/lib/trip-ai/plannerStayRoute";
+import { matchKnownStopLabel, planStaysToMinimizeDriving, roundedDriveHours } from "@/lib/trip-ai/plannerStayRoute";
 
 export type ArchitectDayType =
   | "arrival"
@@ -51,7 +51,7 @@ function normalizeDayType(v: unknown): ArchitectDayType {
   return "full";
 }
 
-function compactStaysFromDays(days: ArchitectDay[]): ArchitectStay[] {
+export function compactStaysFromDays(days: ArchitectDay[]): ArchitectStay[] {
   const out: ArchitectStay[] = [];
   for (const day of days) {
     const stop = clean(day.base);
@@ -140,11 +140,11 @@ export function architectureFromStays(params: {
       const prev = prevByDay.get(d.dayNum);
       if (!prev) return d;
       const sameBase = prev.base.toLowerCase() === d.base.toLowerCase();
+      if (!sameBase) return d;
       return {
         ...d,
-        dayType: sameBase || prev.dayType === "rest" ? prev.dayType : d.dayType,
         summary: prev.summary || d.summary,
-        mainActivities: sameBase ? prev.mainActivities : prev.mainActivities.slice(0, 1),
+        mainActivities: prev.mainActivities.length ? prev.mainActivities : d.mainActivities,
         availableHours: prev.availableHours || d.availableHours,
         notes: prev.notes ?? d.notes,
       };
@@ -171,6 +171,24 @@ export function coerceTripArchitecture(
     totalDays: params.totalDays,
   });
   return parseTripArchitecture(raw, fallback);
+}
+
+export function remapArchitectureToKnownStops(arch: TripArchitecture, labels: string[]): TripArchitecture {
+  const days = arch.days.map((d) => ({
+    ...d,
+    base: matchKnownStopLabel(d.base, labels),
+    transferFrom: d.transferFrom ? matchKnownStopLabel(d.transferFrom, labels) : null,
+    transferTo: d.transferTo ? matchKnownStopLabel(d.transferTo, labels) : null,
+  }));
+  return { ...arch, days, stays: compactStaysFromDays(days) };
+}
+
+export function omittedSleepBases(days: ArchitectDay[], requested: string[], labels: string[]): string[] {
+  const nights = new Set(days.map((d) => matchKnownStopLabel(d.base, labels).toLowerCase()));
+  return requested.filter((b) => {
+    const mapped = matchKnownStopLabel(b, labels);
+    return Boolean(mapped) && !nights.has(mapped.toLowerCase());
+  });
 }
 
 const DAY_TYPE_LABEL: Record<ArchitectDayType, string> = {
@@ -258,9 +276,11 @@ REGLAS OBLIGATORIAS:
 10. Ritmo ${params.brief?.pace || "balanced"}: deja 2 h entre anclas para comer, aparcar y retrasos. No encadenes 4 pueblos en un día.
 11. Si hay valle/costa suave y alta montaña o etapas duras, empieza por lo más suave.
 12. mainActivities OBLIGATORIAS: 1 o 2 nombres propios reales por día (no "explorar el centro").
-13. Respeta estas bases deseadas del usuario como conjunto: ${sleepBases || "sin especificar"}.
+13. Respeta estas bases deseadas del usuario como conjunto: ${sleepBases || "sin especificar"}. Cada base pedida debe aparecer al menos una noche en "days", salvo que sea imposible por fechas.
 14. Si se te pasa un reparto de noches forzado, respétalo exactamente salvo que viole la regla de 4.5 h: ${forcedStaysText}.
 15. availableHours = horas reales de turismo, restando el coche.
+16. "base" DEBE ser exactamente una de las bases candidatas (ej. "Cafayate"). PROHIBIDO "Cafayate, Salta" o poner la provincia como ciudad de noche.
+17. Las noches se leen de "days", no de un hub único. PROHIBIDO dormir todas las noches en la ciudad de llegada si el viajero pidió otras bases. "stays" tiene que coincidir con "days".
 
 Distancias estimadas en coche:
 ${legs || "- sin pares"}
@@ -297,20 +317,10 @@ export function parseTripArchitecture(raw: unknown, fallback: TripArchitecture):
       } satisfies ArchitectDay;
     })
     .filter((x): x is ArchitectDay => Boolean(x));
-  const stays: ArchitectStay[] = Array.isArray(data.stays)
-    ? data.stays.reduce<ArchitectStay[]>((acc, row) => {
-        const s = row && typeof row === "object" ? (row as Record<string, unknown>) : null;
-        if (!s) return acc;
-        const stop = clean(s.stop);
-        const nights = clamp(Number(s.nights) || 0, 0, 60);
-        if (!stop) return acc;
-        acc.push({ stop, nights, reason: clean(s.reason) || undefined });
-        return acc;
-      }, [])
-    : [];
+  const chosenDays = days.length === fallback.days.length ? days : fallback.days;
   return {
-    days: days.length === fallback.days.length ? days : fallback.days,
-    stays: stays.length ? stays : compactStaysFromDays(days.length ? days : fallback.days),
+    days: chosenDays,
+    stays: compactStaysFromDays(chosenDays),
     reasoning: clean(data.reasoning) || fallback.reasoning,
   };
 }

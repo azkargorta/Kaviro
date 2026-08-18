@@ -3,7 +3,9 @@ import {
   architectureFromStays,
   buildArchitectPrompt,
   formatTripArchitectureForChat,
+  omittedSleepBases,
   parseTripArchitecture,
+  remapArchitectureToKnownStops,
   type TripArchitecture,
 } from "@/lib/trip-ai/plannerArchitect";
 import { emptyPlannerBrief } from "@/lib/trip-ai/plannerBrief";
@@ -94,8 +96,106 @@ describe("plannerArchitect", () => {
     );
 
     expect(parsed.days).toEqual(fallback.days);
-    expect(parsed.stays).toEqual([{ stop: "Salta", nights: 1, reason: undefined }]);
+    expect(parsed.stays).toEqual([
+      { stop: "Salta", nights: 1 },
+      { stop: "Tilcara", nights: 1 },
+    ]);
     expect(parsed.reasoning).toBe("respuesta parcial");
+  });
+
+  it("ignora un stays que aplasta todo a Salta y lee las noches de los días", () => {
+    const fallback: TripArchitecture = {
+      days: [
+        {
+          dayNum: 1,
+          date: "2026-12-06",
+          dayType: "arrival",
+          base: "Salta",
+          summary: "Llegada.",
+          transferFrom: null,
+          transferTo: null,
+          mainActivities: [],
+          availableHours: 1,
+          notes: null,
+        },
+        {
+          dayNum: 2,
+          date: "2026-12-07",
+          dayType: "transfer_scenic",
+          base: "Cafayate",
+          summary: "Ruta a Cafayate.",
+          transferFrom: "Salta",
+          transferTo: "Cafayate",
+          mainActivities: ["Quebrada de las Conchas"],
+          availableHours: 8,
+          notes: null,
+        },
+      ],
+      stays: [
+        { stop: "Salta", nights: 1 },
+        { stop: "Cafayate", nights: 1 },
+      ],
+      reasoning: "fallback",
+    };
+
+    const parsed = parseTripArchitecture(
+      {
+        days: fallback.days,
+        stays: [{ stop: "Salta", nights: 6 }],
+        reasoning: "Valle y Quebrada.",
+      },
+      fallback
+    );
+
+    expect(parsed.stays.map((s) => s.stop)).toEqual(["Salta", "Cafayate"]);
+    expect(parsed.days[1]?.base).toBe("Cafayate");
+  });
+
+  it("no pega el resumen de Cafayate sobre una noche que pasó a Salta", () => {
+    const previous: TripArchitecture = {
+      reasoning: "Valle primero.",
+      stays: [
+        { stop: "Salta", nights: 1 },
+        { stop: "Cafayate", nights: 1 },
+      ],
+      days: [
+        {
+          dayNum: 1,
+          date: "2026-12-06",
+          dayType: "arrival",
+          base: "Salta",
+          summary: "Llegada 20:00 y descanso.",
+          transferFrom: null,
+          transferTo: null,
+          mainActivities: [],
+          availableHours: 1,
+          notes: null,
+        },
+        {
+          dayNum: 2,
+          date: "2026-12-07",
+          dayType: "transfer_scenic",
+          base: "Cafayate",
+          summary: "Ruta Salta → Cafayate. El trayecto forma parte del viaje y admite paradas.",
+          transferFrom: "Salta",
+          transferTo: "Cafayate",
+          mainActivities: ["Quebrada de las Conchas"],
+          availableHours: 8,
+          notes: null,
+        },
+      ],
+    };
+
+    const next = architectureFromStays({
+      stays: [{ stop: "Salta", nights: 2 }],
+      startDate: "2026-12-06",
+      totalDays: 2,
+      previous,
+    });
+
+    expect(next.days.every((d) => d.base === "Salta")).toBe(true);
+    expect(next.days[1]?.summary).not.toMatch(/Cafayate/);
+    expect(next.days[1]?.mainActivities).toEqual([]);
   });
 
   it("escribe el esqueleto del viaje para el chat, con anclas y noches", () => {
@@ -188,6 +288,49 @@ describe("plannerArchitect", () => {
     expect(next.days[0]?.mainActivities).toEqual(["Bodega El Esteco"]);
     expect(next.days[1]?.base).toBe("Salta");
     expect(next.days[1]?.dayType).toBe("departure");
+    expect(next.days[1]?.summary).not.toMatch(/Vino y pueblos/);
+    expect(next.days[1]?.mainActivities).toEqual([]);
     expect(next.stays.map((s) => s.stop)).toEqual(["Cafayate", "Salta"]);
+  });
+
+  it("remapea Cafayate, Salta a Cafayate y detecta bases pedidas que no tienen noche", () => {
+    const arch: TripArchitecture = {
+      reasoning: null,
+      stays: [{ stop: "Salta", nights: 2 }],
+      days: [
+        {
+          dayNum: 1,
+          date: "2026-12-06",
+          dayType: "arrival",
+          base: "Salta",
+          summary: "Llegada.",
+          transferFrom: null,
+          transferTo: null,
+          mainActivities: [],
+          availableHours: 1,
+          notes: null,
+        },
+        {
+          dayNum: 2,
+          date: "2026-12-07",
+          dayType: "full",
+          base: "Cafayate, Salta",
+          summary: "Valle.",
+          transferFrom: "Salta",
+          transferTo: "Cafayate, Salta",
+          mainActivities: ["Quebrada de las Conchas"],
+          availableHours: 8,
+          notes: null,
+        },
+      ],
+    };
+
+    const remapped = remapArchitectureToKnownStops(arch, ["Salta", "Cafayate", "Tilcara"]);
+    expect(remapped.days[1]?.base).toBe("Cafayate");
+    expect(remapped.days[1]?.transferTo).toBe("Cafayate");
+    expect(remapped.stays.map((s) => s.stop)).toEqual(["Salta", "Cafayate"]);
+    expect(omittedSleepBases(remapped.days, ["Salta", "Cafayate", "Tilcara"], ["Salta", "Cafayate", "Tilcara"])).toEqual([
+      "Tilcara",
+    ]);
   });
 });

@@ -11,6 +11,33 @@ function norm(s: string): string {
     .replace(/\s+/g, " ");
 }
 
+/**
+ * Resuelve un nombre del modelo a una base conocida.
+ * "Cafayate, Salta" debe ser Cafayate, no Salta; "Aeropuerto de Salta" sí es Salta.
+ */
+export function matchKnownStopLabel(name: string, labels: string[]): string {
+  const raw = String(name ?? "").trim();
+  if (!raw || !labels.length) return raw;
+  const n = norm(raw);
+  let best: string | null = null;
+  let bestScore = 0;
+  for (const label of labels) {
+    const l = norm(label);
+    if (!l) continue;
+    let score = 0;
+    if (n === l) score = 1000;
+    else if (n.startsWith(`${l},`) || n.startsWith(`${l} `) || n.startsWith(`${l}/`)) score = 800 + l.length;
+    else if (norm(n.split(",")[0] || "") === l) score = 800 + l.length;
+    else if (/(aeropuerto|airport|estacion|station|terminal)/.test(n) && n.endsWith(l)) score = 700 + l.length;
+    else if (n.endsWith(` ${l}`) || n.endsWith(`, ${l}`)) score = 300 + l.length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = label;
+    }
+  }
+  return best && bestScore >= 500 ? best : raw;
+}
+
 export function haversineKm(a: LatLng, b: LatLng): number {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;

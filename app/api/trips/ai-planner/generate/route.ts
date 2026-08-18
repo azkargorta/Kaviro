@@ -13,7 +13,9 @@ import {
   architectureFromStays,
   coerceTripArchitecture,
   formatTripArchitectureForChat,
+  omittedSleepBases,
   planTripArchitecture,
+  remapArchitectureToKnownStops,
   type ArchitectDay,
   type TripArchitecture,
 } from "@/lib/trip-ai/plannerArchitect";
@@ -48,7 +50,7 @@ import {
   type PlannerPreferences,
 } from "@/lib/trip-ai/plannerPreferences";
 import { consolidateRestaurantsForDay } from "@/lib/trip-ai/restaurantPlans";
-import { planStaysToMinimizeDriving, repairStaysAvoidingLongHops, roundedDriveHours } from "@/lib/trip-ai/plannerStayRoute";
+import { matchKnownStopLabel, planStaysToMinimizeDriving, repairStaysAvoidingLongHops, roundedDriveHours } from "@/lib/trip-ai/plannerStayRoute";
 import { isSkippablePlace } from "@/lib/trip-ai/plannerChatStops";
 import { normalizePlannerBrief } from "@/lib/trip-ai/plannerBrief";
 import {
@@ -450,12 +452,7 @@ function resolveStopPools(
 }
 
 function matchKnownStop(name: string, stops: Array<{ label: string }>): string {
-  const lower = cleanString(name).toLowerCase();
-  if (!lower) return name;
-  const exact = stops.find((s) => s.label.toLowerCase() === lower);
-  if (exact) return exact.label;
-  const partial = stops.find((s) => s.label.toLowerCase().includes(lower) || lower.includes(s.label.toLowerCase()));
-  return partial?.label || name;
+  return matchKnownStopLabel(name, stops.map((s) => s.label));
 }
 
 function syntheticCityPool(city: string, center?: LatLng | null): NearbyPoi[] {
@@ -1160,8 +1157,18 @@ export async function POST(req: Request) {
         logger.error("[ai-planner] architect failed:", e);
       }
     }
+    if (architecture) {
+      architecture = remapArchitectureToKnownStops(architecture, stops.map((s) => s.label));
+    }
 
-    const architectStays = (architecture?.stays || []).filter((s) => cleanString(s.stop) && Number(s.nights) > 0);
+    const requestedBases = (brief?.sleepBases || []).filter(Boolean);
+    const omittedBases =
+      architecture && requestedBases.length > 1 && totalDays >= requestedBases.length
+        ? omittedSleepBases(architecture.days, requestedBases, stops.map((s) => s.label))
+        : [];
+    const architectStays = omittedBases.length
+      ? []
+      : (architecture?.stays || []).filter((s) => cleanString(s.stop) && Number(s.nights) > 0);
     if (architectStays.length) {
       stays = architectStays.map((s) => ({ ...s, stop: matchKnownStop(s.stop, stops) }));
     } else if (parsedStays.length) {
