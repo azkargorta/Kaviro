@@ -20,6 +20,7 @@ import {
   resolvePlannerBriefDates,
   type PlannerBrief,
 } from "@/lib/trip-ai/plannerBrief";
+import type { TripArchitecture } from "@/lib/trip-ai/plannerArchitect";
 import { savePlannerProposalSnapshot, snapshotFromPlannerDraft } from "@/lib/trip-ai/plannerProposalStorage";
 import { PLANNER_MAX_DAYS_MESSAGE, plannerDaysTooLong } from "@/lib/trip-ai/plannerGenerateLimits";
 import {
@@ -47,7 +48,7 @@ type Poi = { name: string; lat: number; lng: number };
 type DraftDayItem = { title: string; description: string | null; activity_date: string; activity_time: string | null; place_name: string | null; address: string | null; latitude: number | null; longitude: number | null; activity_kind: Category; activity_type: string | null; source: string | null };
 type DraftDay = { day: number; date: string; base: string; items: DraftDayItem[] };
 type StayRow = { stop: string; nights: number; reason?: string };
-type ApiDraft = { totalDays: number; startDate: string; endDate: string; destinations: string[]; stays: StayRow[]; baseCityByDay: string[]; suggestions: Record<string, Array<{ category: Exclude<Category, "transport">; pois: Poi[] }>>; days: DraftDay[]; viability?: ViabilityResult | null; _debug?: { mergedNotes: string; blocks: Array<{ city: string; nights: number; prompt: string | null; rawOutput: string | null; itemsGenerated: number; itemsFiltered: number; emptyDays: number }> } };
+type ApiDraft = { totalDays: number; startDate: string; endDate: string; destinations: string[]; stays: StayRow[]; baseCityByDay: string[]; suggestions: Record<string, Array<{ category: Exclude<Category, "transport">; pois: Poi[] }>>; days: DraftDay[]; architecture?: TripArchitecture | null; viability?: ViabilityResult | null; _debug?: { mergedNotes: string; blocks: Array<{ city: string; nights: number; prompt: string | null; rawOutput: string | null; itemsGenerated: number; itemsFiltered: number; emptyDays: number }> } };
 type ViabilityResult = { viable: boolean; warning: string; suggestions: Array<{ stops: string[]; reason: string }> };
 type ChatMessage = { role: "user" | "assistant"; text: string };
 type CurrencyCode = "EUR" | "USD" | "GBP" | "ARS" | "MXN" | "CLP" | "BRL" | "JPY" | "CAD" | "AUD" | "CHF";
@@ -848,6 +849,8 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
           end_date: ed,
           ...(stays.length ? { stays } : {}),
           freeText: notes,
+          brief: opts?.brief ?? interviewBrief ?? undefined,
+          architecture: draft?.architecture || undefined,
           arrivalPlace: opts?.brief?.arrival.place || interviewBrief?.arrival.place || undefined,
           arrivalTime: opts?.brief?.arrival.time || interviewBrief?.arrival.time || undefined,
           departurePlace: opts?.brief?.departure.place || interviewBrief?.departure.place || undefined,

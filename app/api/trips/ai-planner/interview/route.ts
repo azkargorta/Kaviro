@@ -158,34 +158,58 @@ export async function POST(req: Request) {
     }
 
     const todayIso = new Date().toISOString().slice(0, 10);
-    const { text, usage } = await askTripAIWithUsage(buildExtractPrompt(todayIso, prev, message), "planning", {
-      provider: "gemini",
-      maxOutputTokens: 2048,
-      responseMimeType: "application/json",
-    });
+    const prompt = buildExtractPrompt(todayIso, prev, message);
+    let parsed: Record<string, unknown> | null = null;
+    let lastUsage: Awaited<ReturnType<typeof askTripAIWithUsage>>["usage"] | null = null;
 
-    await trackAiUsage({
-      supabase,
-      userId,
-      provider: "gemini",
-      monthKey: monthKeyUtc(),
-      usage,
-    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { text, usage } = await askTripAIWithUsage(prompt, "planning", {
+        provider: "gemini",
+        maxOutputTokens: 2048,
+        responseMimeType: "application/json",
+      });
+      lastUsage = usage;
+      try {
+        parsed = extractJsonObject(text) as Record<string, unknown>;
+        break;
+      } catch {
+        if (attempt === 1) {
+          // Last attempt: return a graceful error message instead of exposing "JSON inválido"
+          return NextResponse.json({
+            ok: true,
+            brief: prev,
+            missingField: getPlannerMissingField(prev),
+            nextQuestion: null,
+            readyToPropose: false,
+            proposedSleepBases: [] as string[],
+            assistantReply: "Perdona, no he podido procesar tu mensaje. ¿Puedes reformularlo de forma más corta o directa?",
+          });
+        }
+      }
+    }
 
-    const parsed = extractJsonObject(text) as Record<string, unknown>;
-    const extracted = normalizePlannerBrief(parsed);
+    if (lastUsage) {
+      await trackAiUsage({
+        supabase,
+        userId,
+        provider: "gemini",
+        monthKey: monthKeyUtc(),
+        usage: lastUsage,
+      });
+    }
+    const extracted = normalizePlannerBrief(parsed!);
     let brief = mergePlannerBrief(prev, extracted);
     if (skipPatch) brief = mergePlannerBrief(brief, skipPatch);
 
-    const proposedSleepBases = Array.isArray(parsed.proposedSleepBases)
-      ? [...new Set(parsed.proposedSleepBases.map((x) => String(x || "").trim()).filter(Boolean))].slice(0, 8)
+    const proposedSleepBases = Array.isArray(parsed!.proposedSleepBases)
+      ? [...new Set((parsed!.proposedSleepBases as unknown[]).map((x) => String(x || "").trim()).filter(Boolean))].slice(0, 8)
       : [];
 
     const missingField = getPlannerMissingField(brief);
     const readyToPropose = missingField == null;
     const modelReply =
-      typeof parsed.assistantReply === "string" && parsed.assistantReply.trim()
-        ? parsed.assistantReply.trim()
+      typeof parsed!.assistantReply === "string" && (parsed!.assistantReply as string).trim()
+        ? (parsed!.assistantReply as string).trim()
         : "He actualizado la ficha con lo que me has contado.";
 
     const nextQuestion = readyToPropose
