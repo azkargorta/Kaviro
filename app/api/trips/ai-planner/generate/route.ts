@@ -142,6 +142,57 @@ function minutesToRuleClock(total: number) {
 }
 function sumPools(p: Record<Category, Poi[]>) { return ALL_CATEGORIES.reduce((n, k) => n + (p[k]?.length || 0), 0); }
 
+function parseGeminiPoiFallback(raw: string, limit = 24): Record<Category, Poi[]> | null {
+  let parsed: unknown = null;
+  try {
+    parsed = extractJsonObject(raw);
+  } catch {
+    return null;
+  }
+  const pools = emptyCategoryPools();
+  const pushPoi = (cat: Category, row: unknown) => {
+    if (!row || typeof row !== "object") return;
+    const rec = row as Record<string, unknown>;
+    const name = cleanString(rec.name || rec.title || rec.place);
+    const lat = typeof rec.lat === "number" ? rec.lat : Number(rec.lat);
+    const lng =
+      typeof rec.lng === "number"
+        ? rec.lng
+        : typeof rec.lon === "number"
+          ? rec.lon
+          : Number(rec.lng ?? rec.lon);
+    if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (pools[cat].some((poi) => poi.name.toLowerCase() === name.toLowerCase())) return;
+    if (pools[cat].length >= limit) return;
+    pools[cat].push({ name, lat, lng });
+  };
+  if (Array.isArray(parsed)) {
+    for (const row of parsed) pushPoi("culture", row);
+  } else if (parsed && typeof parsed === "object") {
+    const obj = parsed as Record<string, unknown>;
+    for (const cat of ALL_CATEGORIES) {
+      const rows = obj[cat];
+      if (Array.isArray(rows)) for (const row of rows) pushPoi(cat, row);
+    }
+    if (Array.isArray(obj.places)) {
+      for (const row of obj.places) {
+        const rec = row && typeof row === "object" ? (row as Record<string, unknown>) : null;
+        const category = cleanString(rec?.category).toLowerCase();
+        const cat = (ALL_CATEGORIES as string[]).includes(category) ? (category as Category) : "culture";
+        pushPoi(cat, row);
+      }
+    }
+  }
+  if (!sumPools(pools)) return null;
+  const excursionSeed = [...pools.nature, ...pools.culture, ...pools.viewpoint];
+  for (const poi of excursionSeed) {
+    if (pools.excursion.length >= limit) break;
+    if (pools.excursion.some((it) => it.name.toLowerCase() === poi.name.toLowerCase())) continue;
+    pools.excursion.push(poi);
+  }
+  return pools;
+}
+
 // ─── Notes helpers ────────────────────────────────────────────────────────────
 
 function mergeNotes(freeText: string, rulesRaw: unknown): string {
@@ -571,25 +622,29 @@ async function generateCityItinerary(
     });
     let raw = "";
     try {
-      raw = await askGemini(prompt, "planning", { maxOutputTokens: 4096 });
-      const parsed = extractJsonObject(raw) as { days?: Array<{ items?: unknown[] }> } | null;
-      if (!parsed?.days || !Array.isArray(parsed.days)) {
-        return { days: [], prompt, rawOutput: raw };
+      for (let attempt = 0; attempt < 2; attempt++) {
+        raw = await askGemini(prompt, "planning", {
+          maxOutputTokens: 4096,
+          responseMimeType: "application/json",
+        });
+        const parsed = extractJsonObject(raw) as { days?: Array<{ items?: unknown[] }> } | null;
+        if (!parsed?.days || !Array.isArray(parsed.days)) continue;
+        const days: PlannerDayWithMeta[] = parsed.days.map((d, idx) => {
+          const date = chunk[idx]?.date ?? chunk[0]!.date;
+          const rawItems = Array.isArray(d.items) ? d.items : [];
+          const items = parseItems(rawItems, date);
+          return {
+            day: chunk[idx]?.dayNum ?? idx + 1,
+            date,
+            base: city,
+            items,
+            _raw_item_count: rawItems.length,
+            _filtered_count: rawItems.length - items.length,
+          };
+        });
+        return { days, prompt, rawOutput: raw };
       }
-      const days: PlannerDayWithMeta[] = parsed.days.map((d, idx) => {
-        const date = chunk[idx]?.date ?? chunk[0]!.date;
-        const rawItems = Array.isArray(d.items) ? d.items : [];
-        const items = parseItems(rawItems, date);
-        return {
-          day: chunk[idx]?.dayNum ?? idx + 1,
-          date,
-          base: city,
-          items,
-          _raw_item_count: rawItems.length,
-          _filtered_count: rawItems.length - items.length,
-        };
-      });
-      return { days, prompt, rawOutput: raw };
+      return { days: [], prompt, rawOutput: raw };
     } catch (e) {
       logger.error(`[ai-planner] chunk ${chunkIndex} failed for "${city}":`, e);
       return { days: [], prompt, rawOutput: raw || String(e) };
@@ -789,6 +844,35 @@ async function fetchAllPoisFromOverpass(center: LatLng, radiusMeters: number): P
   return null;
 }
 
+async function fetchAllPoisFromGemini(stop: { label: string; center: LatLng }): Promise<Record<Category, Poi[]> | null> {
+  const prompt = `Devuelve SOLO JSON válido con lugares reales para visitar cerca de ${stop.label}.
+
+Esquema:
+{
+  "culture": [{"name":"...","lat":0,"lng":0}],
+  "nature": [{"name":"...","lat":0,"lng":0}],
+  "viewpoint": [{"name":"...","lat":0,"lng":0}],
+  "market": [{"name":"...","lat":0,"lng":0}],
+  "gastro_experience": [{"name":"...","lat":0,"lng":0}],
+  "neighborhood": [{"name":"...","lat":0,"lng":0}]
+}
+
+Reglas:
+- Lugares reales y turísticos, no genéricos.
+- Coordenadas plausibles cerca de ${stop.label}.
+- Entre 4 y 10 lugares por categoría si existen.
+- No inventes si no estás seguro; mejor menos lugares.`;
+  try {
+    const raw = await askGemini(prompt, "planning", {
+      maxOutputTokens: 3072,
+      responseMimeType: "application/json",
+    });
+    return parseGeminiPoiFallback(raw, 20);
+  } catch {
+    return null;
+  }
+}
+
 type PoiLoadResult = { pools: Record<Category, Poi[]>; source: "overpass" | "gemini" } | { pools: null; err: string };
 
 async function loadPoisForStop(
@@ -799,6 +883,8 @@ async function loadPoisForStop(
 ): Promise<PoiLoadResult> {
   const rough = await fetchAllPoisFromOverpass(stop.center, 12_000);
   if (rough && sumPools(rough) > 0) return { pools: rough, source: "overpass" };
+  const gemini = await fetchAllPoisFromGemini(stop);
+  if (gemini && sumPools(gemini) > 0) return { pools: gemini, source: "gemini" };
   return { pools: null, err: `No he encontrado lugares suficientes para "${stop.label}". Prueba con una ciudad concreta.` };
 }
 

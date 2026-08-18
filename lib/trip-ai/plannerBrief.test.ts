@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPlannerFieldSkip,
   buildPlannerFreeText,
   emptyPlannerBrief,
   getPlannerMissingField,
+  isPlannerSkipPhrase,
   mergePlannerBrief,
   normalizePlannerBrief,
   plannerDestinationsForGenerate,
@@ -21,7 +23,7 @@ describe("plannerBrief", () => {
     expect(getPlannerMissingField(brief)).toBe("sleepBases");
   });
 
-  it("no pide bases si es una ciudad concreta", () => {
+  it("no pide bases si es una ciudad concreta, pero sí compañía", () => {
     const brief = normalizePlannerBrief({
       destination: "Lisboa",
       destinationKind: "city",
@@ -30,11 +32,11 @@ describe("plannerBrief", () => {
       arrivalSkipped: true,
       departureSkipped: true,
     });
-    expect(getPlannerMissingField(brief)).toBe(null);
+    expect(getPlannerMissingField(brief)).toBe("travelers");
     expect(plannerDestinationsForGenerate(brief)).toEqual(["Lisboa"]);
   });
 
-  it("usa sleepBases para generar", () => {
+  it("usa sleepBases para generar y sigue pidiendo el perfil del viaje", () => {
     const brief = normalizePlannerBrief({
       destination: "NOA",
       destinationKind: "region",
@@ -45,7 +47,7 @@ describe("plannerBrief", () => {
       departureSkipped: true,
       transport: "driving",
     });
-    expect(getPlannerMissingField(brief)).toBe(null);
+    expect(getPlannerMissingField(brief)).toBe("travelers");
     expect(plannerDestinationsForGenerate(brief)).toEqual(["Salta", "Tilcara"]);
   });
 
@@ -66,7 +68,7 @@ describe("plannerBrief", () => {
     expect(notes).toMatch(/coche/i);
   });
 
-  it("acepta llegada y salida abiertas", () => {
+  it("acepta llegada y salida abiertas y pasa a preguntar compañía", () => {
     const withDates = normalizePlannerBrief({
       destination: "Lisboa",
       destinationKind: "city",
@@ -75,7 +77,7 @@ describe("plannerBrief", () => {
       arrivalSkipped: true,
       departureSkipped: true,
     });
-    expect(getPlannerMissingField(withDates)).toBe(null);
+    expect(getPlannerMissingField(withDates)).toBe("travelers");
   });
 
   it("pide transporte si hay más de una base", () => {
@@ -89,5 +91,42 @@ describe("plannerBrief", () => {
       departureSkipped: true,
     });
     expect(getPlannerMissingField(brief)).toBe("transport");
+  });
+
+  it("pide estilo y ritmo después de la compañía", () => {
+    const brief = normalizePlannerBrief({
+      destination: "Lisboa",
+      destinationKind: "city",
+      startDate: "2026-12-06",
+      endDate: "2026-12-11",
+      arrivalSkipped: true,
+      departureSkipped: true,
+      travelersType: "couple",
+    });
+    expect(getPlannerMissingField(brief)).toBe("style");
+    const withStyle = mergePlannerBrief(brief, normalizePlannerBrief({ interests: ["naturaleza"] }));
+    expect(getPlannerMissingField(withStyle)).toBe("pace");
+  });
+
+  it("queda listo si se saltan compañía, estilo y ritmo", () => {
+    const brief = normalizePlannerBrief({
+      destination: "Lisboa",
+      destinationKind: "city",
+      startDate: "2026-12-06",
+      endDate: "2026-12-11",
+      arrivalSkipped: true,
+      departureSkipped: true,
+      travelersSkipped: true,
+      styleSkipped: true,
+      paceSkipped: true,
+    });
+    expect(getPlannerMissingField(brief)).toBe(null);
+  });
+
+  it("marca ritmo equilibrado al saltar el ritmo", () => {
+    const patch = applyPlannerFieldSkip("pace");
+    expect(patch?.paceSkipped).toBe(true);
+    expect(patch?.pace).toBe("balanced");
+    expect(isPlannerSkipPhrase("tú decide")).toBe(true);
   });
 });

@@ -9,7 +9,10 @@ import {
   getPlannerMissingField,
   mergePlannerBrief,
   normalizePlannerBrief,
+  applyPlannerFieldSkip,
+  isPlannerSkipPhrase,
   PLANNER_MISSING_QUESTIONS,
+  PLANNER_QUICK_REPLIES,
   type PlannerBrief,
   type PlannerMissingField,
 } from "@/lib/trip-ai/plannerBrief";
@@ -18,21 +21,11 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const WELCOME =
-  "Cuéntame tu viaje: a dónde queréis ir, cuándo, cómo os movéis y cualquier detalle (vuelos, coche, pueblos de alrededor…). Con lo que me digas relleno la ficha y te pregunto solo lo que falte.";
+  "Cuéntame tu viaje: a dónde queréis ir, cuándo y cómo os movéis. Luego te pregunto solo tres cosas para afinarlo (compañía, estilo y ritmo). Con un mensaje largo también vale.";
 
 function userSkippedOpenField(text: string, field: PlannerMissingField | null): PlannerBrief | null {
-  if (field !== "arrival" && field !== "departure") return null;
-  const q = text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  if (!/\b(no lo se|no se|aun no|todavia no|da igual|dejalo abierto|sin hora|no tengo hora|no lo tengo|mas adelante)\b/.test(q)) {
-    return null;
-  }
-  const patch = emptyPlannerBrief();
-  if (field === "arrival") patch.arrivalSkipped = true;
-  if (field === "departure") patch.departureSkipped = true;
-  return patch;
+  if (!isPlannerSkipPhrase(text)) return null;
+  return applyPlannerFieldSkip(field);
 }
 
 function buildExtractPrompt(todayIso: string, brief: PlannerBrief, userText: string): string {
@@ -47,6 +40,7 @@ Para cada mensaje:
 4. Pregunta como máximo UNA cosa principal (la app añade la pregunta; tú resume).
 5. No preguntes lo que ya está en la ficha.
 6. Acepta "no lo sé", "tú decide" y respuestas flexibles.
+7. Extrae también compañía, estilo (intereses / imprescindibles) y ritmo si el usuario los menciona. La app preguntará eso DESPUÉS de la logística; tú no adelantes esas preguntas si aún faltan fechas o bases.
 
 Devuelve SOLO un objeto JSON (sin markdown) con este esquema. Usa null o [] si no consta:
 
@@ -74,6 +68,9 @@ Devuelve SOLO un objeto JSON (sin markdown) con este esquema. Usa null o [] si n
   "suggestedTripName": string|null,
   "arrivalSkipped": boolean,
   "departureSkipped": boolean,
+  "travelersSkipped": boolean,
+  "styleSkipped": boolean,
+  "paceSkipped": boolean,
   "proposedSleepBases": string[],
   "assistantReply": string
 }
@@ -90,7 +87,7 @@ Reglas de extracción:
 - Fechas: en un relato en español, "6 de diciembre" y "11/12" en el mismo contexto suelen ser el mismo mes. time en 24h.
 - transport driving si dice coche, alquiler, auto, carretera.
 - nearbyExcursions "yes" si quiere pueblos o alrededores.
-- arrivalSkipped/departureSkipped true solo si el usuario dice que no sabe hora/lugar.
+- arrivalSkipped/departureSkipped/travelersSkipped/styleSkipped/paceSkipped true solo si el usuario dice que no sabe o «tú decide».
 - assistantReply: 2-5 frases en español. Resume lo entendido. Si acepta varias bases, deja claro que el orden de noches lo calculará el plan (llegada/salida y menos km), no el orden en que las ha dicho. NO hagas la siguiente pregunta (la app la añade). Si propones bases, menciónalas.
 - No inventes reservas, horarios de apertura ni precios. Separa hechos de decisiones.
 - Si hay homónimos de ciudad, pregunta el país en assistantReply.
@@ -135,6 +132,7 @@ export async function POST(req: Request) {
         nextQuestion: WELCOME,
         readyToPropose: false,
         proposedSleepBases: [] as string[],
+        quickReplies: [] as string[],
         assistantReply: WELCOME,
       });
     }
@@ -182,6 +180,7 @@ export async function POST(req: Request) {
             nextQuestion: null,
             readyToPropose: false,
             proposedSleepBases: [] as string[],
+            quickReplies: [] as string[],
             assistantReply: "Perdona, no he podido procesar tu mensaje. ¿Puedes reformularlo de forma más corta o directa?",
           });
         }
@@ -213,7 +212,7 @@ export async function POST(req: Request) {
         : "He actualizado la ficha con lo que me has contado.";
 
     const nextQuestion = readyToPropose
-      ? "Con esto puedo proponerte un itinerario. ¿Lo genero? Después podrás descargar un PDF y decidir si creas el viaje o lo ajustamos."
+      ? "Con esto ya puedo diseñar el viaje (días, bases y actividades). ¿Lo genero? Después podrás descargar un PDF y decidir si creas el viaje o lo ajustamos."
       : PLANNER_MISSING_QUESTIONS[missingField!];
 
     const assistantReply = readyToPropose ? `${modelReply}\n\n${nextQuestion}` : `${modelReply}\n\n${nextQuestion}`;
@@ -225,6 +224,7 @@ export async function POST(req: Request) {
       nextQuestion,
       readyToPropose,
       proposedSleepBases: brief.sleepBases.length ? [] : proposedSleepBases,
+      quickReplies: readyToPropose ? [] : PLANNER_QUICK_REPLIES[missingField!] || [],
       assistantReply,
     });
   } catch (e) {

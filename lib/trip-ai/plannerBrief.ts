@@ -41,6 +41,9 @@ export type PlannerBrief = {
   suggestedTripName: string | null;
   arrivalSkipped: boolean;
   departureSkipped: boolean;
+  travelersSkipped: boolean;
+  styleSkipped: boolean;
+  paceSkipped: boolean;
 };
 
 export type PlannerMissingField =
@@ -49,7 +52,10 @@ export type PlannerMissingField =
   | "dates"
   | "arrival"
   | "departure"
-  | "transport";
+  | "transport"
+  | "travelers"
+  | "style"
+  | "pace";
 
 const EMPTY_LEG: PlannerLeg = { place: null, date: null, time: null };
 
@@ -78,6 +84,9 @@ export function emptyPlannerBrief(): PlannerBrief {
     suggestedTripName: null,
     arrivalSkipped: false,
     departureSkipped: false,
+    travelersSkipped: false,
+    styleSkipped: false,
+    paceSkipped: false,
   };
 }
 
@@ -197,6 +206,9 @@ export function normalizePlannerBrief(raw: unknown): PlannerBrief {
     suggestedTripName: str(o.suggestedTripName),
     arrivalSkipped: o.arrivalSkipped === true,
     departureSkipped: o.departureSkipped === true,
+    travelersSkipped: o.travelersSkipped === true,
+    styleSkipped: o.styleSkipped === true,
+    paceSkipped: o.paceSkipped === true,
   };
 }
 
@@ -238,6 +250,9 @@ export function mergePlannerBrief(prev: PlannerBrief, patch: PlannerBrief): Plan
     suggestedTripName: patch.suggestedTripName ?? prev.suggestedTripName,
     arrivalSkipped: prev.arrivalSkipped || patch.arrivalSkipped,
     departureSkipped: prev.departureSkipped || patch.departureSkipped,
+    travelersSkipped: prev.travelersSkipped || patch.travelersSkipped,
+    styleSkipped: prev.styleSkipped || patch.styleSkipped,
+    paceSkipped: prev.paceSkipped || patch.paceSkipped,
   };
 }
 
@@ -264,6 +279,21 @@ function hasDeparture(brief: PlannerBrief): boolean {
   return Boolean(brief.departure.time || brief.departure.place);
 }
 
+function hasTravelers(brief: PlannerBrief): boolean {
+  if (brief.travelersSkipped) return true;
+  return Boolean(brief.travelersType || brief.travelerCount);
+}
+
+function hasStyle(brief: PlannerBrief): boolean {
+  if (brief.styleSkipped) return true;
+  return brief.interests.length > 0 || brief.mustDo.length > 0;
+}
+
+function hasPace(brief: PlannerBrief): boolean {
+  if (brief.paceSkipped) return true;
+  return brief.pace != null;
+}
+
 export function getPlannerMissingField(brief: PlannerBrief): PlannerMissingField | null {
   if (!brief.destination) return "destination";
   if (needsSleepBases(brief)) return "sleepBases";
@@ -271,6 +301,9 @@ export function getPlannerMissingField(brief: PlannerBrief): PlannerMissingField
   if (!hasArrival(brief)) return "arrival";
   if (!hasDeparture(brief)) return "departure";
   if (brief.sleepBases.length > 1 && !brief.transport) return "transport";
+  if (!hasTravelers(brief)) return "travelers";
+  if (!hasStyle(brief)) return "style";
+  if (!hasPace(brief)) return "pace";
   return null;
 }
 
@@ -282,7 +315,44 @@ export const PLANNER_MISSING_QUESTIONS: Record<PlannerMissingField, string> = {
   arrival: "¿Dónde y a qué hora llegáis el primer día? (aeropuerto, estación…). Si aún no lo sabes, dímelo y lo dejamos abierto.",
   departure: "¿De dónde y a qué hora salís el último día? Si no lo tienes claro, dímelo y lo dejamos abierto.",
   transport: "Entre esas bases, ¿os moveréis en coche de alquiler, transporte público, o una mezcla?",
+  travelers: "¿Viajáis en pareja, familia, amigos o tú solo? Si da igual, dime «tú decide».",
+  style:
+    "¿Qué tipo de viaje queréis: naturaleza, pueblos, vino, cultura, trekking, playa…? Puedes decir varios, o «tú decide» si lo dejo yo.",
+  pace: "¿Preferís un ritmo relajado (pocas visitas), equilibrado o intenso? Si no lo tienes claro, lo dejo equilibrado.",
 };
+
+export const PLANNER_QUICK_REPLIES: Partial<Record<PlannerMissingField, string[]>> = {
+  transport: ["Coche de alquiler", "Transporte público", "Una mezcla"],
+  travelers: ["En pareja", "En familia", "Con amigos", "Voy solo", "Tú decide"],
+  style: ["Naturaleza", "Pueblos", "Cultura", "Gastronomía y vino", "Trekking", "Playa", "Tú decide"],
+  pace: ["Relajado", "Equilibrado", "Intenso", "Tú decide"],
+};
+
+const SKIPPABLE_FIELDS: PlannerMissingField[] = ["arrival", "departure", "travelers", "style", "pace"];
+
+export function isPlannerSkipPhrase(text: string): boolean {
+  const q = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return /\b(no lo se|no se|aun no|todavia no|da igual|dejalo abierto|sin hora|no tengo hora|no lo tengo|mas adelante|tu decide|lo que quieras|como veas|proponlo tu|proponmelo tu)\b/.test(
+    q
+  );
+}
+
+export function applyPlannerFieldSkip(field: PlannerMissingField | null): PlannerBrief | null {
+  if (!field || !SKIPPABLE_FIELDS.includes(field)) return null;
+  const patch = emptyPlannerBrief();
+  if (field === "arrival") patch.arrivalSkipped = true;
+  if (field === "departure") patch.departureSkipped = true;
+  if (field === "travelers") patch.travelersSkipped = true;
+  if (field === "style") patch.styleSkipped = true;
+  if (field === "pace") {
+    patch.paceSkipped = true;
+    patch.pace = "balanced";
+  }
+  return patch;
+}
 
 export function plannerDestinationsForGenerate(brief: PlannerBrief): string[] {
   if (brief.sleepBases.length) return brief.sleepBases.slice(0, 8);
@@ -298,6 +368,7 @@ export function buildPlannerFreeText(brief: PlannerBrief): string {
   if (brief.avoid.length) parts.push(`NO incluir: ${brief.avoid.join(", ")}.`);
   if (brief.mustDo.length) parts.push(`Imprescindible: ${brief.mustDo.join(", ")}.`);
   if (brief.pace === "relaxed") parts.push("Ritmo relajado: no llenar el día al 100%.");
+  if (brief.pace === "balanced") parts.push("Ritmo equilibrado: 2-4 anclas al día, con margen para comer y traslados.");
   if (brief.pace === "intense") parts.push("Ritmo intenso: aprovechar el día, con margen para comer y traslados.");
   if (brief.stayChangePref === "few") parts.push("Prefiere pocas bases y menos cambios de hotel.");
   if (brief.stayChangePref === "many") parts.push("Acepta más cambios de base para ver más sitios.");
@@ -394,10 +465,32 @@ export function plannerBriefSummaryLines(brief: PlannerBrief): string[] {
   if (brief.interests.length) lines.push(`Estilo: ${brief.interests.join(", ")}`);
   if (brief.avoid.length) lines.push(`Evitar: ${brief.avoid.join(", ")}`);
   if (brief.mustDo.length) lines.push(`Imprescindible: ${brief.mustDo.join(", ")}`);
+  if (brief.travelersType) {
+    const label =
+      brief.travelersType === "solo"
+        ? "viajero solo"
+        : brief.travelersType === "couple"
+          ? "pareja"
+          : brief.travelersType === "family"
+            ? "familia"
+            : "amigos";
+    lines.push(`Compañía: ${label}${brief.travelerCount ? ` (${brief.travelerCount})` : ""}`);
+  }
   if (brief.pace) {
     lines.push(
       `Ritmo: ${brief.pace === "relaxed" ? "relajado" : brief.pace === "intense" ? "intenso" : "equilibrado"}`
     );
+  }
+  if (brief.budgetBand) {
+    const b =
+      brief.budgetBand === "low"
+        ? "ajustado"
+        : brief.budgetBand === "medium"
+          ? "medio"
+          : brief.budgetBand === "comfortable"
+            ? "cómodo"
+            : "premium";
+    lines.push(`Presupuesto: ${b}`);
   }
   return lines;
 }

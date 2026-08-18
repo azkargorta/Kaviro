@@ -16,6 +16,7 @@ type InterviewResponse = {
   brief?: PlannerBrief;
   readyToPropose?: boolean;
   proposedSleepBases?: string[];
+  quickReplies?: string[];
   assistantReply?: string;
 };
 
@@ -32,6 +33,7 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [bases, setBases] = useState<string[]>([]);
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +81,7 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
       if (data.brief) setBrief(data.brief);
       setReady(Boolean(data.readyToPropose));
       setBases(data.proposedSleepBases || []);
+      setQuickReplies(data.quickReplies || []);
       setMessages((prev) => [...prev, { role: "assistant", text: data.assistantReply || "De acuerdo." }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al hablar con el asistente.");
@@ -97,8 +100,8 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
           <span className="text-sm font-extrabold text-slate-900 dark:text-white">Cuéntame tu viaje</span>
         </div>
         <p className="mt-0.5 text-xs font-medium text-slate-500">
-          Escribe con naturalidad. Te pregunto solo lo que falte para proponerte un itinerario y un PDF antes de crear el
-          viaje.
+          Primero la logística y luego tres preguntas cortas (compañía, estilo y ritmo). Si ya lo cuentas todo en un
+          mensaje, no te lo vuelvo a pedir.
         </p>
       </div>
 
@@ -173,6 +176,25 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
         </div>
       ) : null}
 
+      {quickReplies.length > 0 && !ready ? (
+        <div className="border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
+          <p className="mb-2 text-xs font-bold text-slate-500">Respuestas rápidas</p>
+          <div className="flex flex-wrap gap-1.5">
+            {quickReplies.map((reply) => (
+              <button
+                key={reply}
+                type="button"
+                disabled={loading}
+                onClick={() => void send(reply)}
+                className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-50 disabled:opacity-40"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {error ? <p className="px-4 pb-2 text-xs font-semibold text-red-700">{error}</p> : null}
 
       <div className="border-t border-slate-100 px-4 py-3 dark:border-[#1E293B]">
@@ -187,7 +209,8 @@ export default function TripAiPlannerInterview({ onGenerate, onClassic, generati
                   </p>
                 ))}
                 <p className="mt-1 text-[11px] font-medium text-slate-500">
-                  Puedes corregir cualquier dato en el chat antes de generar.
+                  Puedes corregir cualquier dato en el chat antes de generar. Si falta estilo o ritmo, el plan queda más
+                  genérico.
                 </p>
               </div>
             ) : null}
