@@ -824,7 +824,7 @@ export default function TripAiPlannerWizard({ isAdmin = false }: { isAdmin?: boo
   ): Promise<boolean> {
     setError(null);
     setGeneratingDraft(true);
-    setStep("generating");
+    if (!opts?.fromInterview) setStep("generating");
     const dests = plausiblePlaces(
       uniquePlaces(
         opts?.destinations,

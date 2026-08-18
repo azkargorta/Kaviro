@@ -111,11 +111,12 @@ export function clipItemsToDayWindow<T extends { activity_time?: string | null; 
   items: T[],
   w: DayTimeWindow
 ): T[] {
-  const transport: T[] = [];
+  const keepAlways: T[] = [];
   const rest: T[] = [];
   for (const it of items || []) {
-    if (String(it.activity_kind || "").toLowerCase() === "transport") {
-      transport.push(it);
+    const kind = String(it.activity_kind || "").toLowerCase();
+    if (kind === "transport" || kind === "rest") {
+      keepAlways.push(it);
       continue;
     }
     if (w.maxSights <= 0) continue;
@@ -123,5 +124,5 @@ export function clipItemsToDayWindow<T extends { activity_time?: string | null; 
     if (rest.length >= w.maxSights) continue;
     rest.push(it);
   }
-  return [...transport, ...rest];
+  return [...keepAlways, ...rest];
 }

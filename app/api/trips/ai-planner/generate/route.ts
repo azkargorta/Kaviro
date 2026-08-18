@@ -438,7 +438,49 @@ function resolveStopPools(
     const k = key.toLowerCase();
     if (k === lower || k.startsWith(lower) || lower.startsWith(k)) return poisByStop[key];
   }
+  for (const key of Object.keys(poisByStop)) {
+    const k = key.toLowerCase();
+    if (k.includes(lower) || lower.includes(k)) return poisByStop[key];
+  }
   return undefined;
+}
+
+function matchKnownStop(name: string, stops: Array<{ label: string }>): string {
+  const lower = cleanString(name).toLowerCase();
+  if (!lower) return name;
+  const exact = stops.find((s) => s.label.toLowerCase() === lower);
+  if (exact) return exact.label;
+  const partial = stops.find((s) => s.label.toLowerCase().includes(lower) || lower.includes(s.label.toLowerCase()));
+  return partial?.label || name;
+}
+
+function syntheticCityPool(city: string, center?: LatLng | null): NearbyPoi[] {
+  const lat = center?.lat ?? 0;
+  const lng = center?.lng ?? 0;
+  return [
+    { name: `Casco histórico de ${city}`, lat, lng },
+    { name: `Mirador de ${city}`, lat, lng },
+    { name: `Mercado de ${city}`, lat, lng },
+    { name: `Alrededores de ${city}`, lat, lng },
+  ];
+}
+
+function arrivalRestItem(city: string, date: string, arrivalTime: string | null): PlannerDayItem {
+  return {
+    title: `Llegada a ${city} y noche`,
+    description: arrivalTime
+      ? `Llegada a las ${arrivalTime}. Traslado al alojamiento y descanso; sin visitas turísticas.`
+      : `Día de llegada. Traslado al alojamiento y descanso.`,
+    activity_date: date,
+    activity_time: arrivalTime || "21:00",
+    place_name: city,
+    address: city,
+    latitude: null,
+    longitude: null,
+    activity_kind: "rest",
+    activity_type: "general",
+    source: "ai_planner",
+  };
 }
 
 function poisToGastroPool(pools: Record<Category, Poi[]> | undefined): NearbyPoi[] {
@@ -484,9 +526,9 @@ function fillDayFromPools(
   const addPoi = (poi: NearbyPoi) => {
     const k = String(poi.name || "").trim().toLowerCase();
     if (!k || used.has(k) || onThisDay.has(k)) return false;
-    const real = out.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
-    if (!times.length) return false;
-    const time = times[Math.min(real, times.length - 1)]!;
+    const realNow = out.filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
+    const slots = times.length ? times : FILL_TIMES;
+    const time = slots[Math.min(realNow, slots.length - 1)]!;
     out.push(buildInCityItem(poi, city, date, time));
     onThisDay.add(k);
     used.add(k);
@@ -497,6 +539,12 @@ function fillDayFromPools(
   for (const poi of pools) {
     if (real >= minReal) break;
     if (addPoi(poi)) real += 1;
+  }
+  if (real < minReal) {
+    for (const poi of syntheticCityPool(city, fallbackCenter)) {
+      if (real >= minReal) break;
+      if (addPoi(poi)) real += 1;
+    }
   }
   return out;
 }
@@ -669,8 +717,9 @@ async function generateCityItinerary(
   let allDays = chunkResults.flatMap((r) => r?.days ?? []);
   if (geo?.totalDays) {
     allDays = allDays.map((d) => {
+      const dayIndex = geo.tripStartDate ? dayCountBetween(geo.tripStartDate, d.date) : d.day;
       const w = windowForTripDay({
-        dayIndex: d.day,
+        dayIndex,
         totalDays: geo.totalDays || nights,
         arrivalTime: geo.arrivalTime ?? null,
         departureTime: geo.departureTime ?? null,
@@ -1046,9 +1095,9 @@ export async function POST(req: Request) {
 
     const architectStays = (architecture?.stays || []).filter((s) => cleanString(s.stop) && Number(s.nights) > 0);
     if (architectStays.length) {
-      stays = architectStays;
+      stays = architectStays.map((s) => ({ ...s, stop: matchKnownStop(s.stop, stops) }));
     } else if (parsedStays.length) {
-      stays = parsedStays;
+      stays = parsedStays.map((s) => ({ ...s, stop: matchKnownStop(s.stop, stops) }));
     } else {
       const startHint =
         cleanString(body?.arrivalPlace || body?.arrival_place || "") ||
@@ -1301,6 +1350,12 @@ export async function POST(req: Request) {
           fillTimes,
           cityStop?.center ?? null
         );
+        if (
+          (architectureDay?.dayType === "arrival" || (globalDayNum === 1 && dayWindow.maxSights === 0)) &&
+          !items.some((it) => String(it.activity_kind || "").toLowerCase() === "rest")
+        ) {
+          items = [arrivalRestItem(block.city, dayDate, arrivalTime), ...items];
+        }
 
         const stopPools = resolveStopPools(poisByStop, block.city);
         items = consolidateRestaurantsForDay(items, {
@@ -1375,6 +1430,12 @@ export async function POST(req: Request) {
         fillTimes,
         cityStop?.center ?? null
       );
+      if (
+        (architectureDay?.dayType === "arrival" || (day.day === 1 && dayWindow.maxSights === 0)) &&
+        !items.some((it) => String(it.activity_kind || "").toLowerCase() === "rest")
+      ) {
+        items = [arrivalRestItem(day.base || "", day.date, arrivalTime), ...items];
+      }
       for (const it of items) {
         const t = String(it.title || "").trim().toLowerCase();
         if (t && String(it.activity_kind || "").toLowerCase() !== "transport") usedAfterRepair.add(t);
@@ -1386,18 +1447,32 @@ export async function POST(req: Request) {
       repairedDaysOut.push({ day: repairedDaysOut.length + 1, date: addDaysIso(startDate, repairedDaysOut.length), base: stays[stays.length - 1]?.stop || stops[0]!.label, items: [] });
     }
 
-    // ── 9. Suggestion chips ───────────────────────────────────────────────────
-    const suggestions: Record<string, Array<{ category: Category; pois: Poi[] }>> = {};
-    for (const stop of stops) {
-      const p = poisByStop[stop.label];
-      suggestions[stop.label] = [
-        { category: "culture", pois: pickN(p.culture || [], 18) },
-        { category: "nature", pois: pickN(p.nature || [], 18) },
-        { category: "market", pois: pickN(p.market || [], 12) },
-        { category: "viewpoint", pois: pickN(p.viewpoint || [], 12) },
-        { category: "neighborhood", pois: pickN(p.neighborhood || [], 12) },
-        { category: "gastro_experience", pois: pickN(p.gastro_experience || [], 12) },
-      ];
+    for (let i = 0; i < repairedDaysOut.length; i++) {
+      const day = repairedDaysOut[i]!;
+      const real = (day.items || []).filter((it) => String(it.activity_kind || "").toLowerCase() !== "transport").length;
+      if (real > 0) continue;
+      const dayWindow = windowForTripDay({ dayIndex: day.day, totalDays, arrivalTime, departureTime });
+      const cityStop = stops.find((s) => s.label.toLowerCase() === String(day.base || "").toLowerCase()) || null;
+      if (dayWindow.maxSights <= 0) {
+        repairedDaysOut[i] = {
+          ...day,
+          items: [arrivalRestItem(day.base || cityStop?.label || "destino", day.date, arrivalTime)],
+        };
+        continue;
+      }
+      repairedDaysOut[i] = {
+        ...day,
+        items: fillDayFromPools(
+          day.items || [],
+          day.date,
+          day.base || cityStop?.label || "destino",
+          syntheticCityPool(day.base || cityStop?.label || "destino", cityStop?.center ?? null),
+          new Set(),
+          Math.max(1, dayWindow.minSights || 1),
+          slotsAfter(dayWindow.earliestMin, FILL_TIMES),
+          cityStop?.center ?? null
+        ),
+      };
     }
 
     const activityCount = repairedDaysOut.reduce(
@@ -1405,14 +1480,18 @@ export async function POST(req: Request) {
         n + (d.items || []).filter((it: { activity_kind?: string }) => String(it.activity_kind || "").toLowerCase() !== "transport").length,
       0
     );
-    if (!planOnly && activityCount === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "No se pudieron generar actividades para este destino. Prueba a ampliar el radio (ciudad más grande cercana), revisa GEMINI_API_KEY en el servidor, o inténtalo de nuevo.",
-        },
-        { status: 502 }
-      );
+
+    const suggestions: Record<string, Array<{ category: Category; pois: Poi[] }>> = {};
+    for (const stop of stops) {
+      const p = poisByStop[stop.label];
+      suggestions[stop.label] = [
+        { category: "culture", pois: pickN(p?.culture || [], 18) },
+        { category: "nature", pois: pickN(p?.nature || [], 18) },
+        { category: "market", pois: pickN(p?.market || [], 12) },
+        { category: "viewpoint", pois: pickN(p?.viewpoint || [], 12) },
+        { category: "neighborhood", pois: pickN(p?.neighborhood || [], 12) },
+        { category: "gastro_experience", pois: pickN(p?.gastro_experience || [], 12) },
+      ];
     }
 
     return NextResponse.json({

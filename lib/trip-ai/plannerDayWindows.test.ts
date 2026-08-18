@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseClockFromNotes, windowForTripDay, itemFitsWindow } from "@/lib/trip-ai/plannerDayWindows";
+import { parseClockFromNotes, windowForTripDay, itemFitsWindow, clipItemsToDayWindow } from "@/lib/trip-ai/plannerDayWindows";
 
 describe("plannerDayWindows", () => {
   it("llegada a las 20:00: el primer día no admite visitas a las 10:00", () => {
@@ -8,6 +8,25 @@ describe("plannerDayWindows", () => {
     expect(w.maxSights).toBeLessThanOrEqual(1);
     expect(itemFitsWindow("10:00", w)).toBe(false);
     expect(itemFitsWindow("20:45", w)).toBe(true);
+  });
+
+  it("un día intermedio no se trata como llegada aunque el vuelo sea a las 20:00", () => {
+    const w = windowForTripDay({ dayIndex: 3, totalDays: 6, arrivalTime: "20:00", departureTime: "20:00" });
+    expect(w.minSights).toBe(3);
+    expect(itemFitsWindow("10:00", w)).toBe(true);
+  });
+
+  it("conserva el descanso de llegada aunque no haya visitas", () => {
+    const w = windowForTripDay({ dayIndex: 1, totalDays: 6, arrivalTime: "20:00" });
+    const clipped = clipItemsToDayWindow(
+      [
+        { activity_kind: "rest", activity_time: "21:00" },
+        { activity_kind: "culture", activity_time: "10:00" },
+      ],
+      w
+    );
+    expect(clipped).toHaveLength(1);
+    expect(clipped[0]?.activity_kind).toBe("rest");
   });
 
   it("salida a las 20:00: el último día corta por la tarde", () => {
