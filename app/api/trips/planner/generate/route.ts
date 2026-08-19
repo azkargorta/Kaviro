@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateDetail } from "@/lib/trip-planner/detailer";
 import { validateAndGeocode } from "@/lib/trip-planner/validator";
-import type { TripBrief, TripSkeleton, TripItinerary } from "@/lib/trip-planner/types";
+import type { TripBrief, TripSkeleton, TripItinerary, TripDay } from "@/lib/trip-planner/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -15,12 +15,18 @@ export async function POST(req: Request) {
     const brief = body.brief as TripBrief | undefined;
     const skeleton = body.skeleton as TripSkeleton | undefined;
     const stops = body.stops as Array<{ label: string; center: LatLng }> | undefined;
+    const refinementNotes =
+      typeof body.refinementNotes === "string" && body.refinementNotes.trim() ? body.refinementNotes.trim() : "";
+    const previousDays = Array.isArray(body.previousDays) ? (body.previousDays as TripDay[]) : [];
 
     if (!brief || !skeleton?.days?.length) {
       return NextResponse.json({ error: "Faltan brief o skeleton." }, { status: 400 });
     }
 
-    const days = await generateDetail(brief, skeleton);
+    const days = await generateDetail(brief, skeleton, {
+      refinementNotes,
+      previousDays,
+    });
 
     const baseCenters = new Map<string, LatLng>();
     if (stops?.length) {

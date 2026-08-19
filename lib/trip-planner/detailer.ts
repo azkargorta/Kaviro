@@ -5,12 +5,18 @@
 
 import { askGeminiWithUsage } from "@/lib/trip-ai/providers";
 import { extractJsonObject } from "@/lib/trip-ai/tripCreationJson";
-import type { TripBrief, TripSkeleton, TripDay, TripActivity, TripItinerary, ActivityKind } from "./types";
+import type { TripBrief, TripSkeleton, TripDay, TripActivity, ActivityKind } from "./types";
 
 // ─── Build prompt ─────────────────────────────────────────────────────────────
 
-export function buildDetailPrompt(brief: TripBrief, skeleton: TripSkeleton): string {
+export function buildDetailPrompt(
+  brief: TripBrief,
+  skeleton: TripSkeleton,
+  opts?: { refinementNotes?: string; previousDays?: TripDay[] | null }
+): string {
   const skeletonJson = JSON.stringify(skeleton.days, null, 2);
+  const previousJson =
+    opts?.previousDays && opts.previousDays.length ? JSON.stringify(opts.previousDays, null, 2) : null;
 
   return `Eres un planificador de viajes experto. Rellena el itinerario COMPLETO para este viaje.
 
@@ -50,10 +56,14 @@ REGLAS:
 ${brief.interests.length ? `12. Estilo del viajero: ${brief.interests.join(", ")}.` : ""}
 ${brief.avoid.length ? `13. EVITAR: ${brief.avoid.join(", ")}.` : ""}
 ${brief.constraints.length ? `14. Restricciones: ${brief.constraints.join("; ")}.` : ""}
+15. Devuelve actividades para TODOS los días. PROHIBIDO dejar un día con "activities": [] salvo que sea imposible y expliques claramente por qué.
+16. Si te paso peticiones de cambio, modifica SOLO lo necesario y conserva lo demás.
 - Transporte: ${brief.transport || "sin especificar"}
 - Ritmo: ${brief.pace || "balanced"}
 - Viajeros: ${brief.travelersType || "sin especificar"}${brief.travelerCount ? ` (${brief.travelerCount})` : ""}
-${brief.freeText ? `- Notas adicionales: ${brief.freeText}` : ""}`;
+${brief.freeText ? `- Notas adicionales: ${brief.freeText}` : ""}
+${opts?.refinementNotes ? `- Cambios pedidos por el usuario: ${opts.refinementNotes}` : ""}
+${previousJson ? `- Itinerario anterior a conservar salvo cambios concretos:\n${previousJson}` : ""}`;
 }
 
 // ─── Parse response ───────────────────────────────────────────────────────────
@@ -82,9 +92,14 @@ function normalizeTime(v: unknown): string | null {
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
-export function parseDetailResponse(raw: unknown, skeleton: TripSkeleton): TripDay[] {
+export function parseDetailResponse(
+  raw: unknown,
+  skeleton: TripSkeleton,
+  previousDays?: TripDay[] | null
+): TripDay[] {
   const data = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rawDays = Array.isArray(data.days) ? data.days : [];
+  const previousByDay = new Map((previousDays || []).map((day) => [day.dayNum, day]));
 
   const days: TripDay[] = skeleton.days.map((sd, idx) => {
     const rd = rawDays[idx];
@@ -111,12 +126,15 @@ export function parseDetailResponse(raw: unknown, skeleton: TripSkeleton): TripD
       })
       .filter((x): x is TripActivity => x !== null);
 
+    const previous = previousByDay.get(sd.dayNum);
+    const safeActivities = activities.length ? activities : previous?.activities || [];
+
     return {
       dayNum: sd.dayNum,
       date: sd.date,
       base: sd.base,
-      summary: dayData?.summary ? String(dayData.summary) : sd.summary,
-      activities,
+      summary: dayData?.summary ? String(dayData.summary) : previous?.summary || sd.summary,
+      activities: safeActivities,
     };
   });
 
@@ -125,8 +143,12 @@ export function parseDetailResponse(raw: unknown, skeleton: TripSkeleton): TripD
 
 // ─── Main function ────────────────────────────────────────────────────────────
 
-export async function generateDetail(brief: TripBrief, skeleton: TripSkeleton): Promise<TripDay[]> {
-  const prompt = buildDetailPrompt(brief, skeleton);
+export async function generateDetail(
+  brief: TripBrief,
+  skeleton: TripSkeleton,
+  opts?: { refinementNotes?: string; previousDays?: TripDay[] | null }
+): Promise<TripDay[]> {
+  const prompt = buildDetailPrompt(brief, skeleton, opts);
 
   const { text } = await askGeminiWithUsage(prompt, "planning", {
     maxOutputTokens: 8192,
@@ -134,5 +156,5 @@ export async function generateDetail(brief: TripBrief, skeleton: TripSkeleton): 
   });
 
   const parsed = extractJsonObject(text);
-  return parseDetailResponse(parsed, skeleton);
+  return parseDetailResponse(parsed, skeleton, opts?.previousDays);
 }

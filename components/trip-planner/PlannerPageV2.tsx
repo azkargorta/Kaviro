@@ -97,11 +97,18 @@ export default function PlannerPageV2() {
     if (!brief) return;
     setLoading(true);
     setError(null);
+    const userNotes = chatMessages
+      .filter((m) => m.role === "user")
+      .map((m) => m.text)
+      .join("\n");
     try {
       const res = await fetch("/api/trips/planner/skeleton", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(brief),
+        body: JSON.stringify({
+          ...brief,
+          freeText: [brief.freeText, userNotes].filter(Boolean).join("\n"),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al regenerar.");
@@ -121,31 +128,82 @@ export default function PlannerPageV2() {
     setGenerating(true);
     setError(null);
     setStep("generating");
+    const refinementNotes = previewMessages
+      .filter((m) => m.role === "user")
+      .map((m) => m.text.trim())
+      .filter(Boolean)
+      .join("\n");
     try {
       const res = await fetch("/api/trips/planner/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brief, skeleton, stops }),
+        body: JSON.stringify({
+          brief,
+          skeleton,
+          stops,
+          refinementNotes,
+          previousDays: itinerary?.days || [],
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al generar itinerario.");
       setItinerary(data.itinerary);
-      setPreviewMessages([{ role: "assistant", text: "Aquí tienes el itinerario completo. ¿Quieres modificar algo antes de crear el viaje?" }]);
+      setPreviewMessages((prev) =>
+        prev.length
+          ? [
+              ...prev,
+              {
+                role: "assistant",
+                text: refinementNotes
+                  ? "He regenerado el itinerario aplicando tus cambios. Revísalo y dime si quieres ajustar algo más."
+                  : "Aquí tienes el itinerario completo. ¿Quieres modificar algo antes de crear el viaje?",
+              },
+            ]
+          : [{ role: "assistant", text: "Aquí tienes el itinerario completo. ¿Quieres modificar algo antes de crear el viaje?" }]
+      );
       setStep("preview");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido.");
-      setStep("skeleton");
+      setStep(itinerary ? "preview" : "skeleton");
     } finally {
       setGenerating(false);
     }
   }
 
   function handleChatSend(text: string) {
-    setChatMessages((prev) => [...prev, { role: "user", text }]);
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "assistant", text: "Para aplicar cambios al esqueleto, pulsa «Rehacer esqueleto» (próximamente: edición en chat)." },
-    ]);
+    const updated = [...chatMessages, { role: "user" as const, text }];
+    setChatMessages(updated);
+    regenWithMessages(updated);
+  }
+
+  async function regenWithMessages(msgs: ChatMessage[]) {
+    if (!brief) return;
+    setLoading(true);
+    setError(null);
+    const userNotes = msgs
+      .filter((m) => m.role === "user")
+      .map((m) => m.text)
+      .join("\n");
+    try {
+      const res = await fetch("/api/trips/planner/skeleton", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...brief,
+          freeText: [brief.freeText, userNotes].filter(Boolean).join("\n"),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al regenerar.");
+      setSkeleton(data.skeleton);
+      setSkeletonText(data.skeletonText);
+      setStops(data.stops || []);
+      setChatMessages((prev) => [...prev, { role: "assistant", text: data.skeletonText }]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error desconocido.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -244,10 +302,10 @@ export default function PlannerPageV2() {
             <PlannerChat
               messages={previewMessages}
               onSend={(text) => {
-                setPreviewMessages((prev) => [...prev, { role: "user", text }]);
                 setPreviewMessages((prev) => [
                   ...prev,
-                  { role: "assistant", text: "Entendido. Pulsa «Regenerar itinerario» para aplicar tus cambios." },
+                  { role: "user", text },
+                  { role: "assistant", text: "Entendido. Voy a tenerlo en cuenta al regenerar el itinerario." },
                 ]);
               }}
               loading={generating}
