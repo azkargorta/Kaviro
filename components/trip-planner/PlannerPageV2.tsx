@@ -44,6 +44,7 @@ export default function PlannerPageV2() {
   const [stops, setStops] = useState<Array<{ label: string; center: { lat: number; lng: number } }>>([]);
   const [itinerary, setItinerary] = useState<TripItinerary | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [previewMessages, setPreviewMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +130,7 @@ export default function PlannerPageV2() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al generar itinerario.");
       setItinerary(data.itinerary);
+      setPreviewMessages([{ role: "assistant", text: "Aquí tienes el itinerario completo. ¿Quieres modificar algo antes de crear el viaje?" }]);
       setStep("preview");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido.");
@@ -228,11 +230,50 @@ export default function PlannerPageV2() {
       )}
 
       {step === "preview" && itinerary && (
-        <PlannerPreview
-          itinerary={itinerary}
-          onCreateTrip={() => alert("Próximamente: crear viaje desde aquí")}
-          onDownloadPdf={() => alert("Próximamente: descargar PDF")}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
+          <PlannerPreview
+            itinerary={itinerary}
+            onCreateTrip={() => alert("Próximamente: crear viaje desde aquí")}
+            onDownloadPdf={() => alert("Próximamente: descargar PDF")}
+          />
+          <div className="card-soft flex flex-col sticky top-4 max-h-[calc(100vh-6rem)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E293B]">
+              <p className="text-sm font-extrabold text-slate-900 dark:text-white">¿Quieres cambiar algo?</p>
+              <p className="text-xs text-slate-400 mt-0.5">Dime qué modificar y regenero el itinerario.</p>
+            </div>
+            <PlannerChat
+              messages={previewMessages}
+              onSend={(text) => {
+                setPreviewMessages((prev) => [...prev, { role: "user", text }]);
+                setPreviewMessages((prev) => [
+                  ...prev,
+                  { role: "assistant", text: "Entendido. Pulsa «Regenerar itinerario» para aplicar tus cambios." },
+                ]);
+              }}
+              loading={generating}
+              placeholder="Ej. Cambia el restaurante del día 3…"
+            />
+            <div className="px-4 py-3 border-t border-slate-100 dark:border-[#1E293B] flex gap-2">
+              <button
+                type="button"
+                disabled={generating}
+                onClick={handleGenerateDetail}
+                className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-3 disabled:opacity-50"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Regenerar
+              </button>
+              <button
+                type="button"
+                disabled={generating}
+                onClick={() => setStep("skeleton")}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-700 px-2 py-2"
+              >
+                Volver al esqueleto
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
