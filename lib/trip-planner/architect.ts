@@ -27,13 +27,17 @@ function roundedDrive(a: LatLng, b: LatLng): number {
 // ─── Geocode destinations ─────────────────────────────────────────────────────
 
 export async function geocodeDestinations(brief: TripBrief): Promise<GeoStop[]> {
-  const label = brief.destinations.join(" · ");
-  const anchor = await geocodeTripAnchor(label);
-  const hints = regionHintsFromDestination(label);
+  const destLabel = brief.destinations.join(" · ");
+  const anchor = await geocodeTripAnchor(destLabel);
+  const hints = regionHintsFromDestination(destLabel);
   const results = await Promise.all(
     brief.sleepBases.map(async (name) => {
       const geo = await geocodePhotonPreferred(name, { anchor, regionHints: hints, maxDistanceKm: 50000 });
-      return geo ? { label: name, center: { lat: geo.lat, lng: geo.lng } } : null;
+      if (geo) return { label: name, center: { lat: geo.lat, lng: geo.lng } };
+      const withDest = `${name}, ${brief.destinations[0] || ""}`.trim();
+      const geo2 = await geocodePhotonPreferred(withDest, { anchor, regionHints: hints, maxDistanceKm: 50000 });
+      if (geo2) return { label: name, center: { lat: geo2.lat, lng: geo2.lng } };
+      return null;
     })
   );
   return results.filter((r): r is GeoStop => r !== null);
@@ -113,11 +117,14 @@ export function parseArchitectResponse(raw: unknown, brief: TripBrief, stops: Ge
   const data = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rawDays = Array.isArray(data.days) ? data.days : [];
 
+  const allLabels = [...new Set([...labels, ...brief.sleepBases])];
+
   const days: SkeletonDay[] = rawDays
     .map((row, idx) => {
       const d = row && typeof row === "object" ? (row as Record<string, unknown>) : null;
       if (!d) return null;
-      const base = resolveToKnown(String(d.base ?? ""), labels);
+      const rawBase = String(d.base ?? "").trim();
+      const base = resolveToKnown(rawBase, allLabels) || rawBase;
       if (!base) return null;
       return {
         dayNum: idx + 1,
@@ -125,8 +132,8 @@ export function parseArchitectResponse(raw: unknown, brief: TripBrief, stops: Ge
         dayType: normalizeDayType(d.dayType),
         base,
         summary: String(d.summary ?? `Día ${idx + 1} en ${base}.`),
-        transferFrom: d.transferFrom ? resolveToKnown(String(d.transferFrom), labels) : null,
-        transferTo: d.transferTo ? resolveToKnown(String(d.transferTo), labels) : null,
+        transferFrom: d.transferFrom ? (resolveToKnown(String(d.transferFrom), allLabels) || String(d.transferFrom).trim()) : null,
+        transferTo: d.transferTo ? (resolveToKnown(String(d.transferTo), allLabels) || String(d.transferTo).trim()) : null,
         mainActivities: Array.isArray(d.mainActivities)
           ? (d.mainActivities as unknown[]).map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 3)
           : [],
@@ -166,7 +173,7 @@ function resolveToKnown(name: string, labels: string[]): string | null {
 
 export function buildFallbackSkeleton(brief: TripBrief, stops: GeoStop[]): TripSkeleton {
   const totalDays = totalDaysBetween(brief.startDate, brief.endDate);
-  const labels = stops.map((s) => s.label);
+  const labels = brief.sleepBases.length ? [...brief.sleepBases] : stops.map((s) => s.label);
   if (!labels.length) labels.push("Destino");
 
   const baseByDay: string[] = [];
