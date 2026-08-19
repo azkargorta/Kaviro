@@ -68,7 +68,7 @@ function DashboardEmptyState() {
           Crear mi primer viaje
         </button>
         <Link
-          href="/trips/new/planner"
+          href="/trips/new/planner-v2"
           className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:text-slate-200"
         >
           <Sparkles className="h-4 w-4 text-[var(--brand)]" aria-hidden />

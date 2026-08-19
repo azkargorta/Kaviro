@@ -45,7 +45,7 @@ export default function DashboardCreateRow({ disabled = false }: Props) {
       title: "Planificar con IA",
       subtitle: "Crea un borrador en minutos",
       icon: <Sparkles className="h-5 w-5" aria-hidden />,
-      href: "/trips/new/planner",
+      href: "/trips/new/planner-v2",
     },
     {
       key: "create",
