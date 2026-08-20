@@ -69,7 +69,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Máximo 30 días por viaje." }, { status: 400 });
     }
 
-    const { skeleton, stops, skeletonText } = await generateSkeleton(brief);
+    const refinementNotes =
+      typeof body.refinementNotes === "string" && body.refinementNotes.trim() ? body.refinementNotes.trim() : "";
+
+    const { skeleton, stops, skeletonText } = await generateSkeleton(brief, { refinementNotes });
 
     return NextResponse.json({
       ok: true,

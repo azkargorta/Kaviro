@@ -97,7 +97,7 @@ export default function PlannerPageV2() {
     if (!brief) return;
     setLoading(true);
     setError(null);
-    const userNotes = chatMessages
+    const refinementNotes = chatMessages
       .filter((m) => m.role === "user")
       .map((m) => m.text)
       .join("\n");
@@ -107,7 +107,7 @@ export default function PlannerPageV2() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...brief,
-          freeText: [brief.freeText, userNotes].filter(Boolean).join("\n"),
+          refinementNotes,
         }),
       });
       const data = await res.json();
@@ -180,7 +180,7 @@ export default function PlannerPageV2() {
     if (!brief) return;
     setLoading(true);
     setError(null);
-    const userNotes = msgs
+    const refinementNotes = msgs
       .filter((m) => m.role === "user")
       .map((m) => m.text)
       .join("\n");
@@ -190,7 +190,7 @@ export default function PlannerPageV2() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...brief,
-          freeText: [brief.freeText, userNotes].filter(Boolean).join("\n"),
+          refinementNotes,
         }),
       });
       const data = await res.json();
