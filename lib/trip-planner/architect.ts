@@ -24,6 +24,11 @@ function roundedDrive(a: LatLng, b: LatLng): number {
   return Math.max(1, Math.round(driveHours(a, b)));
 }
 
+type NightOverride = {
+  date: string;
+  base: string;
+};
+
 // ─── Geocode destinations ─────────────────────────────────────────────────────
 
 export async function geocodeDestinations(brief: TripBrief): Promise<GeoStop[]> {
@@ -48,6 +53,7 @@ export async function geocodeDestinations(brief: TripBrief): Promise<GeoStop[]> 
 export function buildArchitectPrompt(brief: TripBrief, stops: GeoStop[]): string {
   const totalDays = totalDaysBetween(brief.startDate, brief.endDate);
   const stopLabels = stops.map((s) => s.label);
+  const nightOverrides = extractNightOverrides(brief, stopLabels);
   const legs = stops
     .flatMap((a, i) =>
       stops.slice(i + 1).map((b) => `- ${a.label} ↔ ${b.label}: ~${roundedDrive(a.center, b.center)} h en coche`)
@@ -87,6 +93,7 @@ REGLAS:
 ${brief.interests.length ? `11. Estilo preferido: ${brief.interests.join(", ")}.` : ""}
 ${brief.avoid.length ? `12. EVITAR: ${brief.avoid.join(", ")}.` : ""}
 ${brief.mustDo.length ? `13. OBLIGATORIO incluir: ${brief.mustDo.join(", ")}.` : ""}
+${nightOverrides.length ? `14. OBLIGATORIO: respeta exactamente estas noches pedidas por el usuario:\n${nightOverrides.map((o) => `- ${o.date} -> ${o.base}`).join("\n")}` : ""}
 
 Distancias:
 ${legs || "- sin pares de ciudades"}
@@ -113,11 +120,11 @@ function normalizeDayType(v: unknown): SkeletonDayType {
 export function parseArchitectResponse(raw: unknown, brief: TripBrief, stops: GeoStop[]): TripSkeleton {
   const totalDays = totalDaysBetween(brief.startDate, brief.endDate);
   const labels = stops.map((s) => s.label);
+  const allLabels = [...new Set([...labels, ...brief.sleepBases])];
+  const nightOverrides = extractNightOverrides(brief, allLabels);
 
   const data = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rawDays = Array.isArray(data.days) ? data.days : [];
-
-  const allLabels = [...new Set([...labels, ...brief.sleepBases])];
 
   const days: SkeletonDay[] = rawDays
     .map((row, idx) => {
@@ -144,9 +151,10 @@ export function parseArchitectResponse(raw: unknown, brief: TripBrief, stops: Ge
     .filter((x): x is SkeletonDay => x !== null);
 
   if (days.length === totalDays) {
+    const withOverrides = applyNightOverrides(days, brief, nightOverrides);
     return {
-      days,
-      stays: staysFromDays(days),
+      days: withOverrides,
+      stays: staysFromDays(withOverrides),
       reasoning: String(data.reasoning ?? "") || null,
     };
   }
@@ -174,6 +182,7 @@ function resolveToKnown(name: string, labels: string[]): string | null {
 export function buildFallbackSkeleton(brief: TripBrief, stops: GeoStop[]): TripSkeleton {
   const totalDays = totalDaysBetween(brief.startDate, brief.endDate);
   const labels = brief.sleepBases.length ? [...brief.sleepBases] : stops.map((s) => s.label);
+  const nightOverrides = extractNightOverrides(brief, labels);
   if (!labels.length) labels.push("Destino");
 
   const baseByDay: string[] = [];
@@ -217,7 +226,93 @@ export function buildFallbackSkeleton(brief: TripBrief, stops: GeoStop[]): TripS
     };
   });
 
-  return { days, stays: staysFromDays(days), reasoning: "fallback" };
+  const withOverrides = applyNightOverrides(days, brief, nightOverrides);
+  return { days: withOverrides, stays: staysFromDays(withOverrides), reasoning: "fallback" };
+}
+
+function extractNightOverrides(brief: TripBrief, labels: string[]): NightOverride[] {
+  const raw = brief.freeText || "";
+  if (!raw.trim()) return [];
+
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const overrides = new Map<string, string>();
+
+  for (const line of lines) {
+    const m = line.match(/(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\s*[-:=> ]+\s*([^\n]+)/i);
+    if (!m) continue;
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    if (!Number.isFinite(day) || !Number.isFinite(month)) continue;
+    const baseRaw = m[4]?.trim() || "";
+    const base = resolveToKnown(baseRaw, labels) || baseRaw;
+    if (!base) continue;
+
+    const date = resolveOverrideDate(brief, day, month);
+    if (!date) continue;
+    overrides.set(date, base);
+  }
+
+  return Array.from(overrides.entries()).map(([date, base]) => ({ date, base }));
+}
+
+function resolveOverrideDate(brief: TripBrief, day: number, month: number): string | null {
+  const totalDays = totalDaysBetween(brief.startDate, brief.endDate);
+  for (let i = 0; i < totalDays; i += 1) {
+    const iso = addDaysToIso(brief.startDate, i);
+    const d = new Date(`${iso}T12:00:00Z`);
+    if (d.getUTCDate() === day && d.getUTCMonth() + 1 === month) return iso;
+  }
+  return null;
+}
+
+function applyNightOverrides(days: SkeletonDay[], brief: TripBrief, overrides: NightOverride[]): SkeletonDay[] {
+  if (!overrides.length) return days;
+  const overrideMap = new Map(overrides.map((item) => [item.date, item.base]));
+
+  return days.map((day, idx, arr) => {
+    const forcedBase = overrideMap.get(day.date);
+    const base = forcedBase || day.base;
+    const prevBase = idx > 0 ? overrideMap.get(arr[idx - 1]!.date) || arr[idx - 1]!.base : null;
+    const isArrival = day.dayNum === 1;
+    const isDeparture = day.dayNum === arr.length;
+    const isTransfer = !isArrival && !isDeparture && prevBase !== null && prevBase.toLowerCase() !== base.toLowerCase();
+    const dayType: SkeletonDayType = isArrival
+      ? "arrival"
+      : isDeparture
+        ? "departure"
+        : isTransfer
+          ? "transfer_scenic"
+          : "full";
+
+    const changedBase = base.toLowerCase() !== day.base.toLowerCase();
+    return {
+      ...day,
+      base,
+      dayType,
+      transferFrom: isTransfer ? prevBase : null,
+      transferTo: isTransfer ? base : null,
+      summary: changedBase ? defaultSummaryForDay(dayType, brief, prevBase, base) : day.summary,
+    };
+  });
+}
+
+function defaultSummaryForDay(
+  dayType: SkeletonDayType,
+  brief: TripBrief,
+  transferFrom: string | null,
+  base: string
+): string {
+  if (dayType === "arrival") return `Llegada${brief.arrival.time ? ` a las ${brief.arrival.time}` : ""} y descanso.`;
+  if (dayType === "departure") return "Último día. Margen para salida.";
+  if (dayType === "transfer_scenic" || dayType === "transfer_practical") {
+    return `Traslado ${transferFrom || "base anterior"} → ${base}.`;
+  }
+  if (dayType === "rest") return `Día tranquilo en ${base}.`;
+  return `Día completo en ${base}.`;
 }
 
 // ─── Main function ────────────────────────────────────────────────────────────
