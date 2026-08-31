@@ -1,6 +1,7 @@
 import TripExpensesView from "@/components/trip/expenses/TripExpensesView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
+import TripEmptyModuleGuide from "@/components/trip/onboarding/TripEmptyModuleGuide";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import { createClient } from "@/lib/supabase/server";
 import { getCachedTripPremium } from "@/lib/entitlements";
@@ -26,7 +27,13 @@ export default async function TripExpensesPage({
 
   const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await getCachedTripPremium(tripId, access.userId);
+  const [isPremium, { count: expensesCount }] = await Promise.all([
+    getCachedTripPremium(tripId, access.userId),
+    supabase
+      .from("trip_expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("trip_id", tripId),
+  ]);
 
   let budgetTarget: number | null = null;
   try {
@@ -63,13 +70,30 @@ export default async function TripExpensesPage({
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripExpensesView
-        tripId={tripId}
-        isPremium={isPremium}
-        canManageExpenses={access.can_manage_expenses}
-        budgetTarget={budgetTarget}
-        isExpenseGroup={isExpenseGroup}
-      />
+      {(expensesCount ?? 0) === 0 && access.can_manage_expenses ? (
+        <TripEmptyModuleGuide
+          icon="💶"
+          title="Añade el primer gasto cuando lo necesites"
+          description="Registra quién pagó y entre quiénes se reparte. A partir de ahí Kaviro calcula automáticamente los balances del grupo."
+          primaryHref={`/trip/${encodeURIComponent(tripId)}/expenses#expenses-workspace`}
+          primaryLabel="Ir a añadir el primer gasto"
+          secondaryText={
+            isExpenseGroup
+              ? "En un grupo de gastos este es el primer paso recomendado."
+              : "Si todavía no habéis pagado nada juntos, puedes dejar esta sección para más adelante sin bloquear la organización del viaje."
+          }
+        />
+      ) : null}
+
+      <section id="expenses-workspace" className="scroll-mt-24">
+        <TripExpensesView
+          tripId={tripId}
+          isPremium={isPremium}
+          canManageExpenses={access.can_manage_expenses}
+          budgetTarget={budgetTarget}
+          isExpenseGroup={isExpenseGroup}
+        />
+      </section>
     </main>
   );
 }
