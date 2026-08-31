@@ -21,7 +21,7 @@ export default async function ParticipantsPage({ params }: ParticipantsPageProps
   const onlyOrganizer = (count ?? 0) <= 1;
 
   return (
-    <main className="space-y-5 md:space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {onlyOrganizer && access.can_manage_participants ? (
         <TripEmptyModuleGuide
           icon="👥"
@@ -36,6 +36,6 @@ export default async function ParticipantsPage({ params }: ParticipantsPageProps
       <section id="participants-workspace" className="scroll-mt-24">
         <TripParticipantsView tripId={params.id} />
       </section>
-    </main>
+    </div>
   );
 }
