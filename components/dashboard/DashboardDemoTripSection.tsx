@@ -47,139 +47,110 @@ export default function DashboardDemoTripSection({ trips }: { trips: Trip[] }) {
     }
   }
 
-  function toggle() {
-    setCollapsed((c) => !c);
-  }
-
   if (!trips.length) return null;
 
   const demoTrip = trips[0];
 
   return (
-    <section className="space-y-2">
-
-      {/* ── Header colapsable ─────────────────────────────────────────── */}
+    <section className="space-y-2" aria-label="Ejemplo de Kaviro">
       <button
         type="button"
-        onClick={toggle}
-        className="w-full flex items-center justify-between rounded-2xl border border-[#F87171]/25 bg-[#F87171]/5 px-4 py-3 text-left transition hover:bg-[#F87171]/10 dark:border-[#F87171]/20 dark:bg-[#F87171]/5"
+        onClick={() => setCollapsed((value) => !value)}
+        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-[#F87171]/35 hover:bg-slate-50 dark:border-[#1E293B] dark:bg-[#0F1623] dark:hover:bg-[#111a29]"
       >
         <div className="flex items-center gap-2.5">
           <KaviroMark size={24} className="shrink-0 rounded-full" title="Kaviro" />
           <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Viaje demo · Londres
-            </h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">¿Quieres ver un ejemplo completo?</h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Empieza aquí · Visita guiada de {DEMO_SPOTLIGHT_STEP_COUNT} pasos · No cuenta en el límite free
+              Explora Londres cuando quieras · No afecta a tus viajes reales
             </p>
           </div>
         </div>
-        <span className="text-slate-400 shrink-0 ml-2">
+        <span className="ml-2 shrink-0 text-slate-400">
           {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </span>
       </button>
 
-      {/* ── Content ───────────────────────────────────────────────────── */}
-      {!collapsed && mounted && (
-        <div className="rounded-2xl border border-[#F87171]/20 bg-white dark:bg-[#0F1623] dark:border-[#F87171]/10 shadow-sm overflow-hidden">
-
-          {/* Guided tour CTA */}
-          <div className="bg-gradient-to-r from-[#F87171]/10 to-transparent px-4 py-3 border-b border-slate-100 dark:border-[#1E293B] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="text-xl shrink-0">🗺️</span>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Visita guiada</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  {DEMO_SPOTLIGHT_STEP_COUNT} pasos por todas las pestañas
-                </p>
-              </div>
+      {!collapsed && mounted ? (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#1E293B] dark:bg-[#0F1623]">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 dark:border-[#1E293B] dark:bg-[#080C14]">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Viaje demo · Londres</p>
+              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                Una visita guiada opcional de {DEMO_SPOTLIGHT_STEP_COUNT} pasos para conocer las funciones principales.
+              </p>
             </div>
             <Link
               href={`/trip/${demoTrip.id}/summary?tutorial=demo`}
               data-tour="dashboard-demo-tour-cta"
-              className="shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-[#F87171] px-3 text-xs font-bold text-white shadow-md ring-2 ring-[#F87171]/30 transition hover:bg-[#EF4444] animate-pulse"
+              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[#F87171]/30 bg-[#F87171]/10 px-3 text-xs font-bold text-[#F87171] transition hover:bg-[#F87171]/15"
             >
               <Sparkles className="h-3 w-3" />
-              Iniciar tour
+              Ver tour
             </Link>
           </div>
 
-          {/* Feature pills */}
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E293B]">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-2">
-              Qué puedes explorar
-            </p>
+          <div className="px-4 py-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Incluye ejemplos de</p>
             <div className="flex flex-wrap gap-1.5">
               {[
                 "📅 Plan día a día",
-                "🗺️ Rutas en el mapa",
-                "💶 Gastos del grupo",
-                "🔎 Buscar hotel/vuelos",
+                "🗺️ Rutas",
+                "💶 Gastos",
                 "👥 Participantes",
                 "📎 Documentos",
                 "✨ Asistente IA",
-              ].map((f) => (
+              ].map((feature) => (
                 <span
-                  key={f}
-                  className="rounded-full bg-slate-50 dark:bg-[#1E293B] border border-slate-200 dark:border-[#334155] px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300"
+                  key={feature}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-300"
                 >
-                  {f}
+                  {feature}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Trip card */}
-          <div className="p-3">
+          <div className="p-3 pt-0">
             <TripCardItem
               trip={demoTrip}
               badge="Demo"
-              accent="from-[#F87171]/10 to-slate-50 border-[#F87171]/20 dark:from-[#F87171]/5 dark:to-[#0F1623]"
+              accent="from-slate-50 to-white border-slate-200 dark:from-[#080C14] dark:to-[#0F1623]"
               locked={false}
               isDemo
             />
           </div>
 
-          {/* Footer tip + reset */}
-          <div className="px-4 py-2.5 bg-slate-50 dark:bg-[#080C14] border-t border-slate-100 dark:border-[#1E293B] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-              <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                Explora libremente — no afecta a tus viajes reales.
-              </p>
+          <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-4 py-2.5 dark:border-[#1E293B] dark:bg-[#080C14]">
+            <div className="flex min-w-0 items-center gap-2">
+              <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">Úsalo solo si prefieres explorar antes de crear tu viaje.</p>
             </div>
             <button
               type="button"
               onClick={handleReset}
               disabled={resetting}
               title="Borra el demo actual y lo regenera con los datos más recientes"
-              className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-[#334155] bg-white dark:bg-[#1E293B] px-2 py-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 transition hover:border-[#F87171]/50 hover:text-[#F87171] disabled:opacity-50 disabled:pointer-events-none"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-[#F87171]/50 hover:text-[#F87171] disabled:pointer-events-none disabled:opacity-50 dark:border-[#334155] dark:bg-[#1E293B] dark:text-slate-400"
             >
               <RefreshCw className={`h-2.5 w-2.5 ${resetting ? "animate-spin" : ""}`} />
-              {resetting ? "Regenerando…" : "Regenerar demo"}
+              {resetting ? "Regenerando…" : "Regenerar"}
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Collapsed state — quick access */}
-      {collapsed && mounted && (
-        <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-slate-50 dark:bg-[#080C14] border border-slate-200 dark:border-[#1E293B]">
-          <Link
-            href={`/trip/${demoTrip.id}/summary`}
-            className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-[#F87171] transition"
-          >
-            Abrir viaje demo →
-          </Link>
+      {collapsed && mounted ? (
+        <div className="flex items-center justify-end px-2">
           <Link
             href={`/trip/${demoTrip.id}/summary?tutorial=demo`}
-            className="text-xs font-semibold text-[#F87171] hover:text-[#EF4444] transition"
+            className="text-[11px] font-semibold text-slate-400 transition hover:text-[#F87171]"
           >
-            🗺️ Visita guiada
+            Ver ejemplo de Londres →
           </Link>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
