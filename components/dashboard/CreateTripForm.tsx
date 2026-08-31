@@ -7,7 +7,6 @@ import { useToast } from "@/components/ui/toast";
 import TripPlacesFields from "@/components/dashboard/TripPlacesFields";
 import { joinTripPlaces } from "@/lib/trip-places";
 import { buildTravelCurrencySelectOptions } from "@/lib/travel-currencies";
-import { FREE_PLAN_CREATION_STEPS } from "@/lib/dashboard-creation-flow";
 import {
   canShowExpensesGroupCreation,
   expensesGroupRolloutAtLeast,
@@ -48,15 +47,15 @@ export default function CreateTripForm({
     }
     setCreationMode(initialMode === "expenses" ? "expenses" : "travel");
   }, [initialMode, showExpensesGroup]);
+
   const [name, setName] = useState("");
   const [places, setPlaces] = useState<string[]>([""]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [baseCurrency, setBaseCurrency] = useState("EUR");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<"idle" | "trip" | "participant" | "done">("idle");
+  const [step, setStep] = useState<"idle" | "trip" | "done">("idle");
 
   const destinationHint = useMemo(() => joinTripPlaces(places), [places]);
   const currencyOptions = useMemo(
@@ -65,7 +64,7 @@ export default function CreateTripForm({
   );
 
   useEffect(() => {
-    const valid = new Set(currencyOptions.map((o) => o.code));
+    const valid = new Set(currencyOptions.map((option) => option.code));
     if (!valid.has(baseCurrency)) {
       setBaseCurrency(currencyOptions[0]?.code ?? "EUR");
     }
@@ -73,7 +72,6 @@ export default function CreateTripForm({
 
   useEffect(() => {
     if (!startDate) return;
-    // Si aún no hay fin, o si fin < inicio, ajustamos fin = inicio (mínimo permitido)
     if (!endDate || endDate < startDate) {
       setEndDate(startDate);
     }
@@ -86,11 +84,13 @@ export default function CreateTripForm({
     setError(null);
     setStep("idle");
 
-    const trimmedName = name.trim();
     const trimmedDestination = joinTripPlaces(places);
+    const trimmedName =
+      name.trim() ||
+      (creationMode === "travel" && trimmedDestination ? trimmedDestination : "Grupo de gastos");
 
-    if (!trimmedName) {
-      setError("El nombre del viaje es obligatorio.");
+    if (creationMode === "travel" && !trimmedDestination) {
+      setError("Indica al menos un destino para crear tu viaje.");
       return;
     }
 
@@ -110,7 +110,7 @@ export default function CreateTripForm({
           body: JSON.stringify({
             name: trimmedName,
             trip_mode: creationMode,
-            destination: creationMode === "expenses" ? null : trimmedDestination ? trimmedDestination : null,
+            destination: creationMode === "expenses" ? null : trimmedDestination,
             start_date: creationMode === "expenses" ? null : startDate || null,
             end_date: creationMode === "expenses" ? null : endDate || null,
             base_currency: baseCurrency || "EUR",
@@ -124,6 +124,7 @@ export default function CreateTripForm({
       if (!createResult.ok) {
         throw new Error(payload?.error || "No se pudo crear el viaje.");
       }
+
       const newTripId = String(payload?.tripId || "");
       if (!newTripId) throw new Error("No se pudo crear el viaje (sin id).");
 
@@ -142,7 +143,9 @@ export default function CreateTripForm({
       setStep("done");
       toast.success(
         creationMode === "expenses" ? "Grupo creado" : "Viaje creado",
-        creationMode === "expenses" ? "Empieza añadiendo gastos." : "Te llevamos al resumen para los primeros pasos."
+        creationMode === "expenses"
+          ? "Empieza añadiendo el primer gasto cuando lo necesites."
+          : "Ya está listo. Ahora te enseñamos solo los siguientes pasos útiles."
       );
       router.push(
         creationMode === "expenses"
@@ -151,9 +154,9 @@ export default function CreateTripForm({
       );
       router.refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "No se pudo crear el viaje.";
-      setError(msg);
-      toast.error("No se pudo crear el viaje", msg);
+      const message = err instanceof Error ? err.message : "No se pudo crear el viaje.";
+      setError(message);
+      toast.error("No se pudo crear el viaje", message);
     } finally {
       setLoading(false);
       setStep("idle");
@@ -163,59 +166,49 @@ export default function CreateTripForm({
   return (
     <form onSubmit={handleCreateTrip} className="card-soft p-6">
       <div className="mb-5">
-        <h2 className="mb-2 text-2xl font-bold">
-          {creationMode === "expenses" && showExpensesGroup ? "Crear grupo de gastos" : "Crear nuevo viaje"}
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.12em] text-[#F87171]">Tu primer paso</p>
+        <h2 className="text-2xl font-bold text-slate-950">
+          {creationMode === "expenses" && showExpensesGroup ? "Crea un grupo de gastos" : "¿A dónde vas?"}
         </h2>
-        <p className="text-slate-600">
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           {creationMode === "expenses" && showExpensesGroup
-            ? "Reparte gastos entre amigos sin plan ni mapa."
-            : showExpensesTabs
-              ? "Viaje con plan y mapa, o solo un grupo para repartir gastos."
-              : "Planifica destino, fechas y gastos del grupo."}
+            ? "Ponle un nombre y empieza. Las fechas son opcionales."
+            : "Con el destino ya puedes crear el viaje. Fechas, nombre y moneda se pueden ajustar después."}
         </p>
       </div>
 
       {showExpensesTabs ? (
-        <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <div className="mb-5 flex flex-wrap gap-2" aria-label="Tipo de espacio">
           <button
             type="button"
             onClick={() => setCreationMode("travel")}
-            className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+            className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
               creationMode === "travel"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "border-[#F87171]/40 bg-[#F87171]/10 text-[#F87171]"
+                : "border-slate-200 bg-white text-slate-500 hover:text-slate-900"
             }`}
           >
-            ✈️ Viaje
+            ✈️ Organizar un viaje
           </button>
           <button
             type="button"
             onClick={() => setCreationMode("expenses")}
-            className={`rounded-lg px-3 py-2.5 text-sm font-bold transition ${
+            className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
               creationMode === "expenses"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                : "border-slate-200 bg-white text-slate-500 hover:text-slate-900"
             }`}
           >
-            💸 Grupo de gastos
+            💸 Solo repartir gastos
           </button>
         </div>
       ) : showExpensesGroup && creationMode === "travel" ? (
         <button
           type="button"
           onClick={() => setCreationMode("expenses")}
-          className="mb-5 flex w-full items-center gap-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/80 px-4 py-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50"
+          className="mb-5 text-xs font-semibold text-slate-500 transition hover:text-emerald-700"
         >
-          <span className="text-xl" aria-hidden>
-            💸
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-slate-900">¿Solo repartir gastos?</span>
-            <span className="mt-0.5 block text-xs text-slate-600">
-              Crea un grupo sin plan ni mapa — ideal para pisos, cenas o viajes cortos.
-            </span>
-          </span>
-          <span className="shrink-0 text-xs font-bold text-emerald-800">Crear grupo →</span>
+          ¿Solo quieres repartir gastos? Crear grupo sin itinerario →
         </button>
       ) : showExpensesGroup && creationMode === "expenses" ? (
         <button
@@ -223,28 +216,13 @@ export default function CreateTripForm({
           onClick={() => setCreationMode("travel")}
           className="mb-5 text-sm font-semibold text-slate-500 transition hover:text-slate-800"
         >
-          ← Volver a crear viaje completo
+          ← Volver a crear viaje
         </button>
       ) : null}
 
-      {!isPremium ? (
-        <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50/90 p-4">
-          <p className="text-sm font-semibold text-slate-900">Guía paso a paso (plan gratuito)</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Después de guardar, en el viaje usa las pestañas en este orden para sacarle el máximo partido.
-          </p>
-          <ol className="mt-3 space-y-2.5 border-t border-slate-200/80 pt-3 text-xs text-slate-700 sm:text-sm">
-            {FREE_PLAN_CREATION_STEPS.map((step, i) => (
-              <li key={step.label} className="flex gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[11px] font-bold text-white">
-                  {i + 1}
-                </span>
-                <span>
-                  <span className="font-semibold text-slate-900">{step.label}.</span> {step.hint}
-                </span>
-              </li>
-            ))}
-          </ol>
+      {!isPremium && creationMode === "travel" ? (
+        <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
+          No necesitas configurar todo ahora. Después de crear el viaje, Kaviro te indicará qué puedes hacer a continuación.
         </div>
       ) : null}
 
@@ -255,86 +233,94 @@ export default function CreateTripForm({
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <label className="mb-1 block text-sm font-medium">
-            {creationMode === "expenses" ? "Nombre del grupo" : "Nombre del viaje"}
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
-            placeholder={creationMode === "expenses" ? "Ej. Piso compartido" : "Ej. Japón 2026"}
-          />
-        </div>
-
         {creationMode === "travel" ? (
           <div className="md:col-span-2">
             <TripPlacesFields places={places} onChange={setPlaces} />
           </div>
         ) : null}
 
-        <div className="md:col-span-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              {creationMode === "expenses" ? "Desde" : "Fecha inicio"}
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              {creationMode === "expenses" ? "Hasta" : "Fecha fin"}
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              min={startDate || undefined}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
-            />
-          </div>
-          {creationMode === "expenses" ? (
-            <p className="sm:col-span-2 text-xs text-slate-500">
-              Opcional: indica entre qué fechas repartís gastos (p. ej. fin de semana o mes del piso).
-            </p>
+        <div className="md:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-800">
+            {creationMode === "expenses" ? "Nombre del grupo" : "Nombre del viaje"}
+            <span className="ml-1 font-normal text-slate-400">(opcional)</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+            placeholder={
+              creationMode === "expenses"
+                ? "Ej. Fin de semana con amigos"
+                : destinationHint
+                  ? `Ej. ${destinationHint} 2027`
+                  : "Ej. Japón 2027"
+            }
+          />
+          {creationMode === "travel" ? (
+            <p className="mt-1.5 text-xs text-slate-500">Si lo dejas vacío, usaremos el destino como nombre.</p>
           ) : null}
         </div>
 
-        <div className="md:col-span-2 max-w-xl">
-          <label className="mb-1 block text-sm font-medium">Moneda base</label>
-          <select
-            value={baseCurrency}
-            onChange={(e) => setBaseCurrency(e.target.value)}
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-800">
+            {creationMode === "expenses" ? "Desde" : "Fecha de inicio"}
+            <span className="ml-1 font-normal text-slate-400">(opcional)</span>
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
             className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
-          >
-            {currencyOptions.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-800">
+            {creationMode === "expenses" ? "Hasta" : "Fecha de fin"}
+            <span className="ml-1 font-normal text-slate-400">(opcional)</span>
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            min={startDate || undefined}
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+          />
+        </div>
+
+        <details className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+          <summary className="cursor-pointer text-xs font-semibold text-slate-600">Opciones avanzadas</summary>
+          <div className="mt-3 max-w-xl">
+            <label className="mb-1 block text-sm font-medium text-slate-800">Moneda base</label>
+            <select
+              value={baseCurrency}
+              onChange={(e) => setBaseCurrency(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--brand-border)]"
+            >
+              {currencyOptions.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </details>
       </div>
 
-      <div className="mt-6">
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-press btn-primary disabled:opacity-50"
-        >
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <button type="submit" disabled={loading} className="btn-press btn-primary min-h-[44px] disabled:opacity-50">
           {loading
             ? step === "trip"
-              ? "Creando viaje..."
-              : "Creando..."
+              ? "Creando..."
+              : "Guardando..."
             : creationMode === "expenses"
               ? "Crear grupo"
-              : "Crear viaje"}
+              : "Crear mi viaje →"}
         </button>
+        {creationMode === "travel" ? (
+          <p className="text-xs text-slate-500">Podrás cambiar estos datos en Ajustes cuando quieras.</p>
+        ) : null}
       </div>
     </form>
   );
