@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import type { TripOnboardingCounts } from "@/lib/trip-onboarding";
 
 type Props = {
@@ -53,6 +55,20 @@ export default function TripFirstStepsGuide({ tripId, tripName, counts }: Props)
 
   const doneCount = steps.filter((step) => step.done).length;
   const nextStep = steps.find((step) => !step.done) ?? null;
+  const allComplete = doneCount === steps.length;
+
+  useEffect(() => {
+    if (!allComplete || typeof window === "undefined") return;
+    const storageKey = `kaviro_onboarding_complete_${tripId}`;
+    try {
+      if (window.localStorage.getItem(storageKey)) return;
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, { trip_id: tripId });
+      window.localStorage.setItem(storageKey, "1");
+    } catch {
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, { trip_id: tripId });
+    }
+  }, [allComplete, tripId]);
+
   if (!nextStep) return null;
 
   const pct = Math.round((doneCount / steps.length) * 100);
@@ -117,6 +133,13 @@ export default function TripFirstStepsGuide({ tripId, tripName, counts }: Props)
             </div>
             <Link
               href={nextStep.href}
+              onClick={() =>
+                trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_CLICKED, {
+                  trip_id: tripId,
+                  step: nextStep.id,
+                  completed_steps: doneCount,
+                })
+              }
               className="btn-press inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)]"
             >
               {nextStep.cta} →
