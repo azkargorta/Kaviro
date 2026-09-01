@@ -23,14 +23,19 @@ export default function CountUpStat({
 }: CountUpStatProps) {
   const ref = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
-  const [display, setDisplay] = useState(0);
+
+  // Render the real value in the initial HTML so crawlers, previews and
+  // no-JS clients never see a misleading 0. The count-up is progressive
+  // enhancement applied only after hydration in the browser.
+  const [display, setDisplay] = useState(value);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
+    setDisplay(value);
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setDisplay(value);
       return;
     }
 
@@ -39,6 +44,7 @@ export default function CountUpStat({
         if (!entry?.isIntersecting) return;
         observer.disconnect();
 
+        setDisplay(0);
         const duration = 650;
         const start = performance.now();
 
