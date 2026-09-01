@@ -3,8 +3,11 @@ import { STORAGE_KEY_PREFIX } from "@/lib/brand";
 const CONSENT_KEY = `${STORAGE_KEY_PREFIX}_cookie_consent`;
 
 export const ANALYTICS_EVENTS = {
+  SIGN_UP_COMPLETED: "sign_up_completed",
   TRIP_CREATED: "trip_created",
   TRIP_OPENED: "trip_opened",
+  ONBOARDING_STEP_CLICKED: "onboarding_step_clicked",
+  ONBOARDING_COMPLETED: "onboarding_completed",
   EXPENSE_GROUP_CREATED: "expense_group_created",
   AI_PLANNER_STARTED: "ai_planner_started",
   AI_PLANNER_COMPLETED: "ai_planner_completed",
