@@ -11,6 +11,16 @@ import { isUsernameAvailable } from "@/lib/profile";
 import { clearSupabaseBrowserCookies } from "@/lib/clear-supabase-browser-cookies";
 import { withTimeout } from "@/lib/with-timeout";
 
+function friendlyLoginError(message: string) {
+  if (/email.*not.*confirmed|email_not_confirmed/i.test(message)) {
+    return "Todavía falta confirmar tu email. Abre el enlace que te enviamos al registrarte o solicita uno nuevo.";
+  }
+  if (/invalid login credentials|invalid.*credentials/i.test(message)) {
+    return "Email o contraseña incorrectos.";
+  }
+  return message;
+}
+
 /**
  * Registro con email + password
  */
@@ -66,8 +76,28 @@ export async function signUpWithEmail(params: {
     throw new Error(msg);
   }
 
-  // La sesión se establece server-side en /api/auth/signup (cookies). No hacemos signIn en cliente.
+  // Con confirmación de email activa, la sesión llegará al abrir el enlace del correo.
   return payload;
+}
+
+/** Reenvía el correo de confirmación de una cuenta recién creada. */
+export async function resendSignupConfirmation(emailRaw: string) {
+  const email = emailRaw.trim().toLowerCase();
+  if (!isValidEmail(email)) throw new Error("Introduce un email válido.");
+
+  const client = createClient();
+  const redirectTo = `${window.location.origin}/auth/callback`;
+  const { error } = await withTimeout(
+    client.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: redirectTo },
+    }),
+    20_000,
+    "El servidor tardó demasiado en reenviar el correo. Reintenta."
+  );
+
+  if (error) throw new Error(error.message);
 }
 
 /**
@@ -100,12 +130,12 @@ export async function signInWithEmail(params: {
       20_000,
       "El servidor tardó demasiado. Reintenta."
     );
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(friendlyLoginError(error.message));
     return { ok: true };
   }
 
   if (!res.ok) {
-    throw new Error(payload?.error || `Error ${res.status}`);
+    throw new Error(friendlyLoginError(payload?.error || `Error ${res.status}`));
   }
 
   return payload;
