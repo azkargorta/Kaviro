@@ -9,9 +9,9 @@ function isOtpType(s: string): s is OtpType {
 }
 
 /**
- * Validación sin PKCE vía token_hash en el correo (plantillas en Supabase).
+ * Validación sin PKCE vía token_hash en el correo.
  * - recovery → /auth/reset-password
- * - signup | email → cuenta confirmada (pantalla ok → login)
+ * - signup | email → entra directamente a Kaviro con la sesión creada
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -20,9 +20,6 @@ export async function GET(request: NextRequest) {
   const typeRaw = requestUrl.searchParams.get("type");
   const nextRaw = requestUrl.searchParams.get("next") ?? "/dashboard";
 
-  // Compat: si la plantilla de Supabase usa el enlace antiguo ({{ .ConfirmationURL }})
-  // acabamos aquí con ?code=. Ese flujo depende de PKCE (mismo navegador). Lo reenviamos
-  // a /auth/callback para canjear el código en servidor y evitar cuelgues en WebViews.
   if (!token_hash && code) {
     const safeNext =
       nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/dashboard";
@@ -38,7 +35,7 @@ export async function GET(request: NextRequest) {
     u.searchParams.set("status", "error");
     u.searchParams.set(
       "message",
-      "Enlace incompleto o tipo no válido. Si el correo usa el enlace antiguo (PKCE), actualiza las plantillas en Supabase o pide un correo nuevo."
+      "El enlace de confirmación está incompleto o ya no es válido. Solicita un correo nuevo e inténtalo otra vez."
     );
     return NextResponse.redirect(u);
   }
@@ -46,15 +43,12 @@ export async function GET(request: NextRequest) {
   const safeNext =
     nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/dashboard";
 
-  const successUrl =
-    typeRaw === "recovery"
-      ? new URL("/auth/reset-password", requestUrl.origin)
-      : (() => {
-          const u = new URL("/auth/confirmed", requestUrl.origin);
-          u.searchParams.set("status", "ok");
-          u.searchParams.set("next", safeNext);
-          return u;
-        })();
+  const successUrl = (() => {
+    if (typeRaw === "recovery") return new URL("/auth/reset-password", requestUrl.origin);
+    const u = new URL(safeNext, requestUrl.origin);
+    if (safeNext === "/dashboard") u.searchParams.set("welcome", "1");
+    return u;
+  })();
 
   let response = NextResponse.redirect(successUrl);
 

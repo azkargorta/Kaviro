@@ -21,7 +21,7 @@ type Props = {
   newParticipantCount?: number;
 };
 
-const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "expenses", "participants"];
+const PERSONAL_PRIMARY_KEYS: TripTabKey[] = ["summary", "plan", "participants", "resources"];
 const EXPENSES_GROUP_PRIMARY_KEYS: TripTabKey[] = ["summary", "expenses", "participants"];
 const AGENCY_PRIMARY_KEYS: TripTabKey[] = ["plan", "map", "resources"];
 

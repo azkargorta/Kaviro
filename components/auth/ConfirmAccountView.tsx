@@ -30,79 +30,51 @@ function Card({
 export default function ConfirmAccountView() {
   const searchParams = useSearchParams();
   const status = (searchParams.get("status") || "").toLowerCase();
-  const next = searchParams.get("next") || "/dashboard";
+  const nextRaw = searchParams.get("next") || "/dashboard";
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/dashboard";
   const rawMessage = useMemo(
-    () => searchParams.get("message") || "No se pudo validar el enlace. Puede haber caducado o ya estar usado.",
+    () => searchParams.get("message") || "No se pudo validar el enlace.",
     [searchParams]
   );
 
   if (status === "ok") {
     return (
       <div className="space-y-5">
-        <Card tone="ok" title="Cuenta confirmada" description="Tu email se ha validado correctamente. Ya puedes entrar." />
+        <Card tone="ok" title="Cuenta confirmada" description="Tu email se ha validado correctamente." />
         <Link
-          href={`/auth/login?next=${encodeURIComponent(next)}`}
-          className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-semibold text-white hover:bg-[#EF4444] transition"
+          href={next}
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#EF4444]"
         >
-          Iniciar sesión
+          Continuar a Kaviro
         </Link>
       </div>
     );
   }
 
   if (status === "error") {
-    const fromCallback = searchParams.get("from") === "callback";
-    const isFlowIssue =
-      fromCallback ||
-      /pkce|code verifier|flow state|invalid_grant|token has expired|verifier not found/i.test(rawMessage);
-
-    const description =
-      isFlowIssue
-        ? "Al abrir el enlace dentro de Gmail (o en otro navegador distinto al que usaste al registrarte), la validación suele fallar. Prueba: menú del enlace → «Abrir en Chrome» / «Abrir en Safari» y vuelve a pulsar. Si el enlace ya caducó, pide un correo nuevo."
-        : rawMessage;
+    const expired = /expired|caduc|token.*invalid|otp.*expired/i.test(rawMessage);
+    const description = expired
+      ? "El enlace ha caducado o ya fue utilizado. Vuelve al login con tu email y solicita un nuevo correo de confirmación."
+      : "No hemos podido validar este enlace. Vuelve al login con tu email; si la cuenta sigue pendiente, podrás reenviar el correo de confirmación desde allí.";
 
     return (
       <div className="space-y-5">
-        <Card tone="error" title="No se pudo confirmar" description={description} />
-        {isFlowIssue ? (
-          <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-950">
-            <p>
-              <span className="font-semibold">Si el fallo viene de un enlace por correo:</span> no uses solo{" "}
-              <code className="rounded bg-amber-100/80 px-1 font-mono">{"{{ .ConfirmationURL }}"}</code> (genera{" "}
-              <code className="rounded bg-amber-100/80 px-1 font-mono">?code=</code>
-              ). Usa en cada plantilla:
-            </p>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>
-                <strong>Confirm signup:</strong>{" "}
-                <code className="break-all rounded bg-amber-100/80 px-1 text-[11px]">
-                  {"{{ .SiteURL }}/auth/verify?token_hash={{ .TokenHash }}&type=signup"}
-                </code>
-              </li>
-              <li>
-                <strong>Reset password:</strong>{" "}
-                <code className="break-all rounded bg-amber-100/80 px-1 text-[11px]">
-                  {"{{ .SiteURL }}/auth/verify?token_hash={{ .TokenHash }}&type=recovery"}
-                </code>
-              </li>
-            </ul>
-            <p>
-              Redirect URLs debe incluir <code className="font-mono">/auth/verify</code>.
-            </p>
-          </div>
-        ) : null}
+        <Card tone="error" title="No se pudo confirmar la cuenta" description={description} />
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300">
+          Si abriste el enlace dentro de la vista previa de una app de correo, prueba a abrirlo directamente en Chrome, Safari o tu navegador habitual.
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Link
             href="/auth/login"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-semibold text-white hover:bg-[#EF4444] transition"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[#F87171] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#EF4444]"
           >
             Ir al login
           </Link>
           <Link
-            href={isFlowIssue ? "/auth/forgot-password" : "/auth/register"}
+            href="/auth/register"
             className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200 dark:hover:bg-[#1E293B]"
           >
-            {isFlowIssue ? "Pedir nuevo enlace (email)" : "Crear cuenta otra vez"}
+            Volver al registro
           </Link>
         </div>
       </div>
@@ -111,14 +83,13 @@ export default function ConfirmAccountView() {
 
   return (
     <div className="space-y-5">
-      <Card tone="info" title="Abriendo enlace…" description="Si esta pantalla no cambia, vuelve a intentar abrir el enlace del email." />
+      <Card tone="info" title="Abriendo enlace…" description="Si esta pantalla no cambia, vuelve a abrir el enlace desde tu correo." />
       <Link
         href="/auth/login"
-        className="inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-200"
       >
         Ir al login
       </Link>
     </div>
   );
 }
-

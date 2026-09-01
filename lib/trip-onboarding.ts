@@ -110,12 +110,12 @@ export function onboardingProgress(counts: TripOnboardingCounts, steps: Onboardi
   total: number;
 } {
   const total = steps.length;
-  const done = steps.filter((s) => isOnboardingStepDone(s.id, counts)).length;
+  const done = steps.filter((step) => isOnboardingStepDone(step.id, counts)).length;
   return { done, total };
 }
 
 export function isOnboardingComplete(counts: TripOnboardingCounts, steps: OnboardingStep[]): boolean {
-  return steps.length > 0 && steps.every((s) => isOnboardingStepDone(s.id, counts));
+  return steps.length > 0 && steps.every((step) => isOnboardingStepDone(step.id, counts));
 }
 
 export function shouldShowTripOnboarding(
@@ -129,78 +129,53 @@ export function shouldShowTripOnboarding(
 
 export function buildOnboardingSteps(
   tripId: string,
-  isPremium: boolean,
+  _isPremium: boolean,
   tripMode: "travel" | "expenses" = "travel"
 ): OnboardingStep[] {
   const id = encodeURIComponent(tripId);
+
   const participants: OnboardingStep = {
     id: "participants",
     icon: "👥",
-    title: "Invita a tu grupo",
+    title: tripMode === "expenses" ? "Añade a tu grupo" : "Invita a quien viaja contigo",
     description:
       tripMode === "expenses"
         ? "Añade a las personas que comparten gastos contigo."
-        : "Añade familia o amigos y define quién puede editar qué.",
+        : "Compartid el mismo plan y mantened el viaje actualizado entre todos.",
     href: `/trip/${id}/participants`,
   };
+
   const expenses: OnboardingStep = {
     id: "expenses",
     icon: "💶",
-    title: "Anota los gastos",
-    description:
-      tripMode === "expenses"
-        ? "Registra pagos, consulta balances y obtén los pagos exactos para saldar."
-        : "Splits y balances para que nadie lleve la cuenta en Excel.",
+    title: "Añade el primer gasto",
+    description: "Registra un pago para empezar a calcular balances del grupo.",
     href: `/trip/${id}/expenses`,
   };
-  const resources: OnboardingStep = {
-    id: "resources",
-    icon: "📎",
-    title: "Guarda facturas y documentos",
-    description: "Comprobantes, recibos y archivos del grupo.",
-    href: `/trip/${id}/resources`,
-  };
 
-  // Para grupos de gastos solo mostramos los pasos relevantes
   if (tripMode === "expenses") {
-    return [participants, expenses, resources];
+    return [participants, expenses];
   }
 
   const plan: OnboardingStep = {
     id: "plan",
     icon: "📅",
-    title: "Crea el plan",
-    description: "Actividades por día, visibilidad del grupo e IA sugiere.",
+    title: "Añade tu primer plan",
+    description: "Empieza por algo que ya sepas: un vuelo, una reserva o una actividad.",
     href: `/trip/${id}/plan`,
   };
-  const map: OnboardingStep = {
-    id: "map",
-    icon: "🗺️",
-    title: "Monta las rutas",
-    description: "Trayectos y paradas sobre el mapa.",
-    href: `/trip/${id}/map`,
-  };
-  const resourcesTravel: OnboardingStep = {
+
+  const resources: OnboardingStep = {
     id: "resources",
     icon: "📎",
-    title: "Guarda reservas y documentos",
-    description: "Billetes, alojamiento y archivos del viaje.",
+    title: "Guarda una reserva o documento",
+    description: "Ten billetes, alojamientos y reservas junto al resto del viaje.",
     href: `/trip/${id}/resources`,
   };
-  const ai: OnboardingStep = {
-    id: "ai",
-    icon: "✨",
-    title: "Prueba el asistente IA",
-    description: isPremium
-      ? "Pide un itinerario o reorganiza el plan con contexto del viaje."
-      : "Disponible con Premium (o si un compañero tiene Premium en el viaje).",
-    href: `/trip/${id}/ai-chat`,
-  };
 
-  if (isPremium) {
-    return [participants, plan, expenses, map, resourcesTravel, ai];
-  }
-  return [participants, plan, expenses, map, resourcesTravel];
+  // El primer uso debe ser corto y evidente. Mapa, gastos e IA se descubren
+  // después, de forma contextual, cuando ya existe contenido real en el viaje.
+  return [plan, participants, resources];
 }
 
 /** Cuenta módulos del viaje en servidor (layout / resumen). */
@@ -216,7 +191,11 @@ export async function fetchTripOnboardingCounts(
     { count: resources },
     { count: aiConversations },
   ] = await Promise.all([
-    supabase.from("trip_participants").select("id", { count: "exact", head: true }).eq("trip_id", tripId).neq("status", "removed"),
+    supabase
+      .from("trip_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("trip_id", tripId)
+      .neq("status", "removed"),
     supabase.from("trip_activities").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
     supabase.from("trip_routes").select("id", { count: "exact", head: true }).eq("trip_id", tripId),
     supabase.from("trip_expenses").select("id", { count: "exact", head: true }).eq("trip_id", tripId),

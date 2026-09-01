@@ -3,6 +3,7 @@ import { getCachedTripAccess } from "@/lib/trip-access";
 import TripPlanView from "@/components/trip/plan/TripPlanView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
+import TripEmptyModuleGuide from "@/components/trip/onboarding/TripEmptyModuleGuide";
 import { getCachedTripPremium } from "@/lib/entitlements";
 import { canEditTripNotesFromAccess } from "@/lib/trip-module-access";
 import type { TripActivitiesInitial } from "@/hooks/useTripActivities";
@@ -140,22 +141,35 @@ export default async function TripPlanPage({
         actions={<TripScreenActions tripId={params.id} />}
       />
 
-      <TripPlanView
-        tripId={params.id}
-        premiumEnabled={isPremium}
-        currentUserId={access.userId}
-        currentDisplayName={currentDisplayName}
-        initialExploreOpen={initialExploreOpen}
-        initialTripDescription={tripDescription}
-        canEditTripNotes={canEditTripNotes}
-        canManagePlan={access.can_manage_plan}
-        initialWorkspaceTab={initialWorkspaceTab}
-        initialSelectedDate={initialSelectedDate}
-        initialActivities={initialActivities}
-        participants={participantNames}
-        tripParticipants={tripParticipants}
-        currentParticipantId={access.participantId}
-      />
+      {visibleActivities.length === 0 && access.can_manage_plan ? (
+        <TripEmptyModuleGuide
+          icon="📅"
+          title="Empieza con una sola cosa"
+          description="Añade algo que ya conozcas: un vuelo, un hotel, un restaurante o una actividad. Después podrás ordenar el resto del viaje por días."
+          primaryHref={`/trip/${encodeURIComponent(params.id)}/plan#plan-workspace`}
+          primaryLabel="Ir a añadir el primer plan"
+          secondaryText="No hace falta completar el itinerario entero ahora. Con una primera actividad ya tendrás una base sobre la que seguir trabajando."
+        />
+      ) : null}
+
+      <section id="plan-workspace" className="scroll-mt-24">
+        <TripPlanView
+          tripId={params.id}
+          premiumEnabled={isPremium}
+          currentUserId={access.userId}
+          currentDisplayName={currentDisplayName}
+          initialExploreOpen={initialExploreOpen}
+          initialTripDescription={tripDescription}
+          canEditTripNotes={canEditTripNotes}
+          canManagePlan={access.can_manage_plan}
+          initialWorkspaceTab={initialWorkspaceTab}
+          initialSelectedDate={initialSelectedDate}
+          initialActivities={initialActivities}
+          participants={participantNames}
+          tripParticipants={tripParticipants}
+          currentParticipantId={access.participantId}
+        />
+      </section>
     </main>
   );
 }

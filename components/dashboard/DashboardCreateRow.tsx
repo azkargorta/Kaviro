@@ -24,14 +24,14 @@ type ActionCard = {
 };
 
 const VARIANT_SHELL: Record<ActionVariant, string> = {
-  ai: `${DASHBOARD_CARD_HOVER} group relative overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white p-4 text-left shadow-[0_4px_18px_rgba(248,113,113,0.1)] ring-1 ring-[var(--brand-border)]/35 dark:from-[#1a0f0f]/35 dark:via-[#0F1623] dark:to-[#0F1623]`,
-  create: `${DASHBOARD_CARD_HOVER} group rounded-2xl border border-slate-200/90 bg-white p-4 text-left shadow-[0_2px_12px_rgba(15,23,42,0.06)] dark:border-[#1E293B] dark:bg-[#0F1623]`,
+  create: `${DASHBOARD_CARD_HOVER} group relative overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white p-4 text-left shadow-[0_4px_18px_rgba(248,113,113,0.1)] ring-1 ring-[var(--brand-border)]/35 dark:from-[#1a0f0f]/35 dark:via-[#0F1623] dark:to-[#0F1623]`,
+  ai: `${DASHBOARD_CARD_HOVER} group rounded-2xl border border-slate-200/90 bg-white p-4 text-left shadow-[0_2px_12px_rgba(15,23,42,0.06)] dark:border-[#1E293B] dark:bg-[#0F1623]`,
   expenses: `${DASHBOARD_CARD_HOVER} group rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/60 via-white to-white p-4 text-left shadow-[0_2px_12px_rgba(15,23,42,0.05)] ring-1 ring-emerald-100/80 dark:border-emerald-900/30 dark:from-emerald-950/15 dark:via-[#0F1623] dark:to-[#0F1623]`,
 };
 
 const VARIANT_ICON: Record<ActionVariant, string> = {
-  ai: "bg-white text-[var(--brand)] shadow-sm ring-1 ring-[var(--brand-border)] dark:bg-[#141c2b]",
-  create: "bg-slate-50 text-slate-700 ring-1 ring-slate-200/90 group-hover:bg-[var(--brand-light)] group-hover:text-[var(--brand)] dark:bg-[#141c2b] dark:text-slate-200",
+  create: "bg-white text-[var(--brand)] shadow-sm ring-1 ring-[var(--brand-border)] dark:bg-[#141c2b]",
+  ai: "bg-slate-50 text-slate-700 ring-1 ring-slate-200/90 group-hover:bg-[var(--brand-light)] group-hover:text-[var(--brand)] dark:bg-[#141c2b] dark:text-slate-200",
   expenses: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-300",
 };
 
@@ -40,20 +40,20 @@ export default function DashboardCreateRow({ disabled = false }: Props) {
 
   const actions: ActionCard[] = [
     {
-      key: "ai",
-      variant: "ai",
-      title: "Planificar con IA",
-      subtitle: "Crea un borrador en minutos",
-      icon: <Sparkles className="h-5 w-5" aria-hidden />,
-      href: "/trips/new/planner-v2",
-    },
-    {
       key: "create",
       variant: "create",
       title: "Crear viaje",
-      subtitle: "Empieza desde cero",
+      subtitle: "Empieza con tu destino",
       icon: <Luggage className="h-5 w-5" aria-hidden />,
       onClick: () => openCreateTripForm({ mode: "travel" }),
+    },
+    {
+      key: "ai",
+      variant: "ai",
+      title: "Planificar con IA",
+      subtitle: "Alternativa: crea un borrador",
+      icon: <Sparkles className="h-5 w-5" aria-hidden />,
+      href: "/trips/new/planner-v2",
     },
   ];
 
@@ -72,10 +72,10 @@ export default function DashboardCreateRow({ disabled = false }: Props) {
     <div className="space-y-2.5">
       <div>
         <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-          Acciones principales
+          Empieza aquí
         </h2>
         <p className="mt-0.5 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
-          Empieza un viaje, planifica con IA o liquida gastos en grupo.
+          Crea tu viaje y añade lo que ya sabes. La IA y los gastos pueden esperar.
         </p>
       </div>
       <div
@@ -88,29 +88,29 @@ export default function DashboardCreateRow({ disabled = false }: Props) {
 
           const inner = (
             <>
-              {action.variant === "ai" ? (
+              {action.variant === "create" ? (
                 <span
                   aria-hidden
                   className="pointer-events-none absolute -right-6 -top-6 hidden h-20 w-20 rounded-full bg-[var(--brand)]/10 sm:block"
                 />
               ) : null}
               <div className="relative flex items-center gap-2 sm:block">
-              <span
-                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition sm:h-10 sm:w-10 ${VARIANT_ICON[action.variant]}`}
-              >
-                {action.icon}
-              </span>
-              <p
-                className={`relative min-w-0 text-xs font-extrabold leading-snug tracking-tight sm:mt-3 sm:text-sm ${
-                  action.variant === "ai"
-                    ? "text-[var(--brand-text)]"
-                    : action.variant === "expenses"
-                      ? "text-emerald-900 dark:text-emerald-100"
-                      : "text-slate-900 dark:text-white"
-                }`}
-              >
-                {action.title}
-              </p>
+                <span
+                  className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition sm:h-10 sm:w-10 ${VARIANT_ICON[action.variant]}`}
+                >
+                  {action.icon}
+                </span>
+                <p
+                  className={`relative min-w-0 text-xs font-extrabold leading-snug tracking-tight sm:mt-3 sm:text-sm ${
+                    action.variant === "create"
+                      ? "text-[var(--brand-text)]"
+                      : action.variant === "expenses"
+                        ? "text-emerald-900 dark:text-emerald-100"
+                        : "text-slate-900 dark:text-white"
+                  }`}
+                >
+                  {action.title}
+                </p>
               </div>
               <p className="relative mt-0.5 hidden text-xs text-slate-500 sm:block dark:text-slate-400">{action.subtitle}</p>
               <span className="relative mt-1 hidden items-center gap-1 text-[11px] font-semibold text-slate-400 opacity-0 transition group-hover:opacity-100 group-hover:text-[var(--brand)] sm:mt-2 sm:inline-flex">

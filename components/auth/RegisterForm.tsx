@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { signUpWithEmail } from "@/lib/auth";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { resendSignupConfirmation, signUpWithEmail } from "@/lib/auth";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import {
   isValidEmail,
   isValidPassword,
@@ -11,7 +12,6 @@ import {
 } from "@/lib/validators/auth";
 
 export default function RegisterForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
   const loginHref = next ? `/auth/login?next=${encodeURIComponent(next)}` : "/auth/login";
@@ -21,16 +21,15 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     if (!isValidUsername(username.trim().toLowerCase())) {
       setError(
@@ -66,15 +65,17 @@ export default function RegisterForm() {
         username,
         email,
         password,
+        next,
       });
 
-      setSuccess("Cuenta creada. Revisa tu email para confirmar la cuenta antes de entrar.");
+      const normalizedEmail = email.trim().toLowerCase();
+      trackEvent(ANALYTICS_EVENTS.SIGN_UP_COMPLETED, { method: "email" });
+      setSuccessEmail(normalizedEmail);
       setUsername("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-      router.push(loginHref);
-      router.refresh();
+      setAcceptedLegal(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear la cuenta");
     } finally {
@@ -82,17 +83,84 @@ export default function RegisterForm() {
     }
   }
 
+  async function handleResend() {
+    if (!successEmail || resending) return;
+    setResendMessage(null);
+    try {
+      setResending(true);
+      await resendSignupConfirmation(successEmail, next);
+      setResendMessage("Correo reenviado. Revisa también spam o correo no deseado.");
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : "No se pudo reenviar el correo.");
+    } finally {
+      setResending(false);
+    }
+  }
+
+  if (successEmail) {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-5 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100">
+          <div className="text-2xl" aria-hidden>✉️</div>
+          <h2 className="mt-2 text-lg font-extrabold">Revisa tu correo</h2>
+          <p className="mt-2 text-sm leading-relaxed text-emerald-900/85 dark:text-emerald-200/85">
+            Hemos enviado un enlace de confirmación a <strong>{successEmail}</strong>. Ábrelo para activar tu cuenta de Kaviro.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-4 text-sm text-slate-600 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300">
+          <p className="font-bold text-slate-900 dark:text-white">¿Qué hago ahora?</p>
+          <ol className="mt-2 space-y-1.5">
+            <li>1. Abre el email de Kaviro.</li>
+            <li>2. Pulsa el enlace para confirmar tu cuenta.</li>
+            <li>3. Kaviro te llevará automáticamente a tu espacio.</li>
+          </ol>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Si no aparece, revisa también la carpeta de spam o correo no deseado.
+          </p>
+        </div>
+
+        {resendMessage ? (
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300">
+            {resendMessage}
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => void handleResend()}
+          disabled={resending}
+          className="btn-press inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-100 dark:hover:bg-[#1E293B]"
+        >
+          {resending ? "Reenviando…" : "No me ha llegado · Reenviar correo"}
+        </button>
+
+        <Link
+          href={loginHref}
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--brand-hover)]"
+        >
+          Ya la confirmé, ir al login →
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSuccessEmail(null);
+            setResendMessage(null);
+          }}
+          className="w-full text-center text-xs font-semibold text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          Usar otro email
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
-        </div>
-      ) : null}
-
-      {success ? (
-        <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2 text-sm text-green-700 dark:text-green-300">
-          {success}
         </div>
       ) : null}
 
@@ -110,9 +178,12 @@ export default function RegisterForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
-            placeholder="nombre de usuario"
+            placeholder="ej. unai_viajes"
             autoComplete="username"
           />
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            Entre 3 y 20 caracteres: letras minúsculas, números o guion bajo.
+          </p>
         </div>
 
         <div>
@@ -134,19 +205,26 @@ export default function RegisterForm() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Contraseña</label>
+          <label htmlFor="register-password" className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Contraseña
+          </label>
           <input
+            id="register-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:border-[#334155] dark:bg-[#0F1623]"
             autoComplete="new-password"
+            placeholder="Mínimo 8 caracteres"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Confirmar contraseña</label>
+          <label htmlFor="register-confirm-password" className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Confirmar contraseña
+          </label>
           <input
+            id="register-confirm-password"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

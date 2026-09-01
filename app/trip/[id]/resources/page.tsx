@@ -1,6 +1,7 @@
 import TripResourcesView from "@/components/trip/resources/TripResourcesView";
 import TripScreenActions from "@/components/trip/common/TripScreenActions";
 import TripBoardPageHeader from "@/components/layout/TripBoardPageHeader";
+import TripEmptyModuleGuide from "@/components/trip/onboarding/TripEmptyModuleGuide";
 import { getCachedTripAccess } from "@/lib/trip-access";
 import { createClient } from "@/lib/supabase/server";
 import { getCachedTripPremium } from "@/lib/entitlements";
@@ -16,7 +17,13 @@ export default async function TripResourcesPage({
   // (Si no, el endpoint del asistente también lo rechazará.)
   const access = await getCachedTripAccess(tripId);
   const supabase = await createClient();
-  const isPremium = await getCachedTripPremium(tripId, access.userId);
+  const [isPremium, { count: resourcesCount }] = await Promise.all([
+    getCachedTripPremium(tripId, access.userId),
+    supabase
+      .from("trip_resources")
+      .select("id", { count: "exact", head: true })
+      .eq("trip_id", tripId),
+  ]);
 
   return (
     <main className="space-y-6">
@@ -29,7 +36,20 @@ export default async function TripResourcesPage({
         actions={<TripScreenActions tripId={tripId} />}
       />
 
-      <TripResourcesView tripId={tripId} isPremium={isPremium} canManageResources={access.can_manage_resources} />
+      {(resourcesCount ?? 0) === 0 && access.can_manage_resources ? (
+        <TripEmptyModuleGuide
+          icon="📎"
+          title="Guarda el primer documento del viaje"
+          description="Empieza por algo que ya tengas: una reserva de hotel, un billete, una entrada o cualquier PDF o imagen que no quieras buscar después entre emails y WhatsApp."
+          primaryHref={`/trip/${encodeURIComponent(tripId)}/resources#resources-workspace`}
+          primaryLabel="Ir a adjuntar documento"
+          secondaryText="Más adelante puedes usar el analizador con IA o crear reservas manuales. Para empezar, basta con guardar un documento."
+        />
+      ) : null}
+
+      <section id="resources-workspace" className="scroll-mt-24">
+        <TripResourcesView tripId={tripId} isPremium={isPremium} canManageResources={access.can_manage_resources} />
+      </section>
     </main>
   );
 }

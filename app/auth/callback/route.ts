@@ -61,7 +61,7 @@ export async function GET(request: Request) {
   if (!code) {
     return redirectConfirmedError(
       origin,
-      "Falta el código de autorización. Vuelve a intentar desde el login.",
+      "El enlace no contiene la información necesaria. Vuelve a abrir el correo o solicita un enlace nuevo.",
       nextPath
     );
   }
@@ -97,15 +97,8 @@ export async function GET(request: Request) {
     return redirectWithSessionCookies(`${origin}/auth/reset-password`, cookieWrites);
   }
 
-  /** Registro / confirmación email: sesión activa; agencias van al panel B2B. */
-  if (type === "signup" || type === "email" || type === "email_confirmation") {
-    const welcome = new URL(resolvedNext, origin);
-    if (resolvedNext === "/dashboard") welcome.searchParams.set("welcome", "1");
-    return redirectWithSessionCookies(welcome.toString(), cookieWrites);
-  }
-
-  const ok = new URL("/auth/confirmed", origin);
-  ok.searchParams.set("status", "ok");
-  ok.searchParams.set("next", resolvedNext);
-  return redirectWithSessionCookies(ok.toString(), cookieWrites);
+  // El código ya ha creado una sesión válida: no pedimos al usuario que vuelva a iniciar sesión.
+  const target = new URL(resolvedNext, origin);
+  if (resolvedNext === "/dashboard") target.searchParams.set("welcome", "1");
+  return redirectWithSessionCookies(target.toString(), cookieWrites);
 }
