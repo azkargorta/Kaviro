@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { signUpWithEmail } from "@/lib/auth";
+import { resendSignupConfirmation, signUpWithEmail } from "@/lib/auth";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import {
   isValidEmail,
   isValidPassword,
@@ -23,6 +24,8 @@ export default function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +67,9 @@ export default function RegisterForm() {
         password,
       });
 
-      setSuccessEmail(email.trim().toLowerCase());
+      const normalizedEmail = email.trim().toLowerCase();
+      trackEvent(ANALYTICS_EVENTS.SIGN_UP_COMPLETED, { method: "email" });
+      setSuccessEmail(normalizedEmail);
       setUsername("");
       setEmail("");
       setPassword("");
@@ -74,6 +79,20 @@ export default function RegisterForm() {
       setError(err instanceof Error ? err.message : "No se pudo crear la cuenta");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    if (!successEmail || resending) return;
+    setResendMessage(null);
+    try {
+      setResending(true);
+      await resendSignupConfirmation(successEmail);
+      setResendMessage("Correo reenviado. Revisa también spam o correo no deseado.");
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : "No se pudo reenviar el correo.");
+    } finally {
+      setResending(false);
     }
   }
 
@@ -93,23 +112,41 @@ export default function RegisterForm() {
           <ol className="mt-2 space-y-1.5">
             <li>1. Abre el email de Kaviro.</li>
             <li>2. Pulsa el enlace para confirmar tu cuenta.</li>
-            <li>3. Vuelve a Kaviro e inicia sesión.</li>
+            <li>3. Kaviro te llevará automáticamente a tu espacio.</li>
           </ol>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             Si no aparece, revisa también la carpeta de spam o correo no deseado.
           </p>
         </div>
 
+        {resendMessage ? (
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-300">
+            {resendMessage}
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => void handleResend()}
+          disabled={resending}
+          className="btn-press inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60 dark:border-[#334155] dark:bg-[#0F1623] dark:text-slate-100 dark:hover:bg-[#1E293B]"
+        >
+          {resending ? "Reenviando…" : "No me ha llegado · Reenviar correo"}
+        </button>
+
         <Link
           href={loginHref}
-          className="btn-press inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--brand)] px-4 text-sm font-bold text-white shadow-md transition hover:bg-[var(--brand-hover)]"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--brand-hover)]"
         >
-          Ya he confirmado mi cuenta →
+          Ya la confirmé, ir al login →
         </Link>
 
         <button
           type="button"
-          onClick={() => setSuccessEmail(null)}
+          onClick={() => {
+            setSuccessEmail(null);
+            setResendMessage(null);
+          }}
           className="w-full text-center text-xs font-semibold text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
         >
           Usar otro email
@@ -121,7 +158,7 @@ export default function RegisterForm() {
   return (
     <div className="space-y-5">
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </div>
       ) : null}
