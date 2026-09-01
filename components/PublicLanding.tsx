@@ -180,19 +180,19 @@ const STEPS = [
     step: "01",
     icon: Luggage,
     title: "Crea el viaje",
-    desc: "Nombre, destino, fechas e invitación al grupo con un enlace.",
+    desc: "Indica el destino y empieza. El nombre, las fechas y otros detalles los puedes completar después.",
   },
   {
     step: "02",
     icon: MapPinned,
-    title: "Centraliza el plan",
-    desc: "Añade días, rutas, gastos y documentos. O pide ayuda al asistente IA (Premium).",
+    title: "Ponlo en marcha",
+    desc: "Añade lo primero al Plan, invita al grupo y guarda tus reservas. Mapa, gastos e IA están ahí cuando los necesites.",
   },
   {
     step: "03",
     icon: Share2,
     title: "Viaja sin caos",
-    desc: "Consulta el plan en destino, registra gastos y comparte el recap al volver.",
+    desc: "Consulta el plan en destino, registra gastos cuando los haya y comparte el recap al volver.",
   },
 ] as const;
 
