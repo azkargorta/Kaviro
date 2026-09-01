@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { signInWithEmail } from "@/lib/auth";
+import { resendSignupConfirmation, signInWithEmail } from "@/lib/auth";
 import KaviroLoadingScreen from "@/components/brand/KaviroLoadingScreen";
 import { AGENCY_PARTNERSHIP_EMAIL, KAVIRO_TRIPS_PRODUCT_NAME } from "@/lib/brand";
 import { defaultLoginNext, parseWorkspaceModeParam, WORKSPACE_MODE_STORAGE_KEY } from "@/lib/workspace-mode";
@@ -27,6 +27,9 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [welcomeName, setWelcomeName] = useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // PKCE: Supabase suele redirigir con ?code= y a menudo sin type= en la query.
@@ -57,6 +60,8 @@ export default function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsConfirmation(false);
+    setResendMessage(null);
 
     try {
       setLoading(true);
@@ -112,8 +117,24 @@ export default function LoginForm() {
       }, 1800);
     } catch (err) {
       setWelcomeName(null);
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
+      const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
+      setError(message);
+      setNeedsConfirmation(/confirmar tu email/i.test(message));
       setLoading(false);
+    }
+  }
+
+  async function handleResendConfirmation() {
+    if (!email.trim() || resending) return;
+    setResendMessage(null);
+    try {
+      setResending(true);
+      await resendSignupConfirmation(email);
+      setResendMessage("Te hemos enviado un nuevo correo de confirmación. Revisa también spam.");
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : "No se pudo reenviar el correo.");
+    } finally {
+      setResending(false);
     }
   }
 
@@ -143,14 +164,28 @@ export default function LoginForm() {
         </p>
       ) : null}
 
-      {/* ERROR */}
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-          {error}
+      {error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          <p>{error}</p>
+          {needsConfirmation ? (
+            <button
+              type="button"
+              onClick={() => void handleResendConfirmation()}
+              disabled={resending}
+              className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-red-200 bg-white px-3 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-60 dark:border-red-900/60 dark:bg-[#0F1623] dark:text-red-200"
+            >
+              {resending ? "Reenviando…" : "Reenviar correo de confirmación"}
+            </button>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
-      {/* FORM */}
+      {resendMessage ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200">
+          {resendMessage}
+        </div>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label
@@ -164,7 +199,7 @@ export default function LoginForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white dark:bg-[#0F1623] px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)]"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-border)] dark:bg-[#0F1623]"
             placeholder="tu@email.com"
             autoComplete="email"
           />
@@ -177,7 +212,7 @@ export default function LoginForm() {
           >
             Contraseña
           </label>
-<div className="relative">
+          <div className="relative">
             <input
               id="login-password"
               type={showPassword ? "text" : "password"}
@@ -190,7 +225,7 @@ export default function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:text-slate-300 transition"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:text-slate-700 dark:text-slate-300"
               aria-label={showPassword ? "Ocultar caracteres escritos" : "Mostrar caracteres escritos"}
               tabIndex={-1}
             >
@@ -219,7 +254,6 @@ export default function LoginForm() {
         </button>
       </form>
 
-      {/* LINKS */}
       <div className="flex flex-col gap-2 text-sm text-slate-600">
         {isAgencyLogin ? (
           <Link href="/auth/login" className="text-center text-slate-500 hover:text-slate-700 dark:text-slate-300">
