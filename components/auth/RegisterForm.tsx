@@ -65,6 +65,7 @@ export default function RegisterForm() {
         username,
         email,
         password,
+        next,
       });
 
       const normalizedEmail = email.trim().toLowerCase();
@@ -87,7 +88,7 @@ export default function RegisterForm() {
     setResendMessage(null);
     try {
       setResending(true);
-      await resendSignupConfirmation(successEmail);
+      await resendSignupConfirmation(successEmail, next);
       setResendMessage("Correo reenviado. Revisa también spam o correo no deseado.");
     } catch (err) {
       setResendMessage(err instanceof Error ? err.message : "No se pudo reenviar el correo.");
