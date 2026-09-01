@@ -129,7 +129,7 @@ export default function LoginForm() {
     setResendMessage(null);
     try {
       setResending(true);
-      await resendSignupConfirmation(email);
+      await resendSignupConfirmation(email, next);
       setResendMessage("Te hemos enviado un nuevo correo de confirmación. Revisa también spam.");
     } catch (err) {
       setResendMessage(err instanceof Error ? err.message : "No se pudo reenviar el correo.");
